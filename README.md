@@ -4,6 +4,8 @@ ee_npc
 Earth Empires Non-Player-Country Project!
 
 
+<br /><br />
+
 
 TO RUN ON LINUX:
 
@@ -18,6 +20,8 @@ TO RUN ON LINUX:
 
 3) To Stop it go Control-C
 
+
+<br /><br />
 
 
 TO RUN ON WINDOWS:
