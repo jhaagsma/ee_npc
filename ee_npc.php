@@ -5,10 +5,13 @@ out('STARTING UP BOT');// out() is defined below
 date_default_timezone_set('GMT'); //SET THE TIMEZONE FIRST
 error_reporting(E_ALL); //SET THE ERROR REPORTING TO REPORT EVERYTHING
 out('Error Reporting and Timezone Set');
+include('config.php');
+if(!isset($config))
+	die("Config not included successfully! Do you have config.php set up properly?");
 
-$username = 'qzjul';     //<======== PUT IN YOUR USERNAME HERE
-$ai_key = '7de188b2a96271fb20acc1cee66cd3f7';   //<======== PUT IN YOUR API KEY HERE
-$base_url = 'http://qz.earthempires.com/api';
+$username = $config['username'];     //<======== PUT IN YOUR USERNAME HERE
+$ai_key = $config['ai_key'];   //<======== PUT IN YOUR API KEY HERE
+$base_url = $config['base_url'];
 $serv = 'ai';
 $cnum = null;
 $last_function = null;
