@@ -88,7 +88,7 @@ function play_rainbow_strat($server){
 		}
 		
 		if($c->foodnet < 0 && $c->food < $c->foodnet*-3 && $c->money > 20*$c->foodnet*-3*$pm_info->buy_price->m_bu){ //losing food, less than 3 turns left, AND have the money to buy it
-			out("Less than 3 turns worth of food! We're rich, so buy food at any price!~");	//Text for screen
+			out("Less than 3 turns worth of food! (" . $c->foodnet .  "/turn) We're rich, so buy food at any price!~");	//Text for screen
 			$result = buy_on_pm($c,array('m_bu' => -3*$c->foodnet));	//Buy 3 turns of food!
 			//out_data($result);
 		}
@@ -108,9 +108,11 @@ function play_rainbow_strat($server){
 function update_c(&$c,$result){
 	global $last_function;
 	//out_data($result);				//output data for testing
+	$explain = null;					//Text formatting
 	if(isset($result->built)){
 		$str = 'Built ';				//Text for screen
 		$first = true;					//Text formatting
+		$bpt = $tpt = false;
 		foreach($result->built as $type  =>  $num){	//for each type of building that we built....
 			if(!$first)					//Text formatting
 				$str .= ' and ';		//Text formatting
@@ -119,8 +121,18 @@ function update_c(&$c,$result){
 			$c->$build += $num;			//add buildings to keep track
 			$c->empty -= $num;			//subtract buildings from empty, to keep track
 			$str .= $num . ' ' . $type;	//Text for screen
+			if($type == 'cs' && $num > 0)
+				$bpt = true;
+			elseif($type == 'lab' && $num > 0)
+				$tpt = true;
 		}
+		if($bpt)
+			$explain = '(' . $result->bpt . ' bpt)';	//Text for screen
+		if($tpt)
+			$explain = '(' . $result->tpt . ' tpt)';	//Text for screen
+			
 		$c->bpt = $result->bpt;			//update BPT - added this to the API so that we don't have to calculate it
+		$c->tpt = $result->tpt;			//update TPT - added this to the API so that we don't have to calculate it
 		$c->money -= $result->cost;
 	}
 	elseif(isset($result->new_land)){
@@ -128,10 +140,24 @@ function update_c(&$c,$result){
 		$c->land += $result->new_land;				//update land
 		$c->build_cost = $result->build_cost;		//update Build Cost
 		$c->explore_rate = $result->explore_rate;	//update explore rate
+		$c->tpt = $result->tpt;			//update TPT - added this to the API so that we don't have to calculate it
 		$str = "Explored " . $result->new_land . " Acres";	//Text for screen
+		$explain = '(' . $c->land . ' A)';			//Text for screen
+	}
+	elseif(isset($result->teched)){
+		$str = 'Tech: ';
+		$tot = 0;
+		foreach($result->teched as $type  =>  $num){	//for each type of tech that we teched....
+			$build = 't_' . $type;		//have to convert to the advisor output, for now
+			$c->$build += $num;			//add buildings to keep track
+			$tot += $num;	//Text for screen
+		}
+		$c->tpt = $result->tpt;			//update TPT - added this to the API so that we don't have to calculate it
+		$str .=  $tot . ' ' . actual_count($result->turns) . ' turns';
+		$explain = '(' . $c->tpt . ' tpt)';	//Text for screen
 	}
 	elseif($last_function == 'cash'){
-		$str = "Cashed " . count($result->turns) . "turns";	//Text for screen
+		$str = "Cashed " . actual_count($result->turns) . "turns";	//Text for screen
 	}
 	
 	$event = null; //Text for screen	
@@ -177,7 +203,7 @@ function update_c(&$c,$result){
 	
 	$netfood = ($netfood > 0 ? '+' . $netfood : $netfood);			//Text formatting (adding a + if it is positive; - will be there if it's negative already)
 	$netmoney = ($netmoney > 0 ? '+' . $netmoney : $netmoney);		//Text formatting (adding a + if it is positive; - will be there if it's negative already)
-	$str = str_pad($str,26) . str_pad('$' . $c->money,16) . str_pad('($' . $netmoney . ')',12) . str_pad($c->food . ' Bu',10) . str_pad('(' . $netfood . ')',8); //Text for screen
+	$str = str_pad($str,26) . str_pad($explain,12) .  str_pad('$' . $c->money,16) . str_pad('($' . $netmoney . ')',12) . str_pad($c->food . ' Bu',10) . str_pad('(' . $netfood . ')',8); //Text for screen
 
 	
 	out(str_pad($c->turns,3) . ' Turns - ' . $str . $event);
@@ -188,8 +214,10 @@ function play_rainbow_turn(&$c){ //c as in country!
 	//out($main->turns . ' turns left');
 	if($c->empty > $c->bpt && $c->money > $c->bpt*$c->build_cost){	//build a full BPT if we can afford it
 		return build_something($c);
-	}elseif($c->turns >= 4 && $c->empty >= 4 && $c->bpt < 80 && $c->money > 4*$c->build_cost) //otherwise... build 4CS if we can afford it and are below our target BPT (80)
+	}elseif($c->turns >= 4 && $c->empty >= 4 && $c->bpt < 80 && $c->money > 4*$c->build_cost && ($c->foodnet > 0 || $c->food > $c->foodnet*-5)) //otherwise... build 4CS if we can afford it and are below our target BPT (80)
 		return build_cs(4); //build 4 CS
+	elseif($c->tpt > $c->land*0.17 && rand(0,10) > 5) //tech per turn is greater than land*0.17 -- just kindof a rough "don't tech below this" rule...
+		return tech_something($c);
 	elseif($c->empty < $c->land/2)	//otherwise... explore if we can
 		return explore($c);
 	elseif($c->empty && $c->bpt < 80 && $c->money > $c->build_cost) //otherwise... build one CS if we can afford it and are below our target BPT (80)
@@ -203,13 +231,54 @@ function build_something(&$c){
 		return build(array('farm' => $c->bpt));
 	}
 	elseif($c->income < max(100000,2*$c->build_cost*$c->bpt/$c->explore_rate)){ //build ent/res if we're not making more than enough to keep building continually at least $100k
-		$res = round($c->bpt/2.12);
-		$ent = $c->bpt - $res;
-		return build(array('ent' => $ent,'res' => $res));
+		if(rand(0,100) > 50 && $c->income > $c->build_cost*$c->bpt/$c->explore_rate){
+			return build(array('lab' => $c->bpt));
+		}
+		else{
+			$res = round($c->bpt/2.12);
+			$ent = $c->bpt - $res;
+			return build(array('ent' => $ent,'res' => $res));
+		}
 	}
-	else{ //build indies
-		return build(array('indy' => $c->bpt));
+	else{ //build indies or labs
+		if(($c->tpt < $c->land && rand(0,100) > 10) || rand(0,100) > 40)
+			return build(array('lab' => $c->bpt));
+		else
+			return build(array('indy' => $c->bpt));
 	}
+}
+
+function tech_something(&$c){
+	//lets do random weighting... to some degree
+	$mil	= rand(0,25);
+	$med	= rand(0,5);
+	$bus	= rand(10,100);
+	$res	= rand(10,100);
+	$agri	= rand(10,100);
+	$war	= rand(0,10);
+	$ms		= rand(0,20);
+	$weap	= rand(0,20);
+	$indy	= rand(5,40);
+	$spy	= rand(0,10);
+	$sdi	= rand(2,15);	
+	$tot	= $mil + $med + $bus + $res + $agri + $war + $ms + $weap + $indy + $spy + $sdi;
+	
+	$left = $c->tpt;
+	$left -= $mil = min($left,floor($c->tpt*($mil/$tot)));
+	$left -= $med = min($left,floor($c->tpt*($med/$tot)));
+	$left -= $bus = min($left,floor($c->tpt*($bus/$tot)));
+	$left -= $res = min($left,floor($c->tpt*($res/$tot)));
+	$left -= $agri = min($left,floor($c->tpt*($agri/$tot)));
+	$left -= $war = min($left,floor($c->tpt*($war/$tot)));
+	$left -= $ms = min($left,floor($c->tpt*($ms/$tot)));
+	$left -= $weap = min($left,floor($c->tpt*($weap/$tot)));
+	$left -= $indy = min($left,floor($c->tpt*($indy/$tot)));
+	$left -= $spy = min($left,floor($c->tpt*($spy/$tot)));
+	$left -= $sdi = max($left,min($left,floor($c->tpt*($spy/$tot))));
+	if($left != 0)
+		die("What the hell?");
+	
+	return tech(array('mil'=>$mil,'med'=>$med,'bus'=>$bus,'res'=>$res,'agri'=>$agri,'war'=>$war,'ms'=>$ms,'weap'=>$weap,'indy'=>$indy,'spy'=>$spy,'sdi'=>$sdi));
 }
 
 function build_cs($turns=1){							//default is 1 CS if not provided
@@ -224,9 +293,12 @@ function cash(&$c,$turns = 1){							//this means 1 is the default number of tur
 	return ee('cash',array('turns' => $turns));			//cash a certain number of turns
 }
 
-
 function explore(&$c,$turns = 1){						//this means 1 is the default number of turns if not provided
 	return ee('explore',array('turns' => $turns));		//cash a certain number of turns
+}
+
+function tech($tech = array()){					//default is an empty array
+	return ee('tech',array('tech' => $tech));	//research a particular set of techs
 }
 
 function get_main(){

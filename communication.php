@@ -69,6 +69,7 @@ function expected_result($input){
 		case 'cash':	return 'CASH';
 		case 'pm_info':	return 'PM_INFO';
 		case 'pm':		return 'PM';
+		case 'tech':	return 'TECH';
 	}
 }
 
@@ -80,6 +81,14 @@ function out($str){
 function out_data($data){
 	//This function is to output and format some data nicely
 	out("DATA:\n" . str_replace(",\n", "\n",var_export($data,true)));
+}
+
+function actual_count($data){ //do not ask me why, but count() doesn't work on $result->turns
+	$i = 0;
+	foreach($data as $stuff)
+		$i++;
+	
+	return $i;
 }
 
 function done($str = null){
