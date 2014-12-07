@@ -14,9 +14,10 @@ if(!isset($config))
 $username = $config['username'];	//<======== PUT IN YOUR USERNAME IN config.php
 $ai_key = $config['ai_key'];		//<======== PUT IN YOUR AI API KEY IN config.php
 $base_url = $config['base_url'];	//<======== PUT IN THE BASE URL IN config.php
-$serv = 'ai';
+$serv = isset($config['server']) ? $config['server'] : 'ai';
 $cnum = null;
 $last_function = null;
+$turnsleep = isset($config['turnsleep']) ? $config['turnsleep'] : 500000;
 
 out('Current Unix Time: ' . time());
 out('Entering Infinite Loop');
@@ -48,9 +49,16 @@ while(1){
 	foreach($countries as $cnum){
 		play_rainbow_strat($server,$cnum);
 	}
+	
+	if($server->reset_end < time() - $server->turn_rate * 9){
+		foreach($countries as $cnum){
+			destock($server,$cnum);
+		}
+		sleep(10*$server->turn_rate);	
+	}
 	$cnum = null;
 	$loopcount++;
-	$sleepturns = 10;
+	$sleepturns = 4;
 	out("Played 'Day' $loopcount; Sleeping for " . $sleepturns*$server->turn_rate . " seconds ($sleepturns Turns)");
 	sleep($sleepturns*$server->turn_rate); //sleep for 4 turns
 }
@@ -70,6 +78,7 @@ function play_rainbow_strat($server){
 	$pm_info = get_pm_info();	//get the PM info
 	//out_data($pm_info);		//output the PM info
 	$market_info = get_market_info();	//get the Public Market info
+	//out_data($market_info);		//output the PM info
 	
 	$owned_on_market_info = get_owned_on_market_info();	//find out what we have on the market
 	//out_data($market_info);	//output the Public Market info
@@ -120,6 +129,70 @@ function play_rainbow_strat($server){
 		//$main->turns = 0;				//use this to do one turn at a time
 	}
 	out("Done Playing Rainbow Turns for #$cnum!");	//Text for screen
+}
+
+function destock($server,$cnum){
+	$c = get_advisor();	//c as in country! (get the advisor)
+	out("Destocking #$cnum!");	//Text for screen
+	sell_on_pm($c,array('m_bu' => $c->food));	//Sell 'em
+	
+	$dpnw = 200;
+	while($c->money > 1000 && $dpnw < 500){
+		out("Try to buy goods at $dpwn dpnw or below!");	//Text for screen
+		buy_public_below_dpnw($c,$dpnw);
+		buy_private_below_dpnw($c,$dpnw);
+		$dpnw += 4;
+	}
+	if($c->money <= 1000)
+		out("Done Destocking!");	//Text for screen
+	else
+		out("Ran out of goods?");	//Text for screen
+}
+
+function buy_public_below_dpnw($c,$dpnw){
+	$market_info = get_market_info();
+	
+	$tr_price = round($dpnw*0.5/((100+$c->g_tax)/100));
+	$j_price = $tu_price = round($dpnw*0.6/((100+$c->g_tax)/100));
+	$ta_price = round($dpnw*2/((100+$c->g_tax)/100));
+
+	while($market_info->buy_price->m_tr <= $tr_price && $c->money > $tr_price){
+		$result = buy_public($c,array('m_tr' => floor($c->money/$tr_price)),array('m_tr' => $tr_price));	//Buy troops!
+		$market_info = get_market_info();
+	}
+	while($market_info->buy_price->m_j <= $j_price && $c->money > $j_price){
+		$result = buy_public($c,array('m_j' => floor($c->money/$j_price)),array('m_j' => $j_price));	//Buy troops!
+		$market_info = get_market_info();
+	}
+	while($market_info->buy_price->m_tu <= $tr_price && $c->money > $tu_price){
+		$result = buy_public($c,array('m_tr' => floor($c->money/$tu_price)),array('m_tu' => $tu_price));	//Buy troops!
+		$market_info = get_market_info();
+	}
+	while($market_info->buy_price->m_ta <= $tr_price && $c->money > $ta_price){
+		$result = buy_public($c,array('m_ta' => floor($c->money/$ta_price)),array('m_ta' => $ta_price));	//Buy troops!
+		$market_info = get_market_info();
+	}
+}
+
+function buy_private_below_dpnw($c,$dpnw){
+	$pm_info = get_pm_info();	//get the PM info
+	
+	$tr_price = round($dpnw*0.5);
+	$j_price = $tu_price = round($dpnw*0.6);
+	$ta_price = round($dpnw*2);
+	
+	if($pm_info->buy_price->m_tr <= $tr_price && $pm_info->available->m_tr > 0){
+		$result = buy_on_pm($c,array('m_tr' => min(floor($c->money/$tr_price),$pm_info->available->m_tr)));
+	}
+	if($pm_info->buy_price->m_ta <= $ta_price && $pm_info->available->m_ta > 0){
+		$result = buy_on_pm($c,array('m_ta' => min(floor($c->money/$ta_price),$pm_info->available->m_ta)));
+	}
+	if($pm_info->buy_price->m_j <= $j_price && $pm_info->available->m_j > 0){
+		$result = buy_on_pm($c,array('m_j' => min(floor($c->money/$j_price),$pm_info->available->m_j)));
+	}
+	if($pm_info->buy_price->m_tu <= $tu_price && $pm_info->available->m_tu > 0){
+		$result = buy_on_pm($c,array('m_tu' => min(floor($c->money/$tu_price),$pm_info->available->m_tu)));
+	}
 }
 
 function update_c(&$c,$result){
@@ -227,7 +300,8 @@ function update_c(&$c,$result){
 }
 
 function play_rainbow_turn(&$c){ //c as in country!
-	usleep(500000);
+	global $turnsleep;
+	usleep($turnsleep);
 	//out($main->turns . ' turns left');
 	if($c->empty > $c->bpt && $c->money > $c->bpt*$c->build_cost){	//build a full BPT if we can afford it
 		return build_something($c);
