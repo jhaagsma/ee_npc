@@ -113,9 +113,9 @@ function play_rainbow_strat($server){
 			sell_all_military($c,1/4);	//sell 1/4 of our military
 		}
 		
-		if($c->foodnet > 0 && $c->foodnet > 3*$c->foodcon && $c->food > 30*$c->foodnet){
+		if($c->foodnet > 0 && $c->foodnet > 3*$c->foodcon && $c->food > 30*$c->foodnet && $c->food > 7000){
 			out("Lots of food, let's sell some!");
-			
+			$result = sell_public($c,array('m_bu' => $c->food),array('m_bu' => round(max($pm_info->sell_price->m_bu,$market_info->buy_price->m_bu)*rand(80,120)/100)));	//Sell food!
 		}
 		//$main->turns = 0;				//use this to do one turn at a time
 	}
@@ -388,8 +388,6 @@ function sell_on_pm(&$c,$units = array()){
 	return $result;	
 }
 
-
-
 function buy_public(&$c,$quantity=array(),$price=array()){
 	$result = ee('buy',array('quantity' => $quantity, 'price' => $price));
 	
@@ -410,6 +408,28 @@ function buy_public(&$c,$quantity=array(),$price=array()){
 		$str .= 'nothing ';
 	
 	$str .= 'for $' .$tcost;
+	out($str);
+	return $result;
+}
+
+function sell_public(&$c,$quantity=array(),$price=array(),$tonm=array()){
+	$result = ee('sell',array('quantity' => $quantity, 'price' => $price)); //ignore tonm for now, it's optional
+	
+	$str = 'Put ';
+	foreach($result->bought as $type => $details){
+		$omtype = 'o' . $type;
+		if($type == 'm_bu')
+			$type = 'food';
+		elseif($type == 'm_oil')
+			$type = 'oil';
+		$c->$omtype += $details->quantity;
+		$c->$type -= $details->quantity;
+		$str .= $details->quantity . ' ' . $type . ', ';
+	}
+	if($str == 'Put ')
+		$str .= 'nothing ';
+	
+	$str .= 'on market.';
 	out($str);
 	return $result;
 }
