@@ -34,6 +34,8 @@ while(1){
 		sleep(300);								//wait 5 mins, see if new one is created
 		continue;								//restart the loop
 	}
+	
+	server_start_end_notification($server);
 
 	while($server->alive_count < $server->countries_allowed){
 		out("Less countries than allowed! (" . $server->alive_count . '/' . $server->countries_allowed . ')');
@@ -54,17 +56,21 @@ while(1){
 		foreach($countries as $cnum){
 			destock($server,$cnum);
 		}
+		out("Sleep until end");
 		sleep(10*$server->turn_rate);	
 	}
 	$cnum = null;
 	$loopcount++;
 	$sleepturns = 4;
 	out("Played 'Day' $loopcount; Sleeping for " . $sleepturns*$server->turn_rate . " seconds ($sleepturns Turns)");
+	server_start_end_notification($server);
 	sleep($sleepturns*$server->turn_rate); //sleep for 4 turns
 }
 done(); //done() is defined below
 
-
+function server_start_end_notification($server){
+	out("Server started " . round((time()-$server->reset_start)/3600,1) . ' hours ago and ends in ' . round(($server->reset_end-time())/3600,1) . ' hours');
+}
 //COUNTRY PLAYING STUFF
 
 function play_rainbow_strat($server){
