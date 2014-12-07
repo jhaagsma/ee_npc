@@ -64,7 +64,7 @@ while(1){
 	$sleepturns = 4;
 	out("Played 'Day' $loopcount; Sleeping for " . $sleepturns*$server->turn_rate . " seconds ($sleepturns Turns)");
 	server_start_end_notification($server);
-	sleep($sleepturns*$server->turn_rate); //sleep for 4 turns
+	sleep(min($sleepturns*$server->turn_rate,max(0,$server->reset_end - 60 - time()))); //sleep for 4 turns
 }
 done(); //done() is defined below
 
