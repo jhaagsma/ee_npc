@@ -69,8 +69,14 @@ function play_rainbow_strat($server){
 	//out_data($c);				//ouput the advisor data
 	$pm_info = get_pm_info();	//get the PM info
 	//out_data($pm_info);		//output the PM info
+	$market_info = get_market_info();	//get the Public Market info
+	
+	$owned_on_market_info = get_owned_on_market_info();	//find out what we have on the market
+	//out_data($market_info);	//output the Public Market info
+	//var_export($owned_on_market_info);
 	
 	while($c->turns > 0){
+		//$result = buy_public($c,array('m_bu'=>100),array('m_bu'=>400));
 		$result = play_rainbow_turn($c);
 		if($result === false){	//UNEXPECTED RETURN VALUE
 			$c = get_advisor();	//UPDATE EVERYTHING
@@ -88,6 +94,12 @@ function play_rainbow_strat($server){
 		}
 		
 		if($c->foodnet < 0 && $c->food < $c->foodnet*-3 && $c->money > 20*$c->foodnet*-3*$pm_info->buy_price->m_bu){ //losing food, less than 3 turns left, AND have the money to buy it
+			out("Less than 3 turns worth of food! (" . $c->foodnet .  "/turn) Buy food off Public if we can!");	//Text for screen
+			$result = buy_public($c,array('m_bu' => -3*$c->foodnet),array('m_bu' => $pm_info->buy_price->m_bu));	//Buy 3 turns of food off the public at or below the PM price
+			//out_data($result);
+		}
+		
+		if($c->foodnet < 0 && $c->food < $c->foodnet*-3 && $c->money > 20*$c->foodnet*-3*$pm_info->buy_price->m_bu){ //losing food, less than 3 turns left, AND have the money to buy it
 			out("Less than 3 turns worth of food! (" . $c->foodnet .  "/turn) We're rich, so buy food at any price!~");	//Text for screen
 			$result = buy_on_pm($c,array('m_bu' => -3*$c->foodnet));	//Buy 3 turns of food!
 			//out_data($result);
@@ -99,6 +111,11 @@ function play_rainbow_strat($server){
 		elseif($c->income < 0){ //sell 1/4 of all military on PM
 			out("Losing money! Sell 1/4 of our military!");	//Text for screen
 			sell_all_military($c,1/4);	//sell 1/4 of our military
+		}
+		
+		if($c->foodnet > 0 && $c->foodnet > 3*$c->foodcon && $c->food > 30*$c->foodnet){
+			out("Lots of food, let's sell some!");
+			
 		}
 		//$main->turns = 0;				//use this to do one turn at a time
 	}
@@ -313,6 +330,14 @@ function get_pm_info(){
 	return ee('pm_info');	//get and return the PRIVATE MARKET information
 }
 
+function get_market_info(){
+	return ee('market');	//get and return the PUBLIC MARKET information
+}
+
+function get_owned_on_market_info(){
+	return ee('onmarket');	//get and return the GOODS OWNED ON PUBLIC MARKET information
+}
+
 
 function sell_all_military(&$c,$fraction = 1){
 	$fraction = max(0,min(1,$fraction));
@@ -341,7 +366,7 @@ function buy_on_pm(&$c,$units = array()){
 	}
 	$str .= 'for $' . $result->cost;
 	out($str);
-	return $result;	
+	return $result;
 }
 
 
@@ -362,6 +387,33 @@ function sell_on_pm(&$c,$units = array()){
 	out($str);
 	return $result;	
 }
+
+
+
+function buy_public(&$c,$quantity=array(),$price=array()){
+	$result = ee('buy',array('quantity' => $quantity, 'price' => $price));
+	
+	$str = 'Bought ';
+	$tcost = 0;
+	foreach($result->bought as $type => $details){
+		if($type == 'm_bu')
+			$type = 'food';
+		elseif($type == 'm_oil')
+			$type = 'oil';
+		
+		$c->$type += $details->quantity;
+		$c->money -= $details->cost;
+		$tcost += $details->cost;
+		$str .= $details->quantity . ' ' . $type . ', ';
+	}
+	if($str == 'Bought ')
+		$str .= 'nothing ';
+	
+	$str .= 'for $' .$tcost;
+	out($str);
+	return $result;
+}
+
 
 function event_text($event){
 	switch($event){

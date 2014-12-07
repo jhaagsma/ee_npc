@@ -60,16 +60,21 @@ function expected_result($input){
 	//This is simply a list of expected return values for each function
 	//This allows us to quickly verify if an error occurred
 	switch($input){
-		case 'server':	return 'SERVER_INFO';
-		case 'create':	return 'CNUM';
-		case 'advisor':	return 'ADVISOR';
-		case 'main':	return 'MAIN';
-		case 'build':	return 'BUILD';
-		case 'explore':	return 'EXPLORE';
-		case 'cash':	return 'CASH';
-		case 'pm_info':	return 'PM_INFO';
-		case 'pm':		return 'PM';
-		case 'tech':	return 'TECH';
+		case 'server':		return 'SERVER_INFO';
+		case 'create':		return 'CNUM';
+		case 'advisor':		return 'ADVISOR';
+		case 'main':		return 'MAIN';
+		case 'build':		return 'BUILD';
+		case 'explore':		return 'EXPLORE';
+		case 'cash':		return 'CASH';
+		case 'pm_info':		return 'PM_INFO';
+		case 'pm':			return 'PM';
+		case 'tech':		return 'TECH';
+		case 'market':		return 'MARKET';
+		case 'onmarket':	return 'ONMARKET';
+				
+		case 'buy':			return 'BUY';
+		case 'sell':		return 'SELL';
 	}
 }
 
