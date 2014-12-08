@@ -26,7 +26,7 @@ while(1){
 	$server = ee('server');
 	if($server->reset_start > time()){
 		out("Reset has not started!");			//done() is defined below
-		sleep(time()-$server->reset_start);		//sleep until the reset starts
+		sleep(max(300,time()-$server->reset_start));		//sleep until the reset starts
 		continue;								//return to the beginning of the loop
 	}
 	elseif($server->reset_end < time()){
@@ -52,7 +52,7 @@ while(1){
 		play_rainbow_strat($server,$cnum);
 	}
 	
-	if($server->reset_end < time() - $server->turn_rate * 9){
+	if($server->reset_end - $server->turn_rate * 9 - time() < 0){
 		foreach($countries as $cnum){
 			destock($server,$cnum);
 		}
@@ -63,6 +63,7 @@ while(1){
 	$loopcount++;
 	$sleepturns = 4;
 	$sleep = min($sleepturns*$server->turn_rate,max(0,$server->reset_end - 60 - time()));
+	$sleepturns = ($sleep != $sleepturns*$server->turnrate ? floor($sleep/$server->turn_rate) : $sleepturns);
 	out("Played 'Day' $loopcount; Sleeping for " . $sleep . " seconds ($sleepturns Turns)");
 	server_start_end_notification($server);
 	sleep($sleep); //sleep for 4 turns
