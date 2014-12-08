@@ -164,21 +164,29 @@ function buy_public_below_dpnw($c,$dpnw){
 	$j_price = $tu_price = round($dpnw*0.6/((100+$c->g_tax)/100));
 	$ta_price = round($dpnw*2/((100+$c->g_tax)/100));
 
-	while($market_info->buy_price->m_tr <= $tr_price && $c->money > $tr_price){
-		$result = buy_public($c,array('m_tr' => floor($c->money/$tr_price)),array('m_tr' => $tr_price));	//Buy troops!
-		$market_info = get_market_info();
+	if($market_info->buy_price->m_tr != null && $market_info->available->m_tr > 0){
+		while($market_info->buy_price->m_tr <= $tr_price && $c->money > $tr_price){
+			$result = buy_public($c,array('m_tr' => floor($c->money/$tr_price)),array('m_tr' => $tr_price));	//Buy troops!
+			$market_info = get_market_info();
+		}
 	}
-	while($market_info->buy_price->m_j <= $j_price && $c->money > $j_price){
-		$result = buy_public($c,array('m_j' => floor($c->money/$j_price)),array('m_j' => $j_price));	//Buy troops!
-		$market_info = get_market_info();
+	if($market_info->buy_price->m_j != null && $market_info->available->m_j > 0){
+		while($market_info->buy_price->m_j <= $j_price && $c->money > $j_price){
+			$result = buy_public($c,array('m_j' => floor($c->money/$j_price)),array('m_j' => $j_price));	//Buy troops!
+			$market_info = get_market_info();
+		}
 	}
-	while($market_info->buy_price->m_tu <= $tr_price && $c->money > $tu_price){
-		$result = buy_public($c,array('m_tr' => floor($c->money/$tu_price)),array('m_tu' => $tu_price));	//Buy troops!
-		$market_info = get_market_info();
+	if($market_info->buy_price->m_tu != null && $market_info->available->m_tu > 0){
+		while($market_info->buy_price->m_tu <= $tr_price && $c->money > $tu_price){
+			$result = buy_public($c,array('m_tr' => floor($c->money/$tu_price)),array('m_tu' => $tu_price));	//Buy troops!
+			$market_info = get_market_info();
+		}
 	}
-	while($market_info->buy_price->m_ta <= $tr_price && $c->money > $ta_price){
-		$result = buy_public($c,array('m_ta' => floor($c->money/$ta_price)),array('m_ta' => $ta_price));	//Buy troops!
-		$market_info = get_market_info();
+	if($market_info->buy_price->m_ta != null && $market_info->available->m_ta > 0){
+		while($market_info->buy_price->m_ta <= $tr_price && $c->money > $ta_price){
+			$result = buy_public($c,array('m_ta' => floor($c->money/$ta_price)),array('m_ta' => $ta_price));	//Buy troops!
+			$market_info = get_market_info();
+		}
 	}
 }
 
