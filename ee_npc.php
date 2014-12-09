@@ -84,7 +84,7 @@ while(1){
 	}
 	$cnum = null;
 	$loopcount++;
-	$sleepturns = 4;
+	$sleepturns = 25;
 	$sleep = min($sleepturns*$server->turn_rate,max(0,$server->reset_end - 60 - time()));
 	$sleepturns = ($sleep != $sleepturns*$server->turn_rate ? floor($sleep/$server->turn_rate) : $sleepturns);
 	out("Played 'Day' $loopcount; Sleeping for " . $sleep . " seconds ($sleepturns Turns)");
