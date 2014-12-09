@@ -507,9 +507,12 @@ function buy_tech(&$c, $tech = 't_bus', $spend = 0, $maxprice = 9999){
 	$tech = substr($tech,2);
 	$diff = $c->money - $spend;
 	if($market_info->buy_price->$tech != null && $market_info->available->$tech > 0){
-		while($market_info->buy_price->$tech <= $maxprice && $spend > 0){
+		while($market_info->buy_price->$tech != null && $market_info->available->$tech > 0 && $market_info->buy_price->$tech <= $maxprice && $spend > 0){
 			$price = $market_info->buy_price->$tech;
-			$tobuy = $spend / ($price*(100 + $c->g_tax)/100);
+			$tobuy = min(floor($spend / ($price*(100 + $c->g_tax)/100)),$market_info->available->$tech);
+			if($tobuy == 0)
+				return;
+			//out($tech . $tobuy . "@$" . $price);
 			$result = buy_public($c,array($tech => $tobuy),array($tech => $price));	//Buy troops!
 			$spend = $c->money - $diff;
 			$market_info = get_market_info();

@@ -42,7 +42,7 @@ function play_farmer_strat($server){
 		}
 		
 		if($c->money > max($c->bpt,30)*$c->build_cost*10){ //buy_tech
-			out("Try to buy tech?");
+			//out("Try to buy tech?");
 			$spend = $c->money - $c->bpt*$c->build_cost*10;
 			if($c->pt_agri < 160)
 				buy_tech($c,'t_agri',$spend*1/2);
@@ -52,7 +52,7 @@ function play_farmer_strat($server){
 				buy_tech($c,'t_res',$spend*1/4);
 			
 			$c = get_advisor();	//UPDATE EVERYTHING
-			out("Try Higher Amount!");
+			//out("Try Higher Amount!");
 			$spend = $c->money - $c->bpt*$c->build_cost*10;
 			if($c->pt_agri < 200)
 				buy_tech($c,'t_agri',$spend*1/2);
