@@ -10,6 +10,19 @@ include_once('config.php');
 if(!isset($config))
 	die("Config not included successfully! Do you have config.php set up properly?");
 
+include_once('rainbow_strat.php');
+include_once('farmer_strat.php');
+include_once('techer_strat.php');
+include_once('casher_strat.php');
+include_once('indy_strat.php');
+include_once('oiler_strat.php');
+
+define("RAINBOW",$colors->getColoredString("Rainbow","purple"));
+define("FARMER",$colors->getColoredString("Farmer","cyan"));
+define("TECHER",$colors->getColoredString("Techer","brown"));
+define("CASHER",$colors->getColoredString("Casher","green"));
+define("INDY",$colors->getColoredString("Indy","yellow"));
+define("OILER",$colors->getColoredString("Oiler","red"));
 
 $username = $config['username'];	//<======== PUT IN YOUR USERNAME IN config.php
 $ai_key = $config['ai_key'];		//<======== PUT IN YOUR AI API KEY IN config.php
@@ -18,6 +31,7 @@ $serv = isset($config['server']) ? $config['server'] : 'ai';
 $cnum = null;
 $last_function = null;
 $turnsleep = isset($config['turnsleep']) ? $config['turnsleep'] : 500000;
+$mktinfo = null; //so we don't have to get it mkt data over and over again
 
 out('Current Unix Time: ' . time());
 out('Entering Infinite Loop');
@@ -49,7 +63,16 @@ while(1){
 	$countries = $server->cnum_list->alive;
 
 	foreach($countries as $cnum){
-		play_rainbow_strat($server,$cnum);
+		if($cnum%5 == 1)
+			play_farmer_strat($server,$cnum);
+		elseif($cnum%5 == 2)
+			play_techer_strat($server,$cnum);
+		elseif($cnum%5 == 3)
+			play_casher_strat($server,$cnum);
+		elseif($cnum%5 == 4)
+			play_indy_strat($server,$cnum);
+		else
+			play_rainbow_strat($server,$cnum);
 	}
 	
 	if($server->reset_end - $server->turn_rate * 9 - time() < 0){
@@ -75,68 +98,35 @@ function server_start_end_notification($server){
 }
 //COUNTRY PLAYING STUFF
 
-function play_rainbow_strat($server){
-	global $cnum;
-	out("Playing rainbow turns for #$cnum");
-	$main = get_main();	//get the basic stats
-	//out_data($main);			//output the main data
-	$c = get_advisor();	//c as in country! (get the advisor)
-	out($c->turns . ' turns left');
-	//out_data($c);				//ouput the advisor data
-	$pm_info = get_pm_info();	//get the PM info
-	//out_data($pm_info);		//output the PM info
-	$market_info = get_market_info();	//get the Public Market info
-	//out_data($market_info);		//output the PM info
-	
-	$owned_on_market_info = get_owned_on_market_info();	//find out what we have on the market
-	//out_data($market_info);	//output the Public Market info
-	//var_export($owned_on_market_info);
-	
-	while($c->turns > 0){
-		//$result = buy_public($c,array('m_bu'=>100),array('m_bu'=>400));
-		$result = play_rainbow_turn($c);
-		if($result === false){	//UNEXPECTED RETURN VALUE
-			$c = get_advisor();	//UPDATE EVERYTHING
-			continue;
-		}
-		update_c($c,$result);
-		if(!$c->turns%5){					//Grab new copy every 5 turns
-			$main = get_main();		//Grab a fresh copy of the main stats //we probably don't need to do this *EVERY* turn
-			$c->money = $main->money;		//might as well use the newest numbers?
-			$c->food = $main->food;			//might as well use the newest numbers?
-			$c->networth = $main->networth; //might as well use the newest numbers?
-			$c->oil = $main->oil;			//might as well use the newest numbers?
-			$c->pop = $main->pop;			//might as well use the newest numbers?
-			$c->turns = $main->turns;		//This is the only one we really *HAVE* to check for
-		}
+function onmarket($good = 'food'){
+	global $mktinfo;
+	if(!$mktinfo)
+		$mktinfo = get_owned_on_market_info();	//find out what we have on the market
 		
-		if($c->foodnet < 0 && $c->food < $c->foodnet*-3 && $c->money > 20*$c->foodnet*-3*$pm_info->buy_price->m_bu){ //losing food, less than 3 turns left, AND have the money to buy it
-			out("Less than 3 turns worth of food! (" . $c->foodnet .  "/turn) Buy food off Public if we can!");	//Text for screen
-			$result = buy_public($c,array('m_bu' => -3*$c->foodnet),array('m_bu' => $pm_info->buy_price->m_bu));	//Buy 3 turns of food off the public at or below the PM price
-			//out_data($result);
+	//out_data($mktinfo);
+	$total = 0;
+	foreach($mktinfo as $key => $goods){
+		//out_data($goods);
+		if($goods->type == $good){
+			$total += $goods->quantity;		
 		}
-		
-		if($c->foodnet < 0 && $c->food < $c->foodnet*-3 && $c->money > 20*$c->foodnet*-3*$pm_info->buy_price->m_bu){ //losing food, less than 3 turns left, AND have the money to buy it
-			out("Less than 3 turns worth of food! (" . $c->foodnet .  "/turn) We're rich, so buy food at any price!~");	//Text for screen
-			$result = buy_on_pm($c,array('m_bu' => -3*$c->foodnet));	//Buy 3 turns of food!
-			//out_data($result);
-		}
-		elseif($c->foodnet < 0 && $c->food < $c->foodnet*-3){
-			out("We're too poor to buy food! Sell 1/4 of our military");	//Text for screen
-			sell_all_military($c,1/4);	//sell 1/4 of our military
-		}
-		elseif($c->income < 0){ //sell 1/4 of all military on PM
-			out("Losing money! Sell 1/4 of our military!");	//Text for screen
-			sell_all_military($c,1/4);	//sell 1/4 of our military
-		}
-		
-		if($c->foodnet > 0 && $c->foodnet > 3*$c->foodcon && $c->food > 30*$c->foodnet && $c->food > 7000){
-			out("Lots of food, let's sell some!");
-			$result = sell_public($c,array('m_bu' => $c->food),array('m_bu' => round(max($pm_info->sell_price->m_bu,$market_info->buy_price->m_bu)*rand(80,120)/100)));	//Sell food!
-		}
-		//$main->turns = 0;				//use this to do one turn at a time
 	}
-	out("Done Playing Rainbow Turns for #$cnum!");	//Text for screen
+	return $total;
+}
+
+function totaltech($c){
+	return $c->t_mil + $c->t_med + $c->t_bus + $c->t_res + $c->t_agri + $c->t_war + $c->t_ms + $c->t_weap + $c->t_indy + $c->t_spy + $c->t_sdi;
+}
+
+
+function total_cansell_tech($c){
+	$cansell = 0;
+	global $techlist;
+	foreach($techlist as $tech)
+		$cansell += can_sell_tech($c,$tech);
+	
+	//out("CANSELL TECH: $cansell");
+	return $cansell;
 }
 
 function destock($server,$cnum){
@@ -212,6 +202,8 @@ function buy_private_below_dpnw($c,$dpnw){
 }
 
 function update_c(&$c,$result){
+	if(!isset($result->turns) || !$result->turns)
+		return;
 	global $last_function;
 	//out_data($result);				//output data for testing
 	$explain = null;					//Text formatting
@@ -265,6 +257,9 @@ function update_c(&$c,$result){
 	elseif($last_function == 'cash'){
 		$str = "Cashed " . actual_count($result->turns) . "turns";	//Text for screen
 	}
+	elseif(isset($result->sell)){
+		$str = "Put goods on market";
+	}
 	
 	$event = null; //Text for screen	
 	$netmoney = $netfood = 0;
@@ -315,79 +310,6 @@ function update_c(&$c,$result){
 	out(str_pad($c->turns,3) . ' Turns - ' . $str . $event);
 }
 
-function play_rainbow_turn(&$c){ //c as in country!
-	global $turnsleep;
-	usleep($turnsleep);
-	//out($main->turns . ' turns left');
-	if($c->empty > $c->bpt && $c->money > $c->bpt*$c->build_cost){	//build a full BPT if we can afford it
-		return build_something($c);
-	}elseif($c->turns >= 4 && $c->empty >= 4 && $c->bpt < 80 && $c->money > 4*$c->build_cost && ($c->foodnet > 0 || $c->food > $c->foodnet*-5)) //otherwise... build 4CS if we can afford it and are below our target BPT (80)
-		return build_cs(4); //build 4 CS
-	elseif($c->tpt > $c->land*0.17 && rand(0,10) > 5) //tech per turn is greater than land*0.17 -- just kindof a rough "don't tech below this" rule...
-		return tech_something($c);
-	elseif($c->empty < $c->land/2)	//otherwise... explore if we can
-		return explore($c);
-	elseif($c->empty && $c->bpt < 80 && $c->money > $c->build_cost) //otherwise... build one CS if we can afford it and are below our target BPT (80)
-		return build_cs(); //build 1 CS
-	else  //otherwise...  cash
-		return cash($c);
-}
-
-function build_something(&$c){
-	if($c->foodnet < 0 && -1*$c->food/$c->foodnet < 50){ //build farms if we have less than 50 turns of food on hand
-		return build(array('farm' => $c->bpt));
-	}
-	elseif($c->income < max(100000,2*$c->build_cost*$c->bpt/$c->explore_rate)){ //build ent/res if we're not making more than enough to keep building continually at least $100k
-		if(rand(0,100) > 50 && $c->income > $c->build_cost*$c->bpt/$c->explore_rate){
-			return build(array('lab' => $c->bpt));
-		}
-		else{
-			$res = round($c->bpt/2.12);
-			$ent = $c->bpt - $res;
-			return build(array('ent' => $ent,'res' => $res));
-		}
-	}
-	else{ //build indies or labs
-		if(($c->tpt < $c->land && rand(0,100) > 10) || rand(0,100) > 40)
-			return build(array('lab' => $c->bpt));
-		else
-			return build(array('indy' => $c->bpt));
-	}
-}
-
-function tech_something(&$c){
-	//lets do random weighting... to some degree
-	$mil	= rand(0,25);
-	$med	= rand(0,5);
-	$bus	= rand(10,100);
-	$res	= rand(10,100);
-	$agri	= rand(10,100);
-	$war	= rand(0,10);
-	$ms		= rand(0,20);
-	$weap	= rand(0,20);
-	$indy	= rand(5,40);
-	$spy	= rand(0,10);
-	$sdi	= rand(2,15);	
-	$tot	= $mil + $med + $bus + $res + $agri + $war + $ms + $weap + $indy + $spy + $sdi;
-	
-	$left = $c->tpt;
-	$left -= $mil = min($left,floor($c->tpt*($mil/$tot)));
-	$left -= $med = min($left,floor($c->tpt*($med/$tot)));
-	$left -= $bus = min($left,floor($c->tpt*($bus/$tot)));
-	$left -= $res = min($left,floor($c->tpt*($res/$tot)));
-	$left -= $agri = min($left,floor($c->tpt*($agri/$tot)));
-	$left -= $war = min($left,floor($c->tpt*($war/$tot)));
-	$left -= $ms = min($left,floor($c->tpt*($ms/$tot)));
-	$left -= $weap = min($left,floor($c->tpt*($weap/$tot)));
-	$left -= $indy = min($left,floor($c->tpt*($indy/$tot)));
-	$left -= $spy = min($left,floor($c->tpt*($spy/$tot)));
-	$left -= $sdi = max($left,min($left,floor($c->tpt*($spy/$tot))));
-	if($left != 0)
-		die("What the hell?");
-	
-	return tech(array('mil'=>$mil,'med'=>$med,'bus'=>$bus,'res'=>$res,'agri'=>$agri,'war'=>$war,'ms'=>$ms,'weap'=>$weap,'indy'=>$indy,'spy'=>$spy,'sdi'=>$sdi));
-}
-
 function build_cs($turns=1){							//default is 1 CS if not provided
 	return build(array('cs' => $turns));
 }
@@ -425,9 +347,14 @@ function get_market_info(){
 }
 
 function get_owned_on_market_info(){
-	return ee('onmarket');	//get and return the GOODS OWNED ON PUBLIC MARKET information
+	$goods = ee('onmarket');	//get and return the GOODS OWNED ON PUBLIC MARKET information
+	return $goods->goods;
 }
 
+
+function total_military($c){
+	return $c->m_spy+$c->m_tr+$c->m_j+$c->m_tu+$c->m_ta;	//total_military
+}
 
 function sell_all_military(&$c,$fraction = 1){
 	$fraction = max(0,min(1,$fraction));
@@ -438,6 +365,10 @@ function sell_all_military(&$c,$fraction = 1){
 		'm_tu'	=>	floor($c->m_tu*$fraction),		//$fraction of turrets
 		'm_ta'	=>	floor($c->m_ta*$fraction)		//$fraction of tanks
 	);
+	if(array_sum($sell_units) == 0){
+		out("No Military!");
+		return;
+	}
 	return sell_on_pm($c,$sell_units);	//Sell 'em
 }
 
@@ -479,15 +410,18 @@ function sell_on_pm(&$c,$units = array()){
 }
 
 function buy_public(&$c,$quantity=array(),$price=array()){
+	global $techlist;
 	$result = ee('buy',array('quantity' => $quantity, 'price' => $price));
-	
 	$str = 'Bought ';
 	$tcost = 0;
 	foreach($result->bought as $type => $details){
+		$ttype = 't_' . $type;
 		if($type == 'm_bu')
 			$type = 'food';
 		elseif($type == 'm_oil')
 			$type = 'oil';
+		elseif(in_array($ttype,$techlist))
+			$type = $ttype;
 		
 		$c->$type += $details->quantity;
 		$c->money -= $details->cost;
@@ -503,27 +437,127 @@ function buy_public(&$c,$quantity=array(),$price=array()){
 }
 
 function sell_public(&$c,$quantity=array(),$price=array(),$tonm=array()){
-	$result = ee('sell',array('quantity' => $quantity, 'price' => $price)); //ignore tonm for now, it's optional
+	//out_data($c);
 	
-	$str = 'Put ';
-	foreach($result->bought as $type => $details){
-		$omtype = 'o' . $type;
+	/*$str = 'Try selling ';
+	foreach($quantity as $type => $q){
+		if($q == 0)
+			continue;
 		if($type == 'm_bu')
-			$type = 'food';
+			$t2 = 'food';
 		elseif($type == 'm_oil')
-			$type = 'oil';
-		$c->$omtype += $details->quantity;
-		$c->$type -= $details->quantity;
-		$str .= $details->quantity . ' ' . $type . ', ';
+			$t2 = 'oil';
+		else
+			$t2 = $type;
+		$str .= $q . ' ' . $t2 . '@' . $price[$type] . ', ';
+	}
+	$str .= 'on market.';
+	out($str);*/
+	if(array_sum($quantity) == 0){
+		out("Trying to sell nothing?");
+		return;
+	}
+	$result = ee('sell',array('quantity' => $quantity, 'price' => $price)); //ignore tonm for now, it's optional
+	//out_data($result);
+	if(isset($result->error) && $result->error){
+		out('ERROR: ' . $result->error);
+		sleep(1);
+		return;
+	}
+	global $techlist;
+	$str = 'Put ';
+	if(isset($result->sell)){
+		foreach($result->sell as $type => $details){
+			$bits = explode('_',$type);
+			//$omtype = 'om_' . $bits[1];
+			$ttype = 't_' . $type;
+			if($type == 'm_bu')
+				$type = 'food';
+			elseif($type == 'm_oil')
+				$type = 'oil';
+			elseif(in_array($ttype,$techlist))
+				$type = $ttype;
+			
+			//$c->$omtype += $details->quantity;
+			$c->$type -= $details->quantity;
+			$str .= $details->quantity . ' ' . $type . ' @ ' . $details->price . ', ';
+		}
 	}
 	if($str == 'Put ')
-		$str .= 'nothing ';
+		$str .= 'nothing on market.';
 	
-	$str .= 'on market.';
 	out($str);
+	//sleep(1);
 	return $result;
 }
 
+function can_sell_tech(&$c, $tech = 't_bus'){
+	//out("tech: {$c->$tech}");
+	$onmarket = onmarket($tech);
+	//out("on market: $onmarket");
+	$tot = $c->$tech + $onmarket;
+	//out("tot: $onmarket");
+	$sell = floor($tot/4) - $onmarket;
+	//out("sell: $onmarket");
+	return $sell > 10 ? $sell : 0;
+}
+
+function buy_tech(&$c, $tech = 't_bus', $spend = 0, $maxprice = 9999){
+	$market_info = get_market_info();	//get the Public Market info
+	$tech = substr($tech,2);
+	$diff = $c->money - $spend;
+	if($market_info->buy_price->$tech != null && $market_info->available->$tech > 0){
+		while($market_info->buy_price->$tech <= $maxprice && $spend > 0){
+			$price = $market_info->buy_price->$tech;
+			$tobuy = $spend / ($price*(100 + $c->g_tax)/100);
+			$result = buy_public($c,array($tech => $tobuy),array($tech => $price));	//Buy troops!
+			$spend = $c->money - $diff;
+			$market_info = get_market_info();
+		}
+	}
+}
+
+function food_management(&$c){
+	if($c->foodnet > 0)
+		return;
+	
+	//out("food management");
+	$foodloss = -1*$c->foodnet;
+	$turns_buy = 50;
+	if($c->food > $turns_buy*$foodloss)
+		return;
+	
+	$c = get_advisor();	//UPDATE EVERYTHING
+	$market_info = get_market_info();	//get the Public Market info
+	//out_data($market_info);
+	$pm_info = get_pm_info();
+	while($turns_buy > 1 && $c->food < $turns_buy*$foodloss){
+		$turns_of_food = $foodloss*$turns_buy;
+		$market_price = ($market_info->buy_price->m_bu != null ? $market_info->buy_price->m_bu : $pm_info->buy_price->m_bu);
+		//out("Market Price: " . $market_price);
+		if($c->food < $turns_of_food && $c->money > $turns_of_food*$market_price*((100+$c->g_tax)/100)){ //losing food, less than turns_buy turns left, AND have the money to buy it
+			out("Less than $turns_buy turns worth of food! (" . $c->foodnet .  "/turn) Buy food off Public if we can!");	//Text for screen
+			$result = buy_public($c,array('m_bu' => min($foodloss*$turns_buy,$market_info->available->m_bu)),array('m_bu' => $market_price));	//Buy 3 turns of food off the public at or below the PM price
+			$market_info = get_market_info();	//get the Public Market info
+			$c = get_advisor();	//UPDATE EVERYTHING
+		}
+		/*else
+			out("$turns_buy: " . $c->food . ' < ' . $turns_of_food . '; $' . $c->money . ' > $' . $turns_of_food*$market_price);*/
+		
+		$turns_buy--;
+	}
+
+	$turns_buy = 5;
+	$turns_of_food = $foodloss*$turns_buy;
+	if($c->food < $turns_of_food && $c->money > $turns_buy*$foodloss*$pm_info->buy_price->m_bu){ //losing food, less than turns_buy turns left, AND have the money to buy it
+		out("Less than $turns_buy turns worth of food! (" . $c->foodnet .  "/turn) We're rich, so buy food at any price!~");	//Text for screen
+		$result = buy_on_pm($c,array('m_bu' => $turns_buy*$foodloss));	//Buy 3 turns of food!
+	}
+	elseif($c->foodnet < 0 && $c->food < $c->foodnet*-3 && total_military($c) > 30){
+		out("We're too poor to buy food! Sell 1/4 of our military");	//Text for screen
+		sell_all_military($c,1/4);	//sell 1/4 of our military
+	}
+}
 
 function event_text($event){
 	switch($event){

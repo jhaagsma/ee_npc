@@ -1,5 +1,7 @@
 <?php
 
+include_once('colors.php');
+$colors = new Colors();
 /*
 This file holds the communications with the EE server, so that we can keep
 only the real bot logic in the ee_npc file...
