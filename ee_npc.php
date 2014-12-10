@@ -53,7 +53,8 @@ while(1){
 
 	while($server->alive_count < $server->countries_allowed){
 		out("Less countries than allowed! (" . $server->alive_count . '/' . $server->countries_allowed . ')');
-		$send_data = array('cname' => rand_country_name());
+		include_once('name_generator.php');
+		$send_data = array('cname' => rand_name());
 		out("Making new country named '" . $send_data['cname'] . "'");
 		$cnum = ee('create',$send_data);
 		out($send_data['cname'] . ' (#' . $cnum .') created!');
