@@ -105,19 +105,22 @@ function sell_max_tech($c){
 	);
 	
 	
-	
+	$high = 5000;
+	$low = 3000;
+	$randomup = 120; //percent
+	$randomdown = 80; //percent
 	$price = array(
-		'mil'=>	$quantity['mil'] == 0 ? 0 : floor(($market_info->buy_price->mil != null ? $market_info->buy_price->mil : rand(2000,3000))*(rand(80,120)/100)),
-		'med'=>	$quantity['med'] == 0 ? 0 : floor(($market_info->buy_price->med != null ? $market_info->buy_price->med : rand(2000,3000))*(rand(80,120)/100)),
-		'bus'=>	$quantity['bus'] == 0 ? 0 : floor(($market_info->buy_price->bus != null ? $market_info->buy_price->bus : rand(2000,3000))*(rand(80,120)/100)),
-		'res'=>	$quantity['res'] == 0 ? 0 : floor(($market_info->buy_price->res != null ? $market_info->buy_price->res : rand(2000,3000))*(rand(80,120)/100)),
-		'agri'=>$quantity['agri'] == 0 ? 0 : floor(($market_info->buy_price->agri != null ? $market_info->buy_price->agri : rand(2000,3000))*(rand(80,120)/100)),
-		'war'=>	$quantity['war'] == 0 ? 0 : floor(($market_info->buy_price->war != null ? $market_info->buy_price->war : rand(2000,3000))*(rand(80,120)/100)),
-		'ms'=>	$quantity['ms'] == 0 ? 0 : floor(($market_info->buy_price->ms != null ? $market_info->buy_price->ms : rand(2000,3000))*(rand(80,120)/100)),
-		'weap'=>$quantity['weap'] == 0 ? 0 : floor(($market_info->buy_price->weap != null ? $market_info->buy_price->weap : rand(2000,3000))*(rand(80,120)/100)),
-		'indy'=>$quantity['indy'] == 0 ? 0 : floor(($market_info->buy_price->indy != null ? $market_info->buy_price->indy : rand(2000,3000))*(rand(80,120)/100)),
-		'spy'=>	$quantity['spy'] == 0 ? 0 : floor(($market_info->buy_price->spy != null ? $market_info->buy_price->spy : rand(2000,3000))*(rand(80,120)/100)),
-		'sdi'=>	$quantity['sdi'] == 0 ? 0 : floor(($market_info->buy_price->sdi != null ? $market_info->buy_price->sdi : rand(2000,3000))*(rand(80,120)/100))		
+		'mil'=>	$quantity['mil'] == 0 ? 0 : floor(($market_info->buy_price->mil != null ? $market_info->buy_price->mil : rand($low,$high))*(rand($randomdown,$randomup)/100)),
+		'med'=>	$quantity['med'] == 0 ? 0 : floor(($market_info->buy_price->med != null ? $market_info->buy_price->med : rand($low,$high))*(rand($randomdown,$randomup)/100)),
+		'bus'=>	$quantity['bus'] == 0 ? 0 : floor(($market_info->buy_price->bus != null ? $market_info->buy_price->bus : rand($low,$high))*(rand($randomdown,$randomup)/100)),
+		'res'=>	$quantity['res'] == 0 ? 0 : floor(($market_info->buy_price->res != null ? $market_info->buy_price->res : rand($low,$high))*(rand($randomdown,$randomup)/100)),
+		'agri'=>$quantity['agri'] == 0 ? 0 : floor(($market_info->buy_price->agri != null ? $market_info->buy_price->agri : rand($low,$high))*(rand($randomdown,$randomup)/100)),
+		'war'=>	$quantity['war'] == 0 ? 0 : floor(($market_info->buy_price->war != null ? $market_info->buy_price->war : rand($low,$high))*(rand($randomdown,$randomup)/100)),
+		'ms'=>	$quantity['ms'] == 0 ? 0 : floor(($market_info->buy_price->ms != null ? $market_info->buy_price->ms : rand($low,$high))*(rand($randomdown,$randomup)/100)),
+		'weap'=>$quantity['weap'] == 0 ? 0 : floor(($market_info->buy_price->weap != null ? $market_info->buy_price->weap : rand($low,$high))*(rand($randomdown,$randomup)/100)),
+		'indy'=>$quantity['indy'] == 0 ? 0 : floor(($market_info->buy_price->indy != null ? $market_info->buy_price->indy : rand($low,$high))*(rand($randomdown,$randomup)/100)),
+		'spy'=>	$quantity['spy'] == 0 ? 0 : floor(($market_info->buy_price->spy != null ? $market_info->buy_price->spy : rand($low,$high))*(rand($randomdown,$randomup)/100)),
+		'sdi'=>	$quantity['sdi'] == 0 ? 0 : floor(($market_info->buy_price->sdi != null ? $market_info->buy_price->sdi : rand($low,$high))*(rand($randomdown,$randomup)/100))		
 	);
 	
 	$result = sell_public($c,$quantity,$price);
