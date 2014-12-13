@@ -124,6 +124,10 @@ function sell_max_tech($c){
 	);
 	
 	$result = sell_public($c,$quantity,$price);
+	if($result == 'QUANTITY_MORE_THAN_CAN_SELL'){
+		out("TRIED TO SELL MORE THAN WE CAN!?!");
+		$c = get_advisor();	//UPDATE EVERYTHING
+	}
 	global $mktinfo;
 	$mktinfo = null;
 	return $result;
