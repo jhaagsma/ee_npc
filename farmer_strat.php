@@ -7,7 +7,7 @@ function play_farmer_strat($server){
 	$main = get_main();	//get the basic stats
 	//out_data($main);			//output the main data
 	$c = get_advisor();	//c as in country! (get the advisor)
-	//out_data($c);				//ouput the advisor data
+	//out_data($c) && exit;				//ouput the advisor data
 	out($c->turns . ' turns left');
 	$pm_info = get_pm_info();	//get the PM info
 	//out_data($pm_info);		//output the PM info

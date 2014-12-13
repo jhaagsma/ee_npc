@@ -51,12 +51,12 @@ function play_techer_turn(&$c){ //c as in country!
 	$mktinfo = null;
 	usleep($turnsleep);
 	//out($main->turns . ' turns left');
-	if($c->empty > $c->bpt && $c->money > $c->bpt*$c->build_cost){	//build a full BPT if we can afford it
+	if(total_cansell_tech($c) > 100 && selltechtime($c))
+		return sell_max_tech($c);
+	elseif($c->empty > $c->bpt && $c->money > $c->bpt*$c->build_cost){	//build a full BPT if we can afford it
 		return build_techer($c);
 	}elseif($c->turns >= 4 && $c->empty >= 4 && $c->bpt < 80 && $c->money > 4*$c->build_cost && ($c->foodnet > 0 || $c->food > $c->foodnet*-5)) //otherwise... build 4CS if we can afford it and are below our target BPT (80)
 		return build_cs(4); //build 4 CS
-	elseif(total_cansell_tech($c) > 100 && selltechtime($c))
-		return sell_max_tech($c);
 	elseif($c->tpt > $c->land*0.17 && rand(0,10) > 5) //tech per turn is greater than land*0.17 -- just kindof a rough "don't tech below this" rule...
 		return tech_techer($c);
 	elseif($c->empty < $c->land/2)	//otherwise... explore if we can
@@ -105,22 +105,22 @@ function sell_max_tech($c){
 	);
 	
 	
-	$high = 5000;
-	$low = 3000;
+	$nogoods_high = 5000;
+	$nogoods_low = 3000;
 	$randomup = 120; //percent
 	$randomdown = 80; //percent
 	$price = array(
-		'mil'=>	$quantity['mil'] == 0 ? 0 : floor(($market_info->buy_price->mil != null ? $market_info->buy_price->mil : rand($low,$high))*(rand($randomdown,$randomup)/100)),
-		'med'=>	$quantity['med'] == 0 ? 0 : floor(($market_info->buy_price->med != null ? $market_info->buy_price->med : rand($low,$high))*(rand($randomdown,$randomup)/100)),
-		'bus'=>	$quantity['bus'] == 0 ? 0 : floor(($market_info->buy_price->bus != null ? $market_info->buy_price->bus : rand($low,$high))*(rand($randomdown,$randomup)/100)),
-		'res'=>	$quantity['res'] == 0 ? 0 : floor(($market_info->buy_price->res != null ? $market_info->buy_price->res : rand($low,$high))*(rand($randomdown,$randomup)/100)),
-		'agri'=>$quantity['agri'] == 0 ? 0 : floor(($market_info->buy_price->agri != null ? $market_info->buy_price->agri : rand($low,$high))*(rand($randomdown,$randomup)/100)),
-		'war'=>	$quantity['war'] == 0 ? 0 : floor(($market_info->buy_price->war != null ? $market_info->buy_price->war : rand($low,$high))*(rand($randomdown,$randomup)/100)),
-		'ms'=>	$quantity['ms'] == 0 ? 0 : floor(($market_info->buy_price->ms != null ? $market_info->buy_price->ms : rand($low,$high))*(rand($randomdown,$randomup)/100)),
-		'weap'=>$quantity['weap'] == 0 ? 0 : floor(($market_info->buy_price->weap != null ? $market_info->buy_price->weap : rand($low,$high))*(rand($randomdown,$randomup)/100)),
-		'indy'=>$quantity['indy'] == 0 ? 0 : floor(($market_info->buy_price->indy != null ? $market_info->buy_price->indy : rand($low,$high))*(rand($randomdown,$randomup)/100)),
-		'spy'=>	$quantity['spy'] == 0 ? 0 : floor(($market_info->buy_price->spy != null ? $market_info->buy_price->spy : rand($low,$high))*(rand($randomdown,$randomup)/100)),
-		'sdi'=>	$quantity['sdi'] == 0 ? 0 : floor(($market_info->buy_price->sdi != null ? $market_info->buy_price->sdi : rand($low,$high))*(rand($randomdown,$randomup)/100))		
+		'mil'=>	$quantity['mil'] == 0 ? 0 : floor(($market_info->buy_price->mil != null ? $market_info->buy_price->mil : rand($nogoods_low,$nogoods_high))*(rand($randomdown,$randomup)/100)),
+		'med'=>	$quantity['med'] == 0 ? 0 : floor(($market_info->buy_price->med != null ? $market_info->buy_price->med : rand($nogoods_low,$nogoods_high))*(rand($randomdown,$randomup)/100)),
+		'bus'=>	$quantity['bus'] == 0 ? 0 : floor(($market_info->buy_price->bus != null ? $market_info->buy_price->bus : rand($nogoods_low,$nogoods_high))*(rand($randomdown,$randomup)/100)),
+		'res'=>	$quantity['res'] == 0 ? 0 : floor(($market_info->buy_price->res != null ? $market_info->buy_price->res : rand($nogoods_low,$nogoods_high))*(rand($randomdown,$randomup)/100)),
+		'agri'=>$quantity['agri'] == 0 ? 0 : floor(($market_info->buy_price->agri != null ? $market_info->buy_price->agri : rand($nogoods_low,$nogoods_high))*(rand($randomdown,$randomup)/100)),
+		'war'=>	$quantity['war'] == 0 ? 0 : floor(($market_info->buy_price->war != null ? $market_info->buy_price->war : rand($nogoods_low,$nogoods_high))*(rand($randomdown,$randomup)/100)),
+		'ms'=>	$quantity['ms'] == 0 ? 0 : floor(($market_info->buy_price->ms != null ? $market_info->buy_price->ms : rand($nogoods_low,$nogoods_high))*(rand($randomdown,$randomup)/100)),
+		'weap'=>$quantity['weap'] == 0 ? 0 : floor(($market_info->buy_price->weap != null ? $market_info->buy_price->weap : rand($nogoods_low,$nogoods_high))*(rand($randomdown,$randomup)/100)),
+		'indy'=>$quantity['indy'] == 0 ? 0 : floor(($market_info->buy_price->indy != null ? $market_info->buy_price->indy : rand($nogoods_low,$nogoods_high))*(rand($randomdown,$randomup)/100)),
+		'spy'=>	$quantity['spy'] == 0 ? 0 : floor(($market_info->buy_price->spy != null ? $market_info->buy_price->spy : rand($nogoods_low,$nogoods_high))*(rand($randomdown,$randomup)/100)),
+		'sdi'=>	$quantity['sdi'] == 0 ? 0 : floor(($market_info->buy_price->sdi != null ? $market_info->buy_price->sdi : rand($nogoods_low,$nogoods_high))*(rand($randomdown,$randomup)/100))		
 	);
 	
 	$result = sell_public($c,$quantity,$price);

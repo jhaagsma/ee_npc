@@ -10,6 +10,8 @@ include_once('config.php');
 if(!isset($config))
 	die("Config not included successfully! Do you have config.php set up properly?");
 
+include_once('country_functions.php');
+
 include_once('rainbow_strat.php');
 include_once('farmer_strat.php');
 include_once('techer_strat.php');
@@ -64,6 +66,7 @@ while(1){
 	$countries = $server->cnum_list->alive;
 
 	foreach($countries as $cnum){
+		$mktinfo = null;
 		if($cnum%5 == 1)
 			play_farmer_strat($server,$cnum);
 		elseif($cnum%5 == 2)
@@ -78,6 +81,7 @@ while(1){
 	
 	if($server->reset_end - $server->turn_rate * 9 - time() < 0){
 		foreach($countries as $cnum){
+			$mktinfo = null;
 			destock($server,$cnum);
 		}
 		out("Sleep until end");
@@ -97,14 +101,16 @@ done(); //done() is defined below
 function server_start_end_notification($server){
 	out("Server started " . round((time()-$server->reset_start)/3600,1) . ' hours ago and ends in ' . round(($server->reset_end-time())/3600,1) . ' hours');
 }
-//COUNTRY PLAYING STUFF
 
+
+//COUNTRY PLAYING STUFF
 function onmarket($good = 'food'){
 	global $mktinfo;
 	if(!$mktinfo)
 		$mktinfo = get_owned_on_market_info();	//find out what we have on the market
 		
 	//out_data($mktinfo);
+	//exit;
 	$total = 0;
 	foreach($mktinfo as $key => $goods){
 		//out_data($goods);
@@ -119,6 +125,9 @@ function totaltech($c){
 	return $c->t_mil + $c->t_med + $c->t_bus + $c->t_res + $c->t_agri + $c->t_war + $c->t_ms + $c->t_weap + $c->t_indy + $c->t_spy + $c->t_sdi;
 }
 
+function total_military($c){
+	return $c->m_spy+$c->m_tr+$c->m_j+$c->m_tu+$c->m_ta;	//total_military
+}
 
 function total_cansell_tech($c){
 	$cansell = 0;
@@ -130,78 +139,35 @@ function total_cansell_tech($c){
 	return $cansell;
 }
 
-function destock($server,$cnum){
-	$c = get_advisor();	//c as in country! (get the advisor)
-	out("Destocking #$cnum!");	//Text for screen
-	sell_on_pm($c,array('m_bu' => $c->food));	//Sell 'em
+function total_cansell_military($c){
+	$cansell = 0;
+	global $military_list;
+	foreach($military_list as $mil)
+		$cansell += can_sell_mil($c,$mil);
 	
-	$dpnw = 200;
-	while($c->money > 1000 && $dpnw < 500){
-		out("Try to buy goods at $dpwn dpnw or below!");	//Text for screen
-		buy_public_below_dpnw($c,$dpnw);
-		buy_private_below_dpnw($c,$dpnw);
-		$dpnw += 4;
-	}
-	if($c->money <= 1000)
-		out("Done Destocking!");	//Text for screen
-	else
-		out("Ran out of goods?");	//Text for screen
+	//out("CANSELL TECH: $cansell");
+	return $cansell;
 }
 
-function buy_public_below_dpnw($c,$dpnw){
-	$market_info = get_market_info();
-	
-	$tr_price = round($dpnw*0.5/((100+$c->g_tax)/100));
-	$j_price = $tu_price = round($dpnw*0.6/((100+$c->g_tax)/100));
-	$ta_price = round($dpnw*2/((100+$c->g_tax)/100));
 
-	if($market_info->buy_price->m_tr != null && $market_info->available->m_tr > 0){
-		while($market_info->buy_price->m_tr <= $tr_price && $c->money > $tr_price){
-			$result = buy_public($c,array('m_tr' => floor($c->money/$tr_price)),array('m_tr' => $tr_price));	//Buy troops!
-			$market_info = get_market_info();
-		}
-	}
-	if($market_info->buy_price->m_j != null && $market_info->available->m_j > 0){
-		while($market_info->buy_price->m_j <= $j_price && $c->money > $j_price){
-			$result = buy_public($c,array('m_j' => floor($c->money/$j_price)),array('m_j' => $j_price));	//Buy troops!
-			$market_info = get_market_info();
-		}
-	}
-	if($market_info->buy_price->m_tu != null && $market_info->available->m_tu > 0){
-		while($market_info->buy_price->m_tu <= $tr_price && $c->money > $tu_price){
-			$result = buy_public($c,array('m_tr' => floor($c->money/$tu_price)),array('m_tu' => $tu_price));	//Buy troops!
-			$market_info = get_market_info();
-		}
-	}
-	if($market_info->buy_price->m_ta != null && $market_info->available->m_ta > 0){
-		while($market_info->buy_price->m_ta <= $tr_price && $c->money > $ta_price){
-			$result = buy_public($c,array('m_ta' => floor($c->money/$ta_price)),array('m_ta' => $ta_price));	//Buy troops!
-			$market_info = get_market_info();
-		}
-	}
+function can_sell_tech(&$c, $tech = 't_bus'){
+	$onmarket = onmarket($tech);
+	$tot = $c->$tech + $onmarket;
+	$sell = floor($tot/4) - $onmarket;
+
+	return $sell > 10 ? $sell : 0;
 }
 
-function buy_private_below_dpnw($c,$dpnw){
-	$pm_info = get_pm_info();	//get the PM info
+function can_sell_mil(&$c, $mil = 'm_tr'){
+	$onmarket = onmarket($mil);
+	$tot = $c->$mil + $onmarket;
+	$sell = floor($tot/4) - $onmarket;
 	
-	$tr_price = round($dpnw*0.5);
-	$j_price = $tu_price = round($dpnw*0.6);
-	$ta_price = round($dpnw*2);
-	
-	if($pm_info->buy_price->m_tr <= $tr_price && $pm_info->available->m_tr > 0){
-		$result = buy_on_pm($c,array('m_tr' => min(floor($c->money/$tr_price),$pm_info->available->m_tr)));
-	}
-	if($pm_info->buy_price->m_ta <= $ta_price && $pm_info->available->m_ta > 0){
-		$result = buy_on_pm($c,array('m_ta' => min(floor($c->money/$ta_price),$pm_info->available->m_ta)));
-	}
-	if($pm_info->buy_price->m_j <= $j_price && $pm_info->available->m_j > 0){
-		$result = buy_on_pm($c,array('m_j' => min(floor($c->money/$j_price),$pm_info->available->m_j)));
-	}
-	if($pm_info->buy_price->m_tu <= $tu_price && $pm_info->available->m_tu > 0){
-		$result = buy_on_pm($c,array('m_tu' => min(floor($c->money/$tu_price),$pm_info->available->m_tu)));
-	}
+	return $sell > 5000 ? $sell : 0;
 }
 
+
+//Interaction with API
 function update_c(&$c,$result){
 	if(!isset($result->turns) || !$result->turns)
 		return;
@@ -256,7 +222,7 @@ function update_c(&$c,$result){
 		$explain = '(' . $c->tpt . ' tpt)';	//Text for screen
 	}
 	elseif($last_function == 'cash'){
-		$str = "Cashed " . actual_count($result->turns) . "turns";	//Text for screen
+		$str = "Cashed " . actual_count($result->turns) . " turns";	//Text for screen
 	}
 	elseif(isset($result->sell)){
 		$str = "Put goods on market";
@@ -311,6 +277,20 @@ function update_c(&$c,$result){
 	out(str_pad($c->turns,3) . ' Turns - ' . $str . $event);
 }
 
+function event_text($event){
+	switch($event){
+		case 'earthquake':	return 'earthquake';
+		case 'oilboom':		return '+OIL';
+		case 'oilfire':		return '-oil';
+		case 'foodboom':	return '+FOOD';
+		case 'foodbad':		return '-food';
+		case 'indyboom':	return '+INDY';
+		case 'indybad':		return '-indy';
+		case 'pciboom':		return '+PCI';
+		case 'pcibad':		return '-pci';
+	}
+}
+
 function build_cs($turns=1){							//default is 1 CS if not provided
 	return build(array('cs' => $turns));
 }
@@ -352,26 +332,6 @@ function get_owned_on_market_info(){
 	return $goods->goods;
 }
 
-
-function total_military($c){
-	return $c->m_spy+$c->m_tr+$c->m_j+$c->m_tu+$c->m_ta;	//total_military
-}
-
-function sell_all_military(&$c,$fraction = 1){
-	$fraction = max(0,min(1,$fraction));
-	$sell_units = array(
-		'm_spy'	=>	floor($c->m_spy*$fraction),		//$fraction of spies
-		'm_tr'	=>	floor($c->m_tr*$fraction),		//$fraction of troops
-		'm_j'	=>	floor($c->m_j*$fraction),		//$fraction of jets
-		'm_tu'	=>	floor($c->m_tu*$fraction),		//$fraction of turrets
-		'm_ta'	=>	floor($c->m_ta*$fraction)		//$fraction of tanks
-	);
-	if(array_sum($sell_units) == 0){
-		out("No Military!");
-		return;
-	}
-	return sell_on_pm($c,$sell_units);	//Sell 'em
-}
 
 function buy_on_pm(&$c,$units = array()){
 	$result = ee('pm',array('buy' => $units));
@@ -492,16 +452,6 @@ function sell_public(&$c,$quantity=array(),$price=array(),$tonm=array()){
 	return $result;
 }
 
-function can_sell_tech(&$c, $tech = 't_bus'){
-	//out("tech: {$c->$tech}");
-	$onmarket = onmarket($tech);
-	//out("on market: $onmarket");
-	$tot = $c->$tech + $onmarket;
-	//out("tot: $onmarket");
-	$sell = floor($tot/4) - $onmarket;
-	//out("sell: $onmarket");
-	return $sell > 10 ? $sell : 0;
-}
 
 function buy_tech(&$c, $tech = 't_bus', $spend = 0, $maxprice = 9999){
 	$market_info = get_market_info();	//get the Public Market info
@@ -521,61 +471,6 @@ function buy_tech(&$c, $tech = 't_bus', $spend = 0, $maxprice = 9999){
 	}
 }
 
-function food_management(&$c){
-	if($c->foodnet > 0)
-		return;
-	
-	//out("food management");
-	$foodloss = -1*$c->foodnet;
-	$turns_buy = 50;
-	if($c->food > $turns_buy*$foodloss)
-		return;
-	
-	$c = get_advisor();	//UPDATE EVERYTHING
-	$market_info = get_market_info();	//get the Public Market info
-	//out_data($market_info);
-	$pm_info = get_pm_info();
-	while($turns_buy > 1 && $c->food < $turns_buy*$foodloss){
-		$turns_of_food = $foodloss*$turns_buy;
-		$market_price = ($market_info->buy_price->m_bu != null ? $market_info->buy_price->m_bu : $pm_info->buy_price->m_bu);
-		//out("Market Price: " . $market_price);
-		if($c->food < $turns_of_food && $c->money > $turns_of_food*$market_price*((100+$c->g_tax)/100)){ //losing food, less than turns_buy turns left, AND have the money to buy it
-			out("Less than $turns_buy turns worth of food! (" . $c->foodnet .  "/turn) Buy food off Public if we can!");	//Text for screen
-			$result = buy_public($c,array('m_bu' => min($foodloss*$turns_buy,$market_info->available->m_bu)),array('m_bu' => $market_price));	//Buy 3 turns of food off the public at or below the PM price
-			$market_info = get_market_info();	//get the Public Market info
-			$c = get_advisor();	//UPDATE EVERYTHING
-		}
-		/*else
-			out("$turns_buy: " . $c->food . ' < ' . $turns_of_food . '; $' . $c->money . ' > $' . $turns_of_food*$market_price);*/
-		
-		$turns_buy--;
-	}
-
-	$turns_buy = 5;
-	$turns_of_food = $foodloss*$turns_buy;
-	if($c->food < $turns_of_food && $c->money > $turns_buy*$foodloss*$pm_info->buy_price->m_bu){ //losing food, less than turns_buy turns left, AND have the money to buy it
-		out("Less than $turns_buy turns worth of food! (" . $c->foodnet .  "/turn) We're rich, so buy food at any price!~");	//Text for screen
-		$result = buy_on_pm($c,array('m_bu' => $turns_buy*$foodloss));	//Buy 3 turns of food!
-	}
-	elseif($c->foodnet < 0 && $c->food < $c->foodnet*-3 && total_military($c) > 30){
-		out("We're too poor to buy food! Sell 1/4 of our military");	//Text for screen
-		sell_all_military($c,1/4);	//sell 1/4 of our military
-	}
-}
-
-function event_text($event){
-	switch($event){
-		case 'earthquake':	return 'earthquake';
-		case 'oilboom':		return '+OIL';
-		case 'oilfire':		return '-oil';
-		case 'foodboom':	return '+FOOD';
-		case 'foodbad':		return '-food';
-		case 'indyboom':	return '+INDY';
-		case 'indybad':		return '-indy';
-		case 'pciboom':		return '+PCI';
-		case 'pcibad':		return '-pci';
-	}
-}
 
 
 function rand_country_name(){
