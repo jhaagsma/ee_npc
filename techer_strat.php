@@ -124,6 +124,8 @@ function sell_max_tech($c){
 	);
 	
 	$result = sell_public($c,$quantity,$price);
+	global $mktinfo;
+	$mktinfo = null;
 	return $result;
 }
 

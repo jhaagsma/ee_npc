@@ -119,6 +119,8 @@ function sell_max_military(&$c){
 	);
 	
 	$result = sell_public($c,$quantity,$price);
+	global $mktinfo;
+	$mktinfo = null;
 	return $result;
 }
 

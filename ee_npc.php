@@ -79,13 +79,14 @@ while(1){
 			play_rainbow_strat($server,$cnum);
 	}
 	
-	if($server->reset_end - $server->turn_rate * 9 - time() < 0){
+	$until_end = 50;
+	if($server->reset_end - $server->turn_rate * $until_end - time() < 0){
 		foreach($countries as $cnum){
 			$mktinfo = null;
 			destock($server,$cnum);
 		}
 		out("Sleep until end");
-		sleep(10*$server->turn_rate);	
+		sleep(($until_end + 1)*$server->turn_rate);	//don't let them fluff things up, sleep through end of reset
 	}
 	$cnum = null;
 	$loopcount++;
