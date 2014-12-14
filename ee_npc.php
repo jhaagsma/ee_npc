@@ -40,6 +40,23 @@ out('Entering Infinite Loop');
 $loopcount = 0;
 while(1){
 	$server = ee('server');
+	while($server->alive_count < $server->countries_allowed){
+		out("Less countries than allowed! (" . $server->alive_count . '/' . $server->countries_allowed . ')');
+		include_once('name_generator.php');
+		$send_data = array('cname' => rand_name());
+		out("Making new country named '" . $send_data['cname'] . "'");
+		$cnum = ee('create',$send_data);
+		out($send_data['cname'] . ' (#' . $cnum .') created!');
+		$server = ee('server');
+		if($server->reset_start > time()){
+			$timeleft = $server->reset_start - time();
+			$countriesleft = $server->countries_allowed - $server->alive_count;
+			$sleeptime = $timeleft/$countriesleft;
+			sleep("Sleep for $sleeptime to spread countries out");
+		}
+	}
+	
+	
 	if($server->reset_start > time()){
 		out("Reset has not started!");			//done() is defined below
 		sleep(max(300,time()-$server->reset_start));		//sleep until the reset starts
@@ -52,16 +69,6 @@ while(1){
 	}
 	
 	server_start_end_notification($server);
-
-	while($server->alive_count < $server->countries_allowed){
-		out("Less countries than allowed! (" . $server->alive_count . '/' . $server->countries_allowed . ')');
-		include_once('name_generator.php');
-		$send_data = array('cname' => rand_name());
-		out("Making new country named '" . $send_data['cname'] . "'");
-		$cnum = ee('create',$send_data);
-		out($send_data['cname'] . ' (#' . $cnum .') created!');
-		$server = ee('server');
-	}
 	
 	$countries = $server->cnum_list->alive;
 
