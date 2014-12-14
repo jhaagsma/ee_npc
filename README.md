@@ -26,7 +26,7 @@ TO RUN ON LINUX:
 
 TO RUN ON WINDOWS:
 
-1) DOWNLOAD PHP FOR WINDOWS: http://windows.php.net/...12-nts-Win32-VC11-x86.zip
+1) DOWNLOAD PHP FOR WINDOWS: http://windows.php.net/download/
 
 2) Extract the zip to C:\php
 
@@ -42,7 +42,7 @@ TO RUN ON WINDOWS:
 
 7) Save the changed file as C:\php\php.ini
 
-8) DOWNLOAD the **x86 version** of the MS VC package: http://www.microsoft.com/...oad/details.aspx?id=30679
+8) DOWNLOAD the **x86 version** of the MS VC package: http://www.microsoft.com/download/details.aspx?id=30679
 
 9) Install it!
 
