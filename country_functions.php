@@ -8,7 +8,7 @@ function destock($server,$cnum){
 	
 	$dpnw = 200;
 	while($c->money > 1000 && $dpnw < 500){
-		out("Try to buy goods at $dpwn dpnw or below!");	//Text for screen
+		out("Try to buy goods at $dpnw dpnw or below!");	//Text for screen
 		buy_public_below_dpnw($c,$dpnw);
 		buy_private_below_dpnw($c,$dpnw);
 		$dpnw += 4;

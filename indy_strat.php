@@ -63,7 +63,7 @@ function play_indy_turn(&$c){ //c as in country!
 	global $turnsleep;
 	usleep($turnsleep);
 	//out($main->turns . ' turns left');
-	if(total_cansell_military($c) > 5000 && sellmilitarytime($c))
+	if(total_cansell_military($c) > 7500 && sellmilitarytime($c))
 		return sell_max_military($c);
 	elseif($c->empty > $c->bpt && $c->money > $c->bpt*$c->build_cost){	//build a full BPT if we can afford it
 		return build_indy($c);
