@@ -4,7 +4,8 @@
 function destock($server,$cnum){
 	$c = get_advisor();	//c as in country! (get the advisor)
 	out("Destocking #$cnum!");	//Text for screen
-	sell_on_pm($c,array('m_bu' => $c->food));	//Sell 'em
+	if($c->food > 0)
+		sell_on_pm($c,array('m_bu' => $c->food));	//Sell 'em
 	
 	$dpnw = 200;
 	while($c->money > 1000 && $dpnw < 500){
@@ -19,8 +20,9 @@ function destock($server,$cnum){
 		out("Ran out of goods?");	//Text for screen
 }
 
-function buy_public_below_dpnw($c,$dpnw){
+function buy_public_below_dpnw(&$c,$dpnw){
 	$market_info = get_market_info();
+	//out_data($market_info);
 	
 	$tr_price = round($dpnw*0.5/((100+$c->g_tax)/100));
 	$j_price = $tu_price = round($dpnw*0.6/((100+$c->g_tax)/100));
@@ -28,31 +30,31 @@ function buy_public_below_dpnw($c,$dpnw){
 
 	if($market_info->buy_price->m_tr != null && $market_info->available->m_tr > 0){
 		while($market_info->buy_price->m_tr <= $tr_price && $c->money > $tr_price){
-			$result = buy_public($c,array('m_tr' => floor($c->money/$tr_price)),array('m_tr' => $tr_price));	//Buy troops!
+			$result = buy_public($c,array('m_tr' => floor($c->money/ceil($tr_price*(100+$c->g_tax)/100))),array('m_tr' => $tr_price));	//Buy troops!
 			$market_info = get_market_info();
 		}
 	}
 	if($market_info->buy_price->m_j != null && $market_info->available->m_j > 0){
 		while($market_info->buy_price->m_j <= $j_price && $c->money > $j_price){
-			$result = buy_public($c,array('m_j' => floor($c->money/$j_price)),array('m_j' => $j_price));	//Buy troops!
+			$result = buy_public($c,array('m_j' => floor($c->money/ceil($j_price*(100+$c->g_tax)/100))),array('m_j' => $j_price));	//Buy troops!
 			$market_info = get_market_info();
 		}
 	}
 	if($market_info->buy_price->m_tu != null && $market_info->available->m_tu > 0){
 		while($market_info->buy_price->m_tu <= $tr_price && $c->money > $tu_price){
-			$result = buy_public($c,array('m_tr' => floor($c->money/$tu_price)),array('m_tu' => $tu_price));	//Buy troops!
+			$result = buy_public($c,array('m_tu' => floor($c->money/ceil($tu_price*(100+$c->g_tax)/100))),array('m_tu' => $tu_price));	//Buy troops!
 			$market_info = get_market_info();
 		}
 	}
 	if($market_info->buy_price->m_ta != null && $market_info->available->m_ta > 0){
 		while($market_info->buy_price->m_ta <= $tr_price && $c->money > $ta_price){
-			$result = buy_public($c,array('m_ta' => floor($c->money/$ta_price)),array('m_ta' => $ta_price));	//Buy troops!
+			$result = buy_public($c,array('m_ta' => floor($c->money/ceil($ta_price*(100+$c->g_tax)/100))),array('m_ta' => $ta_price));	//Buy troops!
 			$market_info = get_market_info();
 		}
 	}
 }
 
-function buy_private_below_dpnw($c,$dpnw){
+function buy_private_below_dpnw(&$c,$dpnw){
 	$pm_info = get_pm_info();	//get the PM info
 	
 	$tr_price = round($dpnw*0.5);

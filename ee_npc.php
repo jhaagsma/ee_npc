@@ -394,18 +394,22 @@ function buy_public(&$c,$quantity=array(),$price=array()){
 	if($str == 'Bought '){
 		$str .= 'nothing ';
 		$nothing = true;
+		
+	}
+	if($nothing){
+		$what = null;
+		$cost = 0;
+		foreach($quantity as $key => $q){
+			$what .= $key . $q . '@' . $price[$key] . ', ';
+			$cost += round($q*$price[$key]*(100+$c->g_tax)/100);
+		}
+		out("Tried: " . $what);
+		out("Money: " . $c->money . " Cost: " . $cost);
+		sleep(1);
 	}
 	
 	$str .= 'for $' .$tcost;
 	out($str);
-	if($nothing){
-		$what = null;
-		foreach($quantity as $key => $q){
-			$what .= $key . $q . '@' . $price[$key] . ', ';
-		}
-		out("Tried: " . $what);
-		sleep(1);
-	}
 	return $result;
 }
 
