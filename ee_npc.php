@@ -52,7 +52,8 @@ while(1){
 			$timeleft = $server->reset_start - time();
 			$countriesleft = $server->countries_allowed - $server->alive_count;
 			$sleeptime = $timeleft/$countriesleft;
-			sleep("Sleep for $sleeptime to spread countries out");
+			out("Sleep for $sleeptime to spread countries out");
+			sleep($sleeptime);
 		}
 	}
 	
