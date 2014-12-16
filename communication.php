@@ -77,6 +77,7 @@ function expected_result($input){
 				
 		case 'buy':			return 'BUY';
 		case 'sell':		return 'SELL';
+		case 'govt':		return 'GOVT';
 	}
 }
 

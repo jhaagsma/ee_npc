@@ -8,6 +8,19 @@ function play_rainbow_strat($server){
 	$c = get_advisor();	//c as in country! (get the advisor)
 	out($c->turns . ' turns left');
 	//out_data($c);				//ouput the advisor data
+	if($c->govt == 'M' && $c->turns_played < 100){
+		$rand = rand(0,100);
+		switch($rand){
+			case $rand < 4: change_govt($c,'F'); break;
+			case $rand < 8: change_govt($c,'T'); break;
+			case $rand < 12: change_govt($c,'I'); break;
+			case $rand < 16: change_govt($c,'C'); break;
+			case $rand < 20: change_govt($c,'H'); break;
+			case $rand < 24: change_govt($c,'R'); break;
+			case $rand < 28: change_govt($c,'D'); break;
+			default: break;
+		}
+	}
 	$pm_info = get_pm_info();	//get the PM info
 	//out_data($pm_info);		//output the PM info
 	$market_info = get_market_info();	//get the Public Market info

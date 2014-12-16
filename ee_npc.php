@@ -341,6 +341,15 @@ function get_owned_on_market_info(){
 	return $goods->goods;
 }
 
+function change_govt(&$c,$govt){
+	$result = ee('govt',array('govt' => $govt));
+	if(isset($result->govt)){
+		out("Govt switched to {$result->govt}!");
+		$c = get_advisor();	//UPDATE EVERYTHING
+	}
+	return $result;
+}
+
 
 function buy_on_pm(&$c,$units = array()){
 	$result = ee('pm',array('buy' => $units));

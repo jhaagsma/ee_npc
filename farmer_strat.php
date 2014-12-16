@@ -8,6 +8,16 @@ function play_farmer_strat($server){
 	//out_data($main);			//output the main data
 	$c = get_advisor();	//c as in country! (get the advisor)
 	//out_data($c) && exit;				//ouput the advisor data
+	if($c->govt == 'M'){
+		$rand = rand(0,100);
+		switch($rand){
+			case $rand < 20: change_govt($c,'D'); break;
+			case $rand < 40: change_govt($c,'I'); break;
+			default: change_govt($c,'F'); break;
+		}
+	}
+		
+	
 	out($c->turns . ' turns left');
 	$pm_info = get_pm_info();	//get the PM info
 	//out_data($pm_info);		//output the PM info

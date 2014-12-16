@@ -9,6 +9,16 @@ function play_techer_strat($server){
 	//out_data($main);			//output the main data
 	$c = get_advisor();	//c as in country! (get the advisor)
 	out($c->turns . ' turns left');
+	
+	if($c->govt == 'M'){
+		$rand = rand(0,100);
+		switch($rand){
+			case $rand < 20: change_govt($c,'H'); break;
+			case $rand < 40: change_govt($c,'D'); break;
+			default: change_govt($c,'T'); break;
+		}
+	}
+	
 	//out_data($c);				//ouput the advisor data
 	$pm_info = get_pm_info();	//get the PM info
 	//out_data($pm_info);		//output the PM info
