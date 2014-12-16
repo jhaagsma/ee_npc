@@ -134,3 +134,10 @@ function food_management(&$c){
 		sell_all_military($c,1/4);	//sell 1/4 of our military
 	}
 }
+
+function defend_self(&$c,$reserve_cash){
+
+
+}
+
+

@@ -11,8 +11,9 @@ function play_farmer_strat($server){
 	if($c->govt == 'M'){
 		$rand = rand(0,100);
 		switch($rand){
-			case $rand < 20: change_govt($c,'D'); break;
-			case $rand < 40: change_govt($c,'I'); break;
+			case $rand < 12: change_govt($c,'D'); break;
+			case $rand < 20: change_govt($c,'I'); break;
+			case $rand < 50: change_govt($c,'R'); break;
 			default: change_govt($c,'F'); break;
 		}
 	}
