@@ -20,7 +20,9 @@ TO RUN ON LINUX:
 
 4) Run ee_npc.php in the terminal: ./ee_npc
 
-3) To Stop it go Control-C
+5) To Stop it go Control-C
+
+6) Login and see the AI Dev forum for discussion http://www.earthempires.com/forum/ai-development or view the API details at http://www.earthempires.com/api
 
 
 <br /><br />
@@ -72,3 +74,5 @@ TO RUN ON WINDOWS:
 20) MAGIC! it starts playing countries!
 
 21) To stop it, go Control-C
+
+22) Login and see the AI Dev forum for discussion http://www.earthempires.com/forum/ai-development or view the API details at http://www.earthempires.com/api
