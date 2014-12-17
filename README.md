@@ -48,7 +48,7 @@ TO RUN ON WINDOWS:
 
 10) Go to http://www.earthempires.com/ai/api and Generate an API Key
 
-11) Download or clone the ee_npc project from github: https://github.com/jhaagsma/ee_npc
+11) Download or clone the ee_npc project from github: https://github.com/jhaagsma/ee_npc ( https://github.com/jhaagsma/ee_npc/archive/master.zip )
 
 12) Put the project somewhere like Documents, so you can find it: C:\Users\(your username)\Documents\ee_npc
 
