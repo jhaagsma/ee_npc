@@ -107,9 +107,9 @@ function food_management(&$c){
 	$market_info = get_market_info();	//get the Public Market info
 	//out_data($market_info);
 	$pm_info = get_pm_info();
-	while($turns_buy > 1 && $c->food <= $turns_buy*$foodloss){
+	while($turns_buy > 1 && $c->food <= $turns_buy*$foodloss && $market_info->buy_price->m_bu != null){
 		$turns_of_food = $foodloss*$turns_buy;
-		$market_price = ($market_info->buy_price->m_bu != null ? $market_info->buy_price->m_bu : $pm_info->buy_price->m_bu);
+		$market_price = $market_info->buy_price->m_bu;
 		//out("Market Price: " . $market_price);
 		if($c->food < $turns_of_food && $c->money > $turns_of_food*$market_price*((100+$c->g_tax)/100)){ //losing food, less than turns_buy turns left, AND have the money to buy it
 			$quantity = min($foodloss*$turns_buy,$market_info->available->m_bu);
@@ -133,6 +133,7 @@ function food_management(&$c){
 	elseif($c->foodnet < 0 && $c->food < $c->foodnet*-3 && total_military($c) > 30){
 		out("We're too poor to buy food! Sell 1/4 of our military");	//Text for screen
 		sell_all_military($c,1/4);	//sell 1/4 of our military
+		$c = get_advisor();	//UPDATE EVERYTHING
 	}
 }
 
