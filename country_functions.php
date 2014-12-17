@@ -112,8 +112,9 @@ function food_management(&$c){
 		$market_price = ($market_info->buy_price->m_bu != null ? $market_info->buy_price->m_bu : $pm_info->buy_price->m_bu);
 		//out("Market Price: " . $market_price);
 		if($c->food < $turns_of_food && $c->money > $turns_of_food*$market_price*((100+$c->g_tax)/100)){ //losing food, less than turns_buy turns left, AND have the money to buy it
-			out("Less than $turns_buy turns worth of food! (" . $c->foodnet .  "/turn) Buy ({$market_info->available->m_bu})food off Public (at $market_price) if we can!");	//Text for screen
-			$result = buy_public($c,array('m_bu' => min($foodloss*$turns_buy,$market_info->available->m_bu)),array('m_bu' => $market_price));	//Buy 3 turns of food off the public at or below the PM price
+			$quantity = min($foodloss*$turns_buy,$market_info->available->m_bu);
+			out("Less than $turns_buy turns worth of food! (" . $c->foodnet .  "/turn) Buy $quantity food off Public @\$$market_price if we can!");	//Text for screen
+			$result = buy_public($c,array('m_bu' => $quantity),array('m_bu' => $market_price));	//Buy 3 turns of food off the public at or below the PM price
 			$market_info = get_market_info();	//get the Public Market info
 			$c = get_advisor();	//UPDATE EVERYTHING
 		}
