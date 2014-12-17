@@ -61,7 +61,7 @@ function play_techer_turn(&$c){ //c as in country!
 	$mktinfo = null;
 	usleep($turnsleep);
 	//out($main->turns . ' turns left');
-	if(total_cansell_tech($c) > 100 && selltechtime($c))
+	if(total_cansell_tech($c) > 20*$c->tpt && selltechtime($c)) //never sell less than 20 turns worth of tech
 		return sell_max_tech($c);
 	elseif($c->empty > $c->bpt && $c->money > $c->bpt*$c->build_cost){	//build a full BPT if we can afford it
 		return build_techer($c);
