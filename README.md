@@ -12,13 +12,17 @@ TO RUN ON LINUX:
 
 1) Clone the project from github: https://github.com/jhaagsma/ee_npc
 
-2) Copy config_example.php to config.php and fill out your information
+2) Copy config_example.php to config.php and fill out your information (see 2.1)
+
+2.1) Go to http://www.earthempires.com/ai/api and Generate an API Key if you don't have one
 
 3) Install php if you don't already have it; on ubuntu sudo apt-get install php 
 
 4) Run ee_npc.php in the terminal: ./ee_npc
 
-3) To Stop it go Control-C
+5) To Stop it go Control-C
+
+6) Login and see the AI Dev forum for discussion http://www.earthempires.com/forum/ai-development or view the API details at http://www.earthempires.com/api
 
 
 <br /><br />
@@ -70,3 +74,5 @@ TO RUN ON WINDOWS:
 20) MAGIC! it starts playing countries!
 
 21) To stop it, go Control-C
+
+22) Login and see the AI Dev forum for discussion http://www.earthempires.com/forum/ai-development or view the API details at http://www.earthempires.com/api
