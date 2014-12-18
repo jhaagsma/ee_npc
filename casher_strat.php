@@ -7,7 +7,7 @@ function play_casher_strat($server){
 	$main = get_main();	//get the basic stats
 	//out_data($main);			//output the main data
 	$c = get_advisor();	//c as in country! (get the advisor)
-	//out_data($c);				//ouput the advisor data
+	//out_data($c) && exit;				//ouput the advisor data
 	
 	if($c->govt == 'M'){
 		$rand = rand(0,100);
@@ -46,7 +46,9 @@ function play_casher_strat($server){
 		}
 		
 
-		food_management($c);
+		$hold = food_management($c);
+		if($hold)
+			break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
 		
 		if($c->money > max($c->bpt,30)*$c->build_cost*10){ //buy_tech
 			//out("Try to buy tech?");
@@ -67,16 +69,17 @@ function play_casher_strat($server){
 }
 
 function play_casher_turn(&$c){ //c as in country!
+	$target_bpt = 50;
 	global $turnsleep;
 	usleep($turnsleep);
 	//out($main->turns . ' turns left');
 	if($c->empty > $c->bpt && $c->money > $c->bpt*$c->build_cost){	//build a full BPT if we can afford it
 		return build_casher($c);
-	}elseif($c->turns >= 4 && $c->empty >= 4 && $c->bpt < 80 && $c->money > 4*$c->build_cost && ($c->foodnet > 0 || $c->food > $c->foodnet*-5)) //otherwise... build 4CS if we can afford it and are below our target BPT (80)
+	}elseif($c->turns >= 4 && $c->empty >= 4 && $c->bpt < $target_bpt && $c->money > 4*$c->build_cost && ($c->foodnet > 0 || $c->food > $c->foodnet*-5)) //otherwise... build 4CS if we can afford it and are below our target BPT (80)
 		return build_cs(4); //build 4 CS
 	elseif($c->empty < $c->land/2)	//otherwise... explore if we can
 		return explore($c);
-	elseif($c->empty && $c->bpt < 80 && $c->money > $c->build_cost) //otherwise... build one CS if we can afford it and are below our target BPT (80)
+	elseif($c->empty && $c->bpt < $target_bpt && $c->money > $c->build_cost) //otherwise... build one CS if we can afford it and are below our target BPT (80)
 		return build_cs(); //build 1 CS
 	else  //otherwise...  cash
 		return cash($c);

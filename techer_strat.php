@@ -49,7 +49,9 @@ function play_techer_strat($server){
 		
 		
 		
-		food_management($c);
+		$hold = food_management($c);
+		if($hold)
+			break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
 		
 		//$main->turns = 0;				//use this to do one turn at a time
 	}
@@ -57,21 +59,22 @@ function play_techer_strat($server){
 }
 
 function play_techer_turn(&$c){ //c as in country!
+	$target_bpt = 50;
 	global $turnsleep, $mktinfo;
 	$mktinfo = null;
 	usleep($turnsleep);
 	//out($main->turns . ' turns left');
-	if(total_cansell_tech($c) > 20*$c->tpt && selltechtime($c)) //never sell less than 20 turns worth of tech
+	if($c->protection == 0 && total_cansell_tech($c) > 20*$c->tpt && selltechtime($c)) //never sell less than 20 turns worth of tech
 		return sell_max_tech($c);
 	elseif($c->empty > $c->bpt && $c->money > $c->bpt*$c->build_cost){	//build a full BPT if we can afford it
 		return build_techer($c);
-	}elseif($c->turns >= 4 && $c->empty >= 4 && $c->bpt < 80 && $c->money > 4*$c->build_cost && ($c->foodnet > 0 || $c->food > $c->foodnet*-5)) //otherwise... build 4CS if we can afford it and are below our target BPT (80)
+	}elseif($c->turns >= 4 && $c->empty >= 4 && $c->bpt < $target_bpt && $c->money > 4*$c->build_cost && ($c->foodnet > 0 || $c->food > $c->foodnet*-5)) //otherwise... build 4CS if we can afford it and are below our target BPT (80)
 		return build_cs(4); //build 4 CS
 	elseif($c->tpt > $c->land*0.17 && rand(0,10) > 1) //tech per turn is greater than land*0.17 -- just kindof a rough "don't tech below this" rule...
 		return tech_techer($c);
 	elseif($c->empty < $c->land/2)	//otherwise... explore if we can, for the early bits of the set
 		return explore($c);
-	elseif($c->empty && $c->bpt < 80 && $c->money > $c->build_cost) //otherwise... build one CS if we can afford it and are below our target BPT (80)
+	elseif($c->empty && $c->bpt < $target_bpt && $c->money > $c->build_cost) //otherwise... build one CS if we can afford it and are below our target BPT (80)
 		return build_cs(); //build 1 CS
 	elseif($c->tpt > $c->land*0.17) //tech per turn is greater than land*0.17 -- just kindof a rough "don't tech below this" rule...
 		return tech_techer($c);
@@ -115,11 +118,25 @@ function sell_max_tech($c){
 	);
 	
 	
-	$nogoods_high = 5000;
-	$nogoods_low = 3000;
-	$randomup = 120; //percent
-	$randomdown = 80; //percent
-	$price = array(
+	$nogoods_high = 9000;
+	$nogoods_low = 2000;
+	$nogoods_stddev = 1500;
+	$nogoods_step = 1;
+	$rmax = 1.30; //percent
+	$rmin = 0.70; //percent
+	$rstep = 0.01;
+	$rstddev = 0.10;
+	$price = array();
+	foreach($quantity as $key => $q){
+		if($q == 0)
+			$price[$key] = 0;
+		elseif($market_info->buy_price->$key != null)
+			$price[$key] = floor($market_info->buy_price->$key * purebell($rmin,$rmax,$rstddev,$rstep));
+		else
+			$price[$key] = floor(purebell($nogoods_low,$nogoods_high,$nogoods_stddev,$nogoods_step));
+	}
+	
+	/*$price = array(
 		'mil'=>	$quantity['mil'] == 0 ? 0 : floor(($market_info->buy_price->mil != null ? $market_info->buy_price->mil : rand($nogoods_low,$nogoods_high))*(rand($randomdown,$randomup)/100)),
 		'med'=>	$quantity['med'] == 0 ? 0 : floor(($market_info->buy_price->med != null ? $market_info->buy_price->med : rand($nogoods_low,$nogoods_high))*(rand($randomdown,$randomup)/100)),
 		'bus'=>	$quantity['bus'] == 0 ? 0 : floor(($market_info->buy_price->bus != null ? $market_info->buy_price->bus : rand($nogoods_low,$nogoods_high))*(rand($randomdown,$randomup)/100)),
@@ -131,7 +148,7 @@ function sell_max_tech($c){
 		'indy'=>$quantity['indy'] == 0 ? 0 : floor(($market_info->buy_price->indy != null ? $market_info->buy_price->indy : rand($nogoods_low,$nogoods_high))*(rand($randomdown,$randomup)/100)),
 		'spy'=>	$quantity['spy'] == 0 ? 0 : floor(($market_info->buy_price->spy != null ? $market_info->buy_price->spy : rand($nogoods_low,$nogoods_high))*(rand($randomdown,$randomup)/100)),
 		'sdi'=>	$quantity['sdi'] == 0 ? 0 : floor(($market_info->buy_price->sdi != null ? $market_info->buy_price->sdi : rand($nogoods_low,$nogoods_high))*(rand($randomdown,$randomup)/100))		
-	);
+	);*/
 	
 	$result = sell_public($c,$quantity,$price);
 	if($result == 'QUANTITY_MORE_THAN_CAN_SELL'){
@@ -145,15 +162,15 @@ function sell_max_tech($c){
 
 function tech_techer(&$c){
 	//lets do random weighting... to some degree
-	$mil	= rand(0,25);
+	$mil	= rand(0,300);
 	$med	= rand(0,5);
 	$bus	= rand(10,400);
 	$res	= rand(10,400);
-	$agri	= rand(10,200);
+	$agri	= rand(10,300);
 	$war	= rand(0,10);
 	$ms		= rand(0,20);
 	$weap	= rand(0,20);
-	$indy	= rand(5,100);
+	$indy	= rand(5,300);
 	$spy	= rand(0,10);
 	$sdi	= rand(2,15);	
 	$tot	= $mil + $med + $bus + $res + $agri + $war + $ms + $weap + $indy + $spy + $sdi;

@@ -77,18 +77,19 @@ function play_farmer_strat($server){
 }
 
 function play_farmer_turn(&$c){ //c as in country!
+	$target_bpt = 50;
 	global $turnsleep;
 	usleep($turnsleep);
 	//out($main->turns . ' turns left');
-	if($c->foodnet > 0 && $c->foodnet > 3*$c->foodcon && $c->food > 30*$c->foodnet && $c->food > 7000)
+	if($c->protection == 0 && $c->foodnet > 0 && $c->foodnet > 3*$c->foodcon && $c->food > 30*$c->foodnet && $c->food > 7000) //Don't sell less than 30 turns of food
 		return sellextrafood_farmer($c);
 	elseif($c->empty > $c->bpt && $c->money > $c->bpt*$c->build_cost){	//build a full BPT if we can afford it
 		return build_farmer($c);
-	}elseif($c->turns >= 4 && $c->empty >= 4 && $c->bpt < 80 && $c->money > 4*$c->build_cost && ($c->foodnet > 0 || $c->food > $c->foodnet*-5)) //otherwise... build 4CS if we can afford it and are below our target BPT (80)
+	}elseif($c->turns >= 4 && $c->empty >= 4 && $c->bpt < $target_bpt && $c->money > 4*$c->build_cost && ($c->foodnet > 0 || $c->food > $c->foodnet*-5)) //otherwise... build 4CS if we can afford it and are below our target BPT (80)
 		return build_cs(4); //build 4 CS
 	elseif($c->empty < $c->land/2)	//otherwise... explore if we can
 		return explore($c);
-	elseif($c->empty && $c->bpt < 80 && $c->money > $c->build_cost) //otherwise... build one CS if we can afford it and are below our target BPT (80)
+	elseif($c->empty && $c->bpt < $target_bpt && $c->money > $c->build_cost) //otherwise... build one CS if we can afford it and are below our target BPT (80)
 		return build_cs(); //build 1 CS
 	else  //otherwise...  cash
 		return cash($c);
@@ -99,7 +100,17 @@ function sellextrafood_farmer(&$c){
 	$pm_info = get_pm_info();
 	$market_info = get_market_info();	//get the Public Market info
 	$c = get_advisor();	//UPDATE EVERYTHING
-	return sell_public($c,array('m_bu' => $c->food),array('m_bu' => round(max($pm_info->sell_price->m_bu,$market_info->buy_price->m_bu)*rand(80,120)/100)));	//Sell food!
+	
+	$quantity = array('m_bu' => $c->food); //sell it all! :)
+	
+	$rmax = 1.30; //percent
+	$rmin = 0.70; //percent
+	$rstep = 0.01;
+	$rstddev = 0.10;
+	$price = round(max($pm_info->sell_price->m_bu,$market_info->buy_price->m_bu*purebell($rmin,$rmax,$rstddev,$rstep)));
+	$price = array('m_bu' => $price);
+	
+	return sell_public($c,$quantity,$price);	//Sell food!
 }
 
 function build_farmer(&$c){

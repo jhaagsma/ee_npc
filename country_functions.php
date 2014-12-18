@@ -93,15 +93,15 @@ function sell_all_military(&$c,$fraction = 1){
 }
 
 
-function food_management(&$c){
+function food_management(&$c){ //RETURNS WHETHER TO HOLD TURNS OR NOT
 	if($c->foodnet > 0)
-		return;
+		return false;
 	
 	//out("food management");
 	$foodloss = -1*$c->foodnet;
 	$turns_buy = 50;
 	if($c->food > $turns_buy*$foodloss)
-		return;
+		return false;
 	
 	$c = get_advisor();	//UPDATE EVERYTHING
 	$market_info = get_market_info();	//get the Public Market info
@@ -123,22 +123,44 @@ function food_management(&$c){
 		
 		$turns_buy--;
 	}
-
-	$turns_buy = 5;
+	$turns_buy = min(3,max(1,$turns_buy));
 	$turns_of_food = $foodloss*$turns_buy;
+	
+	if($c->food > $turns_of_food)
+		return false;
+	
+	//WE HAVE MONEY, WAIT FOR FOOD ON MKT
+	if($c->protection == 0 && $c->turns_stored < 30 && $c->income > $pm_info->buy_price->m_bu*$foodloss){
+		out("We make enough to buy food if we want to; hold turns for now.");	//Text for screen
+		return true;
+	}
+	
+	//WAIT FOR GOODS/TECH TO SELL 
+	if($c->protection == 0 && $c->turns_stored < 30 && onmarket_value() > $pm_info->buy_price->m_bu*$foodloss){
+		out("We have goods on market; hold turns for now.");	//Text for screen
+		return true;
+	}
+	
+	//PUT GOODS/TECH ON MKT AS APPROPRIATE
+	
+	
 	if($c->food < $turns_of_food && $c->money > $turns_buy*$foodloss*$pm_info->buy_price->m_bu){ //losing food, less than turns_buy turns left, AND have the money to buy it
-		out("Less than $turns_buy turns worth of food! (" . $c->foodnet .  "/turn) We're rich, so buy food at any price!~");	//Text for screen
+		out("Less than $turns_buy turns worth of food! (" . $c->foodnet .  "/turn) We're rich, so buy food on PM (\${$pm_info->buy_price->m_bu})!~");	//Text for screen
 		$result = buy_on_pm($c,array('m_bu' => $turns_buy*$foodloss));	//Buy 3 turns of food!
+		return false;
 	}
-	elseif($c->foodnet < 0 && $c->food < $c->foodnet*-3 && total_military($c) > 30){
-		out("We're too poor to buy food! Sell 1/4 of our military");	//Text for screen
-		sell_all_military($c,1/4);	//sell 1/4 of our military
+	elseif($c->food < $turns_of_food && total_military($c) > 50){
+		out("We're too poor to buy food! Sell 1/10 of our military");	//Text for screen
+		sell_all_military($c,1/10);	//sell 1/4 of our military
 		$c = get_advisor();	//UPDATE EVERYTHING
+		return food_management($c); //RECURSION!
 	}
+	
+	return false;
 }
 
 function defend_self(&$c,$reserve_cash){
-
+	//BUY MILITARY?
 
 }
 

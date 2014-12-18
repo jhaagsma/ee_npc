@@ -7,7 +7,7 @@ function play_indy_strat($server){
 	$main = get_main();	//get the basic stats
 	//out_data($main);			//output the main data
 	$c = get_advisor();	//c as in country! (get the advisor)
-	//out_data($c);				//ouput the advisor data
+	//out_data($c) && exit;				//ouput the advisor data
 	if($c->govt == 'M'){
 		$rand = rand(0,100);
 		switch($rand){
@@ -43,7 +43,9 @@ function play_indy_strat($server){
 			$c->turns = $main->turns;		//This is the only one we really *HAVE* to check for
 		}
 		
-		food_management($c);
+		$hold = food_management($c);
+		if($hold)
+			break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
 		
 		if($c->money > max($c->bpt,30)*$c->build_cost*10){ //buy_tech
 			//out("Try to buy tech?");
@@ -68,18 +70,19 @@ function play_indy_strat($server){
 }
 
 function play_indy_turn(&$c){ //c as in country!
+	$target_bpt = 50;
 	global $turnsleep;
 	usleep($turnsleep);
 	//out($main->turns . ' turns left');
-	if(total_cansell_military($c) > 7500 && sellmilitarytime($c))
+	if($c->protection == 0 && total_cansell_military($c) > 7500 && sellmilitarytime($c))
 		return sell_max_military($c);
 	elseif($c->empty > $c->bpt && $c->money > $c->bpt*$c->build_cost){	//build a full BPT if we can afford it
 		return build_indy($c);
-	}elseif($c->turns >= 4 && $c->empty >= 4 && $c->bpt < 80 && $c->money > 4*$c->build_cost && ($c->foodnet > 0 || $c->food > $c->foodnet*-5)) //otherwise... build 4CS if we can afford it and are below our target BPT (80)
+	}elseif($c->turns >= 4 && $c->empty >= 4 && $c->bpt < $target_bpt && $c->money > 4*$c->build_cost && ($c->foodnet > 0 || $c->food > $c->foodnet*-5)) //otherwise... build 4CS if we can afford it and are below our target BPT (80)
 		return build_cs(4); //build 4 CS
 	elseif($c->empty < $c->land/2)	//otherwise... explore if we can
 		return explore($c);
-	elseif($c->empty && $c->bpt < 80 && $c->money > $c->build_cost) //otherwise... build one CS if we can afford it and are below our target BPT (80)
+	elseif($c->empty && $c->bpt < $target_bpt && $c->money > $c->build_cost) //otherwise... build one CS if we can afford it and are below our target BPT (80)
 		return build_cs(); //build 1 CS
 	else  //otherwise...  cash
 		return cash($c);
@@ -107,7 +110,7 @@ function sellmilitarytime(&$c){
 function sell_max_military(&$c){
 	$c = get_advisor();	//UPDATE EVERYTHING
 	$market_info = get_market_info();	//get the Public Market info
-	
+	$pm_info = get_pm_info();	//get the PM info
 	global $military_list;
 	
 	$quantity = array();
@@ -115,8 +118,20 @@ function sell_max_military(&$c){
 		$quantity[$unit] = can_sell_mil($c,$unit);
 	}
 	
-	//$nogoods_high = 5000;
-	//$nogoods_low = 3000;
+	$rmax = 1.30; //percent
+	$rmin = 0.70; //percent
+	$rstep = 0.01;
+	$rstddev = 0.10;
+	$price = array();
+	foreach($quantity as $key => $q){
+		if($q == 0)
+			$price[$key] = 0;
+		elseif($market_info->buy_price->$key != null){
+			$price[$key] = floor($pm_info->buy_price->$key * purebell(0.5,1.0,0.3,0.01));
+		}else
+			$price[$key] = min($pm_info->buy_price->$key,floor($market_info->buy_price->$key * purebell($rmin,$rmax,$rstddev,$rstep)));
+	}
+	/*
 	$randomup = 120; //percent
 	$randomdown = 80; //percent
 	$price = array(
@@ -124,7 +139,7 @@ function sell_max_military(&$c){
 		'm_j' =>	$quantity['m_j']  == 0 ? 0 : floor(($market_info->buy_price->m_j  != null ? $market_info->buy_price->m_j  : rand(110,192))*(rand($randomdown,$randomup)/100)),
 		'm_tu'=>	$quantity['m_tu'] == 0 ? 0 : floor(($market_info->buy_price->m_tu != null ? $market_info->buy_price->m_tu : rand(110,200))*(rand($randomdown,$randomup)/100)),
 		'm_ta'=>	$quantity['m_ta'] == 0 ? 0 : floor(($market_info->buy_price->m_ta != null ? $market_info->buy_price->m_ta : rand(400,560))*(rand($randomdown,$randomup)/100))
-	);
+	);*/
 	
 	$result = sell_public($c,$quantity,$price);
 	if($result == 'QUANTITY_MORE_THAN_CAN_SELL'){

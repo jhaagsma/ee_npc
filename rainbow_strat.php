@@ -7,7 +7,7 @@ function play_rainbow_strat($server){
 	//out_data($main);			//output the main data
 	$c = get_advisor();	//c as in country! (get the advisor)
 	out($c->turns . ' turns left');
-	//out_data($c);				//ouput the advisor data
+	//out_data($c) && exit;				//ouput the advisor data
 	if($c->govt == 'M' && $c->turns_played < 100){
 		$rand = rand(0,100);
 		switch($rand){
@@ -48,7 +48,9 @@ function play_rainbow_strat($server){
 			$c->turns = $main->turns;		//This is the only one we really *HAVE* to check for
 		}
 		
-		food_management($c);
+		$hold = food_management($c);
+		if($hold)
+			break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
 		
 		if($c->income < 0 && total_military($c) > 30){ //sell 1/4 of all military on PM
 			out("Losing money! Sell 1/4 of our military!");	//Text for screen
