@@ -310,7 +310,7 @@ function update_c(&$c,$result){
 			. str_pad('(' . $netfood . ')',10, ' ', STR_PAD_LEFT); //Text for screen
 
 	global $api_calls;
-	out(str_pad($c->turns,3) . ' Turns - ' . $str . str_pad($event,5) . ' API: ' . $api_calls);
+	out(str_pad($c->turns,3) . ' Turns - ' . $str . ' ' .  str_pad($event,5) . ' API: ' . $api_calls);
 	$api_calls = 0;
 }
 
