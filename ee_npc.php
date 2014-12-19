@@ -34,6 +34,7 @@ $cnum = null;
 $last_function = null;
 $turnsleep = isset($config['turnsleep']) ? $config['turnsleep'] : 500000;
 $mktinfo = null; //so we don't have to get it mkt data over and over again
+$api_calls = 0;
 
 out('Current Unix Time: ' . time());
 out('Entering Infinite Loop');
@@ -301,15 +302,21 @@ function update_c(&$c,$result){
 	
 	$netfood = ($netfood > 0 ? '+' . $netfood : $netfood);			//Text formatting (adding a + if it is positive; - will be there if it's negative already)
 	$netmoney = ($netmoney > 0 ? '+' . $netmoney : $netmoney);		//Text formatting (adding a + if it is positive; - will be there if it's negative already)
-	$str = str_pad($str,26) . str_pad($explain,12) .  str_pad('$' . $c->money,16) . str_pad('($' . $netmoney . ')',12) . str_pad($c->food . ' Bu',10) . str_pad('(' . $netfood . ')',8); //Text for screen
+	$str = str_pad($str,26) 
+			. str_pad($explain,12) 
+			. str_pad('$' . $c->money,16, ' ', STR_PAD_LEFT) 
+			. str_pad('($' . $netmoney . ')',12, ' ', STR_PAD_LEFT) 
+			. str_pad($c->food . ' Bu',12, ' ', STR_PAD_LEFT) 
+			. str_pad('(' . $netfood . ')',10, ' ', STR_PAD_LEFT); //Text for screen
 
-	
-	out(str_pad($c->turns,3) . ' Turns - ' . $str . $event);
+	global $api_calls;
+	out(str_pad($c->turns,3) . ' Turns - ' . $str . str_pad($event,5) . ' API: ' . $api_calls);
+	$api_calls = 0;
 }
 
 function event_text($event){
 	switch($event){
-		case 'earthquake':	return 'earthquake';
+		case 'earthquake':	return '--EQ--';
 		case 'oilboom':		return '+OIL';
 		case 'oilfire':		return '-oil';
 		case 'foodboom':	return '+FOOD';
@@ -318,6 +325,7 @@ function event_text($event){
 		case 'indybad':		return '-indy';
 		case 'pciboom':		return '+PCI';
 		case 'pcibad':		return '-pci';
+		default:			return null;
 	}
 }
 

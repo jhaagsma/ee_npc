@@ -10,7 +10,7 @@ only the real bot logic in the ee_npc file...
 ///DATA HANDLING AND OUTPUT
 
 function ee($function,$parameter_array = array()){
-	global $base_url, $username, $ai_key, $serv, $cnum;
+	global $base_url, $username, $ai_key, $serv, $cnum, $api_calls;
 	
 	$init = $parameter_array;
 	$parameter_array['ai_key'] = $ai_key;
@@ -31,6 +31,8 @@ function ee($function,$parameter_array = array()){
 	$server_output = curl_exec($ch);
 
 	curl_close($ch);
+	
+	$api_calls++;
 
 	$return = handle_output($server_output,$function);
 	if($return === false)
