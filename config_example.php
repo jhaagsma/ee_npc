@@ -10,5 +10,5 @@ $config = array(
 	'username' => 'your-username-here',
 	'base_url' => 'http://www.earthempires.com/api',	//Don't change this unless qz tells you to =D it needs to end in /api either way
 	'server' => 'ai',		//don't change this
-	'turnsleep'=>500000,	//don't get too ridiculously fast; 500000 is half a second
+	'turnsleep'=>500000	//don't get too ridiculously fast; 500000 is half a second
 );
