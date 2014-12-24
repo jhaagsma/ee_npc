@@ -384,6 +384,9 @@ function buy_on_pm(&$c,$units = array()){
 	$result = ee('pm',array('buy' => $units));
 	if(!isset($result->cost)){
 		out("Failed to buy units on PM; money={$c->money}");
+		out("UPDATE EVERYTHING");
+		$c = get_advisor();	//UPDATE EVERYTHING
+		out("refresh money={$c->money}");
 		return $result;
 	}
 	
