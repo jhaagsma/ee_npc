@@ -220,6 +220,7 @@ function defend_self(&$c,$reserve_cash){
 		
 		buy_private_below_dpnw($c, $dpnw, $spend);
 		$dpnw += 4;
+		$c = get_advisor();	//UPDATE EVERYTHING
 		$spend = $c->money - $reserve_cash;
 		$nlg = nlg($c);
 	}
