@@ -20,58 +20,101 @@ function destock($server,$cnum){
 		out("Ran out of goods?");	//Text for screen
 }
 
-function buy_public_below_dpnw(&$c,$dpnw){
+function buy_public_below_dpnw(&$c,$dpnw, $money = null){
+	//out("Stage 1");
 	$market_info = get_market_info();
 	//out_data($market_info);
+	if(!$money || $money < 0){
+		$money = $c->money;
+		$reserve = 0;
+	}
+	else
+		$reserve = $c->money - $money;
 	
 	$tr_price = round($dpnw*0.5/((100+$c->g_tax)/100));
 	$j_price = $tu_price = round($dpnw*0.6/((100+$c->g_tax)/100));
 	$ta_price = round($dpnw*2/((100+$c->g_tax)/100));
 
 	if($market_info->buy_price->m_tr != null && $market_info->available->m_tr > 0){
-		while($market_info->buy_price->m_tr <= $tr_price && $c->money > $tr_price){
-			$result = buy_public($c,array('m_tr' => floor($c->money/ceil($tr_price*(100+$c->g_tax)/100))),array('m_tr' => $tr_price));	//Buy troops!
+		//out("Stage 1.1");
+		while($market_info->buy_price->m_tr <= $tr_price && $money > $tr_price && $market_info->available->m_tr > 0){
+			//out("Stage 1.1.x");
+			$quantity = min(floor($money/ceil($market_info->buy_price->m_tr*(100+$c->g_tax)/100)),$market_info->available->m_tr);
+			$result = buy_public($c,array('m_tr' => $quantity),array('m_tr' => $market_info->buy_price->m_tr));	//Buy troops!
 			$market_info = get_market_info();
+			$money = $c->money - $reserve;
 		}
 	}
-	if($market_info->buy_price->m_j != null && $market_info->available->m_j > 0){
-		while($market_info->buy_price->m_j <= $j_price && $c->money > $j_price){
-			$result = buy_public($c,array('m_j' => floor($c->money/ceil($j_price*(100+$c->g_tax)/100))),array('m_j' => $j_price));	//Buy troops!
-			$market_info = get_market_info();
-		}
-	}
+
 	if($market_info->buy_price->m_tu != null && $market_info->available->m_tu > 0){
-		while($market_info->buy_price->m_tu <= $tr_price && $c->money > $tu_price){
-			$result = buy_public($c,array('m_tu' => floor($c->money/ceil($tu_price*(100+$c->g_tax)/100))),array('m_tu' => $tu_price));	//Buy troops!
+		//out("Stage 1.3");
+		while($market_info->buy_price->m_tu <= $tu_price && $money > $tu_price && $market_info->available->m_tu > 0){
+			//out("Stage 1.3.x");
+			$quantity = min(floor($money/ceil($market_info->buy_price->m_tu*(100+$c->g_tax)/100)),$market_info->available->m_tu);
+			$result = buy_public($c,array('m_tu' => $quantity),array('m_tu' => $market_info->buy_price->m_tu));	//Buy troops!
 			$market_info = get_market_info();
+			$money = $c->money - $reserve;
 		}
 	}
+	
 	if($market_info->buy_price->m_ta != null && $market_info->available->m_ta > 0){
-		while($market_info->buy_price->m_ta <= $tr_price && $c->money > $ta_price){
-			$result = buy_public($c,array('m_ta' => floor($c->money/ceil($ta_price*(100+$c->g_tax)/100))),array('m_ta' => $ta_price));	//Buy troops!
+		//out("Stage 1.4");
+		while($market_info->buy_price->m_ta <= $ta_price && $money > $ta_price && $market_info->available->m_ta > 0){
+			//out("Stage 1.4.x");
+			//out("Money: $money");
+			//out("Ta Price: $ta_price");
+			//out("Buy Price: {$market_info->buy_price->m_ta}");
+			$quantity = min(floor($money/ceil($market_info->buy_price->m_ta*((100+$c->g_tax)/100))),$market_info->available->m_ta);
+			//out("Quantity: $quantity");
+			//out("Available: {$market_info->available->m_ta}");
+			$result = buy_public($c,array('m_ta' => $quantity),array('m_ta' => $market_info->buy_price->m_ta));	//Buy troops!
 			$market_info = get_market_info();
+			$money = $c->money - $reserve;
+		}
+	}
+		
+	if($market_info->buy_price->m_j != null && $market_info->available->m_j > 0){
+		//out("Stage 1.2");
+		while($market_info->buy_price->m_j <= $j_price && $money > $j_price && $market_info->available->m_j > 0){
+			//out("Stage 1.2.x");
+			$quantity = min(floor($money/ceil($market_info->buy_price->m_j*(100+$c->g_tax)/100)),$market_info->available->m_j);
+			$result = buy_public($c,array('m_j' => $quantity),array('m_j' => $market_info->buy_price->m_j));	//Buy troops!
+			$market_info = get_market_info();
+			$money = $c->money - $reserve;
 		}
 	}
 }
 
-function buy_private_below_dpnw(&$c,$dpnw){
+function buy_private_below_dpnw(&$c,$dpnw, $money = null){
+	//out("Stage 2");
 	$pm_info = get_pm_info();	//get the PM info
+	
+	if(!$money){
+		$money = $c->money;
+		$reserve = 0;
+	}
+	else
+		$reserve = $c->money - $money;
 	
 	$tr_price = round($dpnw*0.5);
 	$j_price = $tu_price = round($dpnw*0.6);
 	$ta_price = round($dpnw*2);
 	
 	if($pm_info->buy_price->m_tr <= $tr_price && $pm_info->available->m_tr > 0){
-		$result = buy_on_pm($c,array('m_tr' => min(floor($c->money/$tr_price),$pm_info->available->m_tr)));
+		$result = buy_on_pm($c,array('m_tr' => min(floor($money/$pm_info->buy_price->m_tr),$pm_info->available->m_tr)));
+		$money = $c->money - $reserve;
 	}
 	if($pm_info->buy_price->m_ta <= $ta_price && $pm_info->available->m_ta > 0){
-		$result = buy_on_pm($c,array('m_ta' => min(floor($c->money/$ta_price),$pm_info->available->m_ta)));
+		$result = buy_on_pm($c,array('m_ta' => min(floor($money/$pm_info->buy_price->m_ta),$pm_info->available->m_ta)));
+		$money = $c->money - $reserve;
 	}
 	if($pm_info->buy_price->m_j <= $j_price && $pm_info->available->m_j > 0){
-		$result = buy_on_pm($c,array('m_j' => min(floor($c->money/$j_price),$pm_info->available->m_j)));
+		$result = buy_on_pm($c,array('m_j' => min(floor($money/$pm_info->buy_price->m_j),$pm_info->available->m_j)));
+		$money = $c->money - $reserve;
 	}
 	if($pm_info->buy_price->m_tu <= $tu_price && $pm_info->available->m_tu > 0){
-		$result = buy_on_pm($c,array('m_tu' => min(floor($c->money/$tu_price),$pm_info->available->m_tu)));
+		$result = buy_on_pm($c,array('m_tu' => min(floor($money/$pm_info->buy_price->m_tu),$pm_info->available->m_tu)));
+		$money = $c->money - $reserve;
 	}
 }
 
@@ -92,16 +135,21 @@ function sell_all_military(&$c,$fraction = 1){
 	return sell_on_pm($c,$sell_units);	//Sell 'em
 }
 
+function turns_of_food(&$c){
+	if($c->foodnet > 0)
+		return 1000; //POSITIVE FOOD, CAN LAST FOREVER BASICALLY
+		
+	$foodloss = -1*$c->foodnet;
+	return floor($c->food/$foodloss);
+}
 
 function food_management(&$c){ //RETURNS WHETHER TO HOLD TURNS OR NOT
-	if($c->foodnet > 0)
+	if(turns_of_food($c) >= 50)
 		return false;
 	
 	//out("food management");
 	$foodloss = -1*$c->foodnet;
 	$turns_buy = 50;
-	if($c->food > $turns_buy*$foodloss)
-		return false;
 	
 	$c = get_advisor();	//UPDATE EVERYTHING
 	$market_info = get_market_info();	//get the Public Market info
@@ -161,7 +209,29 @@ function food_management(&$c){ //RETURNS WHETHER TO HOLD TURNS OR NOT
 
 function defend_self(&$c,$reserve_cash){
 	//BUY MILITARY?
+	$spend = $c->money - $reserve_cash;
+	$nlg_target = floor(50 + $c->turns_played/10);
+	$dpnw = 280;
+	$nlg = nlg($c);
+	while($nlg < $nlg_target && $spend >= 1000 && $dpnw < 380){
+		out("Try to buy goods at $dpnw dpnw or below to reach NLG of $nlg_target from $nlg!");	//Text for screen
+		buy_public_below_dpnw($c, $dpnw, $spend);
+		$spend = $c->money - $reserve_cash;
+		
+		buy_private_below_dpnw($c, $dpnw, $spend);
+		$dpnw += 4;
+		$spend = $c->money - $reserve_cash;
+		$nlg = nlg($c);
+	}
+}
 
+function nlg(&$c){
+	switch($c->govt){
+		case 'R': $govt = 0.9;
+		case 'I': $govt = 1.25;
+		default: $govt = 1.0;
+	}
+	return floor($c->networth/($c->land*$govt));
 }
 
 

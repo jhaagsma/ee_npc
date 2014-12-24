@@ -50,6 +50,9 @@ function play_casher_strat($server){
 		if($hold)
 			break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
 		
+		if(turns_of_food($c) > 40)
+			defend_self($c,floor($c->money * 0.25)); //second param is *RESERVE* cash
+		
 		if($c->money > max($c->bpt,30)*$c->build_cost*10){ //buy_tech
 			//out("Try to buy tech?");
 			$spend = $c->money - $c->bpt*$c->build_cost*10;

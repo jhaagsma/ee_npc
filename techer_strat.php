@@ -53,6 +53,8 @@ function play_techer_strat($server){
 		if($hold)
 			break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
 		
+		if(turns_of_food($c) > 40)
+			defend_self($c,floor($c->money * 0.25)); //second param is *RESERVE* cash
 		//$main->turns = 0;				//use this to do one turn at a time
 	}
 	out("Done Playing " . TECHER . " Turns for #$cnum!");	//Text for screen
@@ -76,10 +78,8 @@ function play_techer_turn(&$c){ //c as in country!
 		return explore($c);
 	elseif($c->empty && $c->bpt < $target_bpt && $c->money > $c->build_cost) //otherwise... build one CS if we can afford it and are below our target BPT (80)
 		return build_cs(); //build 1 CS
-	elseif($c->tpt > $c->land*0.17) //tech per turn is greater than land*0.17 -- just kindof a rough "don't tech below this" rule...
+	else //otherwise, tech, obviously
 		return tech_techer($c);
-	else  //otherwise...  cash
-		return cash($c);
 }
 
 function build_techer(&$c){

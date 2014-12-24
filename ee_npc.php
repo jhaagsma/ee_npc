@@ -382,6 +382,9 @@ function change_govt(&$c,$govt){
 
 function buy_on_pm(&$c,$units = array()){
 	$result = ee('pm',array('buy' => $units));
+	if(!isset($result->cost))
+		out("Failed to buy units on PM; money={$c->money}");
+	
 	$c->money -= $result->cost;
 	$str = 'Bought ';
 	foreach($result->goods as $type => $amount){
@@ -555,14 +558,14 @@ function rand_country_name(){
 
 
 function purebell($min,$max,$std_deviation,$step=1) { //box-muller-method
-  $rand1 = (float)mt_rand()/(float)mt_getrandmax();
-  $rand2 = (float)mt_rand()/(float)mt_getrandmax();
-  $gaussian_number = sqrt(-2 * log($rand1)) * cos(2 * pi() * $rand2);
-  $mean = ($max + $min) / 2;
-  $random_number = ($gaussian_number * $std_deviation) + $mean;
-  $random_number = round($random_number / $step) * $step;
-  if($random_number < $min || $random_number > $max) {
-    $random_number = purebell($min, $max,$std_deviation);
-  }
-  return $random_number;
+	$rand1 = (float)mt_rand()/(float)mt_getrandmax();
+	$rand2 = (float)mt_rand()/(float)mt_getrandmax();
+	$gaussian_number = sqrt(-2 * log($rand1)) * cos(2 * pi() * $rand2);
+	$mean = ($max + $min) / 2;
+	$random_number = ($gaussian_number * $std_deviation) + $mean;
+	$random_number = round($random_number / $step) * $step;
+	if($random_number < $min || $random_number > $max) {
+		$random_number = purebell($min, $max,$std_deviation);
+	}
+	return $random_number;
 }

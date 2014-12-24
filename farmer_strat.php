@@ -52,9 +52,12 @@ function play_farmer_strat($server){
 			sell_on_pm($c,array('m_bu',min($c->food,-10*$c->income/$pm_info->sell_price->m_bu)));	//sell 1/4 of our military
 		}
 		
+		if(turns_of_food($c) > 40)
+			defend_self($c,floor($c->money * 0.25)); //second param is *RESERVE* cash
+		
 		if($c->money > max($c->bpt,30)*$c->build_cost*10){ //buy_tech
 			//out("Try to buy tech?");
-			$spend = $c->money - $c->bpt*$c->build_cost*10;
+			$spend = $c->money - max($c->bpt,30)*$c->build_cost*10;
 			if($c->pt_agri < 160)
 				buy_tech($c,'t_agri',$spend*1/2);
 			if($c->pt_bus < 140)
@@ -64,7 +67,7 @@ function play_farmer_strat($server){
 			
 			$c = get_advisor();	//UPDATE EVERYTHING
 			//out("Try Higher Amount!");
-			$spend = $c->money - $c->bpt*$c->build_cost*10;
+			$spend = $c->money - max($c->bpt,30)*$c->build_cost*10;
 			if($c->pt_agri < 200)
 				buy_tech($c,'t_agri',$spend*1/2);
 			if($c->pt_bus < 160)
