@@ -100,19 +100,19 @@ function buy_private_below_dpnw(&$c,$dpnw, $money = null){
 	$j_price = $tu_price = round($dpnw*0.6);
 	$ta_price = round($dpnw*2);
 	
-	if($pm_info->buy_price->m_tr <= $tr_price && $pm_info->available->m_tr > 0){
+	if($pm_info->buy_price->m_tr <= $tr_price && $pm_info->available->m_tr > 0 && $money > $pm_info->buy_price->m_tr){
 		$result = buy_on_pm($c,array('m_tr' => min(floor($money/$pm_info->buy_price->m_tr),$pm_info->available->m_tr)));
 		$money = $c->money - $reserve;
 	}
-	if($pm_info->buy_price->m_ta <= $ta_price && $pm_info->available->m_ta > 0){
+	if($pm_info->buy_price->m_ta <= $ta_price && $pm_info->available->m_ta > 0 && $money > $pm_info->buy_price->m_ta){
 		$result = buy_on_pm($c,array('m_ta' => min(floor($money/$pm_info->buy_price->m_ta),$pm_info->available->m_ta)));
 		$money = $c->money - $reserve;
 	}
-	if($pm_info->buy_price->m_j <= $j_price && $pm_info->available->m_j > 0){
+	if($pm_info->buy_price->m_j <= $j_price && $pm_info->available->m_j > 0 && $money > $pm_info->buy_price->m_j){
 		$result = buy_on_pm($c,array('m_j' => min(floor($money/$pm_info->buy_price->m_j),$pm_info->available->m_j)));
 		$money = $c->money - $reserve;
 	}
-	if($pm_info->buy_price->m_tu <= $tu_price && $pm_info->available->m_tu > 0){
+	if($pm_info->buy_price->m_tu <= $tu_price && $pm_info->available->m_tu > 0 && $money > $pm_info->buy_price->m_tu){
 		$result = buy_on_pm($c,array('m_tu' => min(floor($money/$pm_info->buy_price->m_tu),$pm_info->available->m_tu)));
 		$money = $c->money - $reserve;
 	}

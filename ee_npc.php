@@ -382,8 +382,10 @@ function change_govt(&$c,$govt){
 
 function buy_on_pm(&$c,$units = array()){
 	$result = ee('pm',array('buy' => $units));
-	if(!isset($result->cost))
+	if(!isset($result->cost)){
 		out("Failed to buy units on PM; money={$c->money}");
+		return $result;
+	}
 	
 	$c->money -= $result->cost;
 	$str = 'Bought ';
