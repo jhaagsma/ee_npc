@@ -208,6 +208,8 @@ function food_management(&$c){ //RETURNS WHETHER TO HOLD TURNS OR NOT
 }
 
 function defend_self(&$c,$reserve_cash){
+	if($c->protection)
+		return;
 	//BUY MILITARY?
 	$spend = $c->money - $reserve_cash;
 	$nlg_target = floor(50 + $c->turns_played/10);
