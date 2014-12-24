@@ -20,7 +20,7 @@ function destock($server,$cnum){
 		out("Ran out of goods?");	//Text for screen
 }
 
-function buy_public_below_dpnw(&$c,$dpnw, $money = null){
+function buy_public_below_dpnw(&$c,$dpnw, &$money = null){
 	//out("Stage 1");
 	$market_info = get_market_info();
 	//out_data($market_info);
@@ -85,11 +85,11 @@ function buy_public_below_dpnw(&$c,$dpnw, $money = null){
 	}
 }
 
-function buy_private_below_dpnw(&$c,$dpnw, $money = null){
+function buy_private_below_dpnw(&$c,$dpnw, &$money = null){
 	//out("Stage 2");
 	$pm_info = get_pm_info();	//get the PM info
 	
-	if(!$money){
+	if(!$money || $money < 0){
 		$money = $c->money;
 		$reserve = 0;
 	}
