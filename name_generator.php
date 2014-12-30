@@ -21,7 +21,7 @@ exit;
 */
 
 function rand_name(){
-	switch(3){ //rand(0,100)%7){
+	switch(rand(0,100)%7){
 		case 0: return guild_name();
 		case 1: return fantasy_name();
 		case 2: return wow_name();
