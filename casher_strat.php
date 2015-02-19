@@ -53,19 +53,21 @@ function play_casher_strat($server){
 		if(turns_of_food($c) > 40)
 			defend_self($c,floor($c->money * 0.25)); //second param is *RESERVE* cash
 		
+		global $cpref;
+		$tol = $cpref->price_tolerance; //should be between 0.5 and 1.5
 		if($c->money > max($c->bpt,30)*$c->build_cost*10){ //buy_tech
 			//out("Try to buy tech?");
 			$spend = $c->money - $c->bpt*$c->build_cost*10;
 			if($c->pt_bus < 140)
-				buy_tech($c,'t_bus',$spend*1/4);
+				buy_tech($c,'t_bus',$spend*1/4,3500*$tol);
 			if($c->pt_res < 140)
-				buy_tech($c,'t_res',$spend*1/4);
+				buy_tech($c,'t_res',$spend*1/4,3500*$tol);
 			
 			$spend = $c->money - $c->bpt*$c->build_cost*10;
 			if($c->pt_bus < 175)
-				buy_tech($c,'t_bus',$spend*1/4);
+				buy_tech($c,'t_bus',$spend*1/4,3500*$tol);
 			if($c->pt_res < 175)
-				buy_tech($c,'t_res',$spend*1/4);	
+				buy_tech($c,'t_res',$spend*1/4,3500*$tol);	
 		}
 	}
 	out("Done Playing " . CASHER . " Turns for #$cnum!");	//Text for screen

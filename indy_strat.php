@@ -47,23 +47,25 @@ function play_indy_strat($server){
 		if($hold)
 			break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
 		
+		global $cpref;
+		$tol = $cpref->price_tolerance; //should be between 0.5 and 1.5
 		if($c->money > max($c->bpt,30)*$c->build_cost*10){ //buy_tech
 			//out("Try to buy tech?");
 			$spend = $c->money - $c->bpt*$c->build_cost*10;
 			if($c->pt_agri < 140)
-				buy_tech($c,'t_indy',$spend*1/2);
+				buy_tech($c,'t_indy',$spend*1/2,3500*$tol);
 			if($c->pt_bus < 140)
-				buy_tech($c,'t_bus',$spend*1/4);
+				buy_tech($c,'t_bus',$spend*1/4,3500*$tol);
 			if($c->pt_res < 140)
-				buy_tech($c,'t_res',$spend*1/4);
+				buy_tech($c,'t_res',$spend*1/4,3500*$tol);
 			
 			$spend = $c->money - $c->bpt*$c->build_cost*10;
 			if($c->pt_agri < 150)
-				buy_tech($c,'t_agri',$spend*1/2);
+				buy_tech($c,'t_agri',$spend*1/2,3500*$tol);
 			if($c->pt_bus < 160)
-				buy_tech($c,'t_bus',$spend*1/4);
+				buy_tech($c,'t_bus',$spend*1/4,3500*$tol);
 			if($c->pt_res < 160)
-				buy_tech($c,'t_res',$spend*1/4);	
+				buy_tech($c,'t_res',$spend*1/4,3500*$tol);	
 		}
 	}
 	out("Done Playing " . INDY . " Turns for #$cnum!");	//Text for screen

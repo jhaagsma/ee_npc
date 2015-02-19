@@ -10,6 +10,15 @@ include_once('config.php');
 if(!isset($config))
 	die("Config not included successfully! Do you have config.php set up properly?");
 
+if(file_exists($config['save_settings_file'])){
+	out("Try to load saved settings");
+	global $settings;
+	$settings = json_decode(file_get_contents($config['save_settings_file']));
+	out("Successfully loaded settings!");
+}
+else
+	out("No Settings File Found");
+
 include_once('country_functions.php');
 
 include_once('rainbow_strat.php');
@@ -38,7 +47,8 @@ $api_calls = 0;
 
 out('Current Unix Time: ' . time());
 out('Entering Infinite Loop');
-$loopcount = 0;
+$sleepcount = $loopcount = 0;
+$played = true;
 while(1){
 	$server = ee('server');
 	while($server->alive_count < $server->countries_allowed){
@@ -70,22 +80,66 @@ while(1){
 		continue;								//restart the loop
 	}
 	
-	server_start_end_notification($server);
+	if($played)
+		server_start_end_notification($server);
 	
 	$countries = $server->cnum_list->alive;
-
+	$played = false;
 	foreach($countries as $cnum){
+		if(!isset($settings->$cnum)){
+			$settings->$cnum = json_decode(json_encode(array(
+								'strat'=>null,
+								'playfreq'=>null, 
+								'playrand'=>null, 
+								'lastplay'=>0, 
+								'price_tolerance'=>1.0, 
+								'def'=>1.0, 
+								'off'=>1.0, 
+								'aggro'=>1.0
+							)));
+		}
+		
+		global $cpref;
+		$cpref = $settings->$cnum;
+		
 		$mktinfo = null;
-		if($cnum%5 == 1)
-			play_farmer_strat($server,$cnum);
-		elseif($cnum%5 == 2)
-			play_techer_strat($server,$cnum);
-		elseif($cnum%5 == 3)
-			play_casher_strat($server,$cnum);
-		elseif($cnum%5 == 4)
-			play_indy_strat($server,$cnum);
-		else
-			play_rainbow_strat($server,$cnum);
+		
+		if($cpref->strat == null){
+			if($cnum%5 == 1)
+				$cpref->strat = 'F';
+			elseif($cnum%5 == 2)
+				$cpref->strat = 'T';
+			elseif($cnum%5 == 3)
+				$cpref->strat = 'C';
+			elseif($cnum%5 == 4)
+				$cpref->strat = 'I';
+			else
+				$cpref->strat = 'R';
+		}
+		if($cpref->playfreq == null){
+			$cpref->playfreq = purebell($server->turn_rate,$server->turn_rate*144,$server->turn_rate*20,$server->turn_rate);
+			$cpref->playrand = mt_rand(10,20)/10.0; //between 1.0 and 2.0
+		}
+		if($cpref->price_tolerance = 1.00){
+			$cpref->price_tolerance = purebell(0.5,1.5,0.1,0.01); //50% to 150%, 10% std dev, steps of 1%
+		}
+		
+		
+		if($cpref->lastplay + $cpref->playfreq*purebell(1/$cpref->playrand,$cpref->playrand,1,0.1) < time()){
+			switch($cpref->strat){
+				case 'F': play_farmer_strat($server,$cnum); break;
+				case 'T': play_techer_strat($server,$cnum); break;
+				case 'C': play_casher_strat($server,$cnum); break;
+				case 'I': play_indy_strat($server,$cnum); break;		
+				default: play_rainbow_strat($server,$cnum);
+			}
+			$cpref->lastplay = time();
+			out("Next Play: {$cpref->playfreq} with rand {$cpref->playrand}");
+			$played = true;
+		}
+		
+		$settings->$cnum = $cpref;
+		file_put_contents($config['save_settings_file'],json_encode($settings));
 	}
 	
 	$until_end = 50;
@@ -100,11 +154,19 @@ while(1){
 	$cnum = null;
 	$loopcount++;
 	$sleepturns = 25;
-	$sleep = min($sleepturns*$server->turn_rate,max(0,$server->reset_end - 60 - time()));
-	$sleepturns = ($sleep != $sleepturns*$server->turn_rate ? floor($sleep/$server->turn_rate) : $sleepturns);
-	out("Played 'Day' $loopcount; Sleeping for " . $sleep . " seconds ($sleepturns Turns)");
-	server_start_end_notification($server);
-	sleep($sleep); //sleep for 4 turns
+	$sleep = 10; //sleep 10s //min($sleepturns*$server->turn_rate,max(0,$server->reset_end - 60 - time())); //sleep for $sleepturns turns
+	//$sleepturns = ($sleep != $sleepturns*$server->turn_rate ? floor($sleep/$server->turn_rate) : $sleepturns);
+	//out("Played 'Day' $loopcount; Sleeping for " . $sleep . " seconds ($sleepturns Turns)");
+	if($played){
+		server_start_end_notification($server);
+		$sleepcount = 0;
+	}
+	else
+		$sleepcount++;
+	sleep($sleep); //sleep for $sleep seconds
+	echo '.';
+	if($sleepcount%25 == 0)
+		echo "\n";
 }
 done(); //done() is defined below
 
