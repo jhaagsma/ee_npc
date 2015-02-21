@@ -192,7 +192,7 @@ function playstats($countries){
 	$stddev = round(playtimes_stddev($countries));
 	out("Standard Deviation of play is: $stddev");
 	global $server;
-	if($stddev < $server->turn_rate*72 || $stddev > $server->turn_rate*200){
+	if($stddev < $server->turn_rate*72/4 || $stddev > $server->turn_rate*72*2){
 		out('Recalculating Nextplays');
 		global $settings;
 		foreach($countries as $cnum)
