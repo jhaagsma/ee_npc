@@ -191,7 +191,8 @@ function server_start_end_notification($server){
 function playstats($countries){
 	$stddev = round(playtimes_stddev($countries));
 	out("Standard Deviation of play is: $stddev");
-	if($stddev < 20000){
+	global $server;
+	if($stddev < $server->turn_rate*72){
 		out('Recalculating Nextplays');
 		global $settings;
 		foreach($countries as $cnum)
