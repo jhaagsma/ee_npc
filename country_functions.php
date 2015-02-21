@@ -39,17 +39,6 @@ function buy_public_below_dpnw(&$c,$dpnw, &$money = null){
 	$j_cost = $tu_cost = round($tu_price*((100+$c->g_tax)/100));  //THE COST OF BUYING THEM
 	$ta_cost = round($ta_price*((100+$c->g_tax)/100));  //THE COST OF BUYING THEM
 
-	if($market_info->buy_price->m_tr != null && $market_info->available->m_tr > 0){
-		//out("Stage 1.1");
-		while($market_info->buy_price->m_tr <= $tr_price && $money > $tr_cost && $market_info->available->m_tr > 0){
-			//out("Stage 1.1.x");
-			$quantity = min(floor($money/ceil($market_info->buy_price->m_tr*(100+$c->g_tax)/100)),$market_info->available->m_tr);
-			$result = buy_public($c,array('m_tr' => $quantity),array('m_tr' => $market_info->buy_price->m_tr));	//Buy troops!
-			$market_info = get_market_info();
-			$money = $c->money - $reserve;
-		}
-	}
-
 	if($market_info->buy_price->m_tu != null && $market_info->available->m_tu > 0){
 		//out("Stage 1.3");
 		while($market_info->buy_price->m_tu <= $tu_price && $money > $tu_cost && $market_info->available->m_tu > 0){
@@ -63,6 +52,25 @@ function buy_public_below_dpnw(&$c,$dpnw, &$money = null){
 			$result = buy_public($c,array('m_tu' => $quantity),array('m_tu' => $market_info->buy_price->m_tu));	//Buy troops!
 			$market_info = get_market_info();
 			$money = $c->money - $reserve;
+			if($result->bought->m_tu == 0){
+				out("Breaking@turrets");
+				break;
+			}
+		}
+	}
+	
+	if($market_info->buy_price->m_tr != null && $market_info->available->m_tr > 0){
+		//out("Stage 1.1");
+		while($market_info->buy_price->m_tr <= $tr_price && $money > $tr_cost && $market_info->available->m_tr > 0){
+			//out("Stage 1.1.x");
+			$quantity = min(floor($money/ceil($market_info->buy_price->m_tr*(100+$c->g_tax)/100)),$market_info->available->m_tr);
+			$result = buy_public($c,array('m_tr' => $quantity),array('m_tr' => $market_info->buy_price->m_tr));	//Buy troops!
+			$market_info = get_market_info();
+			$money = $c->money - $reserve;
+			if($result->bought->m_tr == 0){
+				out("Breaking@troops");
+				break;
+			}
 		}
 	}
 	
@@ -79,6 +87,10 @@ function buy_public_below_dpnw(&$c,$dpnw, &$money = null){
 			$result = buy_public($c,array('m_ta' => $quantity),array('m_ta' => $market_info->buy_price->m_ta));	//Buy troops!
 			$market_info = get_market_info();
 			$money = $c->money - $reserve;
+			if($result->bought->m_ta == 0){
+				out("Breaking@tanks");
+				break;
+			}
 		}
 	}
 		
@@ -90,6 +102,10 @@ function buy_public_below_dpnw(&$c,$dpnw, &$money = null){
 			$result = buy_public($c,array('m_j' => $quantity),array('m_j' => $market_info->buy_price->m_j));	//Buy troops!
 			$market_info = get_market_info();
 			$money = $c->money - $reserve;
+			if($result->bought->m_ta == 0){
+				out("Breaking@jets");
+				break;
+			}
 		}
 	}
 }

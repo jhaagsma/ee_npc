@@ -522,8 +522,6 @@ function buy_public(&$c,$quantity=array(),$price=array()){
 		out("Tried: " . $what);
 		out("Money: " . $c->money . " Cost: " . $cost);
 		sleep(1);
-		out("Break 2");
-		break 2;
 	}
 	
 	$str .= 'for $' .$tcost;
