@@ -49,6 +49,7 @@ out('Current Unix Time: ' . time());
 out('Entering Infinite Loop');
 $sleepcount = $loopcount = 0;
 $played = true;
+
 while(1){
 	$server = ee('server');
 	while($server->alive_count < $server->countries_allowed){
