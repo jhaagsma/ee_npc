@@ -143,7 +143,7 @@ while(1){
 			$cpref->lastplay = time();
 			$nexttime = $cpref->playfreq*purebell(1/$cpref->playrand,$cpref->playrand,1,0.1);
 			$cpref->nextplay = $cpref->lastplay + $nexttime;
-			out("Next Play in: $nexttime");
+			out("This country next plays in: $nexttime");
 			$played = true;
 		}
 		
