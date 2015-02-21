@@ -92,6 +92,7 @@ while(1){
 								'playfreq'=>null, 
 								'playrand'=>null, 
 								'lastplay'=>0, 
+								'nextplay'=>0, 
 								'price_tolerance'=>1.0, 
 								'def'=>1.0, 
 								'off'=>1.0, 
@@ -123,9 +124,11 @@ while(1){
 		if($cpref->price_tolerance = 1.00){
 			$cpref->price_tolerance = purebell(0.5,1.5,0.1,0.01); //50% to 150%, 10% std dev, steps of 1%
 		}
+		if(!isset($cpref->nextplay))
+			$cpref->nextplay = 0;
 		
 		
-		if($cpref->lastplay + $cpref->playfreq*purebell(1/$cpref->playrand,$cpref->playrand,1,0.1) < time()){
+		if($cpref->nextplay < time()){
 			switch($cpref->strat){
 				case 'F': play_farmer_strat($server,$cnum); break;
 				case 'T': play_techer_strat($server,$cnum); break;
@@ -134,7 +137,9 @@ while(1){
 				default: play_rainbow_strat($server,$cnum);
 			}
 			$cpref->lastplay = time();
-			out("Next Play: {$cpref->playfreq} with rand {$cpref->playrand}");
+			$nexttime = $cpref->playfreq*purebell(1/$cpref->playrand,$cpref->playrand,1,0.1);
+			$cpref->nextplay = $cpref->lastplay + $nexttime;
+			out("Next Play in: $nexttime");
 			$played = true;
 		}
 		
@@ -159,19 +164,38 @@ while(1){
 	//out("Played 'Day' $loopcount; Sleeping for " . $sleep . " seconds ($sleepturns Turns)");
 	if($played){
 		server_start_end_notification($server);
+		playstats($countries);
+		echo "\n";
 		$sleepcount = 0;
 	}
 	else
 		$sleepcount++;
 	sleep($sleep); //sleep for $sleep seconds
 	echo '.';
-	if($sleepcount%25 == 0)
+	if($sleepcount%25 == 0){
+		playstats($countries);
 		echo "\n";
+	}
 }
 done(); //done() is defined below
 
 function server_start_end_notification($server){
 	out("Server started " . round((time()-$server->reset_start)/3600,1) . ' hours ago and ends in ' . round(($server->reset_end-time())/3600,1) . ' hours');
+}
+
+function playstats($countries){
+	$stddev = playtimes_stddev($countries);
+	out("Standard Deviation of play is: $stddev");
+}
+
+function playtimes_stddev($countries){
+	global $settings;
+	$nextplays = array();
+	foreach($countries as $cnum)
+		if(isset($settings->$cnum->nextplay))
+			$nextplays[] = $settings->$cnum->nextplay;
+			
+	return stats_standard_deviation($nextplays);
 }
 
 
