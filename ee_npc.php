@@ -80,10 +80,14 @@ while(1){
 		continue;								//restart the loop
 	}
 	
-	if($played)
-		server_start_end_notification($server);
-	
 	$countries = $server->cnum_list->alive;
+	
+	if($played){
+		server_start_end_notification($server);
+		playstats($countries);
+		echo "\n";
+	}
+	
 	$played = false;
 	foreach($countries as $cnum){
 		if(!isset($settings->$cnum)){
@@ -184,19 +188,43 @@ function server_start_end_notification($server){
 }
 
 function playstats($countries){
-	$stddev = playtimes_stddev($countries);
+	$stddev = round(playtimes_stddev($countries));
 	out("Standard Deviation of play is: $stddev");
+	if($stddev < 20000){
+		out('Recalculating Nextplays');
+		global $settings;
+		foreach($countries as $cnum)
+			$settings->$cnum->nextplay = time() + rand(0,86400);
+		
+		$stddev = round(playtimes_stddev($countries));
+		out("Standard Deviation of play is: $stddev");
+	}
+	$nextplays = get_nexplays($countries);
+	out("Next Play in " . (min($nextplays) - time()) );
 }
 
-function playtimes_stddev($countries){
+function get_nexplays($countries){
 	global $settings;
 	$nextplays = array();
 	foreach($countries as $cnum)
 		if(isset($settings->$cnum->nextplay))
 			$nextplays[] = $settings->$cnum->nextplay;
-			
-	return stats_standard_deviation($nextplays);
+	return $nextplays;
 }
+
+function playtimes_stddev($countries){
+	$nextplays = get_nexplays($countries);
+	return sd($nextplays);
+}
+
+// Function to calculate square of value - mean
+function sd_square($x, $mean){ return pow($x - $mean,2); }
+
+function sd($array) {
+	// square root of sum of squares devided by N-1
+	return sqrt(array_sum(array_map("sd_square", $array, array_fill(0,count($array), (array_sum($array) / count($array)) ) ) ) / (count($array)-1));
+}
+
 
 
 //COUNTRY PLAYING STUFF
