@@ -169,18 +169,18 @@ while(1){
 	//out("Played 'Day' $loopcount; Sleeping for " . $sleep . " seconds ($sleepturns Turns)");
 	if($played){
 		server_start_end_notification($server);
-		playstats($countries);
-		echo "\n";
 		$sleepcount = 0;
 	}
 	else
 		$sleepcount++;
-	sleep($sleep); //sleep for $sleep seconds
-	echo '.';
+	
 	if($sleepcount%25 == 0){
 		playstats($countries);
 		echo "\n";
 	}
+	
+	sleep($sleep); //sleep for $sleep seconds
+	echo '.';
 }
 done(); //done() is defined below
 
