@@ -221,6 +221,8 @@ function playtimes_stddev($countries){
 function sd_square($x, $mean){ return pow($x - $mean,2); }
 
 function sd($array) {
+	if(!$array)
+		return 0;
 	// square root of sum of squares devided by N-1
 	return sqrt(array_sum(array_map("sd_square", $array, array_fill(0,count($array), (array_sum($array) / count($array)) ) ) ) / (count($array)-1));
 }
