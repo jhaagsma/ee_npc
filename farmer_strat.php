@@ -49,7 +49,7 @@ function play_farmer_strat($server){
 
 		if($c->income < 0 && $c->money < -5*$c->income){ //sell 1/4 of all military on PM
 			out("Almost out of money! Sell 10 turns of income in food!");	//Text for screen
-			sell_on_pm($c,array('m_bu',min($c->food,-10*$c->income/$pm_info->sell_price->m_bu)));	//sell 1/4 of our military
+			sell_on_pm($c,array('m_bu',min($c->food,floor(-10*$c->income/$pm_info->sell_price->m_bu))));	//sell 1/4 of our military
 		}
 		
 		if(turns_of_food($c) > 40)
