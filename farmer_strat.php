@@ -52,7 +52,7 @@ function play_farmer_strat($server){
 			sell_on_pm($c,array('m_bu',min($c->food,floor(-10*$c->income/$pm_info->sell_price->m_bu))));	//sell 1/4 of our military
 		}
 		
-		if(turns_of_food($c) > 40)
+		if(turns_of_food($c) > 40 && $c->money > $c->networth *2) // 40 turns of food, and more than 2x nw in cash on hand
 			defend_self($c,floor($c->money * 0.25)); //second param is *RESERVE* cash
 		
 		global $cpref;

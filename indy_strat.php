@@ -61,7 +61,7 @@ function play_indy_strat($server){
 			
 			$spend = $c->money - $c->bpt*$c->build_cost*10;
 			if($c->pt_agri < 150)
-				buy_tech($c,'t_agri',$spend*1/2,3500*$tol);
+				buy_tech($c,'t_indy',$spend*1/2,3500*$tol);
 			if($c->pt_bus < 160)
 				buy_tech($c,'t_bus',$spend*1/4,3500*$tol);
 			if($c->pt_res < 160)

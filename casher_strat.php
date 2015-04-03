@@ -50,8 +50,8 @@ function play_casher_strat($server){
 		if($hold)
 			break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
 		
-		if(turns_of_food($c) > 40)
-			defend_self($c,floor($c->money * 0.25)); //second param is *RESERVE* cash
+		if(turns_of_food($c) > 40 && $c->money > $c->networth *2) // 40 turns of food, and more than 2x nw in cash on hand
+			defend_self($c,floor($c->money * 0.10)); //second param is *RESERVE* cash
 		
 		global $cpref;
 		$tol = $cpref->price_tolerance; //should be between 0.5 and 1.5

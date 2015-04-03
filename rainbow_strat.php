@@ -52,7 +52,7 @@ function play_rainbow_strat($server){
 		if($hold)
 			break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
 			
-		if(turns_of_food($c) > 40)
+		if(turns_of_food($c) > 40 && $c->money > $c->networth *2) // 40 turns of food, and more than 2x nw in cash on hand
 			defend_self($c,floor($c->money * 0.25)); //money is *RESERVE* cash
 		
 		if($c->income < 0 && total_military($c) > 30){ //sell 1/4 of all military on PM
