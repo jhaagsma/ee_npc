@@ -195,7 +195,7 @@ function defend_self(&$c,$reserve_cash){
 		return;
 	//BUY MILITARY?
 	$spend = $c->money - $reserve_cash;
-	$nlg_target = floor(50 + $c->turns_played/10);
+	$nlg_target = floor(80 + $c->turns_played/7);
 	$dpnw = 280;
 	$nlg = nlg($c);
 	while($nlg < $nlg_target && $spend >= 1000 && $dpnw < 380){
