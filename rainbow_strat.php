@@ -87,7 +87,9 @@ function play_rainbow_turn(&$c){ //c as in country!
 function sellextrafood_rainbow(&$c){
 	//out("Lots of food, let's sell some!");
 	$c = get_advisor();	//UPDATE EVERYTHING
-	return sell_public($c,array('m_bu' => round(max($pm_info->sell_price->m_bu,$market_info->buy_price->m_bu)*rand(80,120)/100)));	//Sell food!
+	$quantity = round(max($pm_info->sell_price->m_bu,$market_info->buy_price->m_bu)*rand(80,120)/100);
+	if($quantity > 5000)
+		return sell_public($c,array('m_bu' => $quantity));	//Sell food!
 }
 
 function build_rainbow(&$c){
