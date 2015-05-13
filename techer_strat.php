@@ -123,7 +123,7 @@ function sell_max_tech($c){
 	$nogoods_stddev = 1500;
 	$nogoods_step = 1;
 	$rmax = 1.30; //percent
-	$rmin = 0.70; //percent
+	$rmin = 0.80; //percent
 	$rstep = 0.01;
 	$rstddev = 0.10;
 	$price = array();

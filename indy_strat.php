@@ -121,7 +121,7 @@ function sell_max_military(&$c){
 	}
 	
 	$rmax = 1.30; //percent
-	$rmin = 0.70; //percent
+	$rmin = 0.75; //percent
 	$rstep = 0.01;
 	$rstddev = 0.10;
 	$price = array();
