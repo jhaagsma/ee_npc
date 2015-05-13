@@ -220,4 +220,8 @@ function nlg(&$c){
 	return floor($c->networth/($c->land*$govt));
 }
 
-
+/*
+function food_pm_price($c){
+	$pm_info = get_pm_info();
+	return $pm_info->sell_price->m_bu;
+}*/

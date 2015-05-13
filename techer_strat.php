@@ -172,7 +172,7 @@ function tech_techer(&$c){
 	$weap	= rand(0,20);
 	$indy	= rand(5,300);
 	$spy	= rand(0,10);
-	$sdi	= rand(2,15);	
+	$sdi	= rand(2,150);	
 	$tot	= $mil + $med + $bus + $res + $agri + $war + $ms + $weap + $indy + $spy + $sdi;
 	
 	$left = $c->tpt;

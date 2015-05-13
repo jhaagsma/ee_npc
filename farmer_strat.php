@@ -49,7 +49,7 @@ function play_farmer_strat($server){
 
 		if($c->income < 0 && $c->money < -5*$c->income){ //sell 1/4 of all military on PM
 			out("Almost out of money! Sell 10 turns of income in food!");	//Text for screen
-			sell_on_pm($c,array('m_bu',min($c->food,floor(-10*$c->income/$pm_info->sell_price->m_bu))));	//sell 1/4 of our military
+			sell_on_pm($c,array('m_bu' => min($c->food,floor(-10*$c->income/$pm_info->sell_price->m_bu))));	//sell 1/4 of our military
 		}
 		
 		if(turns_of_food($c) > 40 && $c->money > $c->networth *2) // 40 turns of food, and more than 2x nw in cash on hand
@@ -109,11 +109,14 @@ function sellextrafood_farmer(&$c){
 	$quantity = array('m_bu' => $c->food); //sell it all! :)
 	
 	$rmax = 1.30; //percent
-	$rmin = 0.70; //percent
+	$rmin = 0.80; //percent
 	$rstep = 0.01;
 	$rstddev = 0.10;
 	$price = round(max($pm_info->sell_price->m_bu,$market_info->buy_price->m_bu*purebell($rmin,$rmax,$rstddev,$rstep)));
 	$price = array('m_bu' => $price);
+
+	if($price <= 29*(100+$c->g_tax)/100)
+		return sell_on_pm($c,array('m_bu' => $quantity)); ///		sell_on_pm($c,array('m_bu' => $c->food));	//Sell 'em
 	
 	return sell_public($c,$quantity,$price);	//Sell food!
 }
