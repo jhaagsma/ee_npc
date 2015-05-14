@@ -1,7 +1,7 @@
 <?php
 
 function play_rainbow_strat($server){
-	global $cnum;
+	global $cnum,$market_info;
 	out("Playing " . RAINBOW . " turns for #$cnum");
 	$main = get_main();	//get the basic stats
 	//out_data($main);			//output the main data
@@ -85,6 +85,7 @@ function play_rainbow_turn(&$c){ //c as in country!
 }
 
 function sellextrafood_rainbow(&$c){
+	global $market_info;
 	//out("Lots of food, let's sell some!");
 	$c = get_advisor();	//UPDATE EVERYTHING
 	$quantity = round(max($pm_info->sell_price->m_bu,$market_info->buy_price->m_bu)*rand(80,120)/100);
