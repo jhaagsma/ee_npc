@@ -2,7 +2,7 @@
 
 
 function play_farmer_strat($server){
-	global $cnum;
+	global $cnum,$market_info,$pm_info;
 	out("Playing " . FARMER . " turns for #$cnum");
 	$main = get_main();	//get the basic stats
 	//out_data($main);			//output the main data
@@ -102,20 +102,22 @@ function play_farmer_turn(&$c){ //c as in country!
 
 function sellextrafood_farmer(&$c){
 	//out("Lots of food, let's sell some!");
-	$pm_info = get_pm_info();
-	$market_info = get_market_info();	//get the Public Market info
+	//$pm_info = get_pm_info();
+	//$market_info = get_market_info();	//get the Public Market info
+	global $market_info,$pm_info;
+
 	$c = get_advisor();	//UPDATE EVERYTHING
 	
 	$quantity = array('m_bu' => $c->food); //sell it all! :)
 	
-	$rmax = 1.30; //percent
-	$rmin = 0.80; //percent
+	$rmax = 1.10; //percent
+	$rmin = 0.95; //percent
 	$rstep = 0.01;
 	$rstddev = 0.10;
 	$price = round(max($pm_info->sell_price->m_bu,$market_info->buy_price->m_bu*purebell($rmin,$rmax,$rstddev,$rstep)));
 	$price = array('m_bu' => $price);
 
-	if($price <= 29*(100+$c->g_tax)/100)
+	if($price <= max(29,$pm_info->sell_price->m_bu/(100-$c->g_tax)))
 		return sell_on_pm($c,array('m_bu' => $quantity)); ///		sell_on_pm($c,array('m_bu' => $c->food));	//Sell 'em
 	
 	return sell_public($c,$quantity,$price);	//Sell food!
