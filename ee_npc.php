@@ -305,6 +305,8 @@ function getNextPlays($countries)
     foreach ($countries as $cnum) {
         if (isset($settings->$cnum->nextplay)) {
             $nextplays[] = $settings->$cnum->nextplay;
+        } else {
+            $settings->$cnum->nextplay = 0; //set it?
         }
     }
     return $nextplays;
@@ -328,7 +330,10 @@ function lastPlays($countries)
     foreach ($countries as $cnum) {
         if (isset($settings->$cnum->lastplay)) {
             $lastplays[] = $settings->$cnum->lastplay;
+        } else {
+            $settings->$cnum->lastplay = 0; //set it?
         }
+
     }
     return $lastplays;
 }
