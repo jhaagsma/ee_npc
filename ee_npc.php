@@ -8,6 +8,7 @@ error_reporting(E_ALL); //SET THE ERROR REPORTING TO REPORT EVERYTHING
 out('Error Reporting and Timezone Set');
 include_once('config.php');
 if (!isset($config)) {
+    //ADD IN AUTOGENERATE CONFIG HERE?
     die("Config not included successfully! Do you have config.php set up properly?");
 }
 
@@ -77,7 +78,7 @@ while (1) {
         continue;                               //return to the beginning of the loop
     } elseif ($server->reset_end < time()) {
         out("Reset is over!");
-        sleep(300);                                 //wait 5 mins, see if new one is created
+        sleep(300);                             //wait 5 mins, see if new one is created
         continue;                               //restart the loop
     }
     
@@ -202,9 +203,11 @@ function server_start_end_notification($server)
 
 function playstats($countries)
 {
-    $stddev = round(playtimes_stddev($countries));
-    out("Standard Deviation of play is: $stddev");
+    govtStats($countries);
+
     global $server;
+    $stddev = round(playtimes_stddev($countries));
+    out("Standard Deviation of play is: $stddev; (" . round($stddev/$server->turn_rate) . ' turns)');
     if ($stddev < $server->turn_rate*72/4 || $stddev > $server->turn_rate*72) {
         out('Recalculating Nextplays');
         global $settings;
@@ -215,11 +218,82 @@ function playstats($countries)
         $stddev = round(playtimes_stddev($countries));
         out("Standard Deviation of play is: $stddev");
     }
-    $nextplays = get_nexplays($countries);
-    out("Next Play in " . (min($nextplays) - time()));
+    $old = oldestPlay($countries);
+    $onum = getLastPlayCNUM($countries, $old);
+    $old = time() - $old;
+    out("Oldest Play: " . $old . "s ago by #$onum (" . round($old/$server->turn_rate) . " turns)");
+
+    $next = getNextPlays($countries);
+    $xnum = getNextPlayCNUM($countries, min($next));
+    $next = min($next) - time();
+    out("Next Play in " . $next . 's: #' . $xnum);
+
+    $furthest = getFurthestNext($countries);
+    $fnum = getNextPlayCNUM($countries, $furthest);
+    $furthest = $furthest - time();
+    out("Furthest Play in " . $furthest . "s for #$fnum (" . round($furthest/$server->turn_rate) . " turns)");
+
 }
 
-function get_nexplays($countries)
+function govtStats($countries)
+{
+    $cashers = $indies = $farmers = $techers = $oilers = $rainbows = 0;
+    global $settings;
+    foreach ($countries as $cnum) {
+        switch ($settings->$cnum->strat) {
+            case 'C':
+                $cashers++;
+                break;
+            case 'F':
+                $farmers++;
+                break;
+            case 'I':
+                $indies++;
+                break;
+            case 'T':
+                $techers++;
+                break;
+            case 'R':
+                $rainbows++;
+                break;
+            case 'O':
+                $oilers++;
+                break;
+        }
+    }
+    out("\033[1mTotal Countries:\033[0m " . count($countries));
+    out(FARMER . ': ' . $farmers);
+    out(INDY . ': ' . $indies);
+    out(CASHER . ': ' . $cashers);
+    out(TECHER . ': ' . $techers);
+    out(RAINBOW . ': ' . $rainbows);
+    out(OILER . ': ' . $oilers);
+
+}
+
+function getNextPlayCNUM($countries, $time = 0)
+{
+    global $settings;
+    foreach ($countries as $cnum) {
+        if (isset($settings->$cnum->nextplay) && $settings->$cnum->nextplay == $time) {
+            return $cnum;
+        }
+    }
+    return null;
+}
+
+function getLastPlayCNUM($countries, $time = 0)
+{
+    global $settings;
+    foreach ($countries as $cnum) {
+        if (isset($settings->$cnum->lastplay) && $settings->$cnum->lastplay == $time) {
+            return $cnum;
+        }
+    }
+    return null;
+}
+
+function getNextPlays($countries)
 {
     global $settings;
     $nextplays = array();
@@ -231,13 +305,33 @@ function get_nexplays($countries)
     return $nextplays;
 }
 
+function getFurthestNext($countries)
+{
+    return max(getNextPlays($countries));
+}
+
 function playtimes_stddev($countries)
 {
-    $nextplays = get_nexplays($countries);
+    $nextplays = getNextPlays($countries);
     return sd($nextplays);
 }
 
+function lastPlays($countries)
+{
+    global $settings;
+    $lastplays = array();
+    foreach ($countries as $cnum) {
+        if (isset($settings->$cnum->lastplay)) {
+            $lastplays[] = $settings->$cnum->lastplay;
+        }
+    }
+    return $lastplays;
+}
 
+function oldestPlay($countries)
+{
+    return min(lastPlays($countries));
+}
 
 function sd($array)
 {
