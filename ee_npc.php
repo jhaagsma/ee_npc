@@ -111,18 +111,8 @@ while (1) {
         
         $mktinfo = null;
         
-        if ($cpref->strat == null) {
-            if ($cnum%5 == 1) {
-                $cpref->strat = 'F';
-            } elseif ($cnum%5 == 2) {
-                $cpref->strat = 'T';
-            } elseif ($cnum%5 == 3) {
-                $cpref->strat = 'C';
-            } elseif ($cnum%5 == 4) {
-                $cpref->strat = 'I';
-            } else {
-                $cpref->strat = 'R';
-            }
+        if ($cpref->strat == null || !isset($cpref->strat)) {
+            $cpref->strat = pickStrat($cnum);
         }
         if ($cpref->playfreq == null) {
             $cpref->playfreq = purebell($server->turn_rate, $server->turn_rate*144, $server->turn_rate*20, $server->turn_rate);
@@ -201,6 +191,21 @@ function server_start_end_notification($server)
     out("Server started " . round((time()-$server->reset_start)/3600, 1) . ' hours ago and ends in ' . round(($server->reset_end-time())/3600, 1) . ' hours');
 }
 
+function pickStrat($cnum)
+{
+    if ($cnum%5 == 1) {
+        return 'F';
+    } elseif ($cnum%5 == 2) {
+        return 'T';
+    } elseif ($cnum%5 == 3) {
+        return 'C';
+    } elseif ($cnum%5 == 4) {
+        return 'I';
+    } else {
+        return 'R';
+    }
+}
+
 function playstats($countries)
 {
     govtStats($countries);
@@ -243,8 +248,13 @@ function playstats($countries)
 function govtStats($countries)
 {
     $cashers = $indies = $farmers = $techers = $oilers = $rainbows = 0;
+    $undef = 0;
     global $settings;
     foreach ($countries as $cnum) {
+        if (!isset($settings->$cnum->strat)) {
+            out("Picking a new strat for #$cnum");
+            $settings->$cnum->strat = pickStrat($cnum);
+        }
         switch ($settings->$cnum->strat) {
             case 'C':
                 $cashers++;
