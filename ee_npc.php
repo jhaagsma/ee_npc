@@ -224,6 +224,7 @@ function playstats($countries)
     out("Oldest Play: " . $old . "s ago by #$onum (" . round($old/$server->turn_rate) . " turns)");
     if ($old > 86400 * 2) {
         out("OLD TOO FAR: RESET NEXTPLAY");
+        global $settings;
         $settings->$onum->nextplay = 0;
     }
 
