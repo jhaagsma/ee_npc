@@ -1,5 +1,4 @@
-<?php
-
+<?php namespace EENPC;
 
 function play_farmer_strat($server)
 {

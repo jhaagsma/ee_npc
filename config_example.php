@@ -1,4 +1,5 @@
-<?php
+<?php namespace EENPC;
+
 /*
 You must copy or save this file to config.php
 and fill out your AI API KEY and your USERNAME

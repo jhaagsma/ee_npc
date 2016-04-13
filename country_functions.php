@@ -1,5 +1,4 @@
-<?php
-
+<?php namespace EENPC;
 
 function destock($server, $cnum)
 {
@@ -227,8 +226,10 @@ function nlg(&$c)
     switch ($c->govt) {
         case 'R':
             $govt = 0.9;
+            break;
         case 'I':
             $govt = 1.25;
+            break;
         default:
             $govt = 1.0;
     }

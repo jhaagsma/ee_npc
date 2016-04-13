@@ -1,4 +1,4 @@
-<?php
+<?php namespace EENPC;
 
 $techlist = array('t_mil','t_med','t_bus','t_res','t_agri','t_war','t_ms','t_weap','t_indy','t_spy','t_sdi');
 

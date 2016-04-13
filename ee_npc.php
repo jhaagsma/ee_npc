@@ -1,5 +1,5 @@
 #!/usr/bin/php
-<?php
+<?php namespace EENPC;
 
 include_once('communication.php');
 out('STARTING UP BOT');// out() is defined below
@@ -237,11 +237,7 @@ function playtimes_stddev($countries)
     return sd($nextplays);
 }
 
-// Function to calculate square of value - mean
-function sd_square($x, $mean)
-{
-    return pow($x - $mean, 2);
-}
+
 
 function sd($array)
 {
@@ -249,7 +245,19 @@ function sd($array)
         return 0;
     }
     // square root of sum of squares devided by N-1
-    return sqrt(array_sum(array_map("sd_square", $array, array_fill(0, count($array), (array_sum($array) / count($array))))) / (count($array)-1));
+    //frikkin namespaces making my life difficult
+    return sqrt(
+        array_sum(
+            array_map(
+                // ANONYMOUS Function to calculate square of value - mean
+                function ($x, $mean) {
+                    return pow($x - $mean, 2);
+                },
+                $array,
+                array_fill(0, count($array), (array_sum($array) / count($array)))
+            )
+        ) / (count($array)-1)
+    );
 }
 
 

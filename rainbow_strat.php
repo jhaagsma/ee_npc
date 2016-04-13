@@ -1,4 +1,4 @@
-<?php
+<?php namespace EENPC;
 
 function play_rainbow_strat($server)
 {

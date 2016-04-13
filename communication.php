@@ -1,4 +1,4 @@
-<?php
+<?php namespace EENPC;
 
 include_once('colors.php');
 $colors = new Colors();

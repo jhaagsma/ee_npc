@@ -1,4 +1,4 @@
-<?php
+<?php namespace EENPC;
 
 //NOTE THIS WAS BORROWED FROM http://online-generator.com/ AND CONVERTED TO PHP
 

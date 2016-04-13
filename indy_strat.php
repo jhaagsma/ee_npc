@@ -1,4 +1,5 @@
-<?php
+<?php namespace EENPC;
+
 $military_list = array('m_tr','m_j','m_tu','m_ta');
 
 function play_indy_strat($server)
