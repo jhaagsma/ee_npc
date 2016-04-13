@@ -111,10 +111,10 @@ while (1) {
         
         $mktinfo = null;
         
-        if ($cpref->strat == null || !isset($cpref->strat)) {
+        if (!isset($cpref->strat) || $cpref->strat == null) {
             $cpref->strat = pickStrat($cnum);
         }
-        if ($cpref->playfreq == null) {
+        if (!isset($cpref->playfreq) || $cpref->playfreq == null) {
             $cpref->playfreq = purebell($server->turn_rate, $server->turn_rate*144, $server->turn_rate*20, $server->turn_rate);
             $cpref->playrand = mt_rand(10, 20)/10.0; //between 1.0 and 2.0
         }
