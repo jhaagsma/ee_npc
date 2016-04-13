@@ -222,6 +222,10 @@ function playstats($countries)
     $onum = getLastPlayCNUM($countries, $old);
     $old = time() - $old;
     out("Oldest Play: " . $old . "s ago by #$onum (" . round($old/$server->turn_rate) . " turns)");
+    if ($old > 86400 * 2) {
+        out("OLD TOO FAR: RESET NEXTPLAY");
+        $settings->$onum->nextplay = 0;
+    }
 
     $next = getNextPlays($countries);
     $xnum = getNextPlayCNUM($countries, min($next));
