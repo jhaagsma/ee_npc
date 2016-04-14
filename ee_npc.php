@@ -276,6 +276,8 @@ function govtStats($countries)
                 break;
         }
     }
+    global $serv;
+    out("\033[1mServer:\033[0m " . $serv);
     out("\033[1mTotal Countries:\033[0m " . count($countries));
     out(FARMER . ': ' . $farmers);
     out(INDY . ': ' . $indies);
