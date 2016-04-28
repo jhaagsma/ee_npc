@@ -21,7 +21,7 @@ function destock($server, $cnum)
     }
 }
 
-function buy_public_below_dpnw(&$c, $dpnw, &$money = null)
+function buy_public_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false)
 {
     //out("Stage 1");
     $market_info = get_market_info();
@@ -42,7 +42,10 @@ function buy_public_below_dpnw(&$c, $dpnw, &$money = null)
     $ta_cost = round($ta_price*((100+$c->g_tax)/100));  //THE COST OF BUYING THEM
 
     $units = array('tu','tr','ta','j');
-    
+    if ($shuffle) {
+        shuffle($untis);
+    }
+
     foreach ($units as $subunit) {
         $unit = 'm_' . $subunit;
         if ($market_info->buy_price->$unit != null && $market_info->available->$unit > 0) {
@@ -70,7 +73,7 @@ function buy_public_below_dpnw(&$c, $dpnw, &$money = null)
     
 }
 
-function buy_private_below_dpnw(&$c, $dpnw, &$money = null)
+function buy_private_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false)
 {
     //out("Stage 2");
     $pm_info = get_pm_info();   //get the PM info
@@ -86,23 +89,30 @@ function buy_private_below_dpnw(&$c, $dpnw, &$money = null)
     $j_price = $tu_price = round($dpnw*0.6);
     $ta_price = round($dpnw*2);
     
-    if ($pm_info->buy_price->m_tr <= $tr_price && $pm_info->available->m_tr > 0 && $money > $pm_info->buy_price->m_tr) {
-        $result = buy_on_pm($c, array('m_tr' => min(floor($money/$pm_info->buy_price->m_tr), $pm_info->available->m_tr)));
-        $money = $c->money - $reserve;
+    $order = array(1,2,3,4);
+    if ($shuffle) {
+        shuffle($order);
     }
-    if ($pm_info->buy_price->m_ta <= $ta_price && $pm_info->available->m_ta > 0 && $money > $pm_info->buy_price->m_ta) {
-        $result = buy_on_pm($c, array('m_ta' => min(floor($money/$pm_info->buy_price->m_ta), $pm_info->available->m_ta)));
-        $money = $c->money - $reserve;
-    }
-    if ($pm_info->buy_price->m_j <= $j_price && $pm_info->available->m_j > 0 && $money > $pm_info->buy_price->m_j) {
-        $result = buy_on_pm($c, array('m_j' => min(floor($money/$pm_info->buy_price->m_j), $pm_info->available->m_j)));
-        $money = $c->money - $reserve;
-    }
-    if ($pm_info->buy_price->m_tu <= $tu_price && $pm_info->available->m_tu > 0 && $money > $pm_info->buy_price->m_tu) {
-        $result = buy_on_pm($c, array('m_tu' => min(floor($money/$pm_info->buy_price->m_tu), $pm_info->available->m_tu)));
-        $money = $c->money - $reserve;
+
+
+    foreach ($order as $o) {
+        if ($o == 1 && $pm_info->buy_price->m_tr <= $tr_price && $pm_info->available->m_tr > 0 && $money > $pm_info->buy_price->m_tr) {
+            $result = buy_on_pm($c, array('m_tr' => min(floor($money/$pm_info->buy_price->m_tr), $pm_info->available->m_tr)));
+            $money = $c->money - $reserve;
+        } elseif ($o == 2 && $pm_info->buy_price->m_ta <= $ta_price && $pm_info->available->m_ta > 0 && $money > $pm_info->buy_price->m_ta) {
+            $result = buy_on_pm($c, array('m_ta' => min(floor($money/$pm_info->buy_price->m_ta), $pm_info->available->m_ta)));
+            $money = $c->money - $reserve;
+        } elseif ($o == 3 && $pm_info->buy_price->m_j <= $j_price && $pm_info->available->m_j > 0 && $money > $pm_info->buy_price->m_j) {
+            $result = buy_on_pm($c, array('m_j' => min(floor($money/$pm_info->buy_price->m_j), $pm_info->available->m_j)));
+            $money = $c->money - $reserve;
+        } elseif ($o == 4 && $pm_info->buy_price->m_tu <= $tu_price && $pm_info->available->m_tu > 0 && $money > $pm_info->buy_price->m_tu) {
+            $result = buy_on_pm($c, array('m_tu' => min(floor($money/$pm_info->buy_price->m_tu), $pm_info->available->m_tu)));
+            $money = $c->money - $reserve;
+        }
     }
 }
+
+
 
 
 function sell_all_military(&$c, $fraction = 1)
@@ -206,15 +216,15 @@ function defend_self(&$c, $reserve_cash)
     //BUY MILITARY?
     $spend = $c->money - $reserve_cash;
     $nlg_target = floor(80 + $c->turns_played/7);
-    $dpnw = 280;
+    $dpnw = 300;
     $nlg = nlg($c);
     while ($nlg < $nlg_target && $spend >= 1000 && $dpnw < 380) {
         out("Try to buy goods at $dpnw dpnw or below to reach NLG of $nlg_target from $nlg!");  //Text for screen
-        buy_public_below_dpnw($c, $dpnw, $spend);
+        buy_public_below_dpnw($c, $dpnw, $spend, true);
         $spend = $c->money - $reserve_cash;
         
-        buy_private_below_dpnw($c, $dpnw, $spend);
-        $dpnw += 4;
+        buy_private_below_dpnw($c, $dpnw, $spend, true);
+        $dpnw += 20;
         $c = get_advisor();     //UPDATE EVERYTHING
         $spend = $c->money - $reserve_cash;
         $nlg = nlg($c);

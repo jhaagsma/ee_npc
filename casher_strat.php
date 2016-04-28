@@ -57,7 +57,7 @@ function play_casher_strat($server)
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
         }
         if (turns_of_food($c) > 40 && $c->money > $c->networth *2) { // 40 turns of food, and more than 2x nw in cash on hand
-            defend_self($c, floor($c->money * 0.10)); //second param is *RESERVE* cash
+            defend_self($c, floor($c->money * 0.70)); //second param is *RESERVE* cash
         }
         global $cpref;
         $tol = $cpref->price_tolerance; //should be between 0.5 and 1.5
@@ -78,6 +78,9 @@ function play_casher_strat($server)
             if ($c->pt_res < 175) {
                 buy_tech($c, 't_res', $spend*1/4, 3500*$tol);
             }
+        }
+        if (turns_of_food($c) > 40 && $c->money > $c->networth *2) { // 40 turns of food, and more than 2x nw in cash on hand
+            defend_self($c, floor($c->money * 0.10)); //second param is *RESERVE* cash
         }
     }
     out("Done Playing " . CASHER . " Turns for #$cnum!");   //Text for screen
