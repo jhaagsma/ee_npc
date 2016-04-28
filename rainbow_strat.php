@@ -83,18 +83,19 @@ function play_rainbow_strat($server)
 function play_rainbow_turn(&$c)
 {
  //c as in country!
+    $targetBPT = 65;
     global $turnsleep;
     usleep($turnsleep);
     //out($main->turns . ' turns left');
     if ($c->empty > $c->bpt && $c->money > $c->bpt*$c->build_cost) {  //build a full BPT if we can afford it
         return build_rainbow($c);
-    } elseif ($c->turns >= 4 && $c->empty >= 4 && $c->bpt < 80 && $c->money > 4*$c->build_cost && ($c->foodnet > 0 || $c->food > $c->foodnet*-5)) { //otherwise... build 4CS if we can afford it and are below our target BPT (80)
+    } elseif ($c->turns >= 4 && $c->empty >= 4 && $c->bpt < $targetBPT && $c->money > 4*$c->build_cost && ($c->foodnet > 0 || $c->food > $c->foodnet*-5)) { //otherwise... build 4CS if we can afford it and are below our target BPT (80)
         return build_cs(4); //build 4 CS
     } elseif ($c->tpt > $c->land*0.17 && rand(0, 10) > 5) { //tech per turn is greater than land*0.17 -- just kindof a rough "don't tech below this" rule...
         return tech_rainbow($c);
     } elseif ($c->empty < $c->land/2) {  //otherwise... explore if we can
         return explore($c);
-    } elseif ($c->empty && $c->bpt < 80 && $c->money > $c->build_cost) { //otherwise... build one CS if we can afford it and are below our target BPT (80)
+    } elseif ($c->empty && $c->bpt < $targetBPT && $c->money > $c->build_cost) { //otherwise... build one CS if we can afford it and are below our target BPT (80)
         return build_cs(); //build 1 CS
     } elseif ($c->foodnet > 0 && $c->foodnet > 3*$c->foodcon && $c->food > 30*$c->foodnet && $c->food > 7000) {
         return sellextrafood_rainbow($c);

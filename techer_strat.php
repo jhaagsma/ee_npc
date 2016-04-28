@@ -70,7 +70,7 @@ function play_techer_strat($server)
 function play_techer_turn(&$c)
 {
  //c as in country!
-    $target_bpt = 50;
+    $target_bpt = 65;
     global $turnsleep, $mktinfo;
     $mktinfo = null;
     usleep($turnsleep);
@@ -81,7 +81,7 @@ function play_techer_turn(&$c)
         return build_techer($c);
     } elseif ($c->turns >= 4 && $c->empty >= 4 && $c->bpt < $target_bpt && $c->money > 4*$c->build_cost && ($c->foodnet > 0 || $c->food > $c->foodnet*-5)) { //otherwise... build 4CS if we can afford it and are below our target BPT (80)
         return build_cs(4); //build 4 CS
-    } elseif ($c->tpt > $c->land*0.17*1.3 && rand(0, 10) > 3) { //tech per turn is greater than land*0.17 -- just kindof a rough "don't tech below this" rule...
+    } elseif ($c->tpt > $c->land*0.17*1.3 && rand(0, 10) > 6) { //tech per turn is greater than land*0.17 -- just kindof a rough "don't tech below this" rule...
         return tech_techer($c);
     } elseif ($c->empty < $c->land/2 && ($c->land < 5000 || rand(0, 10) > 8)) {   //otherwise... explore if we can, for the early bits of the set
         return explore($c);

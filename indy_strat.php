@@ -88,7 +88,7 @@ function play_indy_strat($server)
 function play_indy_turn(&$c)
 {
  //c as in country!
-    $target_bpt = 50;
+    $target_bpt = 65;
     global $turnsleep;
     usleep($turnsleep);
     //out($main->turns . ' turns left');

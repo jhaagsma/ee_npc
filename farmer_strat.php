@@ -103,7 +103,7 @@ function play_farmer_strat($server)
 function play_farmer_turn(&$c)
 {
  //c as in country!
-    $target_bpt = 50;
+    $target_bpt = 65;
     global $turnsleep;
     usleep($turnsleep);
     //out($main->turns . ' turns left');
