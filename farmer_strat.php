@@ -61,7 +61,7 @@ function play_farmer_strat($server)
         }
         
         if (turns_of_food($c) > 40 && $c->money > $c->networth *2) { // 40 turns of food, and more than 2x nw in cash on hand
-            defend_self($c, floor($c->money * 0.75)); //second param is *RESERVE* cash
+            defend_self($c, floor($c->money * 0.85)); //second param is *RESERVE* cash
         }
 
         global $cpref;

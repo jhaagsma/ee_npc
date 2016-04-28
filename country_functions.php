@@ -220,7 +220,7 @@ function defend_self(&$c, $reserve_cash)
     $nlg = nlg($c);
     while ($nlg < $nlg_target && $spend >= 1000 && $dpnw < 380) {
         out("Try to buy goods at $dpnw dpnw or below to reach NLG of $nlg_target from $nlg!");  //Text for screen
-        buy_public_below_dpnw($c, $dpnw, $spend, true);
+        buy_public_below_dpnw($c, $dpnw, $spend, false);
         $spend = $c->money - $reserve_cash;
         
         buy_private_below_dpnw($c, $dpnw, $spend, true);
