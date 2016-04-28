@@ -43,7 +43,7 @@ function buy_public_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false)
 
     $units = array('tu','tr','ta','j');
     if ($shuffle) {
-        shuffle($untis);
+        shuffle($units);
     }
 
     foreach ($units as $subunit) {
