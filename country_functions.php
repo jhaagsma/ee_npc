@@ -63,7 +63,7 @@ function buy_public_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false)
                 $result = buy_public($c, array($unit => $quantity), array($unit => $market_info->buy_price->$unit));  //Buy troops!
                 $market_info = get_market_info();
                 $money = $c->money - $reserve;
-                if ($result->bought->$unit->quantity == 0) {
+                if (!isset($result->bought->$unit->quantity) || $result->bought->$unit->quantity == 0) {
                     out("Breaking@$unit");
                     break;
                 }
