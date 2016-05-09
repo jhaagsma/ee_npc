@@ -43,6 +43,8 @@ function play_farmer_strat($server)
             $c = get_advisor();     //UPDATE EVERYTHING
             continue;
         }
+
+
         update_c($c, $result);
         if (!$c->turns%5) {                   //Grab new copy every 5 turns
             $main = get_main();         //Grab a fresh copy of the main stats //we probably don't need to do this *EVERY* turn
@@ -54,6 +56,16 @@ function play_farmer_strat($server)
             $c->turns = $main->turns;       //This is the only one we really *HAVE* to check for
         }
         
+        $hold = money_management($c);
+        if ($hold) {
+            break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
+        }
+
+        $hold = food_management($c);
+        if ($hold) {
+            break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
+        }
+
 
         if ($c->income < 0 && $c->money < -5*$c->income) { //sell 1/4 of all military on PM
             out("Almost out of money! Sell 10 turns of income in food!");   //Text for screen

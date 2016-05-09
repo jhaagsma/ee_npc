@@ -141,6 +141,34 @@ function turns_of_food(&$c)
     return floor($c->food/$foodloss);
 }
 
+function turns_of_money(&$c)
+{
+    if ($c->income > 0) {
+        return 1000; //POSITIVE INCOME
+    }
+    $incomeloss = -1*$c->income;
+    return floor($c->money/$incomeloss);
+}
+
+function money_management(&$c)
+{
+    if (turns_of_money($c) > 10) {
+        return false;
+    }
+
+    $foodloss = -1*$c->foodnet;
+
+    if ($c->turns_stored < 30 && total_cansell_military($c) > 7500) {
+        out("Selling max military, and holding turns.");
+        sell_max_military($c);
+        return true;
+    } else {
+        out("We have stored turns or can't sell on public; sell 1/10 of military.");   //Text for screen
+        sell_all_military($c, 1/10);
+    }
+
+}
+
 function food_management(&$c)
 {
  //RETURNS WHETHER TO HOLD TURNS OR NOT
@@ -251,3 +279,50 @@ function food_pm_price($c){
 	$pm_info = get_pm_info();
 	return $pm_info->sell_price->m_bu;
 }*/
+
+
+function sell_max_military(&$c)
+{
+    $c = get_advisor();     //UPDATE EVERYTHING
+    $market_info = get_market_info();   //get the Public Market info
+    $pm_info = get_pm_info();   //get the PM info
+    global $military_list;
+
+    $quantity = array();
+    foreach ($military_list as $unit) {
+        $quantity[$unit] = can_sell_mil($c, $unit);
+    }
+
+    $rmax = 1.30; //percent
+    $rmin = 0.75; //percent
+    $rstep = 0.01;
+    $rstddev = 0.10;
+    $price = array();
+    foreach ($quantity as $key => $q) {
+        if ($q == 0) {
+            $price[$key] = 0;
+        } elseif ($market_info->buy_price->$key == null || $market_info->buy_price->$key == 0) {
+            $price[$key] = floor($pm_info->buy_price->$key * purebell(0.5, 1.0, 0.3, 0.01));
+        } else {
+            $price[$key] = min($pm_info->buy_price->$key, floor($market_info->buy_price->$key * purebell($rmin, $rmax, $rstddev, $rstep)));
+        }
+    }
+    /*
+    $randomup = 120; //percent
+    $randomdown = 80; //percent
+    $price = array(
+        'm_tr'=>    $quantity['m_tr'] == 0 ? 0 : floor(($market_info->buy_price->m_tr != null ? $market_info->buy_price->m_tr : rand(110,144))*(rand($randomdown,$randomup)/100)),
+        'm_j' =>    $quantity['m_j']  == 0 ? 0 : floor(($market_info->buy_price->m_j  != null ? $market_info->buy_price->m_j  : rand(110,192))*(rand($randomdown,$randomup)/100)),
+        'm_tu'=>    $quantity['m_tu'] == 0 ? 0 : floor(($market_info->buy_price->m_tu != null ? $market_info->buy_price->m_tu : rand(110,200))*(rand($randomdown,$randomup)/100)),
+        'm_ta'=>    $quantity['m_ta'] == 0 ? 0 : floor(($market_info->buy_price->m_ta != null ? $market_info->buy_price->m_ta : rand(400,560))*(rand($randomdown,$randomup)/100))
+    );*/
+
+    $result = sell_public($c, $quantity, $price);
+    if ($result == 'QUANTITY_MORE_THAN_CAN_SELL') {
+        out("TRIED TO SELL MORE THAN WE CAN!?!");
+        $c = get_advisor();     //UPDATE EVERYTHING
+    }
+    global $mktinfo;
+    $mktinfo = null;
+    return $result;
+}

@@ -52,13 +52,16 @@ function play_casher_strat($server)
         }
         
 
+        $hold = money_management($c);
+        if ($hold) {
+            break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
+        }
+
         $hold = food_management($c);
         if ($hold) {
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
         }
-        if (turns_of_food($c) > 40 && $c->money > $c->networth *2) { // 40 turns of food, and more than 2x nw in cash on hand
-            defend_self($c, floor($c->money * 0.85)); //second param is *RESERVE* cash
-        }
+
         global $cpref;
         $tol = $cpref->price_tolerance; //should be between 0.5 and 1.5
         if ($c->money > max($c->bpt, 30)*$c->build_cost*10) { //buy_tech

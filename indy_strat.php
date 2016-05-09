@@ -29,10 +29,10 @@ function play_indy_strat($server)
     //out_data($pm_info);		//output the PM info
     $market_info = get_market_info();   //get the Public Market info
     //out_data($market_info);		//output the PM info
-    
+
     $owned_on_market_info = get_owned_on_market_info();     //find out what we have on the market
     //out_data($owned_on_market_info);	//output the Owned on Public Market info
-    
+
     while ($c->turns > 0) {
         //$result = buy_public($c,array('m_bu'=>100),array('m_bu'=>400));
         $result = play_indy_turn($c);
@@ -50,7 +50,12 @@ function play_indy_strat($server)
             $c->pop = $main->pop;           //might as well use the newest numbers?
             $c->turns = $main->turns;       //This is the only one we really *HAVE* to check for
         }
-        
+
+        $hold = money_management($c);
+        if ($hold) {
+            break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
+        }
+
         $hold = food_management($c);
         if ($hold) {
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
@@ -69,7 +74,7 @@ function play_indy_strat($server)
             if ($c->pt_res < 140) {
                 buy_tech($c, 't_res', $spend*1/4, 3500*$tol);
             }
-            
+
             $spend = $c->money - $c->bpt*$c->build_cost*10;
             if ($c->pt_agri < 150) {
                 buy_tech($c, 't_indy', $spend*1/2, 3500*$tol);
@@ -125,52 +130,6 @@ function sellmilitarytime(&$c)
     if ($om < $sum/6) {
         return true;
     }
-    
-    return false;
-}
 
-function sell_max_military(&$c)
-{
-    $c = get_advisor();     //UPDATE EVERYTHING
-    $market_info = get_market_info();   //get the Public Market info
-    $pm_info = get_pm_info();   //get the PM info
-    global $military_list;
-    
-    $quantity = array();
-    foreach ($military_list as $unit) {
-        $quantity[$unit] = can_sell_mil($c, $unit);
-    }
-    
-    $rmax = 1.30; //percent
-    $rmin = 0.75; //percent
-    $rstep = 0.01;
-    $rstddev = 0.10;
-    $price = array();
-    foreach ($quantity as $key => $q) {
-        if ($q == 0) {
-            $price[$key] = 0;
-        } elseif ($market_info->buy_price->$key == null || $market_info->buy_price->$key == 0) {
-            $price[$key] = floor($pm_info->buy_price->$key * purebell(0.5, 1.0, 0.3, 0.01));
-        } else {
-            $price[$key] = min($pm_info->buy_price->$key, floor($market_info->buy_price->$key * purebell($rmin, $rmax, $rstddev, $rstep)));
-        }
-    }
-    /*
-	$randomup = 120; //percent
-	$randomdown = 80; //percent
-	$price = array(
-		'm_tr'=>	$quantity['m_tr'] == 0 ? 0 : floor(($market_info->buy_price->m_tr != null ? $market_info->buy_price->m_tr : rand(110,144))*(rand($randomdown,$randomup)/100)),
-		'm_j' =>	$quantity['m_j']  == 0 ? 0 : floor(($market_info->buy_price->m_j  != null ? $market_info->buy_price->m_j  : rand(110,192))*(rand($randomdown,$randomup)/100)),
-		'm_tu'=>	$quantity['m_tu'] == 0 ? 0 : floor(($market_info->buy_price->m_tu != null ? $market_info->buy_price->m_tu : rand(110,200))*(rand($randomdown,$randomup)/100)),
-		'm_ta'=>	$quantity['m_ta'] == 0 ? 0 : floor(($market_info->buy_price->m_ta != null ? $market_info->buy_price->m_ta : rand(400,560))*(rand($randomdown,$randomup)/100))
-	);*/
-    
-    $result = sell_public($c, $quantity, $price);
-    if ($result == 'QUANTITY_MORE_THAN_CAN_SELL') {
-        out("TRIED TO SELL MORE THAN WE CAN!?!");
-        $c = get_advisor();     //UPDATE EVERYTHING
-    }
-    global $mktinfo;
-    $mktinfo = null;
-    return $result;
+    return false;
 }

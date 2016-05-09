@@ -63,7 +63,12 @@ function play_rainbow_strat($server)
             $c->pop = $main->pop;           //might as well use the newest numbers?
             $c->turns = $main->turns;       //This is the only one we really *HAVE* to check for
         }
-        
+
+        $hold = money_management($c);
+        if ($hold) {
+            break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
+        }
+
         $hold = food_management($c);
         if ($hold) {
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
@@ -74,6 +79,35 @@ function play_rainbow_strat($server)
         if ($c->income < 0 && total_military($c) > 30) { //sell 1/4 of all military on PM
             out("Losing money! Sell 1/4 of our military!");     //Text for screen
             sell_all_military($c, 1/4);  //sell 1/4 of our military
+        }
+
+        global $cpref;
+        $tol = $cpref->price_tolerance; //should be between 0.5 and 1.5
+        if ($c->money > max($c->bpt, 30)*$c->build_cost*10) { //buy_tech
+            //out("Try to buy tech?");
+            $spend = $c->money - max($c->bpt, 30)*$c->build_cost*10;
+            if ($c->pt_agri < 160) {
+                buy_tech($c, 't_agri', $spend*1/2, 3500*$tol);
+            }
+            if ($c->pt_bus < 140) {
+                buy_tech($c, 't_bus', $spend*1/4, 3500*$tol);
+            }
+            if ($c->pt_res < 140) {
+                buy_tech($c, 't_res', $spend*1/4, 3500*$tol);
+            }
+            
+            $c = get_advisor();     //UPDATE EVERYTHING
+            //out("Try Higher Amount!");
+            $spend = $c->money - max($c->bpt, 30)*$c->build_cost*10;
+            if ($c->pt_agri < 200) {
+                buy_tech($c, 't_agri', $spend*1/2, 3500*$tol);
+            }
+            if ($c->pt_bus < 160) {
+                buy_tech($c, 't_bus', $spend*1/4, 3500*$tol);
+            }
+            if ($c->pt_res < 160) {
+                buy_tech($c, 't_res', $spend*1/4, 3500*$tol);
+            }
         }
         //$main->turns = 0;				//use this to do one turn at a time
     }

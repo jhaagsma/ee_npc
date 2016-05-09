@@ -10,7 +10,7 @@ function play_techer_strat($server)
     //out_data($main);			//output the main data
     $c = get_advisor();     //c as in country! (get the advisor)
     out($c->turns . ' turns left');
-    
+
     if ($c->govt == 'M') {
         $rand = rand(0, 100);
         switch ($rand) {
@@ -25,17 +25,17 @@ function play_techer_strat($server)
                 break;
         }
     }
-    
+
     //out_data($c);				//ouput the advisor data
     $pm_info = get_pm_info();   //get the PM info
     //out_data($pm_info);		//output the PM info
     $market_info = get_market_info();   //get the Public Market info
     //out_data($market_info);		//output the PM info
-    
+
     $owned_on_market_info = get_owned_on_market_info();     //find out what we have on the market
     //out_data($owned_on_market_info); //output the owned on market info
-    
-    
+
+
     while ($c->turns > 0) {
         //$result = buy_public($c,array('m_bu'=>100),array('m_bu'=>400));
         $result = play_techer_turn($c);
@@ -53,13 +53,19 @@ function play_techer_strat($server)
             $c->pop = $main->pop;           //might as well use the newest numbers?
             $c->turns = $main->turns;       //This is the only one we really *HAVE* to check for
         }
-        
-        
-        
+
+
+
+        $hold = money_management($c);
+        if ($hold) {
+            break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
+        }
+
         $hold = food_management($c);
         if ($hold) {
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
         }
+
         if (turns_of_food($c) > 40 && $c->money > $c->networth *2) { // 40 turns of food, and more than 2x nw in cash on hand
             defend_self($c, floor($c->money * 0.25)); //second param is *RESERVE* cash
         }        //$main->turns = 0;				//use this to do one turn at a time
@@ -108,7 +114,7 @@ function selltechtime($c)
     if ($om < $sum/6) {
         return true;
     }
-    
+
     return false;
 }
 
@@ -116,7 +122,7 @@ function sell_max_tech($c)
 {
     $c = get_advisor();     //UPDATE EVERYTHING
     $market_info = get_market_info();   //get the Public Market info
-    
+
     $quantity = array(
         'mil'=>can_sell_tech($c, 't_mil'),
         'med'=>can_sell_tech($c, 't_med'),
@@ -130,8 +136,8 @@ function sell_max_tech($c)
         'spy'=>can_sell_tech($c, 't_spy'),
         'sdi'=>can_sell_tech($c, 't_sdi')
     );
-    
-    
+
+
     $nogoods_high = 9000;
     $nogoods_low = 2000;
     $nogoods_stddev = 1500;
@@ -150,7 +156,7 @@ function sell_max_tech($c)
             $price[$key] = floor(purebell($nogoods_low, $nogoods_high, $nogoods_stddev, $nogoods_step));
         }
     }
-    
+
     /*$price = array(
 		'mil'=>	$quantity['mil'] == 0 ? 0 : floor(($market_info->buy_price->mil != null ? $market_info->buy_price->mil : rand($nogoods_low,$nogoods_high))*(rand($randomdown,$randomup)/100)),
 		'med'=>	$quantity['med'] == 0 ? 0 : floor(($market_info->buy_price->med != null ? $market_info->buy_price->med : rand($nogoods_low,$nogoods_high))*(rand($randomdown,$randomup)/100)),
@@ -162,9 +168,9 @@ function sell_max_tech($c)
 		'weap'=>$quantity['weap'] == 0 ? 0 : floor(($market_info->buy_price->weap != null ? $market_info->buy_price->weap : rand($nogoods_low,$nogoods_high))*(rand($randomdown,$randomup)/100)),
 		'indy'=>$quantity['indy'] == 0 ? 0 : floor(($market_info->buy_price->indy != null ? $market_info->buy_price->indy : rand($nogoods_low,$nogoods_high))*(rand($randomdown,$randomup)/100)),
 		'spy'=>	$quantity['spy'] == 0 ? 0 : floor(($market_info->buy_price->spy != null ? $market_info->buy_price->spy : rand($nogoods_low,$nogoods_high))*(rand($randomdown,$randomup)/100)),
-		'sdi'=>	$quantity['sdi'] == 0 ? 0 : floor(($market_info->buy_price->sdi != null ? $market_info->buy_price->sdi : rand($nogoods_low,$nogoods_high))*(rand($randomdown,$randomup)/100))		
+		'sdi'=>	$quantity['sdi'] == 0 ? 0 : floor(($market_info->buy_price->sdi != null ? $market_info->buy_price->sdi : rand($nogoods_low,$nogoods_high))*(rand($randomdown,$randomup)/100))
 	);*/
-    
+
     $result = sell_public($c, $quantity, $price);
     if ($result == 'QUANTITY_MORE_THAN_CAN_SELL') {
         out("TRIED TO SELL MORE THAN WE CAN!?!");
@@ -190,7 +196,7 @@ function tech_techer(&$c)
     $spy    = rand(0, 10);
     $sdi    = rand(2, 150);
     $tot    = $mil + $med + $bus + $res + $agri + $war + $ms + $weap + $indy + $spy + $sdi;
-    
+
     $left = $c->tpt;
     $left -= $mil = min($left, floor($c->tpt*($mil/$tot)));
     $left -= $med = min($left, floor($c->tpt*($med/$tot)));
@@ -206,6 +212,6 @@ function tech_techer(&$c)
     if ($left != 0) {
         die("What the hell?");
     }
-    
+
     return tech(array('mil'=>$mil,'med'=>$med,'bus'=>$bus,'res'=>$res,'agri'=>$agri,'war'=>$war,'ms'=>$ms,'weap'=>$weap,'indy'=>$indy,'spy'=>$spy,'sdi'=>$sdi));
 }
