@@ -70,8 +70,8 @@ while (1) {
             sleep($sleeptime);
         }
     }
-    
-    
+
+
     if ($server->reset_start > time()) {
         out("Reset has not started!");          //done() is defined below
         sleep(max(300, time()-$server->reset_start));        //sleep until the reset starts
@@ -81,15 +81,15 @@ while (1) {
         sleep(300);                             //wait 5 mins, see if new one is created
         continue;                               //restart the loop
     }
-    
+
     $countries = $server->cnum_list->alive;
-    
+
     if ($played) {
         server_start_end_notification($server);
         playstats($countries);
         echo "\n";
     }
-    
+
     $played = false;
     foreach ($countries as $cnum) {
         if (!isset($settings->$cnum)) {
@@ -105,12 +105,12 @@ while (1) {
                                 'aggro'=>1.0
                             )));
         }
-        
+
         global $cpref;
         $cpref = $settings->$cnum;
-        
+
         $mktinfo = null;
-        
+
         if (!isset($cpref->strat) || $cpref->strat == null) {
             $cpref->strat = pickStrat($cnum);
         }
@@ -124,8 +124,8 @@ while (1) {
         if (!isset($cpref->nextplay)) {
             $cpref->nextplay = 0;
         }
-        
-        
+
+
         if ($cpref->nextplay < time()) {
             switch ($cpref->strat) {
                 case 'F':
@@ -149,11 +149,11 @@ while (1) {
             out("This country next plays in: $nexttime");
             $played = true;
         }
-        
+
         $settings->$cnum = $cpref;
         file_put_contents($config['save_settings_file'], json_encode($settings));
     }
-    
+
     $until_end = 50;
     if ($server->reset_end - $server->turn_rate * $until_end - time() < 0) {
         foreach ($countries as $cnum) {
@@ -175,12 +175,12 @@ while (1) {
     } else {
         $sleepcount++;
     }
-    
+
     if ($sleepcount%25 == 0) {
         playstats($countries);
         echo "\n";
     }
-    
+
     sleep($sleep); //sleep for $sleep seconds
     echo '.';
 }
@@ -219,7 +219,7 @@ function playstats($countries)
         foreach ($countries as $cnum) {
             $settings->$cnum->nextplay = time() + rand(0, $server->turn_rate*72);
         }
-        
+
         $stddev = round(playtimes_stddev($countries));
         out("Standard Deviation of play is: $stddev");
     }
@@ -345,7 +345,6 @@ function lastPlays($countries)
         } else {
             $settings->$cnum->lastplay = 0; //set it?
         }
-
     }
     return $lastplays;
 }
@@ -436,7 +435,7 @@ function total_cansell_tech($c)
     foreach ($techlist as $tech) {
         $cansell += can_sell_tech($c, $tech);
     }
-    
+
     //out("CANSELL TECH: $cansell");
     return $cansell;
 }
@@ -448,7 +447,7 @@ function total_cansell_military($c)
     foreach ($military_list as $mil) {
         $cansell += can_sell_mil($c, $mil);
     }
-    
+
     //out("CANSELL TECH: $cansell");
     return $cansell;
 }
@@ -468,7 +467,7 @@ function can_sell_mil(&$c, $mil = 'm_tr')
     $onmarket = onmarket($mil);
     $tot = $c->$mil + $onmarket;
     $sell = floor($tot/4) - $onmarket;
-    
+
     return $sell > 5000 ? $sell : 0;
 }
 
@@ -532,7 +531,7 @@ function update_c(&$c, $result)
     } elseif (isset($result->sell)) {
         $str = "Put goods on market";
     }
-    
+
     $event = null; //Text for screen
     $netmoney = $netfood = 0;
     foreach ($result->turns as $num => $turn) {         //update stuff based on what happened this turn
@@ -545,11 +544,10 @@ function update_c(&$c, $result)
         $c->m_ta    += floor(isset($turn->tanksproduced)    ? $turn->tanksproduced : 0);    //the turn doesn't *always* return these things, so have to check if they exist, and add 0 if they don't
         $c->m_spy   += floor(isset($turn->spiesproduced)    ? $turn->spiesproduced : 0);    //the turn doesn't *always* return these things, so have to check if they exist, and add 0 if they don't
         $c->turns--;
-        
+
         //out_data($turn);
 
         if (isset($turn->event)) {
-
             if ($turn->event == 'earthquake') {   //if an earthquake happens...
                 out("Earthquake destroyed {$turn->earthquake} Buildings! Update Advisor");                          //Text for screen
                 $c = get_advisor();                                             //update the advisor, because we no longer no what infromation is valid
@@ -574,9 +572,9 @@ function update_c(&$c, $result)
     }
     $c->money += $netmoney;
     $c->food += $netfood;
-    
-    $netfood = ($netfood > 0 ? '+' . $netfood : $netfood);          //Text formatting (adding a + if it is positive; - will be there if it's negative already)
-    $netmoney = ($netmoney > 0 ? '+' . $netmoney : $netmoney);      //Text formatting (adding a + if it is positive; - will be there if it's negative already)
+
+    $netfood = ($netfood > 0 ? '+' . $netfood : ($netfood*-30 > $c->food ? $colors->getColoredString($netfood, "red") : $netfood));          //Text formatting (adding a + if it is positive; - will be there if it's negative already)
+    $netmoney = ($netmoney > 0 ? '+' . $netmoney : ($netmoney*-30 > $c->money ? $colors->getColoredString($netmoney, "red") : $netmoney));      //Text formatting (adding a + if it is positive; - will be there if it's negative already)
     $str = str_pad($str, 26)
             . str_pad($explain, 12)
             . str_pad('$' . $c->money, 16, ' ', STR_PAD_LEFT)
@@ -692,7 +690,7 @@ function buy_on_pm(&$c, $units = array())
         out("refresh money={$c->money}");
         return $result;
     }
-    
+
     $c->money -= $result->cost;
     $str = 'Bought ';
     foreach ($result->goods as $type => $amount) {
@@ -701,7 +699,7 @@ function buy_on_pm(&$c, $units = array())
         } elseif ($type == 'm_oil') {
             $type = 'oil';
         }
-                    
+
         $c->$type += $amount;
         $str .= $amount . ' ' . $type . ', ';
     }
@@ -722,7 +720,7 @@ function sell_on_pm(&$c, $units = array())
         } elseif ($type == 'm_oil') {
             $type = 'oil';
         }
-        
+
         $c->$type -= $amount;
         $str .= $amount . ' ' . $type . ', ';
     }
@@ -746,18 +744,19 @@ function buy_public(&$c, $quantity = array(), $price = array())
         } elseif (in_array($ttype, $techlist)) {
             $type = $ttype;
         }
-        
+
         $c->$type += $details->quantity;
         $c->money -= $details->cost;
         $tcost += $details->cost;
         $str .= $details->quantity . ' ' . $type . ', ';
     }
+
     $nothing = false;
     if ($str == 'Bought ') {
         $str .= 'nothing ';
         $nothing = true;
-        
     }
+
     if ($nothing) {
         $what = null;
         $cost = 0;
@@ -769,7 +768,7 @@ function buy_public(&$c, $quantity = array(), $price = array())
         out("Money: " . $c->money . " Cost: " . $cost);
         sleep(1);
     }
-    
+
     $str .= 'for $' .$tcost;
     out($str);
     return $result;
@@ -778,7 +777,7 @@ function buy_public(&$c, $quantity = array(), $price = array())
 function sell_public(&$c, $quantity = array(), $price = array(), $tonm = array())
 {
     //out_data($c);
-    
+
     /*$str = 'Try selling ';
 	foreach($quantity as $type => $q){
 		if($q == 0)
@@ -818,7 +817,7 @@ function sell_public(&$c, $quantity = array(), $price = array(), $tonm = array()
             } elseif (in_array($ttype, $techlist)) {
                 $type = $ttype;
             }
-            
+
             //$c->$omtype += $details->quantity;
             $c->$type -= $details->quantity;
             $str .= $details->quantity . ' ' . $type . ' @ ' . $details->price . ', ';
@@ -827,7 +826,7 @@ function sell_public(&$c, $quantity = array(), $price = array(), $tonm = array()
     if ($str == 'Put ') {
         $str .= 'nothing on market.';
     }
-    
+
     out($str);
     //sleep(1);
     return $result;
