@@ -573,6 +573,7 @@ function update_c(&$c, $result)
     $c->money += $netmoney;
     $c->food += $netfood;
 
+    global $colors;
     $netfood = ($netfood > 0 ? '+' . $netfood : ($netfood*-30 > $c->food ? $colors->getColoredString($netfood, "red") : $netfood));          //Text formatting (adding a + if it is positive; - will be there if it's negative already)
     $netmoney = ($netmoney > 0 ? '+' . $netmoney : ($netmoney*-30 > $c->money ? $colors->getColoredString($netmoney, "red") : $netmoney));      //Text formatting (adding a + if it is positive; - will be there if it's negative already)
     $str = str_pad($str, 26)
