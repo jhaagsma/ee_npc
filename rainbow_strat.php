@@ -140,9 +140,18 @@ function play_rainbow_turn(&$c)
 
 function sellextrafood_rainbow(&$c)
 {
-    global $market_info;
+    global $market_info, $pm_info;
+
     //out("Lots of food, let's sell some!");
     $c = get_advisor();     //UPDATE EVERYTHING
+    if (!is_object($pm_info->sell_price)) {
+        $pm_info = get_pm_info();   //get the PM info
+    }
+
+    if (!is_object($market_info->buy_price)) {
+        $market_info = get_market_info();   //get the Public Market info
+    }
+
     $quantity = round(max($pm_info->sell_price->m_bu, $market_info->buy_price->m_bu)*rand(80, 120)/100);
     if ($quantity > 5000 || !is_object($c)) {
         return sell_public($c, array('m_bu' => $quantity));  //Sell food!
