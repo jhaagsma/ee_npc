@@ -160,16 +160,16 @@ function money_management(&$c)
     while (turns_of_money($c) < 10) {
         $foodloss = -1*$c->foodnet;
 
-        if ($c->turns_stored < 30 && total_cansell_military($c) > 7500) {
+        if ($c->turns_stored <= 30 && total_cansell_military($c) > 7500) {
             out("Selling max military, and holding turns.");
             sell_max_military($c);
             return true;
-        } elseif ($c->turns_stored > 30) {
+        } elseif ($c->turns_stored > 30 && total_military($c) > 100) {
             out("We have stored turns or can't sell on public; sell 1/10 of military.");   //Text for screen
             sell_all_military($c, 1/10);
         } else {
-            out("Stored turns ({$c->turns_stored}), or can't sell! (".total_cansell_military($c).')');
-            return false;
+            out("Low stored turns ({$c->turns_stored}); can't sell? (".total_cansell_military($c).')');
+            return true;
         }
     }
 
