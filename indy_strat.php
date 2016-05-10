@@ -99,7 +99,7 @@ function play_indy_turn(&$c)
     //out($main->turns . ' turns left');
     if ($c->protection == 0 && total_cansell_military($c) > 7500 && sellmilitarytime($c)) {
         return sell_max_military($c);
-    } elseif ($c->empty > $c->bpt && $c->money > $c->bpt*$c->build_cost) {  //build a full BPT if we can afford it
+    } elseif ($c->empty > $c->bpt && $c->money > $c->bpt*$c->build_cost + ($c->income > 0 ? 0 : $c->income*-60)) {  //build a full BPT if we can afford it
         return build_indy($c);
     } elseif ($c->turns >= 4 && $c->empty >= 4 && $c->bpt < $target_bpt && $c->money > 4*$c->build_cost && ($c->foodnet > 0 || $c->food > $c->foodnet*-5)) { //otherwise... build 4CS if we can afford it and are below our target BPT (80)
         return build_cs(4); //build 4 CS
