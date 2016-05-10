@@ -23,7 +23,7 @@ function destock($server, $cnum)
 
 function buy_public_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false)
 {
-    //out("Stage 1");
+    out("Stage 1");
     $market_info = get_market_info();
     //out_data($market_info);
     if (!$money || $money < 0) {
@@ -32,20 +32,21 @@ function buy_public_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false)
     } else {
         $reserve = $c->money - $money;
     }
-    
+
     $tr_price = round($dpnw*0.5/((100+$c->g_tax)/100));  //THE PRICE TO BUY THEM AT
     $j_price = $tu_price = round($dpnw*0.6/((100+$c->g_tax)/100));  //THE PRICE TO BUY THEM AT
     $ta_price = round($dpnw*2/((100+$c->g_tax)/100));  //THE PRICE TO BUY THEM AT
 
-    $tr_cost = round($tr_price*((100+$c->g_tax)/100));  //THE COST OF BUYING THEM
-    $j_cost = $tu_cost = round($tu_price*((100+$c->g_tax)/100));  //THE COST OF BUYING THEM
-    $ta_cost = round($ta_price*((100+$c->g_tax)/100));  //THE COST OF BUYING THEM
+    $tr_cost =  ceil($tr_price*((100+$c->g_tax)/100));  //THE COST OF BUYING THEM
+    $j_cost = $tu_cost = ceil($tu_price*((100+$c->g_tax)/100));  //THE COST OF BUYING THEM
+    $ta_cost = ceil($ta_price*((100+$c->g_tax)/100));  //THE COST OF BUYING THEM
 
     $units = array('tu','tr','ta','j');
     if ($shuffle) {
         shuffle($units);
     }
 
+    $last = 0;
     foreach ($units as $subunit) {
         $unit = 'm_' . $subunit;
         if ($market_info->buy_price->$unit != null && $market_info->available->$unit > 0) {
@@ -58,6 +59,10 @@ function buy_public_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false)
                 //out("$subunit Price: $price");
                 //out("Buy Price: {$market_info->buy_price->$unit}");
                 $quantity = min(floor($money/ceil($market_info->buy_price->$unit*((100+$c->g_tax)/100))), $market_info->available->$unit);
+                if ($quantity == $last) {
+                    $quantity = max(0, $quantity--);
+                }
+                $last = $quantity;
                 //out("Quantity: $quantity");
                 //out("Available: {$market_info->available->$unit}");
                 $result = buy_public($c, array($unit => $quantity), array($unit => $market_info->buy_price->$unit));  //Buy troops!
@@ -70,25 +75,25 @@ function buy_public_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false)
             }
         }
     }
-    
+
 }
 
 function buy_private_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false)
 {
     //out("Stage 2");
     $pm_info = get_pm_info();   //get the PM info
-    
+
     if (!$money || $money < 0) {
         $money = $c->money;
         $reserve = 0;
     } else {
         $reserve = $c->money - $money;
     }
-    
+
     $tr_price = round($dpnw*0.5);
     $j_price = $tu_price = round($dpnw*0.6);
     $ta_price = round($dpnw*2);
-    
+
     $order = array(1,2,3,4);
     if ($shuffle) {
         shuffle($order);
@@ -134,7 +139,7 @@ function sell_all_military(&$c, $fraction = 1)
 
 function turns_of_food(&$c)
 {
-    if ($c->foodnet > 0) {
+    if ($c->foodnet >= 0) {
         return 1000; //POSITIVE FOOD, CAN LAST FOREVER BASICALLY
     }
     $foodloss = -1*$c->foodnet;
@@ -152,21 +157,23 @@ function turns_of_money(&$c)
 
 function money_management(&$c)
 {
-    if (turns_of_money($c) > 10) {
-        return false;
+    while (turns_of_money($c) < 10) {
+        $foodloss = -1*$c->foodnet;
+
+        if ($c->turns_stored < 30 && total_cansell_military($c) > 7500) {
+            out("Selling max military, and holding turns.");
+            sell_max_military($c);
+            return true;
+        } elseif ($c->turns_stored > 30) {
+            out("We have stored turns or can't sell on public; sell 1/10 of military.");   //Text for screen
+            sell_all_military($c, 1/10);
+        } else {
+            out("Stored turns ({$c->turns_stored}), or can't sell! (".total_cansell_military($c).')');
+            return false;
+        }
     }
 
-    $foodloss = -1*$c->foodnet;
-
-    if ($c->turns_stored < 30 && total_cansell_military($c) > 7500) {
-        out("Selling max military, and holding turns.");
-        sell_max_military($c);
-        return true;
-    } else {
-        out("We have stored turns or can't sell on public; sell 1/10 of military.");   //Text for screen
-        sell_all_military($c, 1/10);
-    }
-
+    return false;
 }
 
 function food_management(&$c)
@@ -175,11 +182,11 @@ function food_management(&$c)
     if (turns_of_food($c) >= 50) {
         return false;
     }
-    
+
     //out("food management");
     $foodloss = -1*$c->foodnet;
     $turns_buy = 50;
-    
+
     $c = get_advisor();     //UPDATE EVERYTHING
     $market_info = get_market_info();   //get the Public Market info
     //out_data($market_info);
@@ -197,31 +204,31 @@ function food_management(&$c)
         }
         /*else
 			out("$turns_buy: " . $c->food . ' < ' . $turns_of_food . '; $' . $c->money . ' > $' . $turns_of_food*$market_price);*/
-        
+
         $turns_buy--;
     }
     $turns_buy = min(3, max(1, $turns_buy));
     $turns_of_food = $foodloss*$turns_buy;
-    
+
     if ($c->food > $turns_of_food) {
         return false;
     }
-    
+
     //WE HAVE MONEY, WAIT FOR FOOD ON MKT
     if ($c->protection == 0 && $c->turns_stored < 30 && $c->income > $pm_info->buy_price->m_bu*$foodloss) {
         out("We make enough to buy food if we want to; hold turns for now.");   //Text for screen
         return true;
     }
-    
+
     //WAIT FOR GOODS/TECH TO SELL
     if ($c->protection == 0 && $c->turns_stored < 30 && onmarket_value() > $pm_info->buy_price->m_bu*$foodloss) {
         out("We have goods on market; hold turns for now.");    //Text for screen
         return true;
     }
-    
+
     //PUT GOODS/TECH ON MKT AS APPROPRIATE
-    
-    
+
+
     if ($c->food < $turns_of_food && $c->money > $turns_buy*$foodloss*$pm_info->buy_price->m_bu) { //losing food, less than turns_buy turns left, AND have the money to buy it
         out("Less than $turns_buy turns worth of food! (" . $c->foodnet .  "/turn) We're rich, so buy food on PM (\${$pm_info->buy_price->m_bu})!~");   //Text for screen
         $result = buy_on_pm($c, array('m_bu' => $turns_buy*$foodloss));  //Buy 3 turns of food!
@@ -232,7 +239,7 @@ function food_management(&$c)
         $c = get_advisor();     //UPDATE EVERYTHING
         return food_management($c); //RECURSION!
     }
-    
+
     return false;
 }
 
@@ -244,13 +251,13 @@ function defend_self(&$c, $reserve_cash)
     //BUY MILITARY?
     $spend = $c->money - $reserve_cash;
     $nlg_target = floor(80 + $c->turns_played/7);
-    $dpnw = 300;
+    $dpnw = 320;
     $nlg = nlg($c);
     while ($nlg < $nlg_target && $spend >= 1000 && $dpnw < 380) {
         out("Try to buy goods at $dpnw dpnw or below to reach NLG of $nlg_target from $nlg!");  //Text for screen
         buy_public_below_dpnw($c, $dpnw, $spend, false);
         $spend = $c->money - $reserve_cash;
-        
+
         buy_private_below_dpnw($c, $dpnw, $spend, true);
         $dpnw += 20;
         $c = get_advisor();     //UPDATE EVERYTHING

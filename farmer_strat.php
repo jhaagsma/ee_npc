@@ -25,17 +25,17 @@ function play_farmer_strat($server)
                 break;
         }
     }
-        
-    
+
+
     out($c->turns . ' turns left');
     $pm_info = get_pm_info();   //get the PM info
     //out_data($pm_info);		//output the PM info
     $market_info = get_market_info();   //get the Public Market info
     //out_data($market_info);		//output the PM info
-    
+
     $owned_on_market_info = get_owned_on_market_info();     //find out what we have on the market
     //out_data($owned_on_market_info);	//output the Owned on Public Market info
-    
+
     while ($c->turns > 0) {
         //$result = buy_public($c,array('m_bu'=>100),array('m_bu'=>400));
         $result = play_farmer_turn($c);
@@ -55,7 +55,7 @@ function play_farmer_strat($server)
             $c->pop = $main->pop;           //might as well use the newest numbers?
             $c->turns = $main->turns;       //This is the only one we really *HAVE* to check for
         }
-        
+
         $hold = money_management($c);
         if ($hold) {
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
@@ -70,10 +70,6 @@ function play_farmer_strat($server)
         if ($c->income < 0 && $c->money < -5*$c->income) { //sell 1/4 of all military on PM
             out("Almost out of money! Sell 10 turns of income in food!");   //Text for screen
             sell_on_pm($c, array('m_bu' => min($c->food, floor(-10*$c->income/$pm_info->sell_price->m_bu))));     //sell 1/4 of our military
-        }
-        
-        if (turns_of_food($c) > 40 && $c->money > $c->networth *2) { // 40 turns of food, and more than 2x nw in cash on hand
-            defend_self($c, floor($c->money * 0.85)); //second param is *RESERVE* cash
         }
 
         global $cpref;
@@ -90,7 +86,7 @@ function play_farmer_strat($server)
             if ($c->pt_res < 140) {
                 buy_tech($c, 't_res', $spend*1/4, 3500*$tol);
             }
-            
+
             $c = get_advisor();     //UPDATE EVERYTHING
             //out("Try Higher Amount!");
             $spend = $c->money - max($c->bpt, 30)*$c->build_cost*10;
@@ -142,9 +138,9 @@ function sellextrafood_farmer(&$c)
     global $market_info,$pm_info;
 
     $c = get_advisor();     //UPDATE EVERYTHING
-    
+
     $quantity = array('m_bu' => $c->food); //sell it all! :)
-    
+
     $rmax = 1.10; //percent
     $rmin = 0.95; //percent
     $rstep = 0.01;

@@ -574,17 +574,21 @@ function update_c(&$c, $result)
     $c->food += $netfood;
 
     global $colors;
-    $netfood = ($netfood > 0 ? '+' . $netfood : ($netfood*-30 > $c->food ? $colors->getColoredString($netfood, "red") : $netfood));          //Text formatting (adding a + if it is positive; - will be there if it's negative already)
-    $netmoney = ($netmoney > 0 ? '+' . $netmoney : ($netmoney*-30 > $c->money ? $colors->getColoredString($netmoney, "red") : $netmoney));      //Text formatting (adding a + if it is positive; - will be there if it's negative already)
+    $netfood = str_pad('('.($netfood > 0 ? '+' : null).$netfood.')', 10, ' ', STR_PAD_LEFT) ;  //Text formatting (adding a + if it is positive; - will be there if it's negative already)
+    $netmoney = str_pad('($'.($netmoney > 0 ? '+' : null).$netmoney.')', 12, ' ', STR_PAD_LEFT); //Text formatting (adding a + if it is positive; - will be there if it's negative already)
     $str = str_pad($str, 26)
             . str_pad($explain, 12)
             . str_pad('$' . $c->money, 16, ' ', STR_PAD_LEFT)
-            . str_pad('($' . $netmoney . ')', 12, ' ', STR_PAD_LEFT)
+            . $netmoney
             . str_pad($c->food . ' Bu', 12, ' ', STR_PAD_LEFT)
-            . str_pad('(' . $netfood . ')', 10, ' ', STR_PAD_LEFT); //Text for screen
+            . $netfood; //Text for screen
 
     global $api_calls;
-    out(str_pad($c->turns, 3) . ' Turns - ' . $str . ' ' .  str_pad($event, 5) . ' API: ' . $api_calls);
+    $str = str_pad($c->turns, 3) . ' Turns - ' . $str . ' ' .  str_pad($event, 5) . ' API: ' . $api_calls;
+    if ($c->money < 0 || $c->food < 0) {
+        $str = $colors->getColoredString($str, "red");
+    }
+    out($str);
     $api_calls = 0;
 }
 

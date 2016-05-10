@@ -48,7 +48,11 @@ function handle_output($server_output, $function)
     $parts = explode(':', $server_output, 2);
     //This will simply kill the script if EE returns with an error
     //This is to avoid foulups, and to simplify the code checking above
-    if (expected_result($function) && $parts[0] != expected_result($function)) {
+    if ($function == 'COUNTRY_IS_DEAD') {
+        return false;
+    } elseif ($function == 'OWNED') {
+        return false;
+    } elseif (expected_result($function) && $parts[0] != expected_result($function)) {
         out("\n\nUnexpected Result for '$function': " . $parts[0] . "\n\n");
         return false;
     } elseif (!expected_result($function)) {
@@ -93,7 +97,6 @@ function expected_result($input)
             return 'MARKET';
         case 'onmarket':
             return 'ONMARKET';
-                
         case 'buy':
             return 'BUY';
         case 'sell':
