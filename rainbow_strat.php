@@ -144,7 +144,7 @@ function sellextrafood_rainbow(&$c)
     //out("Lots of food, let's sell some!");
     $c = get_advisor();     //UPDATE EVERYTHING
     $quantity = round(max($pm_info->sell_price->m_bu, $market_info->buy_price->m_bu)*rand(80, 120)/100);
-    if ($quantity > 5000) {
+    if ($quantity > 5000 || !is_object($c)) {
         return sell_public($c, array('m_bu' => $quantity));  //Sell food!
     }
 }
