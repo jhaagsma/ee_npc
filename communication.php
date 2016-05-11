@@ -48,9 +48,11 @@ function handle_output($server_output, $function)
     $parts = explode(':', $server_output, 2);
     //This will simply kill the script if EE returns with an error
     //This is to avoid foulups, and to simplify the code checking above
-    if ($function == 'COUNTRY_IS_DEAD') {
+    if ($parts[0] == 'COUNTRY_IS_DEAD') {
+        out("Country is Dead!");
         return false;
-    } elseif ($function == 'OWNED') {
+    } elseif ($parts[0] == 'OWNED') {
+        out("Trying to sell more than owned!");
         return false;
     } elseif (expected_result($function) && $parts[0] != expected_result($function)) {
         out("\n\nUnexpected Result for '$function': " . $parts[0] . "\n\n");
@@ -106,10 +108,10 @@ function expected_result($input)
     }
 }
 
-function out($str)
+function out($str, $newline = true)
 {
     //This just formats output strings nicely
-    echo "\n[" . date("H:i:s") . "] $str";
+    echo ($newline ? "\n" : null). "[" . date("H:i:s") . "] $str";
 }
 
 function out_data($data)

@@ -52,6 +52,7 @@ out('Entering Infinite Loop');
 $sleepcount = $loopcount = 0;
 $played = true;
 
+
 while (1) {
     $server = ee('server');
     while ($server->alive_count < $server->countries_allowed) {
@@ -91,7 +92,9 @@ while (1) {
     }
 
     $played = false;
+    //out("Country Count: ".count($countries));
     foreach ($countries as $cnum) {
+        $save = false;
         if (!isset($settings->$cnum)) {
             $settings->$cnum = json_decode(json_encode(array(
                                 'strat'=>null,
@@ -104,8 +107,9 @@ while (1) {
                                 'off'=>1.0,
                                 'aggro'=>1.0
                             )));
+            out($colors->getColoredString("Resetting Settings #$cnum", 'red'));
+            file_put_contents($config['save_settings_file'], json_encode($settings));
         }
-
         global $cpref;
         $cpref = $settings->$cnum;
 
@@ -113,18 +117,29 @@ while (1) {
 
         if (!isset($cpref->strat) || $cpref->strat == null) {
             $cpref->strat = pickStrat($cnum);
+            out($colors->getColoredString("Resetting Strat #$cnum", 'red'));
+            $save = true;
         }
         if (!isset($cpref->playfreq) || $cpref->playfreq == null) {
             $cpref->playfreq = purebell($server->turn_rate, $server->turn_rate*144, $server->turn_rate*20, $server->turn_rate);
             $cpref->playrand = mt_rand(10, 20)/10.0; //between 1.0 and 2.0
-        }
-        if ($cpref->price_tolerance = 1.00) {
-            $cpref->price_tolerance = purebell(0.5, 1.5, 0.1, 0.01); //50% to 150%, 10% std dev, steps of 1%
-        }
-        if (!isset($cpref->nextplay)) {
-            $cpref->nextplay = 0;
+            out($colors->getColoredString("Resetting Play #$cnum", 'red'));
+            $save = true;
         }
 
+        if ($cpref->price_tolerance == 1.00) {
+            $cpref->price_tolerance = round(purebell(0.5, 1.5, 0.1, 0.01), 3); //50% to 150%, 10% std dev, steps of 1%
+            $save = true;
+        } elseif($cpref->price_tolerance != round($cpref->price_tolerance, 3)) {
+            $cpref->price_tolerance = round($cpref->price_tolerance, 3); //round off silly numbers...
+            $save = true;
+        }
+
+        if (!isset($cpref->nextplay) || !isset($cpref->lastplay) || $cpref->lastplay < time() - 86400*2) { //two days ago
+            $cpref->nextplay = 0;
+            out($colors->getColoredString("Resetting Next #$cnum", 'red'));
+            $save = true;
+        }
 
         if ($cpref->nextplay < time()) {
             switch ($cpref->strat) {
@@ -148,10 +163,14 @@ while (1) {
             $cpref->nextplay = $cpref->lastplay + $nexttime;
             out("This country next plays in: $nexttime");
             $played = true;
+            $save = true;
         }
 
-        $settings->$cnum = $cpref;
-        file_put_contents($config['save_settings_file'], json_encode($settings));
+        if ($save) {
+            $settings->$cnum = $cpref;
+            out($colors->getColoredString("Saving Settings", 'purple'));
+            file_put_contents($config['save_settings_file'], json_encode($settings));
+        }
     }
 
     $until_end = 50;
@@ -166,7 +185,7 @@ while (1) {
     $cnum = null;
     $loopcount++;
     $sleepturns = 25;
-    $sleep = 10; //sleep 10s //min($sleepturns*$server->turn_rate,max(0,$server->reset_end - 60 - time())); //sleep for $sleepturns turns
+    $sleep = 1; //sleep 10s //min($sleepturns*$server->turn_rate,max(0,$server->reset_end - 60 - time())); //sleep for $sleepturns turns
     //$sleepturns = ($sleep != $sleepturns*$server->turn_rate ? floor($sleep/$server->turn_rate) : $sleepturns);
     //out("Played 'Day' $loopcount; Sleeping for " . $sleep . " seconds ($sleepturns Turns)");
     if ($played) {
@@ -176,13 +195,13 @@ while (1) {
         $sleepcount++;
     }
 
-    if ($sleepcount%25 == 0) {
+    if ($sleepcount%300 == 0) {
         playstats($countries);
         echo "\n";
     }
 
     sleep($sleep); //sleep for $sleep seconds
-    echo '.';
+    outNext($countries, true);
 }
 done(); //done() is defined below
 
@@ -223,6 +242,15 @@ function playstats($countries)
         $stddev = round(playtimes_stddev($countries));
         out("Standard Deviation of play is: $stddev");
     }
+
+    outOldest($countries);
+    outFurthest($countries);
+    outNext($countries);
+}
+
+function outOldest($countries)
+{
+    global $server;
     $old = oldestPlay($countries);
     $onum = getLastPlayCNUM($countries, $old);
     $old = time() - $old;
@@ -232,17 +260,23 @@ function playstats($countries)
         global $settings;
         $settings->$onum->nextplay = 0;
     }
+}
 
-    $next = getNextPlays($countries);
-    $xnum = getNextPlayCNUM($countries, min($next));
-    $next = min($next) - time();
-    out("Next Play in " . $next . 's: #' . $xnum);
-
+function outFurthest($countries)
+{
+    global $server;
     $furthest = getFurthestNext($countries);
     $fnum = getNextPlayCNUM($countries, $furthest);
     $furthest = $furthest - time();
     out("Furthest Play in " . $furthest . "s for #$fnum (" . round($furthest/$server->turn_rate) . " turns)");
+}
 
+function outNext($countries, $rewrite = false)
+{
+    $next = getNextPlays($countries);
+    $xnum = getNextPlayCNUM($countries, min($next));
+    $next = max(0, min($next) - time());
+    out("Next Play in " . $next . 's: #' . $xnum . ($rewrite ? "\r" : null), !$rewrite);
 }
 
 function govtStats($countries)
@@ -708,7 +742,7 @@ function buy_on_pm(&$c, $units = array())
         $c->$type += $amount;
         $str .= $amount . ' ' . $type . ', ';
     }
-    $str .= 'for $' . $result->cost;
+    $str .= 'for $' . $result->cost.' on PM';
     out($str);
     return $result;
 }
@@ -729,7 +763,7 @@ function sell_on_pm(&$c, $units = array())
         $c->$type -= $amount;
         $str .= $amount . ' ' . $type . ', ';
     }
-    $str .= 'for $' . $result->money;
+    $str .= 'for $' . $result->money.' on PM';
     out($str);
     return $result;
 }
@@ -774,7 +808,7 @@ function buy_public(&$c, $quantity = array(), $price = array())
         sleep(1);
     }
 
-    $str .= 'for $' .$tcost;
+    $str .= 'for $' .$tcost.' on public.';
     out($str);
     return $result;
 }

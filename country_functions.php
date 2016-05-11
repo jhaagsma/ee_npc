@@ -23,7 +23,7 @@ function destock($server, $cnum)
 
 function buy_public_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false)
 {
-    out("Stage 1");
+    //out("Stage 1");
     $market_info = get_market_info();
     //out_data($market_info);
     if (!$money || $money < 0) {
@@ -46,7 +46,7 @@ function buy_public_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false)
         shuffle($units);
     }
 
-    $last = 0;
+    static $last = 0;
     foreach ($units as $subunit) {
         $unit = 'm_' . $subunit;
         if ($market_info->buy_price->$unit != null && $market_info->available->$unit > 0) {
@@ -60,7 +60,7 @@ function buy_public_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false)
                 //out("Buy Price: {$market_info->buy_price->$unit}");
                 $quantity = min(floor($money/ceil($market_info->buy_price->$unit*((100+$c->g_tax)/100))), $market_info->available->$unit);
                 if ($quantity == $last) {
-                    $quantity = max(0, $quantity--);
+                    $quantity = max(0, $quantity - 1);
                 }
                 $last = $quantity;
                 //out("Quantity: $quantity");
@@ -164,7 +164,7 @@ function money_management(&$c)
             out("Selling max military, and holding turns.");
             sell_max_military($c);
             return true;
-        } elseif ($c->turns_stored > 30 && total_military($c) > 100) {
+        } elseif ($c->turns_stored > 30 && total_military($c) > 1000) {
             out("We have stored turns or can't sell on public; sell 1/10 of military.");   //Text for screen
             sell_all_military($c, 1/10);
         } else {
