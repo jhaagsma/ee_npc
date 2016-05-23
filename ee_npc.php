@@ -127,10 +127,10 @@ while (1) {
             $save = true;
         }
 
-        if ($cpref->price_tolerance == 1.00) {
+        if (!isset($cpref->price_tolerance) || $cpref->price_tolerance == 1.00) {
             $cpref->price_tolerance = round(purebell(0.5, 1.5, 0.1, 0.01), 3); //50% to 150%, 10% std dev, steps of 1%
             $save = true;
-        } elseif($cpref->price_tolerance != round($cpref->price_tolerance, 3)) {
+        } elseif ($cpref->price_tolerance != round($cpref->price_tolerance, 3)) {
             $cpref->price_tolerance = round($cpref->price_tolerance, 3); //round off silly numbers...
             $save = true;
         }
