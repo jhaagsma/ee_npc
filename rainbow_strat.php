@@ -74,7 +74,7 @@ function play_rainbow_strat($server)
         if ($hold) {
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
         }
-        if (turns_of_food($c) > 40 && $c->money > $c->networth *2) { // 40 turns of food, and more than 2x nw in cash on hand
+        if (turns_of_food($c) > 40 && $c->money > $c->networth *2 && $c->money > 3500*100) { // 40 turns of food, and more than 2x nw in cash on hand
             defend_self($c, floor($c->money * 0.35)); //money is *RESERVE* cash
         }
         if ($c->income < 0 && total_military($c) > 30) { //sell 1/4 of all military on PM
@@ -84,7 +84,7 @@ function play_rainbow_strat($server)
 
         global $cpref;
         $tol = $cpref->price_tolerance; //should be between 0.5 and 1.5
-        if (turns_of_food($c) > 40 && $c->money > $c->networth *2) { // 40 turns of food, and more than 2x nw in cash on hand
+        if (turns_of_food($c) > 40 && $c->money > $c->networth *2 && $c->money > 3500*100) { // 40 turns of food, and more than 2x nw in cash on hand
             //out("Try to buy tech?");
             $spend = $c->money * 0.20;
             if ($c->pt_agri < 160) {
