@@ -179,13 +179,14 @@ function money_management(&$c)
 function food_management(&$c)
 {
  //RETURNS WHETHER TO HOLD TURNS OR NOT
-    if (turns_of_food($c) >= 50) {
+    $reserve = max(72, $c->turns);
+    if (turns_of_food($c) >= $reserve) {
         return false;
     }
 
     //out("food management");
     $foodloss = -1*$c->foodnet;
-    $turns_buy = 50;
+    $turns_buy = max($reserve-turns_of_food($c), 50);
 
     $c = get_advisor();     //UPDATE EVERYTHING
     $market_info = get_market_info();   //get the Public Market info
