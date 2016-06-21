@@ -87,6 +87,7 @@ function play_casher_strat($server)
             defend_self($c, floor($c->money * 0.10)); //second param is *RESERVE* cash
         }
     }
+    out("Bus: {$c->pt_bus}%; Res: {$c->pt_res}%");
     out("Done Playing ".CASHER." Turns for #$cnum!");   //Text for screen
 }
 

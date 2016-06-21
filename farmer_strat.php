@@ -109,6 +109,7 @@ function play_farmer_strat($server)
             defend_self($c, floor($c->money * 0.20)); //second param is *RESERVE* cash
         }
     }
+    out("Agri: {$c->pt_agri}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%");
     out("Done Playing ".FARMER." Turns for #$cnum!");   //Text for screen
 }
 
