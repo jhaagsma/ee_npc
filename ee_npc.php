@@ -152,18 +152,21 @@ while (1) {
         }
 
         if ($cpref->nextplay < time()) {
+            $playfactor = 1;
             switch ($cpref->strat) {
                 case 'F':
                     play_farmer_strat($server, $cnum);
                     break;
                 case 'T':
                     play_techer_strat($server, $cnum);
+                    $playfactor = 0.5;
                     break;
                 case 'C':
                     play_casher_strat($server, $cnum);
                     break;
                 case 'I':
                     play_indy_strat($server, $cnum);
+                    $playfactor = 0.5;
                     break;
                 default:
                     play_rainbow_strat($server, $cnum);
@@ -552,7 +555,7 @@ function can_sell_tech(&$c, $tech = 't_bus')
 {
     $onmarket = onmarket($tech);
     $tot = $c->$tech + $onmarket;
-    $sell = floor($tot) - $onmarket;
+    $sell = floor($tot*0.25) - $onmarket;
 
     return $sell > 10 ? $sell : 0;
 }
