@@ -216,7 +216,7 @@ function food_management(&$c)
 
     //WE HAVE MONEY, WAIT FOR FOOD ON MKT
     if ($c->protection == 0 && $c->turns_stored < 30 && $c->income > $pm_info->buy_price->m_bu*$foodloss) {
-        out("We make enough to buy food if we want to; hold turns for now.");   //Text for screen
+        out("We make enough to buy food if we want to; hold turns for now, and wait for food on MKT.");   //Text for screen
         return true;
     }
 
@@ -240,6 +240,7 @@ function food_management(&$c)
         return food_management($c); //RECURSION!
     }
 
+    out('We have exhausted all food options. Valar Morguhlis.');
     return false;
 }
 

@@ -123,7 +123,7 @@ while (1) {
             $save = true;
         }
         if (!isset($cpref->playfreq) || $cpref->playfreq == null) {
-            $cpref->playfreq = purebell($server->turn_rate, $server->turn_rate*144, $server->turn_rate*20, $server->turn_rate);
+            $cpref->playfreq = purebell($server->turn_rate, $server->turn_rate*$rules->maxturns, $server->turn_rate*20, $server->turn_rate);
             $cpref->playrand = mt_rand(10, 20)/10.0; //between 1.0 and 2.0
             out($colors->getColoredString("Resetting Play #$cnum", 'red'));
             $save = true;
@@ -187,9 +187,11 @@ while (1) {
 
     $until_end = 50;
     if ($server->reset_end - $server->turn_rate * $until_end - time() < 0) {
-        foreach ($countries as $cnum) {
-            $mktinfo = null;
-            destock($server, $cnum);
+        for ($i = 0; $i < 5; $i++) {
+            foreach ($countries as $cnum) {
+                $mktinfo = null;
+                destock($server, $cnum);
+            }
         }
         out("Sleep until end");
         sleep(($until_end + 1)*$server->turn_rate);     //don't let them fluff things up, sleep through end of reset
