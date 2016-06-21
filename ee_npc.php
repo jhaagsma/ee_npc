@@ -348,6 +348,8 @@ function govtStats($countries)
     $cashers = $indies = $farmers = $techers = $oilers = $rainbows = 0;
     $undef = 0;
     global $settings;
+    $cNP = $fNP = $iNP = $tNP = $rNP = $oNP = 9999999;
+
     foreach ($countries as $cnum) {
         if (!isset($settings->$cnum->strat)) {
             out("Picking a new strat for #$cnum");
@@ -356,20 +358,26 @@ function govtStats($countries)
         switch ($settings->$cnum->strat) {
             case 'C':
                 $cashers++;
+                $cNP = min($settings->$cnum->nextplay-time(), $cNP);
                 break;
             case 'F':
                 $farmers++;
+                $fNP = min($settings->$cnum->nextplay-time(), $fNP);
                 break;
             case 'I':
                 $indies++;
+                $iNP = min($settings->$cnum->nextplay-time(), $iNP);
                 break;
             case 'T':
                 $techers++;
+                $tNP = min($settings->$cnum->nextplay-time(), $tNP);
                 break;
             case 'R':
+                $rNP = min($settings->$cnum->nextplay-time(), $rNP);
                 $rainbows++;
                 break;
             case 'O':
+                $oNP = min($settings->$cnum->nextplay-time(), $oNP);
                 $oilers++;
                 break;
         }
@@ -377,12 +385,12 @@ function govtStats($countries)
     global $serv;
     out("\033[1mServer:\033[0m ".$serv);
     out("\033[1mTotal Countries:\033[0m ".count($countries));
-    out(FARMER.': '.$farmers);
-    out(INDY.': '.$indies);
-    out(CASHER.': '.$cashers);
-    out(TECHER.': '.$techers);
-    out(RAINBOW.': '.$rainbows);
-    out(OILER.': '.$oilers);
+    out(FARMER.' : '.$farmers.' [Next: '.$fNP.']');
+    out(INDY.'   : '.$indies.' [Next: '.$iNP.']');
+    out(CASHER.' : '.$cashers.' [Next: '.$cNP.']');
+    out(TECHER.' : '.$techers.' [Next: '.$tNP.']');
+    out(RAINBOW.': '.$rainbows.' [Next: '.$rNP.']');
+    out(OILER.'  : '.$oilers.' [Next: '.$oNP.']');
 
 }
 
