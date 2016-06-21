@@ -182,6 +182,7 @@ while (1) {
             $settings->$cnum = $cpref;
             out($colors->getColoredString("Saving Settings", 'purple'));
             file_put_contents($config['save_settings_file'], json_encode($settings));
+            echo "\n\n";
         }
     }
 
