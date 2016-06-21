@@ -69,10 +69,10 @@ function play_casher_strat($server)
             //out("Try to buy tech?");
             $spend = $c->money * 0.30;
             if ($c->pt_bus < 140) {
-                buy_tech($c, 't_bus', $spend*1/4, 3500*$tol);
+                buy_tech($c, 't_bus', $spend*1/2, 3500*$tol);
             }
             if ($c->pt_res < 140) {
-                buy_tech($c, 't_res', $spend*1/4, 3500*$tol);
+                buy_tech($c, 't_res', $spend*1/2, 3500*$tol);
             }
         }
 
@@ -83,16 +83,19 @@ function play_casher_strat($server)
         if (turns_of_food($c) > 40 && $c->money > $c->networth *2 && $c->money > 3500*500) { // 40 turns of food, and more than 2x nw in cash on hand
             $spend = $c->money * 0.30;
             if ($c->pt_bus < 175) {
-                buy_tech($c, 't_bus', $spend*1/4, 3500*$tol);
+                buy_tech($c, 't_bus', $spend*1/3, 3500*$tol);
             }
             if ($c->pt_res < 175) {
-                buy_tech($c, 't_res', $spend*1/4, 3500*$tol);
+                buy_tech($c, 't_res', $spend*1/3, 3500*$tol);
+            }
+            if ($c->pt_mil > 90) {
+                buy_tech($c, 't_mil', $spend*1/3, 3500*$tol);
             }
         }
     }
 
     $nlg = nlg($c);
-    out("Bus: {$c->pt_bus}%; Res: {$c->pt_res}%; NLG: $nlg");
+    out("Bus: {$c->pt_bus}%; Res: {$c->pt_res}%;  Mil: {$c->pt_mil}%; NLG: $nlg");
     out("Done Playing ".CASHER." Turns for #$cnum!");   //Text for screen
 }
 

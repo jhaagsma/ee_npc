@@ -84,22 +84,11 @@ function play_rainbow_strat($server)
 
         global $cpref;
         $tol = $cpref->price_tolerance; //should be between 0.5 and 1.5
-        if (turns_of_food($c) > 40 && $c->money > $c->networth *2 && $c->money > 3500*100) { // 40 turns of food, and more than 2x nw in cash on hand
+        if (turns_of_food($c) > 50 && turns_of_money($c) > 50 && $c->money > 3500*500) { // 40 turns of food, and more than 2x nw in cash on hand
+            //buy tech!
             //out("Try to buy tech?");
-            $spend = $c->money * 0.20;
-            if ($c->pt_agri < 160) {
-                buy_tech($c, 't_agri', $spend*1/2, 3500*$tol);
-            }
-            if ($c->pt_bus < 140) {
-                buy_tech($c, 't_bus', $spend*1/4, 3500*$tol);
-            }
-            if ($c->pt_res < 140) {
-                buy_tech($c, 't_res', $spend*1/4, 3500*$tol);
-            }
+            $spend = min($c->money, $c->money + 50*$c->income)*0.4; //min what we'll use in 50 turns basically
 
-            $c = get_advisor();     //UPDATE EVERYTHING
-            //out("Try Higher Amount!");
-            $spend = $c->money * 0.20;
             if ($c->pt_agri < 200) {
                 buy_tech($c, 't_agri', $spend*1/2, 3500*$tol);
             }
@@ -110,6 +99,7 @@ function play_rainbow_strat($server)
                 buy_tech($c, 't_res', $spend*1/4, 3500*$tol);
             }
         }
+
         //$main->turns = 0;				//use this to do one turn at a time
     }
 
