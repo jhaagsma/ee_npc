@@ -93,13 +93,13 @@ function play_farmer_strat($server)
                 buy_tech($c, 't_agri', $spend*1/2, 3500*$tol);
             }
             if ($c->pt_bus < 160) {
-                buy_tech($c, 't_bus', $spend*1/6, 3500*$tol);
+                buy_tech($c, 't_bus', $spend*3/8, 3500*$tol);
             }
             if ($c->pt_res < 160) {
-                buy_tech($c, 't_res', $spend*1/6, 3500*$tol);
+                buy_tech($c, 't_res', $spend*3/8, 3500*$tol);
             }
             if ($c->pt_mil > 90) {
-                buy_tech($c, 't_mil', $spend*1/6, 3500*$tol);
+                buy_tech($c, 't_mil', $spend*2/8, 3500*$tol);
             }
         }
 

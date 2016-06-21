@@ -66,7 +66,8 @@ function play_techer_strat($server)
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
         }
 
-        if (turns_of_food($c) > 40 && $c->money > $c->networth *2) { // 40 turns of food, and more than 2x nw in cash on hand
+        if (turns_of_food($c) > 40 && $c->money > $c->networth *2 && $c->tpt > 200) { // 40 turns of food, and more than 2x nw in cash on hand
+            //if Tpt is < 200, there's nothing to defend really =/
             defend_self($c, floor($c->money * 0.25)); //second param is *RESERVE* cash
         }        //$main->turns = 0;				//use this to do one turn at a time
     }
