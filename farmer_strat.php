@@ -119,7 +119,7 @@ function play_farmer_turn(&$c)
     global $turnsleep;
     usleep($turnsleep);
     //out($main->turns . ' turns left');
-    if ($c->protection == 0 && $c->foodnet > 0 && $c->foodnet > 3*$c->foodcon && $c->food > 30*$c->foodnet && $c->food > 7000) { //Don't sell less than 30 turns of food
+    if ($c->protection == 0 && $c->foodnet > 0 && $c->foodnet > 3*$c->foodcon && $c->food > 30*$c->foodnet && $c->food > 7000 || $c->turns == 1 && $c->food > 7000) { //Don't sell less than 30 turns of food
         return sellextrafood_farmer($c);
     } elseif ($c->empty > $c->bpt && $c->money > $c->bpt*$c->build_cost) {  //build a full BPT if we can afford it
         return build_farmer($c);

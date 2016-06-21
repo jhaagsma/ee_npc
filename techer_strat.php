@@ -82,7 +82,7 @@ function play_techer_turn(&$c)
     $mktinfo = null;
     usleep($turnsleep);
     //out($main->turns . ' turns left');
-    if ($c->protection == 0 && total_cansell_tech($c) > 20*$c->tpt && selltechtime($c)) { //never sell less than 20 turns worth of tech
+    if ($c->protection == 0 && total_cansell_tech($c) > 20*$c->tpt && selltechtime($c) || $c->turns == 1 && total_cansell_tech($c) > 20) { //never sell less than 20 turns worth of tech
         return sell_max_tech($c);
     } elseif ($c->empty > $c->bpt && $c->money > $c->bpt*$c->build_cost) {  //build a full BPT if we can afford it
         return build_techer($c);
