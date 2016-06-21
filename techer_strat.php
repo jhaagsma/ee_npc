@@ -5,11 +5,11 @@ $techlist = array('t_mil','t_med','t_bus','t_res','t_agri','t_war','t_ms','t_wea
 function play_techer_strat($server)
 {
     global $cnum;
-    out("Playing " . TECHER . " Turns for #$cnum");
+    out("Playing ".TECHER." Turns for #$cnum");
     $main = get_main();     //get the basic stats
     //out_data($main);			//output the main data
     $c = get_advisor();     //c as in country! (get the advisor)
-    out($c->turns . ' turns left');
+    out($c->turns.' turns left');
 
     if ($c->govt == 'M') {
         $rand = rand(0, 100);
@@ -70,7 +70,7 @@ function play_techer_strat($server)
             defend_self($c, floor($c->money * 0.25)); //second param is *RESERVE* cash
         }        //$main->turns = 0;				//use this to do one turn at a time
     }
-    out("Done Playing " . TECHER . " Turns for #$cnum!");   //Text for screen
+    out("Done Playing ".TECHER." Turns for #$cnum!");   //Text for screen
 }
 
 function play_techer_turn(&$c)

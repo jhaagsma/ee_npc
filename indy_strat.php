@@ -5,7 +5,7 @@ $military_list = array('m_tr','m_j','m_tu','m_ta');
 function play_indy_strat($server)
 {
     global $cnum;
-    out("Playing " . INDY . " Turns for #$cnum");
+    out("Playing ".INDY." Turns for #$cnum");
     $main = get_main();     //get the basic stats
     //out_data($main);			//output the main data
     $c = get_advisor();     //c as in country! (get the advisor)
@@ -24,7 +24,7 @@ function play_indy_strat($server)
                 break;
         }
     }
-    out($c->turns . ' turns left');
+    out($c->turns.' turns left');
     $pm_info = get_pm_info();   //get the PM info
     //out_data($pm_info);		//output the PM info
     $market_info = get_market_info();   //get the Public Market info
@@ -87,7 +87,7 @@ function play_indy_strat($server)
             }
         }
     }
-    out("Done Playing " . INDY . " Turns for #$cnum!");     //Text for screen
+    out("Done Playing ".INDY." Turns for #$cnum!");     //Text for screen
 }
 
 function play_indy_turn(&$c)

@@ -9,53 +9,70 @@ only the real bot logic in the ee_npc file...
 
 ///DATA HANDLING AND OUTPUT
 
-function ee($function, $parameter_array = array())
+/**
+ * Main Communication
+ * @param  string $function       which string to call
+ * @param  array  $parameterArray parameters to send
+ * @return object                 a JSON object converted to class
+ */
+function ee($function, $parameterArray = array())
 {
-    global $base_url, $username, $ai_key, $serv, $cnum, $api_calls;
-    
-    $init = $parameter_array;
-    $parameter_array['ai_key'] = $ai_key;
-    $parameter_array['username'] = $username;
-    $parameter_array['server'] = $serv;
-    if ($cnum) {
-        $parameter_array['cnum'] = $cnum;
-    }
-    
-    $ch = curl_init();
+    global $baseURL, $username, $aiKey, $serv, $cnum, $APICalls;
 
-    curl_setopt($ch, CURLOPT_URL, $base_url);
+    $init = $parameterArray;
+    $parameterArray['ai_key'] = $aiKey;
+    $parameterArray['username'] = $username;
+    $parameterArray['server'] = $serv;
+    if ($cnum) {
+        $parameterArray['cnum'] = $cnum;
+    }
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $baseURL);
     curl_setopt($ch, CURLOPT_POST, 1);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, "api_function=" . $function . "&api_payload=" . json_encode($parameter_array));
+    $send = "api_function=".$function."&api_payload=".json_encode($parameterArray);
+    //out($send);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $send);
 
     // receive server response ...
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
-    $server_output = curl_exec($ch);
+    $serverOutput = curl_exec($ch);
 
     curl_close($ch);
-    
-    $api_calls++;
 
-    $return = handle_output($server_output, $function);
+    $APICalls++;
+
+    $return = handle_output($serverOutput, $function);
     if ($return === false) {
         out_data($init);
     }
+
     return $return;
 }
 
-function handle_output($server_output, $function)
+/**
+ * Handle the server output
+ * @param  JSON   $serverOutput JSON return
+ * @param  string $function     function to call
+ * @return object               json object -> class
+ */
+function handle_output($serverOutput, $function)
 {
-    $parts = explode(':', $server_output, 2);
+    $parts = explode(':', $serverOutput, 2);
     //This will simply kill the script if EE returns with an error
     //This is to avoid foulups, and to simplify the code checking above
     if ($parts[0] == 'COUNTRY_IS_DEAD') {
         out("Country is Dead!");
+
         return false;
     } elseif ($parts[0] == 'OWNED') {
         out("Trying to sell more than owned!");
+
         return false;
     } elseif (expected_result($function) && $parts[0] != expected_result($function)) {
-        out("\n\nUnexpected Result for '$function': " . $parts[0] . "\n\n");
+        out("\n\nUnexpected Result for '$function': ".$parts[0]."\n\n");
+
         return false;
     } elseif (!expected_result($function)) {
         out($parts[0]);
@@ -63,15 +80,21 @@ function handle_output($server_output, $function)
             return;
         }
     }
-    
+
     $output = json_decode($parts[1]);
+
     return $output;
 }
 
+/**
+ * just verifies that these things exist
+ * @param  string $input Whatever the game returned
+ * @return string        proper result
+ */
 function expected_result($input)
 {
-    global $last_function;
-    $last_function = $input;
+    global $lastFunction;
+    $lastFunction = $input;
     //This is simply a list of expected return values for each function
     //This allows us to quickly verify if an error occurred
     switch ($input) {
@@ -108,18 +131,34 @@ function expected_result($input)
     }
 }
 
+/**
+ * Ouput strings nicely
+ * @param  string  $str     The string to format
+ * @param  boolean $newline If we shoudl make a new line
+ * @return void             echoes, not returns
+ */
 function out($str, $newline = true)
 {
     //This just formats output strings nicely
-    echo ($newline ? "\n" : null). "[" . date("H:i:s") . "] $str";
+    echo ($newline ? "\n" : null)."[".date("H:i:s")."] $str";
 }
 
+/**
+ * Output and format data
+ * @param  array,object $data Data to ouput
+ * @return void
+ */
 function out_data($data)
 {
     //This function is to output and format some data nicely
-    out("DATA:\n" . str_replace(",\n", "\n", var_export($data, true)));
+    out("DATA:\n".str_replace(",\n", "\n", var_export($data, true)));
 }
 
+/**
+ * Does count() in some case where it doesn't work right
+ * @param  object $data probably a $result object
+ * @return int       count of things in $data
+ */
 function actual_count($data)
 {
  //do not ask me why, but count() doesn't work on $result->turns
@@ -127,10 +166,15 @@ function actual_count($data)
     foreach ($data as $stuff) {
         $i++;
     }
-    
+
     return $i;
 }
 
+/**
+ * Exit
+ * @param  string $str Final output String
+ * @return exit
+ */
 function done($str = null)
 {
     if ($str) {

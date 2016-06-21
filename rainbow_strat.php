@@ -3,11 +3,11 @@
 function play_rainbow_strat($server)
 {
     global $cnum,$market_info;
-    out("Playing " . RAINBOW . " turns for #$cnum");
+    out("Playing ".RAINBOW." turns for #$cnum");
     $main = get_main();     //get the basic stats
     //out_data($main);			//output the main data
     $c = get_advisor();     //c as in country! (get the advisor)
-    out($c->turns . ' turns left');
+    out($c->turns.' turns left');
     //out_data($c) && exit;				//ouput the advisor data
     if ($c->govt == 'M' && $c->turns_played < 100) {
         $rand = rand(0, 100);
@@ -111,7 +111,7 @@ function play_rainbow_strat($server)
         }
         //$main->turns = 0;				//use this to do one turn at a time
     }
-    out("Done Playing " . RAINBOW . " Turns for #$cnum!");  //Text for screen
+    out("Done Playing ".RAINBOW." Turns for #$cnum!");  //Text for screen
 }
 
 function play_rainbow_turn(&$c)

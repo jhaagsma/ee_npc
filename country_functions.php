@@ -48,10 +48,10 @@ function buy_public_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false)
 
     static $last = 0;
     foreach ($units as $subunit) {
-        $unit = 'm_' . $subunit;
+        $unit = 'm_'.$subunit;
         if ($market_info->buy_price->$unit != null && $market_info->available->$unit > 0) {
-            $price = $subunit . '_price';
-            $cost = $subunit . '_cost';
+            $price = $subunit.'_price';
+            $cost = $subunit.'_cost';
             //out("Stage 1.4");
             while ($market_info->buy_price->$unit <= $$price && $money > $$cost && $market_info->available->m_ta > 0) {
                 //out("Stage 1.4.x");
@@ -197,7 +197,7 @@ function food_management(&$c)
         //out("Market Price: " . $market_price);
         if ($c->food < $turns_of_food && $c->money > $turns_of_food*$market_price*((100+$c->g_tax)/100)) { //losing food, less than turns_buy turns left, AND have the money to buy it
             $quantity = min($foodloss*$turns_buy, $market_info->available->m_bu);
-            out("Less than $turns_buy turns worth of food! (" . $c->foodnet .  "/turn) Buy $quantity food off Public @\$$market_price if we can!");     //Text for screen
+            out("Less than $turns_buy turns worth of food! (".$c->foodnet."/turn) Buy $quantity food off Public @\$$market_price if we can!");     //Text for screen
             $result = buy_public($c, array('m_bu' => $quantity), array('m_bu' => $market_price));     //Buy 3 turns of food off the public at or below the PM price
             $market_info = get_market_info();   //get the Public Market info
             $c = get_advisor();     //UPDATE EVERYTHING
@@ -230,7 +230,7 @@ function food_management(&$c)
 
 
     if ($c->food < $turns_of_food && $c->money > $turns_buy*$foodloss*$pm_info->buy_price->m_bu) { //losing food, less than turns_buy turns left, AND have the money to buy it
-        out("Less than $turns_buy turns worth of food! (" . $c->foodnet .  "/turn) We're rich, so buy food on PM (\${$pm_info->buy_price->m_bu})!~");   //Text for screen
+        out("Less than $turns_buy turns worth of food! (".$c->foodnet."/turn) We're rich, so buy food on PM (\${$pm_info->buy_price->m_bu})!~");   //Text for screen
         $result = buy_on_pm($c, array('m_bu' => $turns_buy*$foodloss));  //Buy 3 turns of food!
         return false;
     } elseif ($c->food < $turns_of_food && total_military($c) > 50) {

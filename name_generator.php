@@ -99,27 +99,27 @@ function guild_name()
     $fem_sufname = ucfirst($suffix_female[$n2ekstra]); //suffix_female[n2ekstra].slice(0, 1).toUpperCase() . $suffix_female[n2ekstra].slice(1);
     $n3 = rand(0, 100); //rand(0,100);
     if ($n3 <= 18) {
-        $name = $prename . " of " . $sufname;
+        $name = $prename." of ".$sufname;
     } elseif ($n3 > 18 && $n3 <= 21) {
-        $name = $prename . " out of " . $sufname;
+        $name = $prename." out of ".$sufname;
     } elseif ($n3 > 21 && $n3 <= 41) {
-        $name = "The " . $prename . " of " . $sufname;
+        $name = "The ".$prename." of ".$sufname;
     } elseif ($n3 > 41 && $n3 <= 49) {
-        $name = "The " . $prename . " from " . $sufname;
+        $name = "The ".$prename." from ".$sufname;
     } elseif ($n3 > 49 && $n3 <= 57) {
-        $name = $prename . " from " . $sufname;
+        $name = $prename." from ".$sufname;
     } elseif ($n3 > 57 && $n3 <= 61) {
-        $name = $sufname . " " . $prename;
+        $name = $sufname." ".$prename;
     } elseif ($n3 > 61 && $n3 <= 70) {
-        $name = $sufname . " " . $prename;
+        $name = $sufname." ".$prename;
     } elseif ($n3 > 70 && $n3 <= 90) {
-        $name = $sufname . "s " . $prename;
+        $name = $sufname."s ".$prename;
     } elseif ($n3 > 90 && $n3 <= 95) {
-        $name = $sufname . " of the " . $prename;
+        $name = $sufname." of the ".$prename;
     } elseif ($n3 > 95 && $n3 <= 97) {
-        $name = $sufname . " beneath the " . $prename;
+        $name = $sufname." beneath the ".$prename;
     } elseif ($n3 > 97 && $n3 <= 100) {
-        $name = $sufname . " above the " . $prename;
+        $name = $sufname." above the ".$prename;
     }
     
     return $name;
@@ -200,13 +200,13 @@ function fantasy_name()
     } elseif ($n3 > 12 && $n3 <= 20) {
         $name = $prename_female;
     } elseif ($n3 > 20 && $n3 <= 50) {
-        $name = $prename_male . " " . $sufname;
+        $name = $prename_male." ".$sufname;
     } elseif ($n3 > 50 && $n3 <= 70) {
-        $name = $prename_female . " " . $sufname;
+        $name = $prename_female." ".$sufname;
     } elseif ($n3 > 70 && $n3 <= 85) {
-        $name = $prename_male . " " . $extraname . " " . $sufname;
+        $name = $prename_male." ".$extraname." ".$sufname;
     } elseif ($n3 > 85) {
-        $name = $prename_female . " " . $extraname . " " . $sufname;
+        $name = $prename_female." ".$extraname." ".$sufname;
     }
     return $name;
 }
@@ -286,9 +286,9 @@ function wow_name()
     $n3 = rand(0, 100);
     if ($n3 <= 15) {
         if (strlen($sufname) < 6) {
-            $name = $prename_male . strtolower($sufname); //.toLowerCase()
+            $name = $prename_male.strtolower($sufname); //.toLowerCase()
         } else {
-            $name = $prename_male . ' ' . $sufname;
+            $name = $prename_male.' '.$sufname;
         }
     } elseif ($n3 > 15 && $n3 <= 25) {
         $name = $sufname;
@@ -297,26 +297,26 @@ function wow_name()
     } elseif ($n3 > 50 && $n3 <= 70) {
         $name = $prename_female;
     } elseif ($n3 > 70 && $n3 <= 80) {
-        $name = $prename_male . strtolower($sufname); //.toLowerCase()
+        $name = $prename_male.strtolower($sufname); //.toLowerCase()
     } elseif ($n3 > 80 && $n3 <= 85) {
-        $name = $prename_female . strtolower($sufname); //.toLowerCase()
+        $name = $prename_female.strtolower($sufname); //.toLowerCase()
     } elseif ($n3 > 85 && $n3 <= 92) {
         if (strlen($sufname) < 6) {
-            $name = $prename_female . strtolower($sufname); //.toLowerCase()
+            $name = $prename_female.strtolower($sufname); //.toLowerCase()
         } else {
-            $name = $prename_female . ' ' . $sufname;
+            $name = $prename_female.' '.$sufname;
         }
     } elseif ($n3 > 92 && $n3 <= 97) {
-        if (strlen($prename_male) . strlen($sufname) > 10) {
-            $name = $prename_male . strtolower($sufname);
+        if (strlen($prename_male).strlen($sufname) > 10) {
+            $name = $prename_male.strtolower($sufname);
         } else {
-            $name = $prename_male . ' ' . $extraname . strtolower($sufname);
+            $name = $prename_male.' '.$extraname.strtolower($sufname);
         }
     } elseif ($n3 > 97) {
-        if (strlen($prename_female) . strlen($sufname) > 10) {
-            $name = $prename_female . strtolower($sufname);
+        if (strlen($prename_female).strlen($sufname) > 10) {
+            $name = $prename_female.strtolower($sufname);
         } else {
-            $name = $prename_female . strtolower($extraname) . ' ' . $sufname;
+            $name = $prename_female.strtolower($extraname).' '.$sufname;
         }
     }
     return $name;
@@ -377,23 +377,23 @@ function nickname()
     $c = ucfirst($s[$a]); //s[a].slice(0, 1).toUpperCase() . s[a].slice(1);
     $h = rand(0, 100);
     if ($h <= 30) {
-        $name = $f . " " . $c;
+        $name = $f." ".$c;
     } elseif ($h > 30 && $h <= 40) {
-        $name = $l . " " . $c;
+        $name = $l." ".$c;
     } elseif ($h > 40 && $h <= 65) {
-        $name = $c . " " . $l;
+        $name = $c." ".$l;
     } elseif ($h > 65 && $h <= 84) {
-        $name = $l . " " . $f . " " . $c;
+        $name = $l." ".$f." ".$c;
     } elseif ($h > 84 && $h <= 88) {
-        $name = $c . $c;
+        $name = $c.$c;
     } elseif ($h > 88 && $h <= 90) {
-        $name = "Los " . $c;
+        $name = "Los ".$c;
     } elseif ($h > 90 && $h <= 92) {
-        $name = "Der " . $c;
+        $name = "Der ".$c;
     } elseif ($h > 92 && $h <= 94) {
-        $name = "El " . $c;
+        $name = "El ".$c;
     } else {
-        $name = "The " . $c;
+        $name = "The ".$c;
     }
     return $name;
 }
@@ -450,35 +450,35 @@ function vampirename()
     $s = ucfirst($k[$o]); //k[o].slice(0, 1).toUpperCase() + k[o].slice(1);
     $t = rand(0, 100);
     if ($t <= 30) {
-        $name = $p . " " . $s;
+        $name = $p." ".$s;
     } elseif ($t > 30 && $t <= 50) {
-        $name = $q . " " . $s;
+        $name = $q." ".$s;
     } elseif ($t > 50 && $t <= 65) {
-        $name = $p . " " . $r;
+        $name = $p." ".$r;
     } elseif ($t > 65 && $t <= 80) {
-        $name = $q . " " . $r;
+        $name = $q." ".$r;
     } elseif ($t > 80 && $t <= 90) {
-        $name = $r . " " . $p;
+        $name = $r." ".$p;
     } elseif ($t > 90) {
-        $name = $r . " " . $q;
+        $name = $r." ".$q;
     }
     if ($t <= 10) {
-        $name = $b[$t % 3] . " " . $name;
+        $name = $b[$t % 3]." ".$name;
     }
     if ($t > 50 && $t < 57) {
-        $name = $b[$t % 3] . " " . $name;
+        $name = $b[$t % 3]." ".$name;
     }
     if ($t > 80 && $t < 83) {
-        $name = $b[$t % 3] . " " . $name;
+        $name = $b[$t % 3]." ".$name;
     }
     if ($t > 65 && $t < 70) {
-        $name = $c[$t % 4] . " " . $name;
+        $name = $c[$t % 4]." ".$name;
     }
     if ($t > 30 && $t < 35) {
-        $name = $c[$t % 4] . " " . $name;
+        $name = $c[$t % 4]." ".$name;
     }
     if ($t > 93) {
-        $name = $c[$t % 4] . " " . $name;
+        $name = $c[$t % 4]." ".$name;
     }
     return $name;
 }
@@ -519,20 +519,20 @@ function pirate_name()
     $extraname = ucfirst($suffix[$n2ekstra]); //.slice(0, 1).toUpperCase() . $suffix[n2ekstra].slice(1);
     $n3 = rand(0, 100);
     if ($n3 <= 25) {
-        $name = $prename_male . " " . $sufname;
+        $name = $prename_male." ".$sufname;
     } elseif ($n3 > 25 && $n3 <= 35) {
-        $name = $prename_female . " " . $sufname;
+        $name = $prename_female." ".$sufname;
     } elseif ($n3 > 35 && $n3 <= 55) {
-        $name = $prename_male . " " . $extraname . " " . $sufname;
+        $name = $prename_male." ".$extraname." ".$sufname;
     } elseif ($n3 > 55 && $n3 <= 90) {
-        $name = $extraname . " " . $prename_male . " " . $sufname;
+        $name = $extraname." ".$prename_male." ".$sufname;
     } elseif ($n3 > 90 && $n3 <= 96) {
-        $name = $extraname . " " . $prename_female . " " . $sufname;
+        $name = $extraname." ".$prename_female." ".$sufname;
     } elseif ($n3 > 96) {
-        $name = $prename_female . " " . $extraname . " " . $sufname;
+        $name = $prename_female." ".$extraname." ".$sufname;
     }
     if ($n3 <= 15 || ($n3 > 25 && $n3 <= 30)) {
-        $name = $pirate_title[$n3 % 5] . " " . $name;
+        $name = $pirate_title[$n3 % 5]." ".$name;
     }
     return $name;
 }
@@ -582,11 +582,11 @@ function projectname()
     $sufname = ucfirst($suffix[$n2]); //$suffix[n2].slice(0, 1).toUpperCase() . $suffix[n2].slice(1);
     $n3 = rand(0, 100);
     if ($n3 <= 15) {
-        $name = $prenameex . " " . $prename . " " . $sufname;
+        $name = $prenameex." ".$prename." ".$sufname;
     } elseif ($n3 > 15 && $n3 <= 30) {
-        $name = $sufname . " " . $prename;
+        $name = $sufname." ".$prename;
     } else {
-        $name = $prename . " " . $sufname;
+        $name = $prename." ".$sufname;
     }
     return $name;
 }

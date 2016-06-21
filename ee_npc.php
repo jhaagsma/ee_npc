@@ -38,16 +38,16 @@ define("INDY", $colors->getColoredString("Indy", "yellow"));
 define("OILER", $colors->getColoredString("Oiler", "red"));
 
 $username = $config['username'];    //<======== PUT IN YOUR USERNAME IN config.php
-$ai_key = $config['ai_key'];        //<======== PUT IN YOUR AI API KEY IN config.php
-$base_url = $config['base_url'];    //<======== PUT IN THE BASE URL IN config.php
+$aiKey = $config['ai_key'];        //<======== PUT IN YOUR AI API KEY IN config.php
+$baseURL = $config['base_url'];    //<======== PUT IN THE BASE URL IN config.php
 $serv = isset($config['server']) ? $config['server'] : 'ai';
 $cnum = null;
-$last_function = null;
+$lastFunction = null;
 $turnsleep = isset($config['turnsleep']) ? $config['turnsleep'] : 500000;
 $mktinfo = null; //so we don't have to get it mkt data over and over again
-$api_calls = 0;
+$APICalls = 0;
 
-out('Current Unix Time: ' . time());
+out('Current Unix Time: '.time());
 out('Entering Infinite Loop');
 $sleepcount = $loopcount = 0;
 $played = true;
@@ -56,12 +56,12 @@ $played = true;
 while (1) {
     $server = ee('server');
     while ($server->alive_count < $server->countries_allowed) {
-        out("Less countries than allowed! (" . $server->alive_count . '/' . $server->countries_allowed . ')');
+        out("Less countries than allowed! (".$server->alive_count.'/'.$server->countries_allowed.')');
         include_once('name_generator.php');
         $send_data = array('cname' => rand_name());
-        out("Making new country named '" . $send_data['cname'] . "'");
+        out("Making new country named '".$send_data['cname']."'");
         $cnum = ee('create', $send_data);
-        out($send_data['cname'] . ' (#' . $cnum .') created!');
+        out($send_data['cname'].' (#'.$cnum.') created!');
         $server = ee('server');
         if ($server->reset_start > time()) {
             $timeleft = $server->reset_start - time();
@@ -97,16 +97,16 @@ while (1) {
         $save = false;
         if (!isset($settings->$cnum)) {
             $settings->$cnum = json_decode(json_encode(array(
-                                'strat'=>null,
-                                'playfreq'=>null,
-                                'playrand'=>null,
-                                'lastplay'=>0,
-                                'nextplay'=>0,
-                                'price_tolerance'=>1.0,
-                                'def'=>1.0,
-                                'off'=>1.0,
-                                'aggro'=>1.0
-                            )));
+                'strat' => null,
+                'playfreq' => null,
+                'playrand' => null,
+                'lastplay' => 0,
+                'nextplay' => 0,
+                'price_tolerance' => 1.0,
+                'def' => 1.0,
+                'off' => 1.0,
+                'aggro' => 1.0
+            )));
             out($colors->getColoredString("Resetting Settings #$cnum", 'red'));
             file_put_contents($config['save_settings_file'], json_encode($settings));
         }
@@ -161,7 +161,7 @@ while (1) {
             $cpref->lastplay = time();
             $nexttime = $cpref->playfreq*purebell(1/$cpref->playrand, $cpref->playrand, 1, 0.1);
             $cpref->nextplay = $cpref->lastplay + $nexttime;
-            out("This country next plays in: $nexttime");
+            out("This country next plays in: $nexttime     ");
             $played = true;
             $save = true;
         }
@@ -207,7 +207,7 @@ done(); //done() is defined below
 
 function server_start_end_notification($server)
 {
-    out("Server started " . round((time()-$server->reset_start)/3600, 1) . ' hours ago and ends in ' . round(($server->reset_end-time())/3600, 1) . ' hours');
+    out("Server started ".round((time()-$server->reset_start)/3600, 1).' hours ago and ends in '.round(($server->reset_end-time())/3600, 1).' hours');
 }
 
 function pickStrat($cnum)
@@ -231,7 +231,7 @@ function playstats($countries)
 
     global $server;
     $stddev = round(playtimes_stddev($countries));
-    out("Standard Deviation of play is: $stddev; (" . round($stddev/$server->turn_rate) . ' turns)');
+    out("Standard Deviation of play is: $stddev; (".round($stddev/$server->turn_rate).' turns)');
     if ($stddev < $server->turn_rate*72/4 || $stddev > $server->turn_rate*72) {
         out('Recalculating Nextplays');
         global $settings;
@@ -254,7 +254,7 @@ function outOldest($countries)
     $old = oldestPlay($countries);
     $onum = getLastPlayCNUM($countries, $old);
     $old = time() - $old;
-    out("Oldest Play: " . $old . "s ago by #$onum (" . round($old/$server->turn_rate) . " turns)");
+    out("Oldest Play: ".$old."s ago by #$onum (".round($old/$server->turn_rate)." turns)");
     if ($old > 86400 * 2) {
         out("OLD TOO FAR: RESET NEXTPLAY");
         global $settings;
@@ -268,7 +268,7 @@ function outFurthest($countries)
     $furthest = getFurthestNext($countries);
     $fnum = getNextPlayCNUM($countries, $furthest);
     $furthest = $furthest - time();
-    out("Furthest Play in " . $furthest . "s for #$fnum (" . round($furthest/$server->turn_rate) . " turns)");
+    out("Furthest Play in ".$furthest."s for #$fnum (".round($furthest/$server->turn_rate)." turns)");
 }
 
 function outNext($countries, $rewrite = false)
@@ -276,7 +276,7 @@ function outNext($countries, $rewrite = false)
     $next = getNextPlays($countries);
     $xnum = getNextPlayCNUM($countries, min($next));
     $next = max(0, min($next) - time());
-    out("Next Play in " . $next . 's: #' . $xnum . ($rewrite ? "\r" : null), !$rewrite);
+    out("Next Play in ".$next.'s: #'.$xnum.'    '.($rewrite ? "\r" : null), !$rewrite);
 }
 
 function govtStats($countries)
@@ -311,14 +311,14 @@ function govtStats($countries)
         }
     }
     global $serv;
-    out("\033[1mServer:\033[0m " . $serv);
-    out("\033[1mTotal Countries:\033[0m " . count($countries));
-    out(FARMER . ': ' . $farmers);
-    out(INDY . ': ' . $indies);
-    out(CASHER . ': ' . $cashers);
-    out(TECHER . ': ' . $techers);
-    out(RAINBOW . ': ' . $rainbows);
-    out(OILER . ': ' . $oilers);
+    out("\033[1mServer:\033[0m ".$serv);
+    out("\033[1mTotal Countries:\033[0m ".count($countries));
+    out(FARMER.': '.$farmers);
+    out(INDY.': '.$indies);
+    out(CASHER.': '.$cashers);
+    out(TECHER.': '.$techers);
+    out(RAINBOW.': '.$rainbows);
+    out(OILER.': '.$oilers);
 
 }
 
@@ -512,7 +512,7 @@ function update_c(&$c, $result)
     if (!isset($result->turns) || !$result->turns) {
         return;
     }
-    global $last_function;
+    global $lastFunction;
     //out_data($result);				//output data for testing
     $explain = null;                    //Text formatting
     if (isset($result->built)) {
@@ -523,10 +523,10 @@ function update_c(&$c, $result)
             if (!$first) {                     //Text formatting
                 $str .= ' and ';        //Text formatting
             }            $first = false;                 //Text formatting
-            $build = 'b_' . $type;      //have to convert to the advisor output, for now
+            $build = 'b_'.$type;      //have to convert to the advisor output, for now
             $c->$build += $num;             //add buildings to keep track
             $c->empty -= $num;          //subtract buildings from empty, to keep track
-            $str .= $num . ' ' . $type;     //Text for screen
+            $str .= $num.' '.$type;     //Text for screen
             if ($type == 'cs' && $num > 0) {
                 $bpt = true;
             } elseif ($type == 'lab' && $num > 0) {
@@ -534,9 +534,9 @@ function update_c(&$c, $result)
             }
         }
         if ($bpt) {
-            $explain = '(' . $result->bpt . ' bpt)';    //Text for screen
+            $explain = '('.$result->bpt.' bpt)';    //Text for screen
         }        if ($tpt) {
-            $explain = '(' . $result->tpt . ' tpt)';    //Text for screen
+            $explain = '('.$result->tpt.' tpt)';    //Text for screen
         }
         $c->bpt = $result->bpt;             //update BPT - added this to the API so that we don't have to calculate it
         $c->tpt = $result->tpt;             //update TPT - added this to the API so that we don't have to calculate it
@@ -547,21 +547,21 @@ function update_c(&$c, $result)
         $c->build_cost = $result->build_cost;       //update Build Cost
         $c->explore_rate = $result->explore_rate;   //update explore rate
         $c->tpt = $result->tpt;             //update TPT - added this to the API so that we don't have to calculate it
-        $str = "Explored " . $result->new_land . " Acres";  //Text for screen
-        $explain = '(' . $c->land . ' A)';          //Text for screen
+        $str = "Explored ".$result->new_land." Acres";  //Text for screen
+        $explain = '('.$c->land.' A)';          //Text for screen
     } elseif (isset($result->teched)) {
         $str = 'Tech: ';
         $tot = 0;
         foreach ($result->teched as $type => $num) {    //for each type of tech that we teched....
-            $build = 't_' . $type;      //have to convert to the advisor output, for now
+            $build = 't_'.$type;      //have to convert to the advisor output, for now
             $c->$build += $num;             //add buildings to keep track
             $tot += $num;   //Text for screen
         }
         $c->tpt = $result->tpt;             //update TPT - added this to the API so that we don't have to calculate it
-        $str .=  $tot . ' ' . actual_count($result->turns) . ' turns';
-        $explain = '(' . $c->tpt . ' tpt)';     //Text for screen
-    } elseif ($last_function == 'cash') {
-        $str = "Cashed " . actual_count($result->turns) . " turns";     //Text for screen
+        $str .=  $tot.' '.actual_count($result->turns).' turns';
+        $explain = '('.$c->tpt.' tpt)';     //Text for screen
+    } elseif ($lastFunction == 'cash') {
+        $str = "Cashed ".actual_count($result->turns)." turns";     //Text for screen
     } elseif (isset($result->sell)) {
         $str = "Put goods on market";
     }
@@ -594,7 +594,7 @@ function update_c(&$c, $result)
             } elseif ($turn->event == 'foodbad') {       //in the event of a food boom, recalculate netfood so we don't react based on an event
                 $c->foodnet = floor(isset($turn->foodproduced)  ? $turn->foodproduced*3 : 0)    - (isset($turn->foodconsumed)   ? $turn->foodconsumed : 0);
             }
-            $event .= event_text($turn->event) . ' ';   //Text for screen
+            $event .= event_text($turn->event).' ';   //Text for screen
         }
         if (isset($turn->cmproduced)) {    //a CM was produced
             $event .= 'CM ';            //Text for screen
@@ -610,20 +610,15 @@ function update_c(&$c, $result)
     global $colors;
     $netfood = str_pad('('.($netfood > 0 ? '+' : null).$netfood.')', 10, ' ', STR_PAD_LEFT) ;  //Text formatting (adding a + if it is positive; - will be there if it's negative already)
     $netmoney = str_pad('($'.($netmoney > 0 ? '+' : null).$netmoney.')', 12, ' ', STR_PAD_LEFT); //Text formatting (adding a + if it is positive; - will be there if it's negative already)
-    $str = str_pad($str, 26)
-            . str_pad($explain, 12)
-            . str_pad('$' . $c->money, 16, ' ', STR_PAD_LEFT)
-            . $netmoney
-            . str_pad($c->food . ' Bu', 12, ' ', STR_PAD_LEFT)
-            . $netfood; //Text for screen
+    $str = str_pad($str, 26).str_pad($explain, 12).str_pad('$'.$c->money, 16, ' ', STR_PAD_LEFT).$netmoney.str_pad($c->food.' Bu', 12, ' ', STR_PAD_LEFT).$netfood; //Text for screen
 
-    global $api_calls;
-    $str = str_pad($c->turns, 3) . ' Turns - ' . $str . ' ' .  str_pad($event, 5) . ' API: ' . $api_calls;
+    global $APICalls;
+    $str = str_pad($c->turns, 3).' Turns - '.$str.' '.str_pad($event, 5).' API: '.$APICalls;
     if ($c->money < 0 || $c->food < 0) {
         $str = $colors->getColoredString($str, "red");
     }
     out($str);
-    $api_calls = 0;
+    $APICalls = 0;
 }
 
 function event_text($event)
@@ -740,9 +735,9 @@ function buy_on_pm(&$c, $units = array())
         }
 
         $c->$type += $amount;
-        $str .= $amount . ' ' . $type . ', ';
+        $str .= $amount.' '.$type.', ';
     }
-    $str .= 'for $' . $result->cost.' on PM';
+    $str .= 'for $'.$result->cost.' on PM';
     out($str);
     return $result;
 }
@@ -761,9 +756,9 @@ function sell_on_pm(&$c, $units = array())
         }
 
         $c->$type -= $amount;
-        $str .= $amount . ' ' . $type . ', ';
+        $str .= $amount.' '.$type.', ';
     }
-    $str .= 'for $' . $result->money.' on PM';
+    $str .= 'for $'.$result->money.' on PM';
     out($str);
     return $result;
 }
@@ -775,7 +770,7 @@ function buy_public(&$c, $quantity = array(), $price = array())
     $str = 'Bought ';
     $tcost = 0;
     foreach ($result->bought as $type => $details) {
-        $ttype = 't_' . $type;
+        $ttype = 't_'.$type;
         if ($type == 'm_bu') {
             $type = 'food';
         } elseif ($type == 'm_oil') {
@@ -787,7 +782,7 @@ function buy_public(&$c, $quantity = array(), $price = array())
         $c->$type += $details->quantity;
         $c->money -= $details->cost;
         $tcost += $details->cost;
-        $str .= $details->quantity . ' ' . $type . ', ';
+        $str .= $details->quantity.' '.$type.', ';
     }
 
     $nothing = false;
@@ -800,15 +795,15 @@ function buy_public(&$c, $quantity = array(), $price = array())
         $what = null;
         $cost = 0;
         foreach ($quantity as $key => $q) {
-            $what .= $key . $q . '@' . $price[$key] . ', ';
+            $what .= $key.$q.'@'.$price[$key].', ';
             $cost += round($q*$price[$key]*(100+$c->g_tax)/100);
         }
-        out("Tried: " . $what);
-        out("Money: " . $c->money . " Cost: " . $cost);
+        out("Tried: ".$what);
+        out("Money: ".$c->money." Cost: ".$cost);
         sleep(1);
     }
 
-    $str .= 'for $' .$tcost.' on public.';
+    $str .= 'for $'.$tcost.' on public.';
     out($str);
     return $result;
 }
@@ -838,7 +833,7 @@ function sell_public(&$c, $quantity = array(), $price = array(), $tonm = array()
     $result = ee('sell', array('quantity' => $quantity, 'price' => $price)); //ignore tonm for now, it's optional
     //out_data($result);
     if (isset($result->error) && $result->error) {
-        out('ERROR: ' . $result->error);
+        out('ERROR: '.$result->error);
         sleep(1);
         return;
     }
@@ -848,7 +843,7 @@ function sell_public(&$c, $quantity = array(), $price = array(), $tonm = array()
         foreach ($result->sell as $type => $details) {
             $bits = explode('_', $type);
             //$omtype = 'om_' . $bits[1];
-            $ttype = 't_' . $type;
+            $ttype = 't_'.$type;
             if ($type == 'm_bu') {
                 $type = 'food';
             } elseif ($type == 'm_oil') {
@@ -859,7 +854,7 @@ function sell_public(&$c, $quantity = array(), $price = array(), $tonm = array()
 
             //$c->$omtype += $details->quantity;
             $c->$type -= $details->quantity;
-            $str .= $details->quantity . ' ' . $type . ' @ ' . $details->price . ', ';
+            $str .= $details->quantity.' '.$type.' @ '.$details->price.', ';
         }
     }
     if ($str == 'Put ') {
@@ -897,7 +892,7 @@ function buy_tech(&$c, $tech = 't_bus', $spend = 0, $maxprice = 9999)
 function rand_country_name()
 {
     global $username;
-    $name = substr($username, 0, 2) . ' '; //name them by the first 2 chars of a username; should still be fairly unique on this server
+    $name = substr($username, 0, 2).' '; //name them by the first 2 chars of a username; should still be fairly unique on this server
     $last = chr(32); //we just added a space
     $length = rand(5, 24);
     for ($i = 0; $i < $length; $i++) {
@@ -918,8 +913,8 @@ function rand_country_name()
 function purebell($min, $max, $std_deviation, $step = 1)
 {
  //box-muller-method
-    $rand1 = (float)mt_rand()/(float)mt_getrandmax();
-    $rand2 = (float)mt_rand()/(float)mt_getrandmax();
+    $rand1 = (float) mt_rand()/(float) mt_getrandmax();
+    $rand2 = (float) mt_rand()/(float) mt_getrandmax();
     $gaussian_number = sqrt(-2 * log($rand1)) * cos(2 * pi() * $rand2);
     $mean = ($max + $min) / 2;
     $random_number = ($gaussian_number * $std_deviation) + $mean;
