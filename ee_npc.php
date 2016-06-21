@@ -52,6 +52,8 @@ out('Entering Infinite Loop');
 $sleepcount = $loopcount = 0;
 $played = true;
 
+$rules = ee('rules');
+
 
 while (1) {
     $server = ee('server');
@@ -141,6 +143,14 @@ while (1) {
             $save = true;
         }
 
+        if (!isset($cpref->lastTurns)) {
+            $cpref->lastTurns = 0;
+        }
+
+        if (!isset($cpref->turnStored)) {
+            $cpref->turnStored = 0;
+        }
+
         if ($cpref->nextplay < time()) {
             switch ($cpref->strat) {
                 case 'F':
@@ -160,6 +170,8 @@ while (1) {
             }
             $cpref->lastplay = time();
             $nexttime = $cpref->playfreq*purebell(1/$cpref->playrand, $cpref->playrand, 1, 0.1);
+            $maxin = furthest_play($cpref);
+            $nexttime = min($maxin, $nexttime);
             $cpref->nextplay = $cpref->lastplay + $nexttime;
             out("This country next plays in: $nexttime     ");
             $played = true;
@@ -185,29 +197,48 @@ while (1) {
     $cnum = null;
     $loopcount++;
     $sleepturns = 25;
-    $sleep = 1; //sleep 10s //min($sleepturns*$server->turn_rate,max(0,$server->reset_end - 60 - time())); //sleep for $sleepturns turns
+    $sleep = 1;
+    //sleep 10s //min($sleepturns*$server->turn_rate,max(0,$server->reset_end - 60 - time())); //sleep for $sleepturns turns
     //$sleepturns = ($sleep != $sleepturns*$server->turn_rate ? floor($sleep/$server->turn_rate) : $sleepturns);
     //out("Played 'Day' $loopcount; Sleeping for " . $sleep . " seconds ($sleepturns Turns)");
     if ($played) {
-        server_start_end_notification($server);
         $sleepcount = 0;
     } else {
         $sleepcount++;
     }
 
+    /*
     if ($sleepcount%300 == 0) {
         playstats($countries);
         echo "\n";
     }
+    */
 
     sleep($sleep); //sleep for $sleep seconds
     outNext($countries, true);
 }
 done(); //done() is defined below
 
+function furthest_play($cpref)
+{
+    global $server, $rules;
+    $max = $rules->maxturns + $rules->maxstore;
+    $held = $cpref->lastTurns + $cpref->turnsStored;
+    $diff = $max - $held;
+    $maxin = floor($diff*$server->turn_rate);
+    out('Country is holding '.$held.'. Turns will max in '.$maxin);
+    return $maxin;
+}
+
 function server_start_end_notification($server)
 {
-    out("Server started ".round((time()-$server->reset_start)/3600, 1).' hours ago and ends in '.round(($server->reset_end-time())/3600, 1).' hours');
+    $start = round((time()-$server->reset_start)/3600, 1).' hours ago';
+    $x = floor((time()-$server->reset_start)/$server->turn_rate);
+    $start .= " ($x turns)";
+    $end = round(($server->reset_end-time())/3600, 1).' hours';
+    $x = floor(($server->reset_end-time())/$server->turn_rate);
+    $end .= " ($x turns)";
+    out("Server started ".$start.' and ends in '.$end);
 }
 
 function pickStrat($cnum)
@@ -245,7 +276,7 @@ function playstats($countries)
 
     outOldest($countries);
     outFurthest($countries);
-    outNext($countries);
+    //outNext($countries);
 }
 
 function outOldest($countries)
@@ -522,9 +553,10 @@ function update_c(&$c, $result)
         foreach ($result->built as $type => $num) {     //for each type of building that we built....
             if (!$first) {                     //Text formatting
                 $str .= ' and ';        //Text formatting
-            }            $first = false;                 //Text formatting
-            $build = 'b_'.$type;      //have to convert to the advisor output, for now
-            $c->$build += $num;             //add buildings to keep track
+            }
+            $first = false;             //Text formatting
+            $build = 'b_'.$type;        //have to convert to the advisor output, for now
+            $c->$build += $num;         //add buildings to keep track
             $c->empty -= $num;          //subtract buildings from empty, to keep track
             $str .= $num.' '.$type;     //Text for screen
             if ($type == 'cs' && $num > 0) {
@@ -542,11 +574,11 @@ function update_c(&$c, $result)
         $c->tpt = $result->tpt;             //update TPT - added this to the API so that we don't have to calculate it
         $c->money -= $result->cost;
     } elseif (isset($result->new_land)) {
-        $c->empty += $result->new_land;                 //update empty land
+        $c->empty += $result->new_land;             //update empty land
         $c->land += $result->new_land;              //update land
         $c->build_cost = $result->build_cost;       //update Build Cost
         $c->explore_rate = $result->explore_rate;   //update explore rate
-        $c->tpt = $result->tpt;             //update TPT - added this to the API so that we don't have to calculate it
+        $c->tpt = $result->tpt;                     //update TPT - added this to the API so that we don't have to calculate it
         $str = "Explored ".$result->new_land." Acres";  //Text for screen
         $explain = '('.$c->land.' A)';          //Text for screen
     } elseif (isset($result->teched)) {
@@ -571,9 +603,9 @@ function update_c(&$c, $result)
     foreach ($result->turns as $num => $turn) {         //update stuff based on what happened this turn
         $netfood    += $c->foodnet  = floor(isset($turn->foodproduced)  ? $turn->foodproduced : 0)  - (isset($turn->foodconsumed)   ? $turn->foodconsumed : 0);
         $netmoney   += $c->income   = floor(isset($turn->taxrevenue)    ? $turn->taxrevenue : 0)    - (isset($turn->expenses)       ? $turn->expenses : 0);
-        $c->pop         += floor(isset($turn->popgrowth)        ? $turn->popgrowth : 0);        //the turn doesn't *always* return these things, so have to check if they exist, and add 0 if they don't
+        $c->pop     += floor(isset($turn->popgrowth)        ? $turn->popgrowth : 0);        //the turn doesn't *always* return these things, so have to check if they exist, and add 0 if they don't
         $c->m_tr    += floor(isset($turn->troopsproduced)   ? $turn->troopsproduced : 0);   //the turn doesn't *always* return these things, so have to check if they exist, and add 0 if they don't
-        $c->m_j         += floor(isset($turn->jetsproduced)         ? $turn->jetsproduced : 0);         //the turn doesn't *always* return these things, so have to check if they exist, and add 0 if they don't
+        $c->m_j     += floor(isset($turn->jetsproduced)     ? $turn->jetsproduced : 0);     //the turn doesn't *always* return these things, so have to check if they exist, and add 0 if they don't
         $c->m_tu    += floor(isset($turn->turretsproduced)  ? $turn->turretsproduced : 0);  //the turn doesn't *always* return these things, so have to check if they exist, and add 0 if they don't
         $c->m_ta    += floor(isset($turn->tanksproduced)    ? $turn->tanksproduced : 0);    //the turn doesn't *always* return these things, so have to check if they exist, and add 0 if they don't
         $c->m_spy   += floor(isset($turn->spiesproduced)    ? $turn->spiesproduced : 0);    //the turn doesn't *always* return these things, so have to check if they exist, and add 0 if they don't
@@ -586,9 +618,9 @@ function update_c(&$c, $result)
                 out("Earthquake destroyed {$turn->earthquake} Buildings! Update Advisor");                          //Text for screen
                 $c = get_advisor();                                             //update the advisor, because we no longer no what infromation is valid
             } elseif ($turn->event == 'pciboom') {       //in the event of a pci boom, recalculate income so we don't react based on an event
-                $c->income = floor(isset($turn->taxrevenue)     ? $turn->taxrevenue/3 : 0)  - (isset($turn->expenses)       ? $turn->expenses : 0);
+                $c->income = floor(isset($turn->taxrevenue)     ? $turn->taxrevenue/3 : 0)      - (isset($turn->expenses)       ? $turn->expenses : 0);
             } elseif ($turn->event == 'pcibad') {        //in the event of a pci bad, recalculate income so we don't react based on an event
-                $c->income = floor(isset($turn->taxrevenue)     ? $turn->taxrevenue*3 : 0)  - (isset($turn->expenses)       ? $turn->expenses : 0);
+                $c->income = floor(isset($turn->taxrevenue)     ? $turn->taxrevenue*3 : 0)      - (isset($turn->expenses)       ? $turn->expenses : 0);
             } elseif ($turn->event == 'foodboom') {      //in the event of a food boom, recalculate netfood so we don't react based on an event
                 $c->foodnet = floor(isset($turn->foodproduced)  ? $turn->foodproduced/3 : 0)    - (isset($turn->foodconsumed)   ? $turn->foodconsumed : 0);
             } elseif ($turn->event == 'foodbad') {       //in the event of a food boom, recalculate netfood so we don't react based on an event
@@ -679,12 +711,29 @@ function tech($tech = array())
 
 function get_main()
 {
-    return ee('main');      //get and return the MAIN information
+    $main = ee('main');      //get and return the MAIN information
+
+    global $cpref;
+    $cpref->lastTurns = $main->turns;
+    $cpref->turnsStored = $main->turns_stored;
+
+    return $main;
+}
+
+function get_rules()
+{
+    return ee('rules');      //get and return the RULES information
 }
 
 function get_advisor()
 {
-    return ee('advisor');   //get and return the ADVISOR information
+    $advisor = ee('advisor');   //get and return the ADVISOR information
+
+    global $cpref;
+    $cpref->lastTurns = $advisor->turns;
+    $cpref->turnsStored = $advisor->turns_stored;
+
+    return $advisor;
 }
 
 function get_pm_info()

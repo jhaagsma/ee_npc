@@ -128,6 +128,8 @@ function expected_result($input)
             return 'SELL';
         case 'govt':
             return 'GOVT';
+        case 'rules':
+            return 'RULES';
     }
 }
 
