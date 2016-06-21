@@ -63,9 +63,9 @@ function play_indy_strat($server)
         }
         global $cpref;
         $tol = $cpref->price_tolerance; //should be between 0.5 and 1.5
-        if ($c->money > max($c->bpt, 30)*$c->build_cost*10) { //buy_tech
+        if (turns_of_food($c) > 40 && $c->money > $c->networth *2) { // 40 turns of food, and more than 2x nw in cash on hand
             //out("Try to buy tech?");
-            $spend = $c->money - $c->bpt*$c->build_cost*10;
+            $spend = $c->money * 0.10;
             if ($c->pt_indy < 140) {
                 buy_tech($c, 't_indy', $spend*1/2, 3500*$tol);
             }
@@ -76,15 +76,18 @@ function play_indy_strat($server)
                 buy_tech($c, 't_res', $spend*1/4, 3500*$tol);
             }
 
-            $spend = $c->money - $c->bpt*$c->build_cost*10;
-            if ($c->pt_indy < 150) {
-                buy_tech($c, 't_indy', $spend*1/2, 3500*$tol);
-            }
-            if ($c->pt_bus < 160) {
-                buy_tech($c, 't_bus', $spend*1/4, 3500*$tol);
-            }
-            if ($c->pt_res < 160) {
-                buy_tech($c, 't_res', $spend*1/4, 3500*$tol);
+            $c = get_advisor();     //UPDATE EVERYTHING
+            if (turns_of_food($c) > 40 && $c->money > $c->networth *2) { // 40 turns of food, and more than 2x nw in cash on hand
+                $spend = $c->money * 0.10;
+                if ($c->pt_indy < 150) {
+                    buy_tech($c, 't_indy', $spend*1/2, 3500*$tol);
+                }
+                if ($c->pt_bus < 160) {
+                    buy_tech($c, 't_bus', $spend*1/4, 3500*$tol);
+                }
+                if ($c->pt_res < 160) {
+                    buy_tech($c, 't_res', $spend*1/4, 3500*$tol);
+                }
             }
         }
     }
