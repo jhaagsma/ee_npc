@@ -552,7 +552,7 @@ function can_sell_tech(&$c, $tech = 't_bus')
 {
     $onmarket = onmarket($tech);
     $tot = $c->$tech + $onmarket;
-    $sell = floor($tot/4) - $onmarket;
+    $sell = floor($tot) - $onmarket;
 
     return $sell > 10 ? $sell : 0;
 }
@@ -561,7 +561,7 @@ function can_sell_mil(&$c, $mil = 'm_tr')
 {
     $onmarket = onmarket($mil);
     $tot = $c->$mil + $onmarket;
-    $sell = floor($tot/4) - $onmarket;
+    $sell = floor($tot*($c->govt == 'C' ? 0.25*1.35 : 0.25)) - $onmarket;
 
     return $sell > 5000 ? $sell : 0;
 }
