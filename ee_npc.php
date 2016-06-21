@@ -872,7 +872,7 @@ function buy_public(&$c, $quantity = array(), $price = array())
         $c->$type += $details->quantity;
         $c->money -= $details->cost;
         $tcost += $details->cost;
-        $str .= $details->quantity.' '.$type.', ';
+        $str .= $details->quantity.' '.$type.'@$'.floor($details->cost/$details->quantity).', ';
     }
 
     $nothing = false;
