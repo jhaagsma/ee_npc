@@ -9,6 +9,7 @@ function play_rainbow_strat($server)
     $c = get_advisor();     //c as in country! (get the advisor)
     out($c->turns.' turns left');
     //out_data($c) && exit;				//ouput the advisor data
+    out("Agri: {$c->pt_agri}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%");
     if ($c->govt == 'M' && $c->turns_played < 100) {
         $rand = rand(0, 100);
         switch ($rand) {

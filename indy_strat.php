@@ -9,6 +9,7 @@ function play_indy_strat($server)
     $main = get_main();     //get the basic stats
     //out_data($main);			//output the main data
     $c = get_advisor();     //c as in country! (get the advisor)
+    out("Indy: {$c->pt_indy}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%");
     //out_data($c) && exit;				//ouput the advisor data
     if ($c->govt == 'M') {
         $rand = rand(0, 100);
@@ -65,7 +66,7 @@ function play_indy_strat($server)
         if ($c->money > max($c->bpt, 30)*$c->build_cost*10) { //buy_tech
             //out("Try to buy tech?");
             $spend = $c->money - $c->bpt*$c->build_cost*10;
-            if ($c->pt_agri < 140) {
+            if ($c->pt_indy < 140) {
                 buy_tech($c, 't_indy', $spend*1/2, 3500*$tol);
             }
             if ($c->pt_bus < 140) {
@@ -76,7 +77,7 @@ function play_indy_strat($server)
             }
 
             $spend = $c->money - $c->bpt*$c->build_cost*10;
-            if ($c->pt_agri < 150) {
+            if ($c->pt_indy < 150) {
                 buy_tech($c, 't_indy', $spend*1/2, 3500*$tol);
             }
             if ($c->pt_bus < 160) {

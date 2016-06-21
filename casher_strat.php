@@ -8,7 +8,8 @@ function play_casher_strat($server)
     //out_data($main);			//output the main data
     $c = get_advisor();     //c as in country! (get the advisor)
     //out_data($c) && exit;				//ouput the advisor data
-    
+
+    out("Bus: {$c->pt_bus}%; Res: {$c->pt_res}%");
     if ($c->govt == 'M') {
         $rand = rand(0, 100);
         switch ($rand) {
@@ -23,16 +24,16 @@ function play_casher_strat($server)
                 break;
         }
     }
-    
+
     out($c->turns.' turns left');
     //$pm_info = get_pm_info();	//get the PM info
     //out_data($pm_info);		//output the PM info
     //$market_info = get_market_info();	//get the Public Market info
     //out_data($market_info);		//output the PM info
-    
+
     $owned_on_market_info = get_owned_on_market_info();     //find out what we have on the market
     //out_data($owned_on_market_info);	//output the Owned on Public Market info
-    
+
     while ($c->turns > 0) {
         //$result = buy_public($c,array('m_bu'=>100),array('m_bu'=>400));
         $result = play_casher_turn($c);
@@ -50,7 +51,7 @@ function play_casher_strat($server)
             $c->pop = $main->pop;           //might as well use the newest numbers?
             $c->turns = $main->turns;       //This is the only one we really *HAVE* to check for
         }
-        
+
 
         $hold = money_management($c);
         if ($hold) {
@@ -73,7 +74,7 @@ function play_casher_strat($server)
             if ($c->pt_res < 140) {
                 buy_tech($c, 't_res', $spend*1/4, 3500*$tol);
             }
-            
+
             $spend = $c->money - $c->bpt*$c->build_cost*10;
             if ($c->pt_bus < 175) {
                 buy_tech($c, 't_bus', $spend*1/4, 3500*$tol);
