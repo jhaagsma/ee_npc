@@ -75,7 +75,7 @@ function play_farmer_strat($server)
 
         global $cpref;
         $tol = $cpref->price_tolerance; //should be between 0.5 and 1.5
-        if (turns_of_food($c) > 40 && $c->money > $c->networth *2 && $c->money > 3500*100) { // 40 turns of food, and more than 2x nw in cash on hand
+        if (turns_of_food($c) > 40 && $c->money > $c->networth *2 && $c->money > 3500*500) { // 40 turns of food, and more than 2x nw in cash on hand
             //buy tech!
             //out("Try to buy tech?");
             $spend = $c->money * 0.20;
@@ -91,7 +91,7 @@ function play_farmer_strat($server)
 
             $c = get_advisor();     //UPDATE EVERYTHING
             //out("Try Higher Amount!");
-            if (turns_of_food($c) > 40 && $c->money > $c->networth *2 && $c->money > 3500*100) { // 40 turns of food, and more than 2x nw in cash on hand
+            if (turns_of_food($c) > 40 && $c->money > $c->networth *2 && $c->money > 3500*500) { // 40 turns of food, and more than 2x nw in cash on hand
                 $spend = $c->money * 0.20;
                 if ($c->pt_agri < 200) {
                     buy_tech($c, 't_agri', $spend*1/2, 3500*$tol);
@@ -105,7 +105,7 @@ function play_farmer_strat($server)
             }
         }
 
-        if (turns_of_food($c) > 40 && $c->money > $c->networth *2 && $c->money > 3500*100) { // 40 turns of food, and more than 2x nw in cash on hand
+        if (turns_of_food($c) > 40 && $c->money > $c->networth *2 && $c->money > 3500*500) { // 40 turns of food, and more than 2x nw in cash on hand
             defend_self($c, floor($c->money * 0.20)); //second param is *RESERVE* cash
         }
     }

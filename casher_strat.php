@@ -65,7 +65,7 @@ function play_casher_strat($server)
 
         global $cpref;
         $tol = $cpref->price_tolerance; //should be between 0.5 and 1.5
-        if (turns_of_food($c) > 40 && $c->money > $c->networth *2 && $c->money > 3500*100) { // 40 turns of food, and more than 2x nw in cash on hand
+        if (turns_of_food($c) > 40 && $c->money > $c->networth *2 && $c->money > 3500*500) { // 40 turns of food, and more than 2x nw in cash on hand
             //out("Try to buy tech?");
             $spend = $c->money * 0.30;
             if ($c->pt_bus < 140) {
@@ -83,7 +83,7 @@ function play_casher_strat($server)
                 buy_tech($c, 't_res', $spend*1/4, 3500*$tol);
             }
         }
-        if (turns_of_food($c) > 40 && $c->money > $c->networth *2 && $c->money > 3500*100) { // 40 turns of food, and more than 2x nw in cash on hand
+        if (turns_of_food($c) > 40 && $c->money > $c->networth *2 && $c->money > 3500*500) { // 40 turns of food, and more than 2x nw in cash on hand
             defend_self($c, floor($c->money * 0.10)); //second param is *RESERVE* cash
         }
     }

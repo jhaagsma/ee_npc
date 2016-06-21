@@ -157,7 +157,7 @@ function turns_of_money(&$c)
 
 function money_management(&$c)
 {
-    while (turns_of_money($c) < 10) {
+    while (turns_of_money($c) < 4) {
         $foodloss = -1*$c->foodnet;
 
         if ($c->turns_stored <= 30 && total_cansell_military($c) > 7500) {
@@ -195,7 +195,7 @@ function food_management(&$c)
         $turns_of_food = $foodloss*$turns_buy;
         $market_price = $market_info->buy_price->m_bu;
         //out("Market Price: " . $market_price);
-        if ($c->food < $turns_of_food && $c->money > $turns_of_food*$market_price*((100+$c->g_tax)/100)) { //losing food, less than turns_buy turns left, AND have the money to buy it
+        if ($c->food < $turns_of_food && $c->money > $turns_of_food*$market_price*((100+$c->g_tax)/100) && $c->money - $turns_of_food*$market_price*((100+$c->g_tax)/100) + $c->income*$turns_buy > 0) { //losing food, less than turns_buy turns left, AND have the money to buy it
             $quantity = min($foodloss*$turns_buy, $market_info->available->m_bu);
             out("Less than $turns_buy turns worth of food! (".$c->foodnet."/turn) Buy $quantity food off Public @\$$market_price if we can!");     //Text for screen
             $result = buy_public($c, array('m_bu' => $quantity), array('m_bu' => $market_price));     //Buy 3 turns of food off the public at or below the PM price
