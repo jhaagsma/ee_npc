@@ -902,8 +902,8 @@ function sell_public(&$c, $quantity = array(), $price = array(), $tonm = array()
 {
     //out_data($c);
 
-    out_data($quantity);
-    out_data($price);
+    //out_data($quantity);
+    //out_data($price);
     /*$str = 'Try selling ';
 	foreach($quantity as $type => $q){
 		if($q == 0)
