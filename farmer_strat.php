@@ -108,7 +108,7 @@ function play_farmer_strat($server)
         }
     }
     $nlg = nlg($c);
-    out("Agri: {$c->pt_agri}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%; NLG: $nlg");
+    out("Agri: {$c->pt_agri}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%; Mil: {$c->pt_mil}%; NLG: $nlg");
     out("Done Playing ".FARMER." Turns for #$cnum!");   //Text for screen
 }
 

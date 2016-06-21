@@ -93,10 +93,13 @@ function play_rainbow_strat($server)
                 buy_tech($c, 't_agri', $spend*1/2, 3500*$tol);
             }
             if ($c->pt_bus < 160) {
-                buy_tech($c, 't_bus', $spend*1/4, 3500*$tol);
+                buy_tech($c, 't_bus', $spend*1/6, 3500*$tol);
             }
             if ($c->pt_res < 160) {
-                buy_tech($c, 't_res', $spend*1/4, 3500*$tol);
+                buy_tech($c, 't_res', $spend*1/6, 3500*$tol);
+            }
+            if ($c->pt_mil > 90) {
+                buy_tech($c, 't_res', $spend*1/6, 3500*$tol);
             }
         }
 
@@ -104,7 +107,7 @@ function play_rainbow_strat($server)
     }
 
     $nlg = nlg($c);
-    out("Agri: {$c->pt_agri}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%; NLG: $nlg");
+    out("Agri: {$c->pt_agri}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%; Mil: {$c->pt_mil}%; NLG: $nlg");
     out("Done Playing ".RAINBOW." Turns for #$cnum!");  //Text for screen
 }
 
