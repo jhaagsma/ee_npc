@@ -137,7 +137,7 @@ while (1) {
             $save = true;
         }
 
-        if (!isset($cpref->nextplay) || !isset($cpref->lastplay) || $cpref->lastplay < time() - 86400*2) { //two days ago
+        if (!isset($cpref->nextplay) || !isset($cpref->lastplay) || $cpref->lastplay < time() - $server->turn_rate*$rules->maxturns) { //maxturns
             $cpref->nextplay = 0;
             out($colors->getColoredString("Resetting Next #$cnum", 'red'));
             $save = true;
