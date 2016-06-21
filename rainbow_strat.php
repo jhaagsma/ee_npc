@@ -96,7 +96,7 @@ function play_rainbow_strat($server)
             if ($c->pt_res < 140) {
                 buy_tech($c, 't_res', $spend*1/4, 3500*$tol);
             }
-            
+
             $c = get_advisor();     //UPDATE EVERYTHING
             //out("Try Higher Amount!");
             $spend = $c->money * 0.20;
@@ -112,7 +112,9 @@ function play_rainbow_strat($server)
         }
         //$main->turns = 0;				//use this to do one turn at a time
     }
-    out("Agri: {$c->pt_agri}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%");
+
+    $nlg = nlg($c);
+    out("Agri: {$c->pt_agri}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%; NLG: $nlg");
     out("Done Playing ".RAINBOW." Turns for #$cnum!");  //Text for screen
 }
 

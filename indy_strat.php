@@ -91,7 +91,8 @@ function play_indy_strat($server)
             }
         }
     }
-    out("Indy: {$c->pt_indy}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%");
+    $nlg = nlg($c);
+    out("Indy: {$c->pt_indy}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%; NLG: $nlg");
     out("Done Playing ".INDY." Turns for #$cnum!");     //Text for screen
 }
 

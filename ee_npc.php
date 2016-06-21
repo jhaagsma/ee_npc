@@ -287,8 +287,9 @@ function outOldest($countries)
     global $server;
     $old = oldestPlay($countries);
     $onum = getLastPlayCNUM($countries, $old);
+    $ostrat = txtStrat($onum);
     $old = time() - $old;
-    out("Oldest Play: ".$old."s ago by #$onum (".round($old/$server->turn_rate)." turns)");
+    out("Oldest Play: ".$old."s ago by #$onum $ostrat (".round($old/$server->turn_rate)." turns)");
     if ($old > 86400 * 2) {
         out("OLD TOO FAR: RESET NEXTPLAY");
         global $settings;
@@ -301,16 +302,42 @@ function outFurthest($countries)
     global $server;
     $furthest = getFurthestNext($countries);
     $fnum = getNextPlayCNUM($countries, $furthest);
+    $fstrat = txtStrat($fnum);
     $furthest = $furthest - time();
-    out("Furthest Play in ".$furthest."s for #$fnum (".round($furthest/$server->turn_rate)." turns)");
+    out("Furthest Play in ".$furthest."s for #$fnum $fstrat (".round($furthest/$server->turn_rate)." turns)");
 }
 
 function outNext($countries, $rewrite = false)
 {
     $next = getNextPlays($countries);
     $xnum = getNextPlayCNUM($countries, min($next));
+    $xstrat = txtStrat($xnum);
     $next = max(0, min($next) - time());
-    out("Next Play in ".$next.'s: #'.$xnum.'    '.($rewrite ? "\r" : null), !$rewrite);
+    out("Next Play in ".$next.'s: #'.$xnum." ($xstrat)    ".($rewrite ? "\r" : null), !$rewrite);
+}
+
+function txtStrat($cnum)
+{
+    global $settings;
+    if (!isset($settings->$cnum->strat)) {
+        return;
+    }
+
+    switch ($settings->$cnum->strat) {
+        case 'C':
+            return CASHER;
+        case 'F':
+            return FARMER;
+        case 'I':
+            return INDY;
+        case 'T':
+            return TECHER;
+            break;
+        case 'R':
+            return RAINBOW;
+        case 'O':
+            return OILER;
+    }
 }
 
 function govtStats($countries)

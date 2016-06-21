@@ -88,28 +88,29 @@ function play_farmer_strat($server)
             if ($c->pt_res < 140) {
                 buy_tech($c, 't_res', $spend*1/4, 3500*$tol);
             }
-
-            $c = get_advisor();     //UPDATE EVERYTHING
-            //out("Try Higher Amount!");
-            if (turns_of_food($c) > 40 && $c->money > $c->networth *2 && $c->money > 3500*500) { // 40 turns of food, and more than 2x nw in cash on hand
-                $spend = $c->money * 0.20;
-                if ($c->pt_agri < 200) {
-                    buy_tech($c, 't_agri', $spend*1/2, 3500*$tol);
-                }
-                if ($c->pt_bus < 160) {
-                    buy_tech($c, 't_bus', $spend*1/4, 3500*$tol);
-                }
-                if ($c->pt_res < 160) {
-                    buy_tech($c, 't_res', $spend*1/4, 3500*$tol);
-                }
-            }
         }
 
         if (turns_of_food($c) > 40 && $c->money > $c->networth *2 && $c->money > 3500*500) { // 40 turns of food, and more than 2x nw in cash on hand
             defend_self($c, floor($c->money * 0.20)); //second param is *RESERVE* cash
         }
+
+        $c = get_advisor();     //UPDATE EVERYTHING
+        //out("Try Higher Amount!");
+        if (turns_of_food($c) > 40 && $c->money > $c->networth *2 && $c->money > 3500*500) { // 40 turns of food, and more than 2x nw in cash on hand
+            $spend = $c->money * 0.20;
+            if ($c->pt_agri < 200) {
+                buy_tech($c, 't_agri', $spend*1/2, 3500*$tol);
+            }
+            if ($c->pt_bus < 160) {
+                buy_tech($c, 't_bus', $spend*1/4, 3500*$tol);
+            }
+            if ($c->pt_res < 160) {
+                buy_tech($c, 't_res', $spend*1/4, 3500*$tol);
+            }
+        }
     }
-    out("Agri: {$c->pt_agri}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%");
+    $nlg = nlg($c);
+    out("Agri: {$c->pt_agri}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%; NLG: $nlg");
     out("Done Playing ".FARMER." Turns for #$cnum!");   //Text for screen
 }
 

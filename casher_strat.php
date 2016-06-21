@@ -74,7 +74,13 @@ function play_casher_strat($server)
             if ($c->pt_res < 140) {
                 buy_tech($c, 't_res', $spend*1/4, 3500*$tol);
             }
+        }
 
+        if (turns_of_food($c) > 40 && $c->money > $c->networth *2 && $c->money > 3500*500) { // 40 turns of food, and more than 2x nw in cash on hand
+            defend_self($c, floor($c->money * 0.10)); //second param is *RESERVE* cash
+        }
+
+        if (turns_of_food($c) > 40 && $c->money > $c->networth *2 && $c->money > 3500*500) { // 40 turns of food, and more than 2x nw in cash on hand
             $spend = $c->money * 0.30;
             if ($c->pt_bus < 175) {
                 buy_tech($c, 't_bus', $spend*1/4, 3500*$tol);
@@ -83,11 +89,10 @@ function play_casher_strat($server)
                 buy_tech($c, 't_res', $spend*1/4, 3500*$tol);
             }
         }
-        if (turns_of_food($c) > 40 && $c->money > $c->networth *2 && $c->money > 3500*500) { // 40 turns of food, and more than 2x nw in cash on hand
-            defend_self($c, floor($c->money * 0.10)); //second param is *RESERVE* cash
-        }
     }
-    out("Bus: {$c->pt_bus}%; Res: {$c->pt_res}%");
+
+    $nlg = nlg($c);
+    out("Bus: {$c->pt_bus}%; Res: {$c->pt_res}%; NLG: $nlg");
     out("Done Playing ".CASHER." Turns for #$cnum!");   //Text for screen
 }
 
