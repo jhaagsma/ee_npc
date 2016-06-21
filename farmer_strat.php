@@ -78,7 +78,7 @@ function play_farmer_strat($server)
         if (turns_of_food($c) > 50 && turns_of_money($c) > 50 && $c->money > 3500*500) { // 40 turns of food, and more than 2x nw in cash on hand
             //buy tech!
             //out("Try to buy tech?");
-            $spend = min($c->money, $c->money + 50*$c->income)*0.4; //min what we'll use in 50 turns basically
+            $spend = min($c->money, $c->money + max(20, $c->turns)*$c->income)*0.4; //min what we'll use in turns-left turns basically
             /*if ($c->pt_agri < 160) {
                 buy_tech($c, 't_agri', $spend*1/4, 3500*$tol);
             }
@@ -103,7 +103,7 @@ function play_farmer_strat($server)
             }
         }
 
-        if (turns_of_food($c) > 50 && turns_of_money($c) > 50 && $c->money > 3500*500) { // 40 turns of food, and more than 2x nw in cash on hand
+        if (turns_of_food($c) > 50 && turns_of_money($c) > max(20, $c->turns) && $c->money > 3500*500) { // 40 turns of food, and more than 2x nw in cash on hand
             defend_self($c, floor($c->money * 0.20)); //second param is *RESERVE* cash
         }
     }

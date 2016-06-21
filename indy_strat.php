@@ -65,7 +65,7 @@ function play_indy_strat($server)
         $tol = $cpref->price_tolerance; //should be between 0.5 and 1.5
         if (turns_of_food($c) > 50 && turns_of_money($c) > 50 && $c->money > 3500*500) { // 40 turns of food, and more than 2x nw in cash on hand
             //out("Try to buy tech?");
-            $spend = min($c->money, $c->money + 50*$c->income)*0.4; //min what we'll use in 50 turns basically
+            $spend = min($c->money, $c->money + max(20, $c->turns)*$c->income)*0.4; //min what we'll use in max(20,turns-left) turns basically
 
             if ($c->pt_indy < 150) {
                 buy_tech($c, 't_indy', $spend*2/5, 3500*$tol);
