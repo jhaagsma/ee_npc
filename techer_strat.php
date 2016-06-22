@@ -185,7 +185,7 @@ function sell_max_tech($c)
 function tech_techer(&$c)
 {
     //lets do random weighting... to some degree
-    global $mktinfo; //public mkt info
+    $market_info = get_market_info();   //get the Public Market info
 
     $mil    = max((int)$market_info->buy_price->mil - 2000, rand(0, 300));
     $med    = max((int)$market_info->buy_price->med - 2000, rand(0, 5));
