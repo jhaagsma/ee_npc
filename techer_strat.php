@@ -185,17 +185,19 @@ function sell_max_tech($c)
 function tech_techer(&$c)
 {
     //lets do random weighting... to some degree
-    $mil    = rand(0, 300);
-    $med    = rand(0, 5);
-    $bus    = rand(10, 400);
-    $res    = rand(10, 400);
-    $agri   = rand(10, 300);
-    $war    = rand(0, 10);
-    $ms         = rand(0, 20);
-    $weap   = rand(0, 20);
-    $indy   = rand(5, 300);
-    $spy    = rand(0, 10);
-    $sdi    = rand(2, 150);
+    global $mktinfo; //public mkt info
+
+    $mil    = max((int)$market_info->buy_price->mil - 2000, rand(0, 300));
+    $med    = max((int)$market_info->buy_price->med - 2000, rand(0, 5));
+    $bus    = max((int)$market_info->buy_price->bus - 2000, rand(10, 400));
+    $res    = max((int)$market_info->buy_price->res - 2000, rand(10, 400));
+    $agri   = max((int)$market_info->buy_price->agri - 2000, rand(10, 300));
+    $war    = max((int)$market_info->buy_price->war - 2000, rand(0, 10));
+    $ms     = max((int)$market_info->buy_price->ms - 2000, rand(0, 20));
+    $weap   = max((int)$market_info->buy_price->weap - 2000, rand(0, 20));
+    $indy   = max((int)$market_info->buy_price->indy - 2000, rand(5, 300));
+    $spy    = max((int)$market_info->buy_price->spy - 2000, rand(0, 10));
+    $sdi    = max((int)$market_info->buy_price->sdi - 2000, rand(2, 150));
     $tot    = $mil + $med + $bus + $res + $agri + $war + $ms + $weap + $indy + $spy + $sdi;
 
     $left = $c->tpt;
