@@ -133,10 +133,10 @@ function buy_casher_goals(&$c, $spend = null, $spend_partial = null)
 
     arsort($score);
 
-    //out_data($score);
+    out_data($score);
 
     $what = key($score);
-   // out("Highest Goal: ".$what);
+    out("Highest Goal: ".$what);
     if ($key = 't_bus') {
         buy_tech($c, 't_bus', $spend_partial, 3500*$tol);
     } elseif ($key = 't_res') {
