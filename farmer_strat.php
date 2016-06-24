@@ -179,15 +179,15 @@ function buy_farmer_goals(&$c, $spend = null, $spend_partial = null)
 
 
 
-    if ($key = 't_agri') {
+    if ($what == 't_agri') {
         buy_tech($c, 't_agri', $spend_partial, 3500*$tol);
-    } elseif ($key = 't_bus') {
+    } elseif ($what == 't_bus') {
         buy_tech($c, 't_bus', $spend_partial, 3500*$tol);
-    } elseif ($key = 't_res') {
+    } elseif ($what == 't_res') {
         buy_tech($c, 't_res', $spend_partial, 3500*$tol);
-    } elseif ($key = 't_mil') {
+    } elseif ($what == 't_mil') {
         buy_tech($c, 't_mil', $spend_partial, 3500*$tol);
-    } elseif ($key = 'nlg') {
+    } elseif ($what == 'nlg') {
         defend_self($c, floor($c->money - $spend/$psum)); //second param is *RESERVE* cash
     }
 
