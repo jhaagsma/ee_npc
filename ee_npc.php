@@ -875,7 +875,7 @@ function sell_on_pm(&$c, $units = array())
 
 function buy_public(&$c, $quantity = array(), $price = array())
 {
-    global $techlist;
+    global $techlist, $market;
     $result = ee('buy', array('quantity' => $quantity, 'price' => $price));
     $str = 'Bought ';
     $tcost = 0;
@@ -893,6 +893,8 @@ function buy_public(&$c, $quantity = array(), $price = array())
         $c->money -= $details->cost;
         $tcost += $details->cost;
         $str .= $details->quantity.' '.$type.'@$'.floor($details->cost/$details->quantity).', ';
+
+        $market->relaUpdate($type, $quantity, $details->quantity);
     }
 
     $nothing = false;
@@ -996,8 +998,7 @@ function buy_tech(&$c, $tech = 't_bus', $spend = 0, $maxprice = 9999)
             $result = buy_public($c, array($tech => $tobuy), array($tech => $price));     //Buy troops!
             $spend = $c->money - $diff;
 
-            out_data($result);
-            $market->relaUpdate($tech, $quantity, $result->bought->$tech->quantity);
+            //out_data($result);
         }
     }
 }

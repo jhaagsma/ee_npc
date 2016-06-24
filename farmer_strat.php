@@ -165,20 +165,20 @@ function buy_farmer_goals(&$c, $spend = null)
         }
         $psum += $goal[2];
     }
-    out_data($score);
+    //out_data($score);
 
     arsort($score);
-    out_data($score);
+   // out_data($score);
 
     $what = key($score);
-    out("Highest Score:".$what);
+    //out("Highest Score:".$what);
     if ($key = 't_agri') {
         buy_tech($c, 't_agri', $spend/$psum, 3500*$tol);
     } elseif ($key = 't_bus') {
         buy_tech($c, 't_bus', $spend/$psum, 3500*$tol);
     } elseif ($key = 't_res') {
         buy_tech($c, 't_res', $spend/$psum, 3500*$tol);
-    } elseif ($key = 't_res') {
+    } elseif ($key = 't_mil') {
         buy_tech($c, 't_mil', $spend/$psum, 3500*$tol);
     } elseif ($key = 'nlg') {
         defend_self($c, floor($c->money - $spend/$psum)); //second param is *RESERVE* cash
