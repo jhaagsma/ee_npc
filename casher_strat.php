@@ -127,7 +127,7 @@ function buy_casher_goals(&$c, $spend = null)
     }
     out_data($score);
 
-    sort($score);
+    arsort($score);
 
     out_data($score);
 

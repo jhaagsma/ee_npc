@@ -167,7 +167,7 @@ function buy_farmer_goals(&$c, $spend = null)
     }
     out_data($score);
 
-    sort($score);
+    arsort($score);
     out_data($score);
 
     $what = key($score);
