@@ -146,7 +146,7 @@ function sell_max_tech($c)
     foreach ($quantity as $key => $q) {
         if ($q == 0) {
             $price[$key] = 0;
-        } elseif ($market_info->buy_price->$key != null) {
+        } elseif ($market->price($key) != null) {
             $price[$key] = floor($market->price($key) * purebell($rmin, $rmax, $rstddev, $rstep));
         } else {
             $price[$key] = floor(purebell($nogoods_low, $nogoods_high, $nogoods_stddev, $nogoods_step));
