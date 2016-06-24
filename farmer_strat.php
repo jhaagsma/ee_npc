@@ -130,10 +130,14 @@ function build_farmer(&$c)
 
 
 
-function buy_farmer_goals(&$c, $spend = null)
+function buy_farmer_goals(&$c, $spend = null, $spend_partial = null)
 {
     if ($spend == null) {
         $spend = $c->money;
+    }
+
+    if ($spend_partial == null) {
+        $spend_partial = $spend / 3;
     }
 
     global $cpref;
@@ -172,20 +176,23 @@ function buy_farmer_goals(&$c, $spend = null)
 
     $what = key($score);
     //out("Highest Score:".$what);
+
+
+
     if ($key = 't_agri') {
-        buy_tech($c, 't_agri', $spend/$psum, 3500*$tol);
+        buy_tech($c, 't_agri', $spend_partial, 3500*$tol);
     } elseif ($key = 't_bus') {
-        buy_tech($c, 't_bus', $spend/$psum, 3500*$tol);
+        buy_tech($c, 't_bus', $spend_partial, 3500*$tol);
     } elseif ($key = 't_res') {
-        buy_tech($c, 't_res', $spend/$psum, 3500*$tol);
+        buy_tech($c, 't_res', $spend_partial, 3500*$tol);
     } elseif ($key = 't_mil') {
-        buy_tech($c, 't_mil', $spend/$psum, 3500*$tol);
+        buy_tech($c, 't_mil', $spend_partial, 3500*$tol);
     } elseif ($key = 'nlg') {
         defend_self($c, floor($c->money - $spend/$psum)); //second param is *RESERVE* cash
     }
 
-    $spend -= $spend/3;
+    $spend -= $spend_partial;
     if ($spend > 10000) {
-        buy_farmer_goals($c, $spend);
+        buy_farmer_goals($c, $spend, $spend_partial);
     }
 }
