@@ -108,8 +108,8 @@ function buy_casher_goals(&$c, $spend = null, $spend_partial = null)
 
     $goals = [
         //what, goal, priority
-        ['t_bus',178,4],
-        ['t_res',178,4],
+        ['t_bus',178,8],
+        ['t_res',178,8],
         ['t_mil',90,1],
         ['nlg',$c->nlgTarget(),2],
     ];
