@@ -143,7 +143,7 @@ function buy_casher_goals(&$c, $spend = null)
         defend_self($c, floor($c->money - $spend/$psum)); //second param is *RESERVE* cash
     }
 
-    $spend -= $spend/$psum;
+    $spend -= $spend/3;
     if ($spend > 10000) {
         buy_casher_goals($c, $spend);
     }

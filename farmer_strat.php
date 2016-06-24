@@ -147,7 +147,7 @@ function buy_farmer_goals(&$c, $spend = null)
         ['t_mil',90,1],
         ['nlg',$c->nlgTarget(),1],
     ];
-    out_data($goals);
+    //out_data($goals);
 
     $psum = 0;
     $score = [];
@@ -184,7 +184,7 @@ function buy_farmer_goals(&$c, $spend = null)
         defend_self($c, floor($c->money - $spend/$psum)); //second param is *RESERVE* cash
     }
 
-    $spend -= $spend/$psum;
+    $spend -= $spend/3;
     if ($spend > 10000) {
         buy_farmer_goals($c, $spend);
     }
