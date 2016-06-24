@@ -57,8 +57,8 @@ $played = true;
 $rules = ee('rules');
 $market = new PublicMarket();
 
+$server = ee('server');
 while (1) {
-    $server = ee('server');
     while ($server->alive_count < $server->countries_allowed) {
         out("Less countries than allowed! (".$server->alive_count.'/'.$server->countries_allowed.')');
         include_once('name_generator.php');
@@ -201,6 +201,7 @@ while (1) {
         }
         out("Sleep until end");
         sleep(($until_end + 1)*$server->turn_rate);     //don't let them fluff things up, sleep through end of reset
+        $server = ee('server');
     }
     $cnum = null;
     $loopcount++;
@@ -215,12 +216,13 @@ while (1) {
         $sleepcount++;
     }
 
-    /*
-    if ($sleepcount%300 == 0) {
+
+    if ($sleepcount%120 == 0) {
+        $server = ee('server');
         playstats($countries);
         echo "\n";
     }
-    */
+
 
     sleep($sleep); //sleep for $sleep seconds
     outNext($countries, true);

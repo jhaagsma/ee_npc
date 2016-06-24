@@ -48,6 +48,7 @@ function ee($function, $parameterArray = array())
         out_data($init);
     }
 
+    //out($function);
     return $return;
 }
 
