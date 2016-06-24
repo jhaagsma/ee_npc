@@ -133,6 +133,7 @@ function build_farmer(&$c)
 function buy_farmer_goals(&$c, $spend = null, $spend_partial = null)
 {
     if ($spend == null) {
+        $c = get_advisor();
         $spend = $c->money;
     }
 
