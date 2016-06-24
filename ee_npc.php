@@ -997,7 +997,7 @@ function buy_tech(&$c, $tech = 't_bus', $spend = 0, $maxprice = 9999)
             $spend = $c->money - $diff;
 
             out_data($result);
-            $market->relaUpdate($tech, $quantity, $result->bought[$tech]->quantity);
+            $market->relaUpdate($tech, $quantity, $result->bought->$tech->quantity);
         }
     }
 }
