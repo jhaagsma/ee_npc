@@ -147,6 +147,7 @@ function buy_farmer_goals(&$c, $spend = null)
         ['t_mil',90,1],
         ['nlg',$c->nlgTarget(),1],
     ];
+    out_data($goals);
 
     $psum = 0;
     $score = [];
@@ -164,10 +165,13 @@ function buy_farmer_goals(&$c, $spend = null)
         }
         $psum += $goal[2];
     }
+    out_data($score);
 
     sort($score);
+    out_data($score);
 
     $what = key($score);
+    out("Highest Score:".$what);
     if ($key = 't_agri') {
         buy_tech($c, 't_agri', $spend/$psum, 3500*$tol);
     } elseif ($key = 't_bus') {
