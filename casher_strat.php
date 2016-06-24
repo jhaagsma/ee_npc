@@ -113,7 +113,7 @@ function buy_casher_goals(&$c, $spend = null, $spend_partial = null)
         ['t_mil',90,1],
         ['nlg',$c->nlgTarget(),1],
     ];
-    out_data($goals);
+    //out_data($goals);
 
     $psum = 0;
     $score = [];
