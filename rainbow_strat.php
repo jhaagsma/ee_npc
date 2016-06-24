@@ -2,7 +2,7 @@
 
 function play_rainbow_strat($server)
 {
-    global $cnum,$market_info;
+    global $cnum;
     out("Playing ".RAINBOW." turns for #$cnum");
     //$main = get_main();     //get the basic stats
     //out_data($main);			//output the main data
@@ -40,13 +40,13 @@ function play_rainbow_strat($server)
     }
     $pm_info = get_pm_info();   //get the PM info
     //out_data($pm_info);		//output the PM info
-    $market_info = get_market_info();   //get the Public Market info
+    //$market_info = get_market_info();   //get the Public Market info
     //out_data($market_info);		//output the PM info
-    
+
     $owned_on_market_info = get_owned_on_market_info();     //find out what we have on the market
     //out_data($market_info);	//output the Public Market info
     //var_export($owned_on_market_info);
-    
+
     while ($c->turns > 0) {
         //$result = buy_public($c,array('m_bu'=>100),array('m_bu'=>400));
         $result = play_rainbow_turn($c);
@@ -118,7 +118,7 @@ function play_rainbow_turn(&$c)
     } elseif ($c->tpt > $c->land*0.17 && rand(0, 10) > 5) { //tech per turn is greater than land*0.17 -- just kindof a rough "don't tech below this" rule...
         return tech_rainbow($c);
     } elseif ($c->built() > 50) {  //otherwise... explore if we can
-        return explore($c);
+        return explore($c, min($c->turns, max(1, min(turns_of_money($c), turns_of_food($c))-3)));
     } elseif ($c->empty && $c->bpt < $targetBPT && $c->money > $c->build_cost) { //otherwise... build one CS if we can afford it and are below our target BPT (80)
         return build_cs(); //build 1 CS
     } elseif ($c->foodnet > 0 && $c->foodnet > 3*$c->foodcon && $c->food > 30*$c->foodnet && $c->food > 7000) {
