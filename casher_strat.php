@@ -109,6 +109,7 @@ function buy_casher_goals(&$c, $spend = null)
         ['t_mil',90,1],
         ['nlg',$c->nlgTarget(),1],
     ];
+    out_data($goals);
 
     $psum = 0;
     $score = [];
@@ -124,8 +125,11 @@ function buy_casher_goals(&$c, $spend = null)
         }
         $psum += $goal[2];
     }
+    out_data($score);
 
     sort($score);
+
+    out_data($score);
 
     $what = key($score);
     out("Highest Goal: ".$what);

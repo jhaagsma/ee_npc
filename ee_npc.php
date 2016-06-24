@@ -996,7 +996,7 @@ function buy_tech(&$c, $tech = 't_bus', $spend = 0, $maxprice = 9999)
             $result = buy_public($c, array($tech => $tobuy), array($tech => $price));     //Buy troops!
             $spend = $c->money - $diff;
 
-            $market->rela_update($tech, $quantity, $result->bought[$tech]->quantity);
+            $market->relaUpdate($tech, $quantity, $result->bought[$tech]->quantity);
         }
     }
 }

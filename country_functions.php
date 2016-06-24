@@ -204,7 +204,7 @@ function food_management(&$c)
             out("Less than $reserve turns worth of food! (".$c->foodnet."/turn) Buy $quantity food off Public @\$$market_price if we can!");     //Text for screen
             $result = buy_public($c, array('m_bu' => $quantity), array('m_bu' => $market_price));     //Buy 3 turns of food off the public at or below the PM price
 
-            $market->rela_update('m_bu', $quantity, $result->bought['m_bu']->quantity);
+            $market->relaUpdate('m_bu', $quantity, $result->bought['m_bu']->quantity);
 
             $c = get_advisor();     //UPDATE EVERYTHING
         }
