@@ -2,9 +2,9 @@
 
 function play_farmer_strat($server)
 {
-    global $cnum,$market_info,$pm_info;
+    global $cnum,$pm_info;
     out("Playing ".FARMER." turns for #$cnum");
-    $main = get_main();     //get the basic stats
+    //$main = get_main();     //get the basic stats
     //out_data($main);			//output the main data
     $c = get_advisor();     //c as in country! (get the advisor)
     out("Agri: {$c->pt_agri}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%");
@@ -31,7 +31,7 @@ function play_farmer_strat($server)
     out($c->turns.' turns left');
     $pm_info = get_pm_info();   //get the PM info
     //out_data($pm_info);		//output the PM info
-    $market_info = get_market_info();   //get the Public Market info
+    //$market_info = get_market_info();   //get the Public Market info
     //out_data($market_info);		//output the PM info
 
     $owned_on_market_info = get_owned_on_market_info();     //find out what we have on the market
@@ -48,13 +48,7 @@ function play_farmer_strat($server)
 
         update_c($c, $result);
         if (!$c->turns%5) {                   //Grab new copy every 5 turns
-            $main = get_main();         //Grab a fresh copy of the main stats //we probably don't need to do this *EVERY* turn
-            $c->money = $main->money;       //might as well use the newest numbers?
-            $c->food = $main->food;             //might as well use the newest numbers?
-            $c->networth = $main->networth; //might as well use the newest numbers?
-            $c->oil = $main->oil;           //might as well use the newest numbers?
-            $c->pop = $main->pop;           //might as well use the newest numbers?
-            $c->turns = $main->turns;       //This is the only one we really *HAVE* to check for
+            $c->updateMain(); //we probably don't need to do this *EVERY* turn
         }
 
         $hold = money_management($c);
@@ -73,42 +67,12 @@ function play_farmer_strat($server)
             sell_on_pm($c, array('m_bu' => min($c->food, floor(-10*$c->income/$pm_info->sell_price->m_bu))));     //sell 1/4 of our military
         }
 
-        global $cpref;
-        $tol = $cpref->price_tolerance; //should be between 0.5 and 1.5
-        if (turns_of_food($c) > 50 && turns_of_money($c) > 50 && $c->money > 3500*500) { // 40 turns of food, and more than 2x nw in cash on hand
-            //buy tech!
-            //out("Try to buy tech?");
-            $spend = min($c->money, $c->money + max(20, $c->turns)*$c->income)*0.4; //min what we'll use in turns-left turns basically
-            /*if ($c->pt_agri < 160) {
-                buy_tech($c, 't_agri', $spend*1/4, 3500*$tol);
-            }
-            if ($c->pt_bus < 140) {
-                buy_tech($c, 't_bus', $spend*1/8, 3500*$tol);
-            }
-            if ($c->pt_res < 140) {
-                buy_tech($c, 't_res', $spend*1/8, 3500*$tol);
-            }*/
-
-            if ($c->pt_agri < 200) {
-                buy_tech($c, 't_agri', $spend*1/2, 3500*$tol);
-            }
-            if ($c->pt_bus < 160) {
-                buy_tech($c, 't_bus', $spend*3/8, 3500*$tol);
-            }
-            if ($c->pt_res < 160) {
-                buy_tech($c, 't_res', $spend*3/8, 3500*$tol);
-            }
-            if ($c->pt_mil > 90) {
-                buy_tech($c, 't_mil', $spend*2/8, 3500*$tol);
-            }
-        }
-
-        if (turns_of_food($c) > 50 && turns_of_money($c) > max(20, $c->turns) && $c->money > 3500*500) { // 40 turns of food, and more than 2x nw in cash on hand
-            defend_self($c, floor($c->money * 0.20)); //second param is *RESERVE* cash
+        if (turns_of_food($c) > 50 && turns_of_money($c) > 50 && $c->money > 3500*500 && $c->built() > 80) { // 40 turns of food
+            buy_farmer_goals($c);
         }
     }
-    $nlg = nlg($c);
-    out("Agri: {$c->pt_agri}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%; Mil: {$c->pt_mil}%; NLG: $nlg");
+
+    out("Agri: {$c->pt_agri}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%; Mil: {$c->pt_mil}%; NLG: ".$c->nlg());
     out("Done Playing ".FARMER." Turns for #$cnum!");   //Text for screen
 }
 
@@ -125,7 +89,7 @@ function play_farmer_turn(&$c)
         return build_farmer($c);
     } elseif ($c->turns >= 4 && $c->empty >= 4 && $c->bpt < $target_bpt && $c->money > 4*$c->build_cost && ($c->foodnet > 0 || $c->food > $c->foodnet*-5)) { //otherwise... build 4CS if we can afford it and are below our target BPT (80)
         return build_cs(4); //build 4 CS
-    } elseif ($c->empty < $c->land/2) {  //otherwise... explore if we can
+    } elseif ($c->built() > 50) {  //otherwise... explore if we can
         return explore($c);
     } elseif ($c->empty && $c->bpt < $target_bpt && $c->money > $c->build_cost) { //otherwise... build one CS if we can afford it and are below our target BPT (80)
         return build_cs(); //build 1 CS
@@ -139,7 +103,7 @@ function sellextrafood_farmer(&$c)
     //out("Lots of food, let's sell some!");
     //$pm_info = get_pm_info();
     //$market_info = get_market_info();	//get the Public Market info
-    global $market_info,$pm_info;
+    global $market,$pm_info;
 
     $c = get_advisor();     //UPDATE EVERYTHING
 
@@ -149,10 +113,10 @@ function sellextrafood_farmer(&$c)
     $rmin = 0.95; //percent
     $rstep = 0.01;
     $rstddev = 0.10;
-    $price = round(max($pm_info->sell_price->m_bu+1, $market_info->buy_price->m_bu*purebell($rmin, $rmax, $rstddev, $rstep)));
+    $price = round(max($pm_info->sell_price->m_bu+1, $market->price('m_bu')*purebell($rmin, $rmax, $rstddev, $rstep)));
     $price = array('m_bu' => $price);
 
-    if ($price <= max(29, $pm_info->sell_price->m_bu/(100-$c->g_tax))) {
+    if ($price <= max(29, $pm_info->sell_price->m_bu/$c->tax())) {
         return sell_on_pm($c, array('m_bu' => $quantity)); ///		sell_on_pm($c,array('m_bu' => $c->food));	//Sell 'em
     }
     return sell_public($c, $quantity, $price);    //Sell food!
@@ -162,4 +126,62 @@ function build_farmer(&$c)
 {
     //build farms
     return build(array('farm' => $c->bpt));
+}
+
+
+
+function buy_farmer_goals(&$c, $spend = null)
+{
+    if ($spend == null) {
+        $spend = $c->money;
+    }
+
+    global $cpref;
+    $tol = $cpref->price_tolerance; //should be between 0.5 and 1.5
+
+    $goals = [
+        //what, goal, priority
+        ['t_agri',215,4],
+        ['t_bus',178,2],
+        ['t_res',178,2],
+        ['t_mil',90,1],
+        ['nlg',$c->nlgTarget(),1],
+    ];
+
+    $psum = 0;
+    $score = [];
+    foreach ($goals as $goal) {
+        if ($goal[0] == 't_agri') {
+            $score['t_agri'] = ($goal[1]-$c->pt_agri)/($goal[1]-100)*$goal[2];
+        } elseif ($goal[0] == 't_bus') {
+            $score['t_bus'] = ($goal[1]-$c->pt_bus)/($goal[1]-100)*$goal[2];
+        } elseif ($goal[0] == 't_res') {
+            $score['t_res'] = ($goal[1]-$c->pt_res)/($goal[1]-100)*$goal[2];
+        } elseif ($goal[0] == 't_mil') {
+            $score['t_mil'] = ($c->pt_bus-$goal[1])/(100-$goal[1])*$goal[2];
+        } elseif ($goal[0] == 'nlg') {
+            $score['nlg'] = $c->nlg()/$c->nlgTarget()*$goal[2];
+        }
+        $psum += $goal[2];
+    }
+
+    sort($score);
+
+    $what = key($score);
+    if ($key = 't_agri') {
+        buy_tech($c, 't_agri', $spend/$psum, 3500*$tol);
+    } elseif ($key = 't_bus') {
+        buy_tech($c, 't_bus', $spend/$psum, 3500*$tol);
+    } elseif ($key = 't_res') {
+        buy_tech($c, 't_res', $spend/$psum, 3500*$tol);
+    } elseif ($key = 't_res') {
+        buy_tech($c, 't_mil', $spend/$psum, 3500*$tol);
+    } elseif ($key = 'nlg') {
+        defend_self($c, floor($c->money - $spend/$psum)); //second param is *RESERVE* cash
+    }
+
+    $spend -= $spend/$psum;
+    if ($spend > 10000) {
+        buy_farmer_goals($c, $spend);
+    }
 }

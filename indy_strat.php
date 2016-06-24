@@ -6,7 +6,7 @@ function play_indy_strat($server)
 {
     global $cnum;
     out("Playing ".INDY." Turns for #$cnum");
-    $main = get_main();     //get the basic stats
+    //$main = get_main();     //get the basic stats
     //out_data($main);			//output the main data
     $c = get_advisor();     //c as in country! (get the advisor)
     out("Indy: {$c->pt_indy}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%");
@@ -43,13 +43,7 @@ function play_indy_strat($server)
         }
         update_c($c, $result);
         if (!$c->turns%5) {                   //Grab new copy every 5 turns
-            $main = get_main();         //Grab a fresh copy of the main stats //we probably don't need to do this *EVERY* turn
-            $c->money = $main->money;       //might as well use the newest numbers?
-            $c->food = $main->food;             //might as well use the newest numbers?
-            $c->networth = $main->networth; //might as well use the newest numbers?
-            $c->oil = $main->oil;           //might as well use the newest numbers?
-            $c->pop = $main->pop;           //might as well use the newest numbers?
-            $c->turns = $main->turns;       //This is the only one we really *HAVE* to check for
+            $c->updateMain(); //we probably don't need to do this *EVERY* turn
         }
 
         $hold = money_management($c);
@@ -81,8 +75,8 @@ function play_indy_strat($server)
             }
         }
     }
-    $nlg = nlg($c);
-    out("Indy: {$c->pt_indy}%; Mil: {$c->pt_mil}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%; NLG: $nlg");
+
+    out("Indy: {$c->pt_indy}%; Mil: {$c->pt_mil}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%; NLG: ".$c->nlg());
     out("Done Playing ".INDY." Turns for #$cnum!");     //Text for screen
 }
 
@@ -99,7 +93,7 @@ function play_indy_turn(&$c)
         return build_indy($c);
     } elseif ($c->turns >= 4 && $c->empty >= 4 && $c->bpt < $target_bpt && $c->money > 4*$c->build_cost && ($c->foodnet > 0 || $c->food > $c->foodnet*-5)) { //otherwise... build 4CS if we can afford it and are below our target BPT (80)
         return build_cs(4); //build 4 CS
-    } elseif ($c->empty < $c->land/2) {  //otherwise... explore if we can
+    } elseif ($c->built() > 50) {  //otherwise... explore if we can
         return explore($c);
     } elseif ($c->empty && $c->bpt < $target_bpt && $c->money > $c->build_cost) { //otherwise... build one CS if we can afford it and are below our target BPT (80)
         return build_cs(); //build 1 CS

@@ -22,6 +22,8 @@ if (file_exists($config['save_settings_file'])) {
 }
 
 include_once('country_functions.php');
+include_once('Country.class.php');
+include_once('PublicMarket.class.php');
 
 include_once('rainbow_strat.php');
 include_once('farmer_strat.php');
@@ -53,7 +55,7 @@ $sleepcount = $loopcount = 0;
 $played = true;
 
 $rules = ee('rules');
-
+$market = new PublicMarket();
 
 while (1) {
     $server = ee('server');
@@ -606,11 +608,17 @@ function update_c(&$c, $result)
                 $tpt = true;
             }
         }
+
+        $explain = '('.$c->built().'%)';
+
         if ($bpt) {
             $explain = '('.$result->bpt.' bpt)';    //Text for screen
-        }        if ($tpt) {
-            $explain = '('.$result->tpt.' tpt)';    //Text for screen
         }
+
+        if ($tpt) {
+            $explain = '('.$result->tpt.' tpt/'.$c->built().'%)';    //Text for screen
+        }
+
         $c->bpt = $result->bpt;             //update BPT - added this to the API so that we don't have to calculate it
         $c->tpt = $result->tpt;             //update TPT - added this to the API so that we don't have to calculate it
         $c->money -= $result->cost;
@@ -641,23 +649,28 @@ function update_c(&$c, $result)
 
     $event = null; //Text for screen
     $netmoney = $netfood = 0;
-    foreach ($result->turns as $num => $turn) {         //update stuff based on what happened this turn
+    foreach ($result->turns as $num => $turn) {
+        //update stuff based on what happened this turn
         $netfood    += $c->foodnet  = floor(isset($turn->foodproduced)  ? $turn->foodproduced : 0)  - (isset($turn->foodconsumed)   ? $turn->foodconsumed : 0);
         $netmoney   += $c->income   = floor(isset($turn->taxrevenue)    ? $turn->taxrevenue : 0)    - (isset($turn->expenses)       ? $turn->expenses : 0);
-        $c->pop     += floor(isset($turn->popgrowth)        ? $turn->popgrowth : 0);        //the turn doesn't *always* return these things, so have to check if they exist, and add 0 if they don't
-        $c->m_tr    += floor(isset($turn->troopsproduced)   ? $turn->troopsproduced : 0);   //the turn doesn't *always* return these things, so have to check if they exist, and add 0 if they don't
-        $c->m_j     += floor(isset($turn->jetsproduced)     ? $turn->jetsproduced : 0);     //the turn doesn't *always* return these things, so have to check if they exist, and add 0 if they don't
-        $c->m_tu    += floor(isset($turn->turretsproduced)  ? $turn->turretsproduced : 0);  //the turn doesn't *always* return these things, so have to check if they exist, and add 0 if they don't
-        $c->m_ta    += floor(isset($turn->tanksproduced)    ? $turn->tanksproduced : 0);    //the turn doesn't *always* return these things, so have to check if they exist, and add 0 if they don't
-        $c->m_spy   += floor(isset($turn->spiesproduced)    ? $turn->spiesproduced : 0);    //the turn doesn't *always* return these things, so have to check if they exist, and add 0 if they don't
+
+        //the turn doesn't *always* return these things, so have to check if they exist, and add 0 if they don't
+        $c->pop     += floor(isset($turn->popgrowth)        ? $turn->popgrowth : 0);
+        $c->m_tr    += floor(isset($turn->troopsproduced)   ? $turn->troopsproduced : 0);
+        $c->m_j     += floor(isset($turn->jetsproduced)     ? $turn->jetsproduced : 0);
+        $c->m_tu    += floor(isset($turn->turretsproduced)  ? $turn->turretsproduced : 0);
+        $c->m_ta    += floor(isset($turn->tanksproduced)    ? $turn->tanksproduced : 0);
+        $c->m_spy   += floor(isset($turn->spiesproduced)    ? $turn->spiesproduced : 0);
         $c->turns--;
 
         //out_data($turn);
 
         if (isset($turn->event)) {
             if ($turn->event == 'earthquake') {   //if an earthquake happens...
-                out("Earthquake destroyed {$turn->earthquake} Buildings! Update Advisor");                          //Text for screen
-                $c = get_advisor();                                             //update the advisor, because we no longer no what infromation is valid
+                out("Earthquake destroyed {$turn->earthquake} Buildings! Update Advisor"); //Text for screen
+
+                //update the advisor, because we no longer know what infromation is valid
+                $c = get_advisor();
             } elseif ($turn->event == 'pciboom') {       //in the event of a pci boom, recalculate income so we don't react based on an event
                 $c->income = floor(isset($turn->taxrevenue)     ? $turn->taxrevenue/3 : 0)      - (isset($turn->expenses)       ? $turn->expenses : 0);
             } elseif ($turn->event == 'pcibad') {        //in the event of a pci bad, recalculate income so we don't react based on an event
@@ -667,23 +680,29 @@ function update_c(&$c, $result)
             } elseif ($turn->event == 'foodbad') {       //in the event of a food boom, recalculate netfood so we don't react based on an event
                 $c->foodnet = floor(isset($turn->foodproduced)  ? $turn->foodproduced*3 : 0)    - (isset($turn->foodconsumed)   ? $turn->foodconsumed : 0);
             }
-            $event .= event_text($turn->event).' ';   //Text for screen
+            $event .= event_text($turn->event).' ';//Text for screen
         }
-        if (isset($turn->cmproduced)) {    //a CM was produced
-            $event .= 'CM ';            //Text for screen
-        }        if (isset($turn->nmproduced)) {    //an NM was produced
-            $event .= 'NM ';            //Text for screen
-        }        if (isset($turn->emproduced)) {    //an EM was produced
-            $event .= 'EM ';            //Text for screen
+
+        if (isset($turn->cmproduced)) {//a CM was produced
+            $event .= 'CM '; //Text for screen
+        }
+        if (isset($turn->nmproduced)) {//an NM was produced
+            $event .= 'NM '; //Text for screen
+        }
+        if (isset($turn->emproduced)) {//an EM was produced
+            $event .= 'EM '; //Text for screen
         }
     }
     $c->money += $netmoney;
     $c->food += $netfood;
 
     global $colors;
-    $netfood = str_pad('('.($netfood > 0 ? '+' : null).$netfood.')', 10, ' ', STR_PAD_LEFT) ;  //Text formatting (adding a + if it is positive; - will be there if it's negative already)
-    $netmoney = str_pad('($'.($netmoney > 0 ? '+' : null).$netmoney.')', 12, ' ', STR_PAD_LEFT); //Text formatting (adding a + if it is positive; - will be there if it's negative already)
-    $str = str_pad($str, 26).str_pad($explain, 12).str_pad('$'.$c->money, 16, ' ', STR_PAD_LEFT).$netmoney.str_pad($c->food.' Bu', 12, ' ', STR_PAD_LEFT).$netfood; //Text for screen
+    //Text formatting (adding a + if it is positive; - will be there if it's negative already)
+    $netfood = str_pad('('.($netfood > 0 ? '+' : null).$netfood.')', 10, ' ', STR_PAD_LEFT) ;
+    $netmoney = str_pad('($'.($netmoney > 0 ? '+' : null).$netmoney.')', 12, ' ', STR_PAD_LEFT);
+
+    $str = str_pad($str, 26).str_pad($explain, 12).str_pad('$'.$c->money, 16, ' ', STR_PAD_LEFT);
+    $str .= $netmoney.str_pad($c->food.' Bu', 12, ' ', STR_PAD_LEFT).$netfood; //Text for screen
 
     global $APICalls;
     $str = str_pad($c->turns, 3).' Turns - '.$str.' '.str_pad($event, 5).' API: '.$APICalls;
@@ -774,7 +793,8 @@ function get_advisor()
     $cpref->lastTurns = $advisor->turns;
     $cpref->turnsStored = $advisor->turns_stored;
 
-    return $advisor;
+    //out_data($advisor);
+    return new Country($advisor);
 }
 
 function get_pm_info()
@@ -886,7 +906,7 @@ function buy_public(&$c, $quantity = array(), $price = array())
         $cost = 0;
         foreach ($quantity as $key => $q) {
             $what .= $key.$q.'@'.$price[$key].', ';
-            $cost += round($q*$price[$key]*(100+$c->g_tax)/100);
+            $cost += round($q*$price[$key]*$c->tax());
         }
         out("Tried: ".$what);
         out("Money: ".$c->money." Cost: ".$cost);
@@ -961,20 +981,22 @@ function sell_public(&$c, $quantity = array(), $price = array(), $tonm = array()
 
 function buy_tech(&$c, $tech = 't_bus', $spend = 0, $maxprice = 9999)
 {
-    $market_info = get_market_info();   //get the Public Market info
+    global $market;
+    //$market_info = get_market_info();   //get the Public Market info
     $tech = substr($tech, 2);
     $diff = $c->money - $spend;
-    if ($market_info->buy_price->$tech != null && $market_info->available->$tech > 0) {
-        while ($market_info->buy_price->$tech != null && $market_info->available->$tech > 0 && $market_info->buy_price->$tech <= $maxprice && $spend > 0) {
-            $price = $market_info->buy_price->$tech;
-            $tobuy = min(floor($spend / ($price*(100 + $c->g_tax)/100)), $market_info->available->$tech);
+    if ($market->price($tech) != null && $market->available($tech) > 0) {
+        while ($market->price($tech) != null && $market->available($tech) > 0 && $market->price($tech) <= $maxprice && $spend > 0) {
+            $price = $market->price($tech);
+            $tobuy = min(floor($spend / ($price*$c->tax())), $market->available($tech));
             if ($tobuy == 0) {
                 return;
             }
             //out($tech . $tobuy . "@$" . $price);
             $result = buy_public($c, array($tech => $tobuy), array($tech => $price));     //Buy troops!
             $spend = $c->money - $diff;
-            $market_info = get_market_info();
+
+            $market->rela_update($tech, $quantity, $result->bought[$tech]->quantity);
         }
     }
 }

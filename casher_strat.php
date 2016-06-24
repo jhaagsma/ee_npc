@@ -4,7 +4,7 @@ function play_casher_strat($server)
 {
     global $cnum;
     out("Playing ".CASHER." Turns for #$cnum");
-    $main = get_main();     //get the basic stats
+    //$main = get_main();     //get the basic stats
     //out_data($main);			//output the main data
     $c = get_advisor();     //c as in country! (get the advisor)
     //out_data($c) && exit;				//ouput the advisor data
@@ -43,13 +43,7 @@ function play_casher_strat($server)
         }
         update_c($c, $result);
         if (!$c->turns%5) {                   //Grab new copy every 5 turns
-            $main = get_main();         //Grab a fresh copy of the main stats //we probably don't need to do this *EVERY* turn
-            $c->money = $main->money;       //might as well use the newest numbers?
-            $c->food = $main->food;             //might as well use the newest numbers?
-            $c->networth = $main->networth; //might as well use the newest numbers?
-            $c->oil = $main->oil;           //might as well use the newest numbers?
-            $c->pop = $main->pop;           //might as well use the newest numbers?
-            $c->turns = $main->turns;       //This is the only one we really *HAVE* to check for
+            $c->updateMain(); //we probably don't need to do this *EVERY* turn
         }
 
 
@@ -63,39 +57,12 @@ function play_casher_strat($server)
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
         }
 
-        global $cpref;
-        $tol = $cpref->price_tolerance; //should be between 0.5 and 1.5
-        if (turns_of_food($c) > 40 && $c->money > $c->networth *2 && $c->money > 3500*500) { // 40 turns of food, and more than 2x nw in cash on hand
-            //out("Try to buy tech?");
-            $spend = $c->money * 0.30;
-            if ($c->pt_bus < 140) {
-                buy_tech($c, 't_bus', $spend*1/2, 3500*$tol);
-            }
-            if ($c->pt_res < 140) {
-                buy_tech($c, 't_res', $spend*1/2, 3500*$tol);
-            }
-        }
-
-        if (turns_of_food($c) > 40 && $c->money > $c->networth *2 && $c->money > 3500*500) { // 40 turns of food, and more than 2x nw in cash on hand
-            defend_self($c, floor($c->money * 0.10)); //second param is *RESERVE* cash
-        }
-
-        if (turns_of_food($c) > 40 && $c->money > $c->networth *2 && $c->money > 3500*500) { // 40 turns of food, and more than 2x nw in cash on hand
-            $spend = $c->money * 0.30;
-            if ($c->pt_bus < 175) {
-                buy_tech($c, 't_bus', $spend*1/3, 3500*$tol);
-            }
-            if ($c->pt_res < 175) {
-                buy_tech($c, 't_res', $spend*1/3, 3500*$tol);
-            }
-            if ($c->pt_mil > 90) {
-                buy_tech($c, 't_mil', $spend*1/3, 3500*$tol);
-            }
+        if (turns_of_food($c) > 40 && $c->money > 3500*500 && $c->built() > 80) { // 40 turns of food
+            buy_casher_goals($c);
         }
     }
 
-    $nlg = nlg($c);
-    out("Bus: {$c->pt_bus}%; Res: {$c->pt_res}%;  Mil: {$c->pt_mil}%; NLG: $nlg");
+    out("Bus: {$c->pt_bus}%; Res: {$c->pt_res}%;  Mil: {$c->pt_mil}%; NLG: ".$c->nlg());
     out("Done Playing ".CASHER." Turns for #$cnum!");   //Text for screen
 }
 
@@ -106,11 +73,11 @@ function play_casher_turn(&$c)
     global $turnsleep;
     usleep($turnsleep);
     //out($main->turns . ' turns left');
-    if ($c->empty > $c->bpt && $c->money > $c->bpt*$c->build_cost) {  //build a full BPT if we can afford it
+    if ($c->empty > $c->bpt && $c->money > $c->bpt*$c->build_cost && ($c->bpt/$target_bpt > 0.8 || rand(0, 1))) {  //build a full BPT if we can afford it
         return build_casher($c);
     } elseif ($c->turns >= 4 && $c->empty >= 4 && $c->bpt < $target_bpt && $c->money > 4*$c->build_cost && ($c->foodnet > 0 || $c->food > $c->foodnet*-5)) { //otherwise... build 4CS if we can afford it and are below our target BPT (80)
         return build_cs(4); //build 4 CS
-    } elseif ($c->empty < $c->land/2) {  //otherwise... explore if we can
+    } elseif ($c->built() > 50) {  //otherwise... explore if we can
         return explore($c);
     } elseif ($c->empty && $c->bpt < $target_bpt && $c->money > $c->build_cost) { //otherwise... build one CS if we can afford it and are below our target BPT (80)
         return build_cs(); //build 1 CS
@@ -124,4 +91,56 @@ function build_casher(&$c)
     //build ent/res
     $ent = ceil($c->bpt*1.05/2);
     return build(array('ent' => $ent, 'res' => $c->bpt - $ent));
+}
+
+function buy_casher_goals(&$c, $spend = null)
+{
+    if ($spend == null) {
+        $spend = $c->money;
+    }
+
+    global $cpref;
+    $tol = $cpref->price_tolerance; //should be between 0.5 and 1.5
+
+    $goals = [
+        //what, goal, priority
+        ['t_bus',178,2],
+        ['t_res',178,2],
+        ['t_mil',90,1],
+        ['nlg',$c->nlgTarget(),1],
+    ];
+
+    $psum = 0;
+    $score = [];
+    foreach ($goals as $goal) {
+        if ($goal[0] == 't_bus') {
+            $score['t_bus'] = ($goal[1]-$c->pt_bus)/($goal[1]-100)*$goal[2];
+        } elseif ($goal[0] == 't_res') {
+            $score['t_res'] = ($goal[1]-$c->pt_res)/($goal[1]-100)*$goal[2];
+        } elseif ($goal[0] == 't_mil') {
+            $score['t_mil'] = ($c->pt_bus-$goal[1])/(100-$goal[1])*$goal[2];
+        } elseif ($goal[0] == 'nlg') {
+            $score['nlg'] = $c->nlg()/$c->nlgTarget()*$goal[2];
+        }
+        $psum += $goal[2];
+    }
+
+    sort($score);
+
+    $what = key($score);
+    out("Highest Goal: ".$what);
+    if ($key = 't_bus') {
+        buy_tech($c, 't_bus', $spend/$psum, 3500*$tol);
+    } elseif ($key = 't_res') {
+        buy_tech($c, 't_res', $spend/$psum, 3500*$tol);
+    } elseif ($key = 't_res') {
+        buy_tech($c, 't_mil', $spend/$psum, 3500*$tol);
+    } elseif ($key = 'nlg') {
+        defend_self($c, floor($c->money - $spend/$psum)); //second param is *RESERVE* cash
+    }
+
+    $spend -= $spend/$psum;
+    if ($spend > 10000) {
+        buy_casher_goals($c, $spend);
+    }
 }
