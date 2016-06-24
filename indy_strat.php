@@ -94,7 +94,7 @@ function play_indy_turn(&$c)
     } elseif ($c->turns >= 4 && $c->empty >= 4 && $c->bpt < $target_bpt && $c->money > 4*$c->build_cost && ($c->foodnet > 0 || $c->food > $c->foodnet*-5)) { //otherwise... build 4CS if we can afford it and are below our target BPT (80)
         return build_cs(4); //build 4 CS
     } elseif ($c->built() > 50) {  //otherwise... explore if we can
-        return explore($c, min($c->turns, max(1, min(turns_of_money($c), turns_of_food($c))-3)));
+        return explore($c, min($c->turns - 1, max(1, min(turns_of_money($c), turns_of_food($c))-3)));
     } elseif ($c->empty && $c->bpt < $target_bpt && $c->money > $c->build_cost) { //otherwise... build one CS if we can afford it and are below our target BPT (80)
         return build_cs(); //build 1 CS
     } else { //otherwise...  cash
