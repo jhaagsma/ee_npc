@@ -82,6 +82,6 @@ class Country
 
     public function fullBuildCost()
     {
-        return $c->empty*$c->build_cost;
+        return $this->empty*$this->build_cost;
     }
 }
