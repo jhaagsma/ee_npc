@@ -989,6 +989,7 @@ function buy_tech(&$c, $tech = 't_bus', $spend = 0, $maxprice = 9999)
     //$market_info = get_market_info();   //get the Public Market info
     $tech = substr($tech, 2);
     $diff = $c->money - $spend;
+    //out('Here;P:'.$market->price($tech).';Q:'.$market->available($tech).';S:'.$spend.';M:'.$maxprice.';');
     if ($market->price($tech) != null && $market->available($tech) > 0) {
         while ($market->price($tech) != null && $market->available($tech) > 0 && $market->price($tech) <= $maxprice && $spend > 0) {
             $price = $market->price($tech);

@@ -93,7 +93,7 @@ function build_casher(&$c)
     return build(array('ent' => $ent, 'res' => $c->bpt - $ent));
 }
 
-function buy_casher_goals(&$c, $spend = null, $spend_partial = null)
+function buy_casher_goals(&$c, $spend = null, $spend_partial = null, $skip = 0)
 {
     if ($spend == null) {
         $spend = $c->money;
@@ -134,21 +134,37 @@ function buy_casher_goals(&$c, $spend = null, $spend_partial = null)
     arsort($score);
 
     //out_data($score);
-
-    $what = key($score);
-    //out("Highest Goal: ".$what);
-    if ($what == 't_bus') {
-        buy_tech($c, 't_bus', $spend_partial, 3500*$tol);
-    } elseif ($what == 't_res') {
-        buy_tech($c, 't_res', $spend_partial, 3500*$tol);
-    } elseif ($what == 't_mil') {
-        buy_tech($c, 't_mil', $spend_partial, 3500*$tol);
-    } elseif ($what == 'nlg') {
-        defend_self($c, floor($c->money - $spend_partial)); //second param is *RESERVE* cash
+    for ($i = 0; $i < $skip; $i++) {
+        array_shift($score);
     }
 
-    $spend -= $spend_partial;
-    if ($spend > 10000) {
-        buy_casher_goals($c, $spend, $spend_partial);
+    $what = key($score);
+    //out("Highest Goal: ".$what.' Buy $'.$spend_partial);
+    $diff = 0;
+    if ($what == 't_bus') {
+        $o = $c->money;
+        buy_tech($c, 't_bus', $spend_partial, 5000*$tol);
+        $diff = $c->money - $o;
+    } elseif ($what == 't_res') {
+        $o = $c->money;
+        buy_tech($c, 't_res', $spend_partial, 5000*$tol);
+        $diff = $c->money - $o;
+    } elseif ($what == 't_mil') {
+        $o = $c->money;
+        buy_tech($c, 't_mil', $spend_partial, 5000*$tol);
+        $diff = $c->money - $o;
+    } elseif ($what == 'nlg') {
+        $o = $c->money;
+        defend_self($c, floor($c->money - $spend_partial)); //second param is *RESERVE* cash
+        $diff = $c->money - $o;
+    }
+
+    if ($diff == 0) {
+        $skip++;
+    }
+
+    $spend -= $diff;
+    if ($spend > 10000 && $skip < count($score)) {
+        buy_casher_goals($c, $spend, $spend_partial, $skip);
     }
 }

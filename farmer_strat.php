@@ -129,11 +129,9 @@ function build_farmer(&$c)
 }
 
 
-
-function buy_farmer_goals(&$c, $spend = null, $spend_partial = null)
+function buy_farmer_goals(&$c, $spend = null, $spend_partial = null, $skip = 0)
 {
     if ($spend == null) {
-        $c = get_advisor();
         $spend = $c->money;
     }
 
@@ -157,8 +155,8 @@ function buy_farmer_goals(&$c, $spend = null, $spend_partial = null)
     $psum = 0;
     $score = [];
     foreach ($goals as $goal) {
-        if ($goal[0] == 't_agri') {
-            $score['t_agri'] = ($goal[1]-$c->pt_agri)/($goal[1]-100)*$goal[2];
+        if ($what == 't_agri') {
+            buy_tech($c, 't_agri', $spend_partial, 5000*$tol);
         } elseif ($goal[0] == 't_bus') {
             $score['t_bus'] = ($goal[1]-$c->pt_bus)/($goal[1]-100)*$goal[2];
         } elseif ($goal[0] == 't_res') {
@@ -173,27 +171,39 @@ function buy_farmer_goals(&$c, $spend = null, $spend_partial = null)
     //out_data($score);
 
     arsort($score);
-   // out_data($score);
 
-    $what = key($score);
-    //out("Highest Score:".$what);
-
-
-
-    if ($what == 't_agri') {
-        buy_tech($c, 't_agri', $spend_partial, 3500*$tol);
-    } elseif ($what == 't_bus') {
-        buy_tech($c, 't_bus', $spend_partial, 3500*$tol);
-    } elseif ($what == 't_res') {
-        buy_tech($c, 't_res', $spend_partial, 3500*$tol);
-    } elseif ($what == 't_mil') {
-        buy_tech($c, 't_mil', $spend_partial, 3500*$tol);
-    } elseif ($what == 'nlg') {
-        defend_self($c, floor($c->money - $spend/$psum)); //second param is *RESERVE* cash
+    //out_data($score);
+    for ($i = 0; $i < $skip; $i++) {
+        array_shift($score);
     }
 
-    $spend -= $spend_partial;
-    if ($spend > 10000) {
-        buy_farmer_goals($c, $spend, $spend_partial);
+    $what = key($score);
+    //out("Highest Goal: ".$what.' Buy $'.$spend_partial);
+    $diff = 0;
+    if ($what == 't_bus') {
+        $o = $c->money;
+        buy_tech($c, 't_bus', $spend_partial, 5000*$tol);
+        $diff = $c->money - $o;
+    } elseif ($what == 't_res') {
+        $o = $c->money;
+        buy_tech($c, 't_res', $spend_partial, 5000*$tol);
+        $diff = $c->money - $o;
+    } elseif ($what == 't_mil') {
+        $o = $c->money;
+        buy_tech($c, 't_mil', $spend_partial, 5000*$tol);
+        $diff = $c->money - $o;
+    } elseif ($what == 'nlg') {
+        $o = $c->money;
+        defend_self($c, floor($c->money - $spend_partial)); //second param is *RESERVE* cash
+        $diff = $c->money - $o;
+    }
+
+    if ($diff == 0) {
+        $skip++;
+    }
+
+    $spend -= $diff;
+    if ($spend > 10000 && $skip < count($score)) {
+        buy_farmer_goals($c, $spend, $spend_partial, $skip);
     }
 }
