@@ -55,6 +55,11 @@ function play_indy_strat($server)
         if ($hold) {
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
         }
+
+        if (turns_of_food($c) > 70 && turns_of_money($c) > 70 && $c->money > 3500*500 &&  ($c->built() > 80 || $c->money > $c->fullBuildCost() - $c->runCash())) { // 40 turns of food
+            buy_indy_goals($c, $c->money - $c->fullBuildCost() - $c->runCash()); //keep enough money to build out everything
+        }
+
         global $cpref;
         $tol = $cpref->price_tolerance; //should be between 0.5 and 1.5
         if (turns_of_food($c) > 50 && turns_of_money($c) > 50 && $c->money > 3500*500) { // 40 turns of food, and more than 2x nw in cash on hand
@@ -94,7 +99,7 @@ function play_indy_turn(&$c)
     } elseif ($c->turns >= 4 && $c->empty >= 4 && $c->bpt < $target_bpt && $c->money > 4*$c->build_cost && ($c->foodnet > 0 || $c->food > $c->foodnet*-5)) { //otherwise... build 4CS if we can afford it and are below our target BPT (80)
         return build_cs(4); //build 4 CS
     } elseif ($c->built() > 50) {  //otherwise... explore if we can
-        return explore($c, min(max(1, $c->turns - 1), max(1, min(turns_of_money($c), turns_of_food($c))-3)));
+        return explore($c, min(max(1, $c->turns - 1), max(1, min(turns_of_money($c), turns_of_food($c))-5)));
     } elseif ($c->empty && $c->bpt < $target_bpt && $c->money > $c->build_cost) { //otherwise... build one CS if we can afford it and are below our target BPT (80)
         return build_cs(); //build 1 CS
     } else { //otherwise...  cash
@@ -122,4 +127,17 @@ function sellmilitarytime(&$c)
     }
 
     return false;
+}
+
+function buy_indy_goals(&$c, $spend = null)
+{
+    $goals = [
+        //what, goal, priority
+        ['t_indy',150,8],
+        ['t_bus',178,3],
+        ['t_res',178,3],
+        ['t_mil',90,4],
+    ];
+
+    $c->countryGoals($goals, $spend);
 }

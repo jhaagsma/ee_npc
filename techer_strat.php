@@ -60,10 +60,9 @@ function play_techer_strat($server)
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
         }
 
-        if (turns_of_food($c) > 40 && $c->money > $c->networth *2 && $c->tpt > 200) { // 40 turns of food, and more than 2x nw in cash on hand
-            //if Tpt is < 200, there's nothing to defend really =/
-            defend_self($c, floor($c->money * 0.25)); //second param is *RESERVE* cash
-        }        //$main->turns = 0;				//use this to do one turn at a time
+        if (turns_of_food($c) > 50 && turns_of_money($c) > 50 && $c->money > 3500*500 &&  ($c->built() > 80 || $c->money > $c->fullBuildCost() - $c->runCash()) && $c->tpt > 200) { // 40 turns of food
+            buy_techer_goals($c, $c->money - $c->fullBuildCost() - $c->runCash()); //keep enough money to build out everything
+        }
     }
     out("Done Playing ".TECHER." Turns for #$cnum!");   //Text for screen
 }
@@ -199,4 +198,15 @@ function tech_techer(&$c)
     }
 
     return tech(array('mil'=>$mil,'med'=>$med,'bus'=>$bus,'res'=>$res,'agri'=>$agri,'war'=>$war,'ms'=>$ms,'weap'=>$weap,'indy'=>$indy,'spy'=>$spy,'sdi'=>$sdi));
+}
+
+
+function buy_techer_goals(&$c, $spend = null)
+{
+    $goals = [
+        //what, goal, priority
+        ['nlg',$c->nlgTarget(),2],
+    ];
+
+    $c->countryGoals($goals, $spend);
 }

@@ -93,19 +93,8 @@ function build_casher(&$c)
     return build(array('ent' => $ent, 'res' => $c->bpt - $ent));
 }
 
-function buy_casher_goals(&$c, $spend = null, $spend_partial = null, $skip = 0)
+function buy_casher_goals(&$c, $spend = null)
 {
-    if ($spend == null) {
-        $spend = $c->money;
-    }
-
-    if ($spend_partial == null) {
-        $spend_partial = $spend / 3;
-    }
-
-    global $cpref;
-    $tol = $cpref->price_tolerance; //should be between 0.5 and 1.5
-
     $goals = [
         //what, goal, priority
         ['t_bus',178,8],
@@ -113,58 +102,6 @@ function buy_casher_goals(&$c, $spend = null, $spend_partial = null, $skip = 0)
         ['t_mil',90,1],
         ['nlg',$c->nlgTarget(),2],
     ];
-    //out_data($goals);
 
-    $psum = 0;
-    $score = [];
-    foreach ($goals as $goal) {
-        if ($goal[0] == 't_bus') {
-            $score['t_bus'] = ($goal[1]-$c->pt_bus)/($goal[1]-100)*$goal[2];
-        } elseif ($goal[0] == 't_res') {
-            $score['t_res'] = ($goal[1]-$c->pt_res)/($goal[1]-100)*$goal[2];
-        } elseif ($goal[0] == 't_mil') {
-            $score['t_mil'] = ($c->pt_bus-$goal[1])/(100-$goal[1])*$goal[2];
-        } elseif ($goal[0] == 'nlg') {
-            $score['nlg'] = $c->nlg()/$c->nlgTarget()*$goal[2];
-        }
-        $psum += $goal[2];
-    }
-    //out_data($score);
-
-    arsort($score);
-
-    //out_data($score);
-    for ($i = 0; $i < $skip; $i++) {
-        array_shift($score);
-    }
-
-    $what = key($score);
-    //out("Highest Goal: ".$what.' Buy $'.$spend_partial);
-    $diff = 0;
-    if ($what == 't_bus') {
-        $o = $c->money;
-        buy_tech($c, 't_bus', $spend_partial, 5000*$tol);
-        $diff = $c->money - $o;
-    } elseif ($what == 't_res') {
-        $o = $c->money;
-        buy_tech($c, 't_res', $spend_partial, 5000*$tol);
-        $diff = $c->money - $o;
-    } elseif ($what == 't_mil') {
-        $o = $c->money;
-        buy_tech($c, 't_mil', $spend_partial, 5000*$tol);
-        $diff = $c->money - $o;
-    } elseif ($what == 'nlg') {
-        $o = $c->money;
-        defend_self($c, floor($c->money - $spend_partial)); //second param is *RESERVE* cash
-        $diff = $c->money - $o;
-    }
-
-    if ($diff == 0) {
-        $skip++;
-    }
-
-    $spend -= $spend_partial;
-    if ($spend > 10000 && $skip < count($score) - 1) {
-        buy_casher_goals($c, $spend, $spend_partial, $skip);
-    }
+    $c->countryGoals($goals, $spend);
 }

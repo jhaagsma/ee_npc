@@ -68,34 +68,17 @@ function play_rainbow_strat($server)
         if ($hold) {
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
         }
-        if (turns_of_food($c) > 40 && $c->money > $c->networth *2 && $c->money > 3500*800) { // 40 turns of food, and more than 2x nw in cash on hand
-            defend_self($c, floor($c->money * 0.35)); //money is *RESERVE* cash
+
+        if (turns_of_food($c) > 70 && turns_of_money($c) > 70 && $c->money > 3500*500 &&  ($c->built() > 80 || $c->money > $c->fullBuildCost() - $c->runCash())) { // 40 turns of food
+            buy_rainbow_goals($c, $c->money - $c->fullBuildCost() - $c->runCash()); //keep enough money to build out everything
         }
+
         if ($c->income < 0 && total_military($c) > 30) { //sell 1/4 of all military on PM
             out("Losing money! Sell 1/4 of our military!");     //Text for screen
             sell_all_military($c, 1/4);  //sell 1/4 of our military
         }
 
-        global $cpref;
-        $tol = $cpref->price_tolerance; //should be between 0.5 and 1.5
-        if (turns_of_food($c) > 50 && turns_of_money($c) > 50 && $c->money > 3500*500) { // 40 turns of food, and more than 2x nw in cash on hand
-            //buy tech!
-            //out("Try to buy tech?");
-            $spend = min($c->money, $c->money + max(20, $c->turns)*$c->income)*0.4; //min what we'll use in 50 turns basically
 
-            if ($c->pt_agri < 200) {
-                buy_tech($c, 't_agri', $spend*1/2, 3500*$tol);
-            }
-            if ($c->pt_bus < 160) {
-                buy_tech($c, 't_bus', $spend*1/6, 3500*$tol);
-            }
-            if ($c->pt_res < 160) {
-                buy_tech($c, 't_res', $spend*1/6, 3500*$tol);
-            }
-            if ($c->pt_mil > 90) {
-                buy_tech($c, 't_res', $spend*1/6, 3500*$tol);
-            }
-        }
 
         //$main->turns = 0;				//use this to do one turn at a time
     }
@@ -212,4 +195,20 @@ function tech_rainbow(&$c)
     }
     
     return tech(array('mil'=>$mil,'med'=>$med,'bus'=>$bus,'res'=>$res,'agri'=>$agri,'war'=>$war,'ms'=>$ms,'weap'=>$weap,'indy'=>$indy,'spy'=>$spy,'sdi'=>$sdi));
+}
+
+
+function buy_rainbow_goals(&$c, $spend = null)
+{
+    $goals = [
+        //what, goal, priority
+        ['t_agri',215,1],
+        ['t_indy',150,1],
+        ['t_bus',178,1],
+        ['t_res',178,1],
+        ['t_mil',90,1],
+        ['nlg',$c->nlgTarget(),1],
+    ];
+
+    $c->countryGoals($goals, $spend);
 }

@@ -588,6 +588,11 @@ function update_c(&$c, $result)
     if (!isset($result->turns) || !$result->turns) {
         return;
     }
+    $numT = 0;
+    foreach ($result->turns as $t) {
+        $numT++; //this is dumb, but count wasn't working????
+    }
+
     global $lastFunction;
     //out_data($result);				//output data for testing
     $explain = null;                    //Text formatting
@@ -618,7 +623,7 @@ function update_c(&$c, $result)
         }
 
         if ($tpt) {
-            $explain = '('.$result->tpt.' tpt/'.$c->built().'%)';    //Text for screen
+            $str .= ' ('.$result->tpt.' tpt)';    //Text for screen
         }
 
         $c->bpt = $result->bpt;             //update BPT - added this to the API so that we don't have to calculate it
@@ -630,7 +635,7 @@ function update_c(&$c, $result)
         $c->build_cost = $result->build_cost;       //update Build Cost
         $c->explore_rate = $result->explore_rate;   //update explore rate
         $c->tpt = $result->tpt;                     //update TPT - added this to the API so that we don't have to calculate it
-        $str = "Explored ".$result->new_land." Acres";  //Text for screen
+        $str = "Explored ".$result->new_land." Acres (".$numT.'T)';  //Text for screen
         $explain = '('.$c->land.' A)';          //Text for screen
     } elseif (isset($result->teched)) {
         $str = 'Tech: ';
@@ -944,6 +949,7 @@ function sell_public(&$c, $quantity = array(), $price = array(), $tonm = array()
 	out($str);*/
     if (array_sum($quantity) == 0) {
         out("Trying to sell nothing?");
+        $c = get_advisor();
         return;
     }
     $result = ee('sell', array('quantity' => $quantity, 'price' => $price)); //ignore tonm for now, it's optional
