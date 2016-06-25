@@ -163,8 +163,8 @@ function buy_casher_goals(&$c, $spend = null, $spend_partial = null, $skip = 0)
         $skip++;
     }
 
-    $spend -= $diff;
-    if ($spend > 10000 && $skip < count($score)) {
+    $spend -= $spend_partial;
+    if ($spend > 10000 && $skip < count($score) - 1) {
         buy_casher_goals($c, $spend, $spend_partial, $skip);
     }
 }
