@@ -202,7 +202,7 @@ function buy_farmer_goals(&$c, $spend = null, $spend_partial = null, $skip = 0)
         $skip++;
     }
 
-    $spend -= $diff;
+    $spend -= $spend_partial;
     if ($spend > 10000 && $skip < count($score) - 1) {
         buy_farmer_goals($c, $spend, $spend_partial, $skip);
     }
