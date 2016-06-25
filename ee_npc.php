@@ -900,6 +900,10 @@ function buy_public(&$c, $quantity = array(), $price = array())
         $c->money -= $details->cost;
         $tcost += $details->cost;
         $str .= $details->quantity.' '.$type.'@$'.floor($details->cost/$details->quantity).', ';
+        $pt = 'p'.$type;
+        if (isset($details->$pt)) {
+            $c->$pt = $details->$pt;
+        }
 
         $market->relaUpdate($type, $quantity, $details->quantity);
     }
