@@ -181,7 +181,7 @@ function money_management(&$c)
 function food_management(&$c)
 {
  //RETURNS WHETHER TO HOLD TURNS OR NOT
-    $reserve = max(72, $c->turns);
+    $reserve = max(130, $c->turns);
     if (turns_of_food($c) >= $reserve) {
         return false;
     }
