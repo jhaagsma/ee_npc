@@ -9,6 +9,7 @@ function play_casher_strat($server)
     $c = get_advisor();     //c as in country! (get the advisor)
     //out_data($c) && exit;				//ouput the advisor data
 
+    $c->setIndy('pro_spy');
     out("Bus: {$c->pt_bus}%; Res: {$c->pt_res}%");
     if ($c->govt == 'M') {
         $rand = rand(0, 100);

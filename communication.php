@@ -131,6 +131,8 @@ function expected_result($input)
             return 'GOVT';
         case 'rules':
             return 'RULES';
+        case 'indy':
+            return 'INDY';
     }
 }
 

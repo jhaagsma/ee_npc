@@ -9,6 +9,8 @@ function play_techer_strat($server)
     //$main = get_main();     //get the basic stats
     //out_data($main);			//output the main data
     $c = get_advisor();     //c as in country! (get the advisor)
+    $c->setIndy('pro_spy');
+
     out($c->turns.' turns left');
 
     if ($c->govt == 'M') {

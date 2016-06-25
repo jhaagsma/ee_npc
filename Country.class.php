@@ -32,6 +32,59 @@ class Country
     }
 
     /**
+     * Set the indy production
+     * @param array|string $what either the unit to set to 100%, or an array of percentages
+     */
+    public function setIndy($what)
+    {
+        $init = [
+            'pro_spy'   =>$this->pro_spy,
+            'pro_tr'    =>$this->pro_tr,
+            'pro_j'     =>$this->pro_j,
+            'pro_tu'    =>$this->pro_tu,
+            'pro_ta'    =>$this->pro_ta,
+        ];
+        $new = [];
+        if (is_array($what)) {
+            $sum = 0;
+            foreach ($init as $item => $percentage) {
+                $new[$item] = isset($what[$item]) ? $what[$item] : 0;
+                $sum += $percentage;
+            }
+        } elseif (array_key_exists($what, $init)) {
+            $new = array_fill_keys(array_keys($init), 0);
+            $new[$what] = 100;
+        }
+
+        if ($new != $init) {
+            foreach ($new as $item => $percentage) {
+                $this->$item = $percentage;
+            }
+
+            out("Set indy production".(is_array($what) ? '!' : ' to '.substr($what, 4).'.'));
+            set_indy($this);
+        }
+    }
+
+    public function setIndyFromMarket()
+    {
+        $new = ['pro_spy' => 5]; //just set spies to 5% for now
+        global $market;
+
+        $score = [
+            'pro_tr'  =>1.86*$market->price('m_tr'),
+            'pro_j'   =>1.86*$market->price('m_j'),
+            'pro_tu'  =>1.86*$market->price('m_tu'),
+            'pro_ta'  =>0.4*$market->price('m_ta')
+        ];
+        arsort($score);
+        $which = key($score);
+        $new[$which] = 95; //set to do the most expensive of whatever other good
+
+        $this->setIndy($new);
+    }
+
+    /**
      * How much money it will cost to run turns
      * @param  int  $turns turns we want to run (or all)
      * @return cost        money

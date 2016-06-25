@@ -9,6 +9,8 @@ function play_indy_strat($server)
     //$main = get_main();     //get the basic stats
     //out_data($main);			//output the main data
     $c = get_advisor();     //c as in country! (get the advisor)
+    $c->setIndyFromMarket();
+    $c = get_advisor();     //c as in country! (get the advisor)
     out("Indy: {$c->pt_indy}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%");
     //out_data($c) && exit;				//ouput the advisor data
     if ($c->govt == 'M') {

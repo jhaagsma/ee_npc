@@ -792,6 +792,22 @@ function get_rules()
     return ee('rules');      //get and return the RULES information
 }
 
+function set_indy(&$c)
+{
+    return ee(
+        'indy',
+        ['pro' => [
+                'pro_spy'=>$c->pro_spy,
+                'pro_tr'=>$c->pro_tr,
+                'pro_j'=>$c->pro_j,
+                'pro_tu'=>$c->pro_tu,
+                'pro_ta'=>$c->pro_ta,
+            ]
+        ]
+    );      //set industrial production
+}
+
+
 function get_advisor()
 {
     $advisor = ee('advisor');   //get and return the ADVISOR information

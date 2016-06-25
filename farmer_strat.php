@@ -7,6 +7,9 @@ function play_farmer_strat($server)
     //$main = get_main();     //get the basic stats
     //out_data($main);			//output the main data
     $c = get_advisor();     //c as in country! (get the advisor)
+    $c->setIndy('pro_spy');
+    //$c = get_advisor();     //c as in country! (get the advisor)
+
     out("Agri: {$c->pt_agri}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%");
     //out_data($c) && exit;				//ouput the advisor data
     if ($c->govt == 'M') {
