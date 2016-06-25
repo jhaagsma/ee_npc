@@ -894,7 +894,7 @@ function buy_public(&$c, $quantity = array(), $price = array())
             $type = 'oil';
         } elseif (in_array($ttype, $techlist)) {
             $type = $ttype;
-            out_data($result);
+            //out_data($result);
         }
 
         $c->$type += $details->quantity;
