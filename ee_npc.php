@@ -894,17 +894,19 @@ function buy_public(&$c, $quantity = array(), $price = array())
             $type = 'oil';
         } elseif (in_array($ttype, $techlist)) {
             $type = $ttype;
+            out_data($result);
         }
 
         $c->$type += $details->quantity;
         $c->money -= $details->cost;
         $tcost += $details->cost;
-        $str .= $details->quantity.' '.$type.'@$'.floor($details->cost/$details->quantity).', ';
+        $str .= $details->quantity.' '.$type.'@$'.floor($details->cost/$details->quantity);
         $pt = 'p'.$type;
         if (isset($details->$pt)) {
             $c->$pt = $details->$pt;
-            $str.= '('.$details->$pt.')';
+            $str.= '('.$details->$pt.'%)';
         }
+        $str .= ', ';
 
         $market->relaUpdate($type, $quantity, $details->quantity);
     }
