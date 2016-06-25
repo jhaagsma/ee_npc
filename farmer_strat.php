@@ -155,8 +155,8 @@ function buy_farmer_goals(&$c, $spend = null, $spend_partial = null, $skip = 0)
     $psum = 0;
     $score = [];
     foreach ($goals as $goal) {
-        if ($what == 't_agri') {
-            buy_tech($c, 't_agri', $spend_partial, 5000*$tol);
+        if ($goal[0] == 't_agri') {
+            $score['t_agri'] = ($goal[1]-$c->pt_agri)/($goal[1]-100)*$goal[2];
         } elseif ($goal[0] == 't_bus') {
             $score['t_bus'] = ($goal[1]-$c->pt_bus)/($goal[1]-100)*$goal[2];
         } elseif ($goal[0] == 't_res') {
@@ -180,7 +180,11 @@ function buy_farmer_goals(&$c, $spend = null, $spend_partial = null, $skip = 0)
     $what = key($score);
     //out("Highest Goal: ".$what.' Buy $'.$spend_partial);
     $diff = 0;
-    if ($what == 't_bus') {
+    if ($what == 't_agri') {
+        $o = $c->money;
+        buy_tech($c, 't_agri', $spend_partial, 5000*$tol);
+        $diff = $c->money - $o;
+    } elseif ($what == 't_bus') {
         $o = $c->money;
         buy_tech($c, 't_bus', $spend_partial, 5000*$tol);
         $diff = $c->money - $o;
