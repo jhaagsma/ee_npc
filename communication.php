@@ -60,31 +60,31 @@ function ee($function, $parameterArray = array())
  */
 function handle_output($serverOutput, $function)
 {
-    $parts = explode(':', $serverOutput, 2);
+    $response = json_decode($serverOutput);
+    $message = key($response);
+    $response = isset($response->$message) ? $response->$message : null;
+    //$parts = explode(':', $serverOutput, 2);
     //This will simply kill the script if EE returns with an error
     //This is to avoid foulups, and to simplify the code checking above
-    if ($parts[0] == 'COUNTRY_IS_DEAD') {
+    if ($message == 'COUNTRY_IS_DEAD') {
         out("Country is Dead!");
 
         return false;
-    } elseif ($parts[0] == 'OWNED') {
+    } elseif ($message == 'OWNED') {
         out("Trying to sell more than owned!");
 
         return false;
-    } elseif (expected_result($function) && $parts[0] != expected_result($function)) {
-        out("\n\nUnexpected Result for '$function': ".$parts[0]."\n\n");
+    } elseif (expected_result($function) && $message != expected_result($function)) {
+        out("\n\nUnexpected Result for '$function': ".$message."\n\n");
 
         return false;
     } elseif (!expected_result($function)) {
-        out($parts[0]);
-        if (!isset($parts[1])) {
-            return;
-        }
+        out($message);
+        out_data($response);
+        return;
     }
 
-    $output = json_decode($parts[1]);
-
-    return $output;
+    return $response;
 }
 
 /**
