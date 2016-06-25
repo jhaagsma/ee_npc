@@ -903,6 +903,7 @@ function buy_public(&$c, $quantity = array(), $price = array())
         $pt = 'p'.$type;
         if (isset($details->$pt)) {
             $c->$pt = $details->$pt;
+            $str.= '('.$details->$pt.')';
         }
 
         $market->relaUpdate($type, $quantity, $details->quantity);
