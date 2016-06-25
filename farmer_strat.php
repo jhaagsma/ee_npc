@@ -67,8 +67,8 @@ function play_farmer_strat($server)
             sell_on_pm($c, array('m_bu' => min($c->food, floor(-10*$c->income/$pm_info->sell_price->m_bu))));     //sell 1/4 of our military
         }
 
-        if (turns_of_food($c) > 50 && turns_of_money($c) > 50 && $c->money > 3500*500 && $c->built() > 80) { // 40 turns of food
-            buy_farmer_goals($c);
+        if (turns_of_food($c) > 50 && turns_of_money($c) > 50 && $c->money > 3500*500 &&  ($c->built() > 80 || $c->money > $c->fullBuildCost())) { // 40 turns of food
+            buy_farmer_goals($c, $c->money - $c->fullBuildCost()); //keep enough money to build out everything
         }
     }
 

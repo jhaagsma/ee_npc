@@ -79,4 +79,9 @@ class Country
     {
         return (100+$this->g_tax)/100;
     }
+
+    public function fullBuildCost()
+    {
+        return $c->empty*$c->build_cost;
+    }
 }
