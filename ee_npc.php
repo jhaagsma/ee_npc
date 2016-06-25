@@ -217,10 +217,10 @@ while (1) {
     }
 
 
-    if ($sleepcount%120 == 0) {
+    if ($sleepcount%300 == 0) {
         $server = ee('server');
-        playstats($countries);
-        echo "\n";
+        //playstats($countries);
+        //echo "\n";
     }
 
 
