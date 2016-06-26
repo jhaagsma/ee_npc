@@ -214,6 +214,7 @@ function buy_rainbow_goals(&$c, $spend = null)
         ['t_res',178,1],
         ['t_mil',90,1],
         ['nlg',$c->nlgTarget(),1],
+        ['dpa',$c->defPerAcreTarget(),1],
     ];
 
     $c->countryGoals($goals, $spend);

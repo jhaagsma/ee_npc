@@ -213,6 +213,7 @@ function buy_techer_goals(&$c, $spend = null)
     $goals = [
         //what, goal, priority
         ['nlg',$c->nlgTarget(),2],
+        ['dpa',$c->defPerAcreTarget(),2],
     ];
 
     $c->countryGoals($goals, $spend);

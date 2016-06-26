@@ -272,7 +272,7 @@ function defend_self(&$c, $reserve_cash)
     $nlg_target = $c->nlgTarget();
     $dpnw = 320;
     $nlg = $c->nlg();
-    while ($nlg < $nlg_target && $spend >= 1000 && $dpnw < 380) {
+    while (($nlg < $nlg_target || $c->defPerAcre() < $c->defPerAcreTarget()) && $spend >= 1000 && $dpnw < 380) {
         out("Try to buy goods at $dpnw dpnw or below to reach NLG of $nlg_target from $nlg!");  //Text for screen
         buy_public_below_dpnw($c, $dpnw, $spend, false);
         $spend = $c->money - $reserve_cash;

@@ -181,6 +181,24 @@ class Country
         return floor(80 + $this->turns_played/15);
     }
 
+    /**
+     * A crude Defence Per Acre number
+     * @return {int} DPATarget
+     */
+    public function defPerAcreTarget()
+    {
+        return floor(15 + $this->turns_played/20);
+    }
+
+    /**
+     * The amount of defence per Acre of Land
+     * @return float
+     */
+    public function defPerAcre()
+    {
+        return round((1*$this->m_tr+2*$this->m_tu+4*$this->m_ta)/$this->land);
+    }
+
 
     /**
      * Built Percentage
@@ -265,6 +283,8 @@ class Country
                 $score['t_mil'] = ($this->pt_bus-$goal[1])/(100-$goal[1])*$goal[2];
             } elseif ($goal[0] == 'nlg') {
                 $score['nlg'] = $this->nlg()/$this->nlgTarget()*$goal[2];
+            } elseif ($goal[0] == 'dpa') {
+                $score['dpa'] = $this->defPerAcre()/$this->defPerAcreTarget()*$goal[2];
             }
             $psum += $goal[2];
         }
@@ -302,6 +322,10 @@ class Country
             buy_tech($this, 't_mil', $spend_partial, $techprice);
             $diff = $this->money - $o;
         } elseif ($what == 'nlg') {
+            $o = $this->money;
+            defend_self($this, floor($this->money - $spend_partial)); //second param is *RESERVE* cash
+            $diff = $this->money - $o;
+        } elseif ($what == 'dpa') {
             $o = $this->money;
             defend_self($this, floor($this->money - $spend_partial)); //second param is *RESERVE* cash
             $diff = $this->money - $o;
