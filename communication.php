@@ -156,9 +156,9 @@ function out($str, $newline = true)
 function out_data($data)
 {
     $debug = debug_backtrace();
-    out(var_export($debug, true));
+    //out(var_export($debug, true));
     //This function is to output and format some data nicely
-    out("DATA:\n".str_replace(",\n", "\n", var_export($data, true)));
+    out("DATA: ({$debug[0]['file']}:{$debug[0]['line']})\n".str_replace(",\n", "\n", var_export($data, true)));
 }
 
 /**

@@ -36,10 +36,10 @@ class Country
 
     public function onMarket($goods)
     {
-        out_data($goods);
-        $atm = 'at'.$goods['type'];
+        //out_data($goods);
+        $atm = 'at'.$goods->type;
         out("Setting $atm");
-        $this->$atm = $goods['time'] < time() ? true : false;
+        $this->$atm = $goods->time < time() ? true : false;
     }
 
     /**
