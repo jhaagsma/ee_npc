@@ -212,7 +212,7 @@ function buy_rainbow_goals(&$c, $spend = null)
         ['t_indy',150,1],
         ['t_bus',178,1],
         ['t_res',178,1],
-        ['t_mil',90,1],
+        ['t_mil',94,1],
         ['nlg',$c->nlgTarget(),1],
         ['dpa',$c->defPerAcreTarget(),1],
     ];

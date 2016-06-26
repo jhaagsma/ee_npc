@@ -108,7 +108,7 @@ function buy_casher_goals(&$c, $spend = null)
         //what, goal, priority
         ['t_bus',178,8],
         ['t_res',178,8],
-        ['t_mil',90,1],
+        ['t_mil',94,1],
         ['nlg',$c->nlgTarget(),2],
         ['dpa',$c->defPerAcreTarget(),2],
     ];

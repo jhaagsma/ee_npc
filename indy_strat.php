@@ -138,7 +138,7 @@ function buy_indy_goals(&$c, $spend = null)
         ['t_indy',150,8],
         ['t_bus',160,3],
         ['t_res',160,3],
-        ['t_mil',90,4],
+        ['t_mil',94,4],
     ];
 
     $c->countryGoals($goals, $spend);

@@ -142,7 +142,7 @@ function buy_farmer_goals(&$c, $spend = null)
         ['t_agri',215,8],
         ['t_bus',178,4],
         ['t_res',178,4],
-        ['t_mil',90,1],
+        ['t_mil',94,1],
         ['nlg',$c->nlgTarget(),2],
         ['dpa',$c->defPerAcreTarget(),2],
     ];
