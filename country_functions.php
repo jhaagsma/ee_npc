@@ -303,12 +303,12 @@ function sell_max_military(&$c)
     $rstddev = 0.10;
     $price = array();
     foreach ($quantity as $key => $q) {
-        $max = $c->goodsStuck($key) ? 0.99 : $rmax; //undercut if we have goods stuck
         if ($q == 0) {
             $price[$key] = 0;
         } elseif ($market_info->buy_price->$key == null || $market_info->buy_price->$key == 0) {
             $price[$key] = floor($pm_info->buy_price->$key * purebell(0.5, 1.0, 0.3, 0.01));
         } else {
+            $max = $c->goodsStuck($key) ? 0.99 : $rmax; //undercut if we have goods stuck
             $price[$key] = min($pm_info->buy_price->$key, floor($market_info->buy_price->$key * purebell($rmin, $max, $rstddev, $rstep)));
         }
     }
