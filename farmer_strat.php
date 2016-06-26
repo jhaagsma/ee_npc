@@ -88,6 +88,8 @@ function play_farmer_turn(&$c)
     //out($main->turns . ' turns left');
     if ($c->protection == 0 && $c->foodnet > 0 && $c->foodnet > 3*$c->foodcon && $c->food > 30*$c->foodnet && $c->food > 7000 || $c->turns == 1 && $c->food > 7000) { //Don't sell less than 30 turns of food
         return sellextrafood_farmer($c);
+    } elseif ($c->turns_played > 150 && $c->b_indy < $c->bpt && $c->empty > $c->bpt && $c->money > $c->bpt*$c->build_cost) {  //build a full BPT of indies if we have less than that, and we're out of protection
+        return build_indy($c);
     } elseif ($c->empty > $c->bpt && $c->money > $c->bpt*$c->build_cost) {  //build a full BPT if we can afford it
         return build_farmer($c);
     } elseif ($c->turns >= 4 && $c->empty >= 4 && $c->bpt < $target_bpt && $c->money > 4*$c->build_cost && ($c->foodnet > 0 || $c->food > $c->foodnet*-5)) { //otherwise... build 4CS if we can afford it and are below our target BPT (80)

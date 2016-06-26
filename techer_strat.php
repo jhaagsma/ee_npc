@@ -79,6 +79,8 @@ function play_techer_turn(&$c)
     //out($main->turns . ' turns left');
     if ($c->protection == 0 && total_cansell_tech($c) > 20*$c->tpt && selltechtime($c) || $c->turns == 1 && total_cansell_tech($c) > 20) { //never sell less than 20 turns worth of tech
         return sell_max_tech($c);
+    } elseif ($c->turns_played > 150 && $c->b_indy < $c->bpt && $c->empty > $c->bpt && $c->money > $c->bpt*$c->build_cost) {  //build a full BPT of indies if we have less than that, and we're out of protection
+        return build_indy($c);
     } elseif ($c->empty > $c->bpt && $c->money > $c->bpt*$c->build_cost) {  //build a full BPT if we can afford it
         return build_techer($c);
     } elseif ($c->turns >= 4 && $c->empty >= 4 && $c->bpt < $target_bpt && $c->money > 4*$c->build_cost && ($c->foodnet > 0 || $c->food > $c->foodnet*-5)) { //otherwise... build 4CS if we can afford it and are below our target BPT (80)
