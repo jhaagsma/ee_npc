@@ -47,6 +47,7 @@ class Country
             foreach ($this->market_info as $key => $goods) {
                 $omgood = 'om_'.$goods->type;
                 if (!isset($this->$omgood)) {
+                    $this->$omgood = 0;
                 }
                 $this->$omgood += $goods->quantity;
                 $this->om_total += $goods->quantity;
