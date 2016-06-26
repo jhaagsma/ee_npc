@@ -40,7 +40,7 @@ class Country
         $expl = explode('_', $goods->type);
         $good = $expl[0] == 't' ? $expl[1] : $goods->type;
         $atm = 'at'.$good;
-        out("Setting $atm");
+        //out("Setting $atm");
         $this->$atm = $goods->time < time() ? true : false;
     }
 
@@ -53,10 +53,10 @@ class Country
     public function goodsStuck($good)
     {
         $atm = 'at'.$good;
-        out("Getting $atm");
-        if (isset($this->$atm)) {
-            out("Getting $atm: {$this->$atm}");
-        }
+        //out("Getting $atm");
+        //if (isset($this->$atm)) {
+            //out("Getting $atm: {$this->$atm}");
+        //}
         return isset($this->$atm) ? $this->$atm : false;
     }
 
