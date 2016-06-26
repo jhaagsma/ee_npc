@@ -771,7 +771,11 @@ function cash(&$c, $turns = 1)
 function explore(&$c, $turns = 1)
 {
                        //this means 1 is the default number of turns if not provided
-    return ee('explore', array('turns' => $turns));      //cash a certain number of turns
+    $result = ee('explore', array('turns' => $turns));      //cash a certain number of turns
+    if ($result === false) {
+        $c = get_advisor();
+    }
+    return $result;
 }
 
 function tech($tech = array())

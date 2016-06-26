@@ -32,6 +32,7 @@ class Country
         $this->money = $main->money;       //might as well use the newest numbers?
         $this->food = $main->food;         //might as well use the newest numbers?
         $this->networth = $main->networth; //might as well use the newest numbers?
+        $this->land = $main->land; //might as well use the newest numbers?
         $this->oil = $main->oil;           //might as well use the newest numbers?
         $this->pop = $main->pop;           //might as well use the newest numbers?
         $this->turns = $main->turns;       //This is the only one we really *HAVE* to check for

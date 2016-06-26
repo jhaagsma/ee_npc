@@ -81,7 +81,7 @@ function handle_output($serverOutput, $function)
     } elseif (!expected_result($function)) {
         out($message);
         out_data($response);
-        return;
+        return false;
     }
 
     return $response;
