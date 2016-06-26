@@ -57,6 +57,7 @@ $played = true;
 $rules = ee('rules');
 $market = new PublicMarket();
 
+$server_avg_networth = $server_avg_land = 0;
 $server = ee('server');
 while (1) {
     while ($server->alive_count < $server->countries_allowed) {
@@ -158,6 +159,7 @@ while (1) {
             switch ($cpref->strat) {
                 case 'F':
                     play_farmer_strat($server, $cnum);
+                    $playfactor = 0.8;
                     break;
                 case 'T':
                     play_techer_strat($server, $cnum);
@@ -168,13 +170,13 @@ while (1) {
                     break;
                 case 'I':
                     play_indy_strat($server, $cnum);
-                    $playfactor = 0.5;
+                    $playfactor = 0.33;
                     break;
                 default:
                     play_rainbow_strat($server, $cnum);
             }
             $cpref->lastplay = time();
-            $nexttime = $cpref->playfreq*purebell(1/$cpref->playrand, $cpref->playrand, 1, 0.1);
+            $nexttime = $playfactor*$cpref->playfreq*purebell(1/$cpref->playrand, $cpref->playrand, 1, 0.1);
             $maxin = furthest_play($cpref);
             $nexttime = min($maxin, $nexttime);
             $cpref->nextplay = $cpref->lastplay + $nexttime;
@@ -320,7 +322,7 @@ function outNext($countries, $rewrite = false)
     $xnum = getNextPlayCNUM($countries, min($next));
     $xstrat = txtStrat($xnum);
     $next = max(0, min($next) - time());
-    out("Next Play in ".$next.'s: #'.$xnum." ($xstrat)    ".($rewrite ? "\r" : null), !$rewrite);
+    out("Next Play in ".$next.'s: #'.$xnum." $xstrat    ".($rewrite ? "\r" : null), !$rewrite);
 }
 
 function txtStrat($cnum)
@@ -380,10 +382,13 @@ function govtStats($countries)
         $tld += $settings->$cnum->land;
     }
 
-    global $serv;
-    out("TNW:$tnw; TLD: $tld");
-    $anw = ' [ANW:'.str_pad(round($tnw/count($countries)/1000000, 2), 6, ' ', STR_PAD_LEFT).'M]';
-    $ald = ' [ALnd:'.str_pad(round($tld/count($countries)/1000, 2), 6, ' ', STR_PAD_LEFT).'k]';
+    global $serv, $server_avg_land, $server_avg_networth;
+    //out("TNW:$tnw; TLD: $tld");
+    $server_avg_networth = $tnw/count($countries);
+    $server_avg_land = $tld/count($countries);
+
+    $anw = ' [ANW:'.str_pad(round($server_avg_networth/1000000, 2), 6, ' ', STR_PAD_LEFT).'M]';
+    $ald = ' [ALnd:'.str_pad(round($server_avg_land/1000, 2), 6, ' ', STR_PAD_LEFT).'k]';
 
 
     out("\033[1mServer:\033[0m ".$serv);
@@ -494,7 +499,7 @@ function onmarket($good = 'food')
     if (!$mktinfo) {
         $mktinfo = get_owned_on_market_info();  //find out what we have on the market
     }
-    //out_data($mktinfo);
+    out_data($mktinfo);
     //exit;
     $total = 0;
     foreach ($mktinfo as $key => $goods) {
