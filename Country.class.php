@@ -244,30 +244,12 @@ class Country
 
 
     /**
-     * Convoluted ladder logic to buy whichever goal is least fulfilled
-     * @param  array   $goals         an array of goals to persue
-     * @param  int     $spend         money to spend
-     * @param  int     $spend_partial intermediate money, for recursion
-     * @param  integer $skip          goal to skip due to failure
-     * @return void
+     * Find Highest Goal
+     * @param  array  $goalsan array of goals to persue
+     * @return string highest goal!
      */
-    public function countryGoals($goals = [], $spend = null, $spend_partial = null, $skip = 0)
+    public function highestGoal($goals = [], $skip = 0)
     {
-        if (empty($goals)) {
-            return;
-        }
-
-        if ($spend == null) {
-            $spend = $this->money;
-        }
-
-        if ($spend_partial == null) {
-            $spend_partial = $spend / 3;
-        }
-
-        global $cpref;
-        $tol = $cpref->price_tolerance; //should be between 0.5 and 1.5
-
         $psum = 0;
         $score = [];
         foreach ($goals as $goal) {
@@ -297,7 +279,35 @@ class Country
             array_shift($score);
         }
 
-        $what = key($score);
+        return key($score);
+    }
+
+    /**
+     * Convoluted ladder logic to buy whichever goal is least fulfilled
+     * @param  array   $goals         an array of goals to persue
+     * @param  int     $spend         money to spend
+     * @param  int     $spend_partial intermediate money, for recursion
+     * @param  integer $skip          goal to skip due to failure
+     * @return void
+     */
+    public function countryGoals($goals = [], $spend = null, $spend_partial = null, $skip = 0)
+    {
+        if (empty($goals)) {
+            return;
+        }
+
+        if ($spend == null) {
+            $spend = $this->money;
+        }
+
+        if ($spend_partial == null) {
+            $spend_partial = $spend / 3;
+        }
+
+        global $cpref;
+        $tol = $cpref->price_tolerance; //should be between 0.5 and 1.5
+
+        $what = $this->highestGoal($goals, $skip);
         //out("Highest Goal: ".$what.' Buy $'.$spend_partial);
         $diff = 0;
         $techprice = 8000*$tol;
@@ -345,9 +355,9 @@ class Country
 
     public function countryStats($strat)
     {
-        out("NW: {$this->networth}; Land: {$this->land}; Govt: {$this->govt}; Played: {$this->turns_played};");
+        out("NW: {$this->networth}; Land: {$this->land}; Govt: {$this->govt}; Played: {$this->turns_played}; Goal: ".$this->highestGoal());
         out("Bus: {$this->pt_bus}%; Res: {$this->pt_res}%;  Mil: {$this->pt_mil}%; Agri: {$this->pt_agri}%; Indy: {$this->pt_mil}%;");
-        out("DPA: ".$this->defPerAcre()."NLG: ".$this->nlg());
+        out("DPA: ".$this->defPerAcre()." NLG: ".$this->nlg());
         out("Done Playing ".$strat." Turns for #$this->cnum!");   //Text for screen
     }
 }
