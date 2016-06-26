@@ -276,9 +276,9 @@ class Country
                 $price = $price > 500 ? $price : 10000;
                 $score['t_mil'] = ($this->pt_mil-$goal[1])/(100-$goal[1])*$goal[2]*(2500/$price);
             } elseif ($goal[0] == 'nlg') {
-                $score['nlg'] = $this->nlg()/$this->nlgTarget()*$goal[2];
+                $score['nlg'] = ($this->nlgTarget()-$this->nlg())/$this->nlgTarget()*$goal[2];
             } elseif ($goal[0] == 'dpa') {
-                $score['dpa'] = $this->defPerAcre()/$this->defPerAcreTarget()*$goal[2];
+                $score['dpa'] = ($this->defPerAcreTarget()-$this->defPerAcre())/$this->defPerAcreTarget()*$goal[2];
             }
             $psum += $goal[2];
         }
@@ -377,7 +377,7 @@ class Country
     {
         out("NW: {$this->networth}; Land: {$this->land}; Govt: {$this->govt}; Played: {$this->turns_played}; Goal: ".$this->highestGoal($goals));
         out("Bus: {$this->pt_bus}%; Res: {$this->pt_res}%;  Mil: {$this->pt_mil}%; Agri: {$this->pt_agri}%; Indy: {$this->pt_indy}%;");
-        out("DPA: ".$this->defPerAcre()." NLG: ".$this->nlg());
+        out("DPA: ".$this->defPerAcre()." NLG: ".$this->nlg().' DPAT:'.$this->defPerAcreTarget().' NLGT:'.$this->nlgTarget());
         out("Done Playing ".$strat." Turns for #$this->cnum!");   //Text for screen
     }
 }
