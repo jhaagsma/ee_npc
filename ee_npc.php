@@ -773,6 +773,7 @@ function explore(&$c, $turns = 1)
                        //this means 1 is the default number of turns if not provided
     $result = ee('explore', array('turns' => $turns));      //cash a certain number of turns
     if ($result === false) {
+        out('Explore Fail? Update Advisor');
         $c = get_advisor();
     }
     return $result;

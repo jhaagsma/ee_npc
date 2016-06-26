@@ -105,13 +105,21 @@ function buy_private_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false)
 
     foreach ($order as $o) {
         if ($o == 1 && $pm_info->buy_price->m_tr <= $tr_price && $pm_info->available->m_tr > 0 && $money > $pm_info->buy_price->m_tr) {
-            $result = buy_on_pm($c, array('m_tr' => min(floor($money/$pm_info->buy_price->m_tr), $pm_info->available->m_tr)));
+            $q = min(floor($money/$pm_info->buy_price->m_tr), $pm_info->available->m_tr);
+            debug("BUY_PM: Money: $money; Price: {$pm_info->buy_price->m_tr}; Q: ".$q);
+            $result = buy_on_pm($c, ['m_tr' => $q]);
         } elseif ($o == 2 && $pm_info->buy_price->m_ta <= $ta_price && $pm_info->available->m_ta > 0 && $money > $pm_info->buy_price->m_ta) {
-            $result = buy_on_pm($c, array('m_ta' => min(floor($money/$pm_info->buy_price->m_ta), $pm_info->available->m_ta)));
+            $q = min(floor($money/$pm_info->buy_price->m_ta), $pm_info->available->m_ta);
+            debug("BUY_PM: Money: $money; Price: {$pm_info->buy_price->m_ta}; Q: ".$q);
+            $result = buy_on_pm($c, ['m_ta' => $q]);
         } elseif ($o == 3 && $pm_info->buy_price->m_j <= $j_price && $pm_info->available->m_j > 0 && $money > $pm_info->buy_price->m_j) {
-            $result = buy_on_pm($c, array('m_j' => min(floor($money/$pm_info->buy_price->m_j), $pm_info->available->m_j)));
+            $q = min(floor($money/$pm_info->buy_price->m_j), $pm_info->available->m_j);
+            debug("BUY_PM: Money: $money; Price: {$pm_info->buy_price->m_j}; Q: ".$q);
+            $result = buy_on_pm($c, ['m_j' => $q]);
         } elseif ($o == 4 && $pm_info->buy_price->m_tu <= $tu_price && $pm_info->available->m_tu > 0 && $money > $pm_info->buy_price->m_tu) {
-            $result = buy_on_pm($c, array('m_tu' => min(floor($money/$pm_info->buy_price->m_tu), $pm_info->available->m_tu)));
+            $q = min(floor($money/$pm_info->buy_price->m_tu), $pm_info->available->m_tu);
+            debug("BUY_PM: Money: $money; Price: {$pm_info->buy_price->m_tu}; Q: ".$q);
+            $result = buy_on_pm($c, ['m_tu' => $q]);
         }
         $money = max(0, $c->money - $reserve);
     }
