@@ -537,6 +537,9 @@ function total_military($c)
 
 function total_cansell_tech($c)
 {
+    if ($c->turns_played < 100) {
+        return 0;
+    }
     $cansell = 0;
     global $techlist;
     foreach ($techlist as $tech) {
