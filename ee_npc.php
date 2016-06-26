@@ -549,7 +549,7 @@ function total_cansell_tech($c)
         $cansell += can_sell_tech($c, $tech);
     }
 
-    //out("CANSELL TECH: $cansell");
+    debug("CANSELL TECH: $cansell");
     return $cansell;
 }
 

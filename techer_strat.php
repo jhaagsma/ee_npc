@@ -136,6 +136,11 @@ function sell_max_tech($c)
         'sdi'=>can_sell_tech($c, 't_sdi')
     );
 
+    if (array_sum($quantity) == 0) {
+        out('Techer computing Zero Sell!');
+        return;
+    }
+
 
     $nogoods_high = 9000;
     $nogoods_low = 2000;
