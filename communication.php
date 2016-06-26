@@ -149,6 +149,20 @@ function out($str, $newline = true)
 }
 
 /**
+ * I need a debugging function
+ * @param  string  $str     Output
+ * @param  boolean $newline Whether to print new lines
+ * @return void             Prints text
+ */
+function debug($str, $newline = true)
+{
+    $debug = true;
+    if ($debug == true) {
+        out($str, $newline);
+    }
+}
+
+/**
  * Output and format data
  * @param  array,object $data Data to ouput
  * @return void
