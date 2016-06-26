@@ -120,7 +120,16 @@ function buy_private_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false)
     }
 }
 
-
+function sell_cheap_units(&$c, $unit = 'm_tr', $fraction = 1)
+{
+    $fraction = max(0, min(1, $fraction));
+    $sell_units = [$unit => floor($c->$unit*$fraction)];
+    if (array_sum($sell_units) == 0) {
+        out("No Military!");
+        return;
+    }
+    return sell_on_pm($c, $sell_units);  //Sell 'em
+}
 
 
 function sell_all_military(&$c, $fraction = 1)
@@ -288,9 +297,9 @@ function food_pm_price($c){
 function sell_max_military(&$c)
 {
     $c = get_advisor();     //UPDATE EVERYTHING
-    $market_info = get_market_info();   //get the Public Market info
+    //$market_info = get_market_info();   //get the Public Market info
     $pm_info = get_pm_info();   //get the PM info
-    global $military_list;
+    global $military_list, $market;
 
     $quantity = array();
     foreach ($military_list as $unit) {
@@ -305,11 +314,17 @@ function sell_max_military(&$c)
     foreach ($quantity as $key => $q) {
         if ($q == 0) {
             $price[$key] = 0;
-        } elseif ($market_info->buy_price->$key == null || $market_info->buy_price->$key == 0) {
+        } elseif ($market->price($key) == null || $market->price($key) == 0) {
             $price[$key] = floor($pm_info->buy_price->$key * purebell(0.5, 1.0, 0.3, 0.01));
         } else {
             $max = $c->goodsStuck($key) ? 0.99 : $rmax; //undercut if we have goods stuck
-            $price[$key] = min($pm_info->buy_price->$key, floor($market_info->buy_price->$key * purebell($rmin, $max, $rstddev, $rstep)));
+            $price[$key] = min($pm_info->buy_price->$key, floor($market->price($key) * purebell($rmin, $max, $rstddev, $rstep)));
+        }
+
+        if ($price[$key] > 0 && $price[$key]*$c->tax() <= $pm_info->sell_price->$key) {
+            sell_cheap_units($c, $key, 0.5);
+            $price[$key] = 0;
+            $quantity[$key] = 0;
         }
     }
     /*
