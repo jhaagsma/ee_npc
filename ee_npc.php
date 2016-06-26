@@ -994,10 +994,9 @@ function sell_public(&$c, $quantity = array(), $price = array(), $tonm = array()
         return;
     }
     $result = ee('sell', array('quantity' => $quantity, 'price' => $price)); //ignore tonm for now, it's optional
-    //out_data($result);
+    $c->updateOnMarket();
     if (isset($result->error) && $result->error) {
         out('ERROR: '.$result->error);
-        $c->updateOnMarket();
         sleep(1);
         return;
     }
@@ -1026,7 +1025,6 @@ function sell_public(&$c, $quantity = array(), $price = array(), $tonm = array()
     }
 
     out($str);
-    $c->updateOnMarket();
     //sleep(1);
     return $result;
 }
