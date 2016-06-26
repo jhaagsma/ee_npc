@@ -570,6 +570,7 @@ function can_sell_tech(&$c, $tech = 't_bus')
     $onmarket = $c->onMarket($tech);
     $tot = $c->$tech + $onmarket;
     $sell = floor($tot*0.25) - $onmarket;
+    debug("Can Sell $tech: $sell; (At Home: {$c->$tech}; OnMarket: $onmarket)");
 
     return $sell > 10 ? $sell : 0;
 }
