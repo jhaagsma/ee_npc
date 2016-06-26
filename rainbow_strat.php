@@ -145,11 +145,15 @@ function sellextrafood_rainbow(&$c)
 
 function build_rainbow(&$c)
 {
-    if ($c->foodnet < 0 && -1*$c->food/$c->foodnet < 50) { //build farms if we have less than 50 turns of food on hand
+    if ($c->foodnet < 0) { //build farms if we are foodnet < 0
         return build(array('farm' => $c->bpt));
     } elseif ($c->income < max(100000, 2*$c->build_cost*$c->bpt/$c->explore_rate)) { //build ent/res if we're not making more than enough to keep building continually at least $100k
         if (rand(0, 100) > 50 && $c->income > $c->build_cost*$c->bpt/$c->explore_rate) {
-            return build(array('lab' => $c->bpt));
+            if (($c->tpt < $c->land && rand(0, 100) > 10) || rand(0, 100) > 40) {
+                return build(array('lab' => $c->bpt));
+            } else {
+                return build(array('indy' => $c->bpt));
+            }
         } else {
             $res = round($c->bpt/2.12);
             $ent = $c->bpt - $res;

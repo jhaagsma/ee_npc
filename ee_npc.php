@@ -178,9 +178,10 @@ while (1) {
             $cpref->lastplay = time();
             $nexttime = round($playfactor*$cpref->playfreq*purebell(1/$cpref->playrand, $cpref->playrand, 1, 0.1));
             $maxin = furthest_play($cpref);
-            $nexttime = min($maxin, $nexttime);
+            $nexttime = round(min($maxin, $nexttime));
             $cpref->nextplay = $cpref->lastplay + $nexttime;
-            out("This country next plays in: $nexttime     ");
+            $nextturns = floor($nexttime/$server->turn_rate);
+            out("This country next plays in: $nexttime ($nextturns Turns)    ");
             $played = true;
             $save = true;
         }
@@ -589,7 +590,7 @@ function update_c(&$c, $result)
         return;
     }
     $numT = 0;
-    foreach ($result->turns as $t) {
+    foreach ($result->turns as $z) {
         $numT++; //this is dumb, but count wasn't working????
     }
 
