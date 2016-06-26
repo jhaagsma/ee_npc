@@ -272,8 +272,14 @@ function defend_self(&$c, $reserve_cash)
     $nlg_target = $c->nlgTarget();
     $dpnw = 320;
     $nlg = $c->nlg();
-    while (($nlg < $nlg_target || $c->defPerAcre() < $c->defPerAcreTarget()) && $spend >= 1000 && $dpnw < 380) {
-        out("Try to buy goods at $dpnw dpnw or below to reach NLG of $nlg_target from $nlg!");  //Text for screen
+    $dpat = $c->defPerAcreTarget();
+    $dpa = $c->defPerAcre();
+    while (($nlg < $nlg_target || $dpa < $dpat) && $spend >= 1000 && $dpnw < 380) {
+        if ($c->defPerAcre() < $dpat) {
+            out("Try to buy goods at $dpnw dpnw or below to reach DPA of $dpat from $nlg!");  //Text for screen
+        } else {
+            out("Try to buy goods at $dpnw dpnw or below to reach NLG of $nlg_target from $nlg!");  //Text for screen
+        }
         buy_public_below_dpnw($c, $dpnw, $spend, false);
         $spend = $c->money - $reserve_cash;
 
@@ -282,6 +288,7 @@ function defend_self(&$c, $reserve_cash)
         $c = get_advisor();     //UPDATE EVERYTHING
         $spend = $c->money - $reserve_cash;
         $nlg = $c->nlg();
+        $dpa = $c->defPerAcre();
     }
 }
 
