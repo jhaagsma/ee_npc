@@ -363,40 +363,25 @@ function govtStats($countries)
         }
         $s = $settings->$cnum->strat;
         if (!isset($govs[$s])) {
-            $govs[$s] = [null, 0, 999999, 0, 0];
+            $govs[$s] = [txtStrat($cnum), 0, 999999, 0, 0];
         }
-        switch ($s) {
-            case 'C':
-                $govs[$s][0] = CASHER;
-                break;
-            case 'F':
-                $govs[$s][0] = FARMER;
-                break;
-            case 'I':
-                $indies++;
-                $govs[$s][0] = INDY;
-                break;
-            case 'T':
-                $govs[$s][0] = TECHER;
-                break;
-            case 'R':
-                $govs[$s][0] = RAINBOW;
-                break;
-            case 'O':
-                $govs[$s][0] = OILER;
-                break;
+
+        if (!isset($settings->$cnum->networth) || !isset($settings->$cnum->land)) {
+            update_stats($cnum);
         }
-        $nw = isset($settings->$cnum->networth) ? $settings->$cnum->networth : 0;
-        $ld = isset($settings->$cnum->land) ? $settings->$cnum->land : 0;
+
+        //out_data($settings->$cnum);
+
         $govs[$s][1]++;
         $govs[$s][2] = min($settings->$cnum->nextplay-time(), $govs[$s][2]);
-        $govs[$s][3] += $nw;
-        $govs[$s][4] += $ld;
-        $tnw += $nw;
-        $tld += $ld;
+        $govs[$s][3] += $settings->$cnum->networth;
+        $govs[$s][4] += $settings->$cnum->land;
+        $tnw += $settings->$cnum->networth;
+        $tld += $settings->$cnum->land;
     }
 
     global $serv;
+    out("TNW:$tnw; TLD: $tld");
     $anw = ' [ANW:'.str_pad(round($tnw/count($countries)/1000000, 2), 6, ' ', STR_PAD_LEFT).'M]';
     $ald = ' [ALnd:'.str_pad(round($tld/count($countries)/1000, 2), 6, ' ', STR_PAD_LEFT).'k]';
 
@@ -406,8 +391,8 @@ function govtStats($countries)
     foreach ($govs as $s => $gov) {
         if ($gov[1] > 0) {
             $next = ' [Next:'.str_pad($gov[2], 5, ' ', STR_PAD_LEFT).']';
-            $anw = ' [ANW:'.str_pad(round($gov[3]/$gov[2]/1000000, 2), 6, ' ', STR_PAD_LEFT).'M]';
-            $ald = ' [ALnd:'.str_pad(round($gov[4]/$gov[2]/1000, 2), 6, ' ', STR_PAD_LEFT).'k]';
+            $anw = ' [ANW:'.str_pad(round($gov[3]/$gov[1]/1000000, 2), 6, ' ', STR_PAD_LEFT).'M]';
+            $ald = ' [ALnd:'.str_pad(round($gov[4]/$gov[1]/1000, 2), 6, ' ', STR_PAD_LEFT).'k]';
             out(str_pad($gov[0], 18).': '.$gov[1].$next.$anw.$ald);
         }
     }
@@ -822,6 +807,15 @@ function set_indy(&$c)
     );      //set industrial production
 }
 
+function update_stats($number)
+{
+    global $settings, $cnum;
+    $cnum = $number;
+    $advisor = ee('advisor');   //get and return the ADVISOR information
+    $settings->$cnum->networth = $advisor->networth;
+    $settings->$cnum->land = $advisor->land;
+    return;
+}
 
 function get_advisor()
 {
