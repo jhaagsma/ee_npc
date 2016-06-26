@@ -280,6 +280,10 @@ function defend_self(&$c, $reserve_cash = 50000)
         buy_public_below_dpnw($c, $dpnw, $spend, false);
         $spend = max(0, $c->money - $reserve_cash);
 
+        if ($spend < 100000) {
+            break;
+        }
+
         buy_private_below_dpnw($c, $dpnw, $spend, true);
         $dpnw += 20;
         $c = get_advisor();     //UPDATE EVERYTHING
