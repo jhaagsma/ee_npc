@@ -354,48 +354,54 @@ function govtStats($countries)
     global $settings;
     $cNP = $fNP = $iNP = $tNP = $rNP = $oNP = 9999999;
 
+    $govs = [];
     foreach ($countries as $cnum) {
         if (!isset($settings->$cnum->strat)) {
             out("Picking a new strat for #$cnum");
             $settings->$cnum->strat = pickStrat($cnum);
         }
-        switch ($settings->$cnum->strat) {
+        $s = $settings->$cnum->strat;
+        if (!isset($govs[$s])) {
+            $govs[$s] = [null, 0, 999999, 0, 0];
+        }
+        switch ($s) {
             case 'C':
-                $cashers++;
-                $cNP = min($settings->$cnum->nextplay-time(), $cNP);
+                $govs[$s][0] = CASHER;
                 break;
             case 'F':
-                $farmers++;
-                $fNP = min($settings->$cnum->nextplay-time(), $fNP);
+                $govs[$s][0] = FARMER;
                 break;
             case 'I':
                 $indies++;
-                $iNP = min($settings->$cnum->nextplay-time(), $iNP);
+                $govs[$s][0] = INDY;
                 break;
             case 'T':
-                $techers++;
-                $tNP = min($settings->$cnum->nextplay-time(), $tNP);
+                $govs[$s][0] = TECHER;
                 break;
             case 'R':
-                $rNP = min($settings->$cnum->nextplay-time(), $rNP);
-                $rainbows++;
+                $govs[$s][0] = RAINBOW;
                 break;
             case 'O':
-                $oNP = min($settings->$cnum->nextplay-time(), $oNP);
-                $oilers++;
+                $govs[$s][0] = OILER;
                 break;
         }
+        $govs[$s][1]++;
+        $govs[$s][2] = min($settings->$cnum->nextplay-time(), $govs[$s][2]);
+        $govs[$s][3] += isset($settings->$cnum->networth) ? $settings->$cnum->networth : 0;
+        $govs[$s][4] += isset($settings->$cnum->land) ? $settings->$cnum->land : 0;
     }
+
     global $serv;
     out("\033[1mServer:\033[0m ".$serv);
     out("\033[1mTotal Countries:\033[0m ".count($countries));
-    out(FARMER.' : '.$farmers.' [Next: '.$fNP.']');
-    out(INDY.'   : '.$indies.' [Next: '.$iNP.']');
-    out(CASHER.' : '.$cashers.' [Next: '.$cNP.']');
-    out(TECHER.' : '.$techers.' [Next: '.$tNP.']');
-    out(RAINBOW.': '.$rainbows.' [Next: '.$rNP.']');
-    out(OILER.'  : '.$oilers.' [Next: '.$oNP.']');
-
+    foreach ($govs as $s => $gov) {
+        if ($gov[1] > 0) {
+            $next = ' [Next:'.str_pad($gov[2], 5, ' ', STR_PAD_LEFT).']';
+            $anw = ' [ANW:'.str_pad(round($gov[3]/1000000, 2), 4, ' ', STR_PAD_LEFT).'M]';
+            $ald = ' [ALnd:'.str_pad(round($gov[4]/1000, 2), 4, ' ', STR_PAD_LEFT).'k]';
+            out(str_pad($gov[0], 18).': '.$gov[1].$next.$anw.$ald);
+        }
+    }
 }
 
 function getNextPlayCNUM($countries, $time = 0)
@@ -943,6 +949,7 @@ function buy_public(&$c, $quantity = array(), $price = array())
         out("Tried: ".$what);
         out("Money: ".$c->money." Cost: ".$cost);
         sleep(1);
+        return false;
     }
 
     $str .= 'for $'.$tcost.' on public.';
@@ -1015,6 +1022,7 @@ function sell_public(&$c, $quantity = array(), $price = array(), $tonm = array()
 function buy_tech(&$c, $tech = 't_bus', $spend = 0, $maxprice = 9999)
 {
     global $market;
+    $update = false;
     //$market_info = get_market_info();   //get the Public Market info
     $tech = substr($tech, 2);
     $diff = $c->money - $spend;
@@ -1028,6 +1036,14 @@ function buy_tech(&$c, $tech = 't_bus', $spend = 0, $maxprice = 9999)
             }
             //out($tech . $tobuy . "@$" . $price);
             $result = buy_public($c, array($tech => $tobuy), array($tech => $price));     //Buy troops!
+            if ($result === false) {
+                if ($update == false) {
+                    $update = true;
+                    $market->update(); //force update once more, and let it loop again
+                } else {
+                    return;
+                }
+            }
             $spend = $c->money - $diff;
 
             //out_data($result);

@@ -26,7 +26,8 @@ function destock($server, $cnum)
 function buy_public_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false)
 {
     //out("Stage 1");
-    $market_info = get_market_info();
+    //$market_info = get_market_info();
+    global $market;
     //out_data($market_info);
     if (!$money || $money < 0) {
         $money = $c->money;
@@ -51,26 +52,26 @@ function buy_public_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false)
     static $last = 0;
     foreach ($units as $subunit) {
         $unit = 'm_'.$subunit;
-        if ($market_info->buy_price->$unit != null && $market_info->available->$unit > 0) {
+        if ($market->price($unit) != null && $market->available($unit) > 0) {
             $price = $subunit.'_price';
             $cost = $subunit.'_cost';
             //out("Stage 1.4");
-            while ($market_info->buy_price->$unit <= $$price && $money > $$cost && $market_info->available->m_ta > 0) {
+            while ($market->price($unit) <= $$price && $money > $$cost && $market->available($unit) > 0) {
                 //out("Stage 1.4.x");
                 //out("Money: $money");
                 //out("$subunit Price: $price");
                 //out("Buy Price: {$market_info->buy_price->$unit}");
-                $quantity = min(floor($money/ceil($market_info->buy_price->$unit*$c->tax())), $market_info->available->$unit);
+                $quantity = min(floor($money/ceil($market->price($unit)*$c->tax())), $market->available($unit));
                 if ($quantity == $last) {
                     $quantity = max(0, $quantity - 1);
                 }
                 $last = $quantity;
                 //out("Quantity: $quantity");
                 //out("Available: {$market_info->available->$unit}");
-                $result = buy_public($c, array($unit => $quantity), array($unit => $market_info->buy_price->$unit));  //Buy troops!
-                $market_info = get_market_info();
+                $result = buy_public($c, [$unit => $quantity], [$unit => $market->price($unit)]);  //Buy troops!
+                $market->update();
                 $money = $c->money - $reserve;
-                if (!isset($result->bought->$unit->quantity) || $result->bought->$unit->quantity == 0) {
+                if ($result === false || !isset($result->bought->$unit->quantity) || $result->bought->$unit->quantity == 0) {
                     out("Breaking@$unit");
                     break;
                 }
@@ -203,7 +204,9 @@ function food_management(&$c)
             $quantity = min($foodloss*$turns_buy, $market->available('m_bu'));
             out("Less than $reserve turns worth of food! (".$c->foodnet."/turn) Buy $turns_buy turns of food ($quantity) off Public @\$$market_price if we can!");     //Text for screen
             $result = buy_public($c, array('m_bu' => $quantity), array('m_bu' => $market_price));     //Buy 3 turns of food off the public at or below the PM price
-
+            if ($result === false) {
+                $market->update();
+            }
             //$market->relaUpdate('m_bu', $quantity, $result->bought->m_bu->quantity);
 
             $c = get_advisor();     //UPDATE EVERYTHING

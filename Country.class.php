@@ -18,6 +18,9 @@ class Country
             //out("K:$k V:$var");
             $this->$k = $var;
         }
+        global $cpref;
+        $cpref->networth = $this->networth;
+        $cpref->land = $this->land;
     }
 
     public function updateMain()
@@ -208,7 +211,7 @@ class Country
         $what = key($score);
         //out("Highest Goal: ".$what.' Buy $'.$spend_partial);
         $diff = 0;
-        $techprice = 5000*$tol;
+        $techprice = 8000*$tol;
         if ($what == 't_agri') {
             $o = $this->money;
             buy_tech($this, 't_agri', $spend_partial, $techprice);

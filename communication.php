@@ -75,7 +75,7 @@ function handle_output($serverOutput, $function)
 
         return false;
     } elseif (expected_result($function) && $message != expected_result($function)) {
-        out("\n\nUnexpected Result for '$function': ".$message."\n\n");
+        out("\n\nUnexpected Result for '$function': ".$message.':'.$response."\n\n");
 
         return false;
     } elseif (!expected_result($function)) {

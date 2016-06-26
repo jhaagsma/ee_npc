@@ -106,6 +106,8 @@ function play_rainbow_turn(&$c)
         return build_cs(); //build 1 CS
     } elseif ($c->foodnet > 0 && $c->foodnet > 3*$c->foodcon && $c->food > 30*$c->foodnet && $c->food > 7000) {
         return sellextrafood_rainbow($c);
+    } elseif ($c->protection == 0 && total_cansell_tech($c) > 20*$c->tpt && selltechtime($c) || $c->turns == 1 && total_cansell_tech($c) > 20) { //never sell less than 20 turns worth of tech
+        return sell_max_tech($c);
     } else { //otherwise...  cash
         return cash($c);
     }
