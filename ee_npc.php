@@ -355,6 +355,7 @@ function govtStats($countries)
     $cNP = $fNP = $iNP = $tNP = $rNP = $oNP = 9999999;
 
     $govs = [];
+    $tnw = $tld = 0;
     foreach ($countries as $cnum) {
         if (!isset($settings->$cnum->strat)) {
             out("Picking a new strat for #$cnum");
@@ -385,20 +386,28 @@ function govtStats($countries)
                 $govs[$s][0] = OILER;
                 break;
         }
+        $nw = isset($settings->$cnum->networth) ? $settings->$cnum->networth : 0;
+        $ld = isset($settings->$cnum->land) ? $settings->$cnum->land : 0;
         $govs[$s][1]++;
         $govs[$s][2] = min($settings->$cnum->nextplay-time(), $govs[$s][2]);
-        $govs[$s][3] += isset($settings->$cnum->networth) ? $settings->$cnum->networth : 0;
-        $govs[$s][4] += isset($settings->$cnum->land) ? $settings->$cnum->land : 0;
+        $govs[$s][3] += $nw;
+        $govs[$s][4] += $ld;
+        $tnw += $nw;
+        $tld += $ld;
     }
 
     global $serv;
+    $anw = ' [ANW:'.str_pad(round($tnw/count($countries)/1000000, 2), 6, ' ', STR_PAD_LEFT).'M]';
+    $ald = ' [ALnd:'.str_pad(round($tld/count($countries)/1000, 2), 6, ' ', STR_PAD_LEFT).'k]';
+
+
     out("\033[1mServer:\033[0m ".$serv);
-    out("\033[1mTotal Countries:\033[0m ".count($countries));
+    out("\033[1mTotal Countries:\033[0m ".str_pad(count($countries), 6, ' ', STR_PAD_LEFT).$anw.$ald);
     foreach ($govs as $s => $gov) {
         if ($gov[1] > 0) {
             $next = ' [Next:'.str_pad($gov[2], 5, ' ', STR_PAD_LEFT).']';
-            $anw = ' [ANW:'.str_pad(round($gov[3]/1000000, 2), 6, ' ', STR_PAD_LEFT).'M]';
-            $ald = ' [ALnd:'.str_pad(round($gov[4]/1000, 2), 6, ' ', STR_PAD_LEFT).'k]';
+            $anw = ' [ANW:'.str_pad(round($gov[3]/$gov[2]/1000000, 2), 6, ' ', STR_PAD_LEFT).'M]';
+            $ald = ' [ALnd:'.str_pad(round($gov[4]/$gov[2]/1000, 2), 6, ' ', STR_PAD_LEFT).'k]';
             out(str_pad($gov[0], 18).': '.$gov[1].$next.$anw.$ald);
         }
     }
