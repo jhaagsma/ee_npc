@@ -75,9 +75,10 @@ class Country
         //out_data($goods);
         $expl = explode('_', $goods->type);
         $good = $expl[0] == 't' ? $expl[1] : $goods->type;
+        $good = $good == 'm_bu' ? 'food' : $good;
         $atm = 'at'.$good;
-        out("Setting $atm: {$this->$atm}");
         $this->$atm = $goods->time < time() ? true : false;
+        out("Setting $atm: {$this->$atm}");
     }
 
     /**
