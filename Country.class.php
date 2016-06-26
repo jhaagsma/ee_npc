@@ -50,7 +50,10 @@ class Country
             }
             $this->$omgood += $goods->quantity;
             $this->om_total += $goods->quantity;
+
+            $this->stuckOnMarket($goods);
         }
+        out("Goods on Market: {$this->om_total}");
     }
 
     public function onMarket($good = null)
