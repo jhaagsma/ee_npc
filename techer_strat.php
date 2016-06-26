@@ -138,6 +138,7 @@ function sell_max_tech($c)
 
     if (array_sum($quantity) == 0) {
         out('Techer computing Zero Sell!');
+        $debug = true;
         $c = get_advisor();
         $c->updateOnMarket();
         return;
