@@ -53,7 +53,7 @@ class Country
 
             $this->stuckOnMarket($goods);
         }
-        out("Goods on Market: {$this->om_total}");
+        //out("Goods on Market: {$this->om_total}");
     }
 
     public function onMarket($good = null)
@@ -78,7 +78,7 @@ class Country
         $good = $good == 'm_bu' ? 'food' : $good;
         $atm = 'at'.$good;
         $this->$atm = $goods->time < time() ? true : false;
-        out("Setting $atm: {$this->$atm}");
+        //out("Setting $atm: {$this->$atm}");
     }
 
     /**
