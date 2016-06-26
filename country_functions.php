@@ -267,6 +267,31 @@ function food_management(&$c)
     return false;
 }
 
+function minDpnw(&$c)
+{
+    global $pm_info, $market;
+    if (!isset($pm_info->buy_price)) {
+        $pm_info = get_pm_info();
+    }
+    $pub_tr = $market->price('m_tr')*$c->tax()/0.5;
+    $pub_j = $market->price('m_j')*$c->tax()/0.6;
+    $pub_tu = $market->price('m_tu')*$c->tax()/0.6;
+    $pub_ta = $market->price('m_ta')*$c->tax()/2;
+
+    $dpnws = [
+        $pm_info->buy_price->m_tr/0.5,
+        $pm_info->buy_price->m_j/0.6,
+        $pm_info->buy_price->m_tu/0.6,
+        $pm_info->buy_price->m_ta/2,
+        $pub_tr == 0 ? 9000 : $pub_tr,
+        $pub_j == 0 ? 9000 : $pub_j,
+        $pub_tu == 0 ? 9000 : $pub_tu,
+        $pub_ta == 0 ? 9000 : $pub_ta,
+    ];
+
+    return min($dpnws);
+}
+
 function defend_self(&$c, $reserve_cash = 50000)
 {
     if ($c->protection) {
@@ -275,10 +300,11 @@ function defend_self(&$c, $reserve_cash = 50000)
     //BUY MILITARY?
     $spend = $c->money - $reserve_cash;
     $nlg_target = $c->nlgTarget();
-    $dpnw = 320;
+    $dpnw = minDpnw($c);
     $nlg = $c->nlg();
     $dpat = $c->defPerAcreTarget();
     $dpa = $c->defPerAcre();
+
     while (($nlg < $nlg_target || $dpa < $dpat) && $spend >= 100000 && $dpnw < 380) {
         if ($dpa < $dpat) {
             out("Try to buy goods at $dpnw dpnw or below to reach DPA of $dpat from $dpa!");  //Text for screen
@@ -296,7 +322,7 @@ function defend_self(&$c, $reserve_cash = 50000)
         }
 
         buy_private_below_dpnw($c, $dpnw, $spend, true);
-        $dpnw += 20;
+        $dpnw = minDpnw($c);
         $c = get_advisor();     //UPDATE EVERYTHING
         $spend = max(0, $c->money - $reserve_cash);
         $nlg = $c->nlg();
