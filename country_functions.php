@@ -278,12 +278,12 @@ function defend_self(&$c, $reserve_cash = 25000)
             out("Try to buy goods at $dpnw dpnw or below to reach NLG of $nlg_target from $nlg!");  //Text for screen
         }
         buy_public_below_dpnw($c, $dpnw, $spend, false);
-        $spend = $c->money - $reserve_cash;
+        $spend = max(0, $c->money - $reserve_cash);
 
         buy_private_below_dpnw($c, $dpnw, $spend, true);
         $dpnw += 20;
         $c = get_advisor();     //UPDATE EVERYTHING
-        $spend = $c->money - $reserve_cash;
+        $spend = max(0, $c->money - $reserve_cash);
         $nlg = $c->nlg();
         $dpa = $c->defPerAcre();
     }
