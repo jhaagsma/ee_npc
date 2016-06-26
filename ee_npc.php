@@ -871,6 +871,9 @@ function buy_on_pm(&$c, $units = array())
         out("Failed to buy units on PM; money={$c->money}");
         out_data($units);
         out("UPDATE EVERYTHING");
+        global $debug, $pm_info;
+        debug($pm_info);
+        $debug = true;
         $c = get_advisor();     //UPDATE EVERYTHING
         out("refresh money={$c->money}");
         return $result;
