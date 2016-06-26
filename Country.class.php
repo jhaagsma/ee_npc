@@ -37,21 +37,26 @@ class Country
         $this->turns = $main->turns;       //This is the only one we really *HAVE* to check for
     }
 
+    public function updateOnMarket()
+    {
+        $this->market_info = get_owned_on_market_info();  //find out what we have on the market
+        $this->market_fetched = time();
+
+        $this->om_total = 0;
+        foreach ($this->market_info as $key => $goods) {
+            $omgood = 'om_'.$goods->type;
+            if (!isset($this->$omgood)) {
+                $this->$omgood = 0;
+            }
+            $this->$omgood += $goods->quantity;
+            $this->om_total += $goods->quantity;
+        }
+    }
+
     public function onMarket($good = null)
     {
         if (!$this->market_info) {
-            $this->market_info = get_owned_on_market_info();  //find out what we have on the market
-            $this->market_fetched = time();
-
-            $this->om_total = 0;
-            foreach ($this->market_info as $key => $goods) {
-                $omgood = 'om_'.$goods->type;
-                if (!isset($this->$omgood)) {
-                    $this->$omgood = 0;
-                }
-                $this->$omgood += $goods->quantity;
-                $this->om_total += $goods->quantity;
-            }
+            $this->updateOnMarket();
         }
 
         $omgood = 'om_'.($good != null ? $good : 'total');

@@ -1014,6 +1014,7 @@ function sell_public(&$c, $quantity = array(), $price = array(), $tonm = array()
     }
 
     out($str);
+    $c->updateOnMarket();
     //sleep(1);
     return $result;
 }
