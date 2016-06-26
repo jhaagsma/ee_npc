@@ -256,23 +256,23 @@ class Country
         $score = [];
         foreach ($goals as $goal) {
             if ($goal[0] == 't_agri') {
-                $price = $market->price('t_agri');
+                $price = $market->price('agri');
                 $price = $price > 500 ? $price : 10000;
                 $score['t_agri'] = ($goal[1]-$this->pt_agri)/($goal[1]-100)*$goal[2]*(2500/$price);
             } elseif ($goal[0] == 't_indy') {
-                $price = $market->price('t_indy');
+                $price = $market->price('indy');
                 $price = $price > 500 ? $price : 10000;
                 $score['t_indy'] = ($goal[1]-$this->pt_indy)/($goal[1]-100)*$goal[2]*(2500/$price);
             } elseif ($goal[0] == 't_bus') {
-                $price = $market->price('t_bus');
+                $price = $market->price('bus');
                 $price = $price > 500 ? $price : 10000;
                 $score['t_bus'] = ($goal[1]-$this->pt_bus)/($goal[1]-100)*$goal[2]*(2500/$price);
             } elseif ($goal[0] == 't_res') {
-                $price = $market->price('t_res');
+                $price = $market->price('res');
                 $price = $price > 500 ? $price : 10000;
                 $score['t_res'] = ($goal[1]-$this->pt_res)/($goal[1]-100)*$goal[2]*(2500/$price);
             } elseif ($goal[0] == 't_mil') {
-                $price = $market->price('t_mil');
+                $price = $market->price('mil');
                 $price = $price > 500 ? $price : 10000;
                 $score['t_mil'] = ($this->pt_mil-$goal[1])/(100-$goal[1])*$goal[2]*(2500/$price);
             } elseif ($goal[0] == 'nlg') {
