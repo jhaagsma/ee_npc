@@ -493,13 +493,13 @@ function sd($array)
 
 
 //COUNTRY PLAYING STUFF
-function onmarket($good = 'food')
+function onmarket($good = 'food', &$c = null)
 {
     global $mktinfo;
     if (!$mktinfo) {
         $mktinfo = get_owned_on_market_info();  //find out what we have on the market
     }
-    out_data($mktinfo);
+    //out_data($mktinfo);
     //exit;
     $total = 0;
     foreach ($mktinfo as $key => $goods) {
@@ -509,11 +509,14 @@ function onmarket($good = 'food')
         } elseif ($good == null) {
             $total += $goods->quantity;
         }
+        if ($c != null) {
+            $c->onMarket($goods);
+        }
     }
     return $total;
 }
 
-function onmarket_value($good = null)
+function onmarket_value($good = null, &$c = null)
 {
     global $mktinfo;
     if (!$mktinfo) {
@@ -528,6 +531,10 @@ function onmarket_value($good = null)
             $value += $goods->quantity*$goods->price;
         } elseif ($good == null) {
             $value += $goods->quantity;
+        }
+
+        if ($c != null) {
+            $c->onMarket($goods);
         }
     }
     return $value;
@@ -570,7 +577,7 @@ function total_cansell_military($c)
 
 function can_sell_tech(&$c, $tech = 't_bus')
 {
-    $onmarket = onmarket($tech);
+    $onmarket = onmarket($tech, $c);
     $tot = $c->$tech + $onmarket;
     $sell = floor($tot*0.25) - $onmarket;
 
@@ -579,7 +586,7 @@ function can_sell_tech(&$c, $tech = 't_bus')
 
 function can_sell_mil(&$c, $mil = 'm_tr')
 {
-    $onmarket = onmarket($mil);
+    $onmarket = onmarket($mil, $c);
     $tot = $c->$mil + $onmarket;
     $sell = floor($tot*($c->govt == 'C' ? 0.25*1.35 : 0.25)) - $onmarket;
 

@@ -122,7 +122,7 @@ function sellmilitarytime(&$c)
     $sum = $om = 0;
     foreach ($military_list as $mil) {
         $sum += $c->$mil;
-        $om += onmarket($mil);
+        $om += onmarket($mil, $c);
     }
     if ($om < $sum/6) {
         return true;

@@ -116,7 +116,8 @@ function sellextrafood_farmer(&$c)
     $rmin = 0.95; //percent
     $rstep = 0.01;
     $rstddev = 0.10;
-    $price = round(max($pm_info->sell_price->m_bu+1, $market->price('m_bu')*purebell($rmin, $rmax, $rstddev, $rstep)));
+    $max = $c->goodsStuck($key) ? 0.99 : $rmax;
+    $price = round(max($pm_info->sell_price->m_bu+1, $market->price('m_bu')*purebell($rmin, $max, $rstddev, $rstep)));
     $price = array('m_bu' => $price);
 
     if ($price <= max(29, $pm_info->sell_price->m_bu/$c->tax())) {

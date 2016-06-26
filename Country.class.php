@@ -34,6 +34,26 @@ class Country
         $this->turns = $main->turns;       //This is the only one we really *HAVE* to check for
     }
 
+    public function onMarket($goods)
+    {
+        $atm = 'at'.$goods['type'];
+        out("Setting $atm");
+        $this->$atm = $goods['time'] < time() ? true : false;
+    }
+
+    /**
+     * Tell if $good (like m_tr) are actually FOR SALE on market.
+     * Requres onMarket to have been called
+     * @param  {string} $good like m_tr, t_mil
+     * @return {bool}         return true or false!
+     */
+    public function goodsStuck($good)
+    {
+        $atm = 'at'.$good;
+        out("Getting $atm");
+        return isset($this->$atm) ? $this->$atm : false;
+    }
+
     /**
      * Set the indy production
      * @param array|string $what either the unit to set to 100%, or an array of percentages

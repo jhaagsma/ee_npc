@@ -148,7 +148,8 @@ function sell_max_tech($c)
         if ($q == 0) {
             $price[$key] = 0;
         } elseif ($market->price($key) != null) {
-            $price[$key] = floor($market->price($key) * purebell($rmin, $rmax, $rstddev, $rstep));
+            $max = $c->goodsStuck($key) ? 0.98 : $rmax; //undercut if we have goods stuck
+            $price[$key] = floor($market->price($key) * purebell($rmin, $max, $rstddev, $rstep));
         } else {
             $price[$key] = floor(purebell($nogoods_low, $nogoods_high, $nogoods_stddev, $nogoods_step));
         }
