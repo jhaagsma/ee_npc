@@ -274,7 +274,7 @@ function defend_self(&$c, $reserve_cash)
     $nlg = $c->nlg();
     $dpat = $c->defPerAcreTarget();
     $dpa = $c->defPerAcre();
-    while (($nlg < $nlg_target || $dpa < $dpat) && $spend >= 1000 && $dpnw < 380) {
+    while (($nlg < $nlg_target || $dpa < $dpat) && $spend >= 25000 && $dpnw < 380) {
         if ($dpa < $dpat) {
             out("Try to buy goods at $dpnw dpnw or below to reach DPA of $dpat from $dpa!");  //Text for screen
         } else {
