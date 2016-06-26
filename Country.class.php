@@ -85,7 +85,12 @@ class Country
         //if (isset($this->$atm)) {
             //out("Getting $atm: {$this->$atm}");
         //}
-        return isset($this->$atm) ? $this->$atm : false;
+        if (isset($this->$atm) && $this->$atm) {
+            out("Goods Stuck: $atm: {$this->$atm}");
+            return true;
+        }
+
+        return false;
     }
 
     /**
