@@ -273,6 +273,7 @@ function minDpnw(&$c)
     if (!isset($pm_info->buy_price)) {
         $pm_info = get_pm_info();
     }
+    $market->update();
     $pub_tr = $market->price('m_tr')*$c->tax()/0.5;
     $pub_j = $market->price('m_j')*$c->tax()/0.6;
     $pub_tu = $market->price('m_tu')*$c->tax()/0.6;
