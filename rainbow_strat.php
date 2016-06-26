@@ -83,8 +83,7 @@ function play_rainbow_strat($server)
         //$main->turns = 0;				//use this to do one turn at a time
     }
 
-    out("Agri: {$c->pt_agri}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%; Mil: {$c->pt_mil}%; NLG: ".$c->nlg());
-    out("Done Playing ".RAINBOW." Turns for #$cnum!");  //Text for screen
+    $c->countryStats(RAINBOW);
 }
 
 function play_rainbow_turn(&$c)

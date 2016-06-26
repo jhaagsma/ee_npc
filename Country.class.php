@@ -96,7 +96,7 @@ class Country
             //out("Getting $atm: {$this->$atm}");
         //}
         if (isset($this->$atm) && $this->$atm) {
-            out("Goods Stuck: $atm: {$this->$atm}");
+            out("Goods Stuck: $good: {$this->$atm}");
             return true;
         }
 
@@ -340,5 +340,14 @@ class Country
         if ($spend > 10000 && $skip < count($score) - 1) {
             $this->countryGoals($goals, $spend, $spend_partial, $skip);
         }
+    }
+
+
+    public function countryStats($strat)
+    {
+        out("NW: {$this->networth}; Land: {$this->land}; Govt: {$this->govt}; Played: {$this->turns_played};");
+        out("Bus: {$this->pt_bus}%; Res: {$this->pt_res}%;  Mil: {$this->pt_mil}%; Agri: {$this->pt_agri}%; Indy: {$this->pt_mil}%;");
+        out("DPA: ".$this->defPerAcre()."NLG: ".$this->nlg());
+        out("Done Playing ".$strat." Turns for #$this->cnum!");   //Text for screen
     }
 }

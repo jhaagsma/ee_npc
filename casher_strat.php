@@ -63,8 +63,7 @@ function play_casher_strat($server)
         }
     }
 
-    out("Bus: {$c->pt_bus}%; Res: {$c->pt_res}%;  Mil: {$c->pt_mil}%; NLG: ".$c->nlg());
-    out("Done Playing ".CASHER." Turns for #$cnum!");   //Text for screen
+    $c->countryStats(CASHER);
 }
 
 function play_casher_turn(&$c)

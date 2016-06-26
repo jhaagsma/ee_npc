@@ -83,8 +83,7 @@ function play_indy_strat($server)
         }
     }
 
-    out("Indy: {$c->pt_indy}%; Mil: {$c->pt_mil}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%; NLG: ".$c->nlg());
-    out("Done Playing ".INDY." Turns for #$cnum!");     //Text for screen
+    $c->countryStats(INDY);
 }
 
 function play_indy_turn(&$c)

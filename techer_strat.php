@@ -66,7 +66,7 @@ function play_techer_strat($server)
             buy_techer_goals($c, $c->money - $c->fullBuildCost() - $c->runCash()); //keep enough money to build out everything
         }
     }
-    out("Done Playing ".TECHER." Turns for #$cnum!");   //Text for screen
+    $c->countryStats(TECHER);
 }
 
 function play_techer_turn(&$c)
