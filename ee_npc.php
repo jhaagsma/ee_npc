@@ -397,8 +397,8 @@ function govtStats($countries)
     foreach ($govs as $s => $gov) {
         if ($gov[1] > 0) {
             $next = ' [Next:'.str_pad($gov[2], 5, ' ', STR_PAD_LEFT).']';
-            $anw = ' [ANW:'.str_pad(round($gov[3]/1000000, 2), 4, ' ', STR_PAD_LEFT).'M]';
-            $ald = ' [ALnd:'.str_pad(round($gov[4]/1000, 2), 4, ' ', STR_PAD_LEFT).'k]';
+            $anw = ' [ANW:'.str_pad(round($gov[3]/1000000, 2), 6, ' ', STR_PAD_LEFT).'M]';
+            $ald = ' [ALnd:'.str_pad(round($gov[4]/1000, 2), 6, ' ', STR_PAD_LEFT).'k]';
             out(str_pad($gov[0], 18).': '.$gov[1].$next.$anw.$ald);
         }
     }
