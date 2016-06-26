@@ -56,7 +56,7 @@ function buy_public_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false)
             $price = $subunit.'_price';
             $cost = $subunit.'_cost';
             //out("Stage 1.4");
-            while ($market->price($unit) <= $$price && $money > $$cost && $market->available($unit) > 0) {
+            while ($market->price($unit) <= $$price && $money > $$cost && $market->available($unit) > 0 && $money > 50000) {
                 //out("Stage 1.4.x");
                 //out("Money: $money");
                 //out("$subunit Price: $price");
@@ -259,7 +259,7 @@ function food_management(&$c)
     return false;
 }
 
-function defend_self(&$c, $reserve_cash = 25000)
+function defend_self(&$c, $reserve_cash = 50000)
 {
     if ($c->protection) {
         return;
@@ -271,7 +271,7 @@ function defend_self(&$c, $reserve_cash = 25000)
     $nlg = $c->nlg();
     $dpat = $c->defPerAcreTarget();
     $dpa = $c->defPerAcre();
-    while (($nlg < $nlg_target || $dpa < $dpat) && $spend >= 25000 && $dpnw < 380) {
+    while (($nlg < $nlg_target || $dpa < $dpat) && $spend >= 100000 && $dpnw < 380) {
         if ($dpa < $dpat) {
             out("Try to buy goods at $dpnw dpnw or below to reach DPA of $dpat from $dpa!");  //Text for screen
         } else {
