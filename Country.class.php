@@ -306,7 +306,7 @@ class Country
         }
 
         if ($spend_partial < 1000000) {
-            $spend_partial = 3*$spend;
+            $spend_partial = $spend;
         }
 
         if ($spend_partial < 1000000) {
