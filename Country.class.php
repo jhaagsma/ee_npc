@@ -38,7 +38,7 @@ class Country
     {
         //out_data($goods);
         $atm = 'at'.$goods->type;
-        //out("Setting $atm");
+        out("Setting $atm");
         $this->$atm = $goods->time < time() ? true : false;
     }
 
@@ -51,6 +51,7 @@ class Country
     public function goodsStuck($good)
     {
         $atm = 'at'.$good;
+        out("Getting $atm");
         if (isset($this->$atm)) {
             out("Getting $atm: {$this->$atm}");
         }
