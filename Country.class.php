@@ -280,7 +280,7 @@ class Country
             } elseif ($goal[0] == 't_res') {
                 $score['t_res'] = ($goal[1]-$this->pt_res)/($goal[1]-100)*$goal[2];
             } elseif ($goal[0] == 't_mil') {
-                $score['t_mil'] = ($this->pt_bus-$goal[1])/(100-$goal[1])*$goal[2];
+                $score['t_mil'] = ($this->pt_mil-$goal[1])/(100-$goal[1])*$goal[2];
             } elseif ($goal[0] == 'nlg') {
                 $score['nlg'] = $this->nlg()/$this->nlgTarget()*$goal[2];
             } elseif ($goal[0] == 'dpa') {
