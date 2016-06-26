@@ -38,7 +38,7 @@ class Country
     {
         //out_data($goods);
         $atm = 'at'.$goods->type;
-        out("Setting $atm");
+        //out("Setting $atm");
         $this->$atm = $goods->time < time() ? true : false;
     }
 
