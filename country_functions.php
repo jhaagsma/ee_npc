@@ -262,7 +262,7 @@ function food_management(&$c)
     return false;
 }
 
-function defend_self(&$c, $reserve_cash)
+function defend_self(&$c, $reserve_cash = 25000)
 {
     if ($c->protection) {
         return;
