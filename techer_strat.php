@@ -160,8 +160,7 @@ function sell_max_tech($c)
         out("TRIED TO SELL MORE THAN WE CAN!?!");
         $c = get_advisor();     //UPDATE EVERYTHING
     }
-    global $mktinfo;
-    $mktinfo = null;
+
     return $result;
 }
 

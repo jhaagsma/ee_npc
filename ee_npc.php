@@ -980,12 +980,14 @@ function sell_public(&$c, $quantity = array(), $price = array(), $tonm = array()
     if (array_sum($quantity) == 0) {
         out("Trying to sell nothing?");
         $c = get_advisor();
+        $c->updateOnMarket();
         return;
     }
     $result = ee('sell', array('quantity' => $quantity, 'price' => $price)); //ignore tonm for now, it's optional
     //out_data($result);
     if (isset($result->error) && $result->error) {
         out('ERROR: '.$result->error);
+        $c->updateOnMarket();
         sleep(1);
         return;
     }

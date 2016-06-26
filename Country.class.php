@@ -73,7 +73,7 @@ class Country
         $expl = explode('_', $goods->type);
         $good = $expl[0] == 't' ? $expl[1] : $goods->type;
         $atm = 'at'.$good;
-        //out("Setting $atm");
+        out("Setting $atm: {$this->$atm}");
         $this->$atm = $goods->time < time() ? true : false;
     }
 
