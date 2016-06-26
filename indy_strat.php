@@ -83,7 +83,7 @@ function play_indy_strat($server)
         }
     }
 
-    $c->countryStats(INDY);
+    $c->countryStats(INDY, indyGoals($c));
 }
 
 function play_indy_turn(&$c)
@@ -132,13 +132,18 @@ function sellmilitarytime(&$c)
 
 function buy_indy_goals(&$c, $spend = null)
 {
-    $goals = [
+    $goals = indyGoals($c);
+
+    $c->countryGoals($goals, $spend);
+}
+
+function indyGoals(&$c)
+{
+    return [
         //what, goal, priority
         ['t_indy',150,8],
         ['t_bus',160,3],
         ['t_res',160,3],
         ['t_mil',94,4],
     ];
-
-    $c->countryGoals($goals, $spend);
 }

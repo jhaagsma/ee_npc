@@ -75,7 +75,7 @@ function play_farmer_strat($server)
         }
     }
 
-    $c->countryStats(FARMER);
+    $c->countryStats(FARMER, farmerGoals($c));
 }
 
 function play_farmer_turn(&$c)
@@ -136,7 +136,14 @@ function build_farmer(&$c)
 
 function buy_farmer_goals(&$c, $spend = null)
 {
-    $goals = [
+    $goals = farmerGoals($c);
+
+    $c->countryGoals($goals, $spend);
+}
+
+function farmerGoals(&$c)
+{
+    return [
         //what, goal, priority
         ['t_agri',215,8],
         ['t_bus',178,4],
@@ -145,6 +152,4 @@ function buy_farmer_goals(&$c, $spend = null)
         ['nlg',$c->nlgTarget(),2],
         ['dpa',$c->defPerAcreTarget(),2],
     ];
-
-    $c->countryGoals($goals, $spend);
 }

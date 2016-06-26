@@ -66,7 +66,7 @@ function play_techer_strat($server)
             buy_techer_goals($c, $c->money - $c->fullBuildCost() - $c->runCash()); //keep enough money to build out everything
         }
     }
-    $c->countryStats(TECHER);
+    $c->countryStats(TECHER, techerGoals($c));
 }
 
 function play_techer_turn(&$c)
@@ -210,11 +210,15 @@ function tech_techer(&$c)
 
 function buy_techer_goals(&$c, $spend = null)
 {
-    $goals = [
+    $goals = techerGoals($c);
+    $c->countryGoals($goals, $spend);
+}
+
+function techerGoals(&$c)
+{
+    return [
         //what, goal, priority
         ['nlg',$c->nlgTarget(),2],
         ['dpa',$c->defPerAcreTarget(),2],
     ];
-
-    $c->countryGoals($goals, $spend);
 }

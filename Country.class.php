@@ -353,7 +353,7 @@ class Country
     }
 
 
-    public function countryStats($strat)
+    public function countryStats($strat, $goals = [])
     {
         out("NW: {$this->networth}; Land: {$this->land}; Govt: {$this->govt}; Played: {$this->turns_played}; Goal: ".$this->highestGoal());
         out("Bus: {$this->pt_bus}%; Res: {$this->pt_res}%;  Mil: {$this->pt_mil}%; Agri: {$this->pt_agri}%; Indy: {$this->pt_mil}%;");

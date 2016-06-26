@@ -63,7 +63,7 @@ function play_casher_strat($server)
         }
     }
 
-    $c->countryStats(CASHER);
+    $c->countryStats(CASHER, casherGoals($c));
 }
 
 function play_casher_turn(&$c)
@@ -103,7 +103,12 @@ function build_casher(&$c)
 
 function buy_casher_goals(&$c, $spend = null)
 {
-    $goals = [
+    $c->countryGoals(casherGoals($c), $spend);
+}
+
+function casherGoals(&$c)
+{
+    return [
         //what, goal, priority
         ['t_bus',178,8],
         ['t_res',178,8],
@@ -111,6 +116,4 @@ function buy_casher_goals(&$c, $spend = null)
         ['nlg',$c->nlgTarget(),2],
         ['dpa',$c->defPerAcreTarget(),2],
     ];
-
-    $c->countryGoals($goals, $spend);
 }

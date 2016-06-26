@@ -83,7 +83,7 @@ function play_rainbow_strat($server)
         //$main->turns = 0;				//use this to do one turn at a time
     }
 
-    $c->countryStats(RAINBOW);
+    $c->countryStats(RAINBOW, rainbowGoals($c));
 }
 
 function play_rainbow_turn(&$c)
@@ -205,7 +205,12 @@ function tech_rainbow(&$c)
 
 function buy_rainbow_goals(&$c, $spend = null)
 {
-    $goals = [
+    $c->countryGoals(rainbowGoals($c), $spend);
+}
+
+function rainbowGoals(&$c)
+{
+    return [
         //what, goal, priority
         ['t_agri',215,1],
         ['t_indy',150,1],
@@ -215,6 +220,4 @@ function buy_rainbow_goals(&$c, $spend = null)
         ['nlg',$c->nlgTarget(),1],
         ['dpa',$c->defPerAcreTarget(),1],
     ];
-
-    $c->countryGoals($goals, $spend);
 }
