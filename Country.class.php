@@ -347,7 +347,7 @@ class Country
 
         $spend -= $spend_partial;
         //10000 because that's how much one tech point *could* cost, and i don't want it to get too ridiculous
-        if ($spend > 10000 && $skip < count($score) - 1) {
+        if ($spend > 10000 && $skip < count($goals) - 1) {
             $this->countryGoals($goals, $spend, $spend_partial, $skip);
         }
     }
