@@ -176,7 +176,7 @@ while (1) {
                     play_rainbow_strat($server, $cnum);
             }
             $cpref->lastplay = time();
-            $nexttime = $playfactor*$cpref->playfreq*purebell(1/$cpref->playrand, $cpref->playrand, 1, 0.1);
+            $nexttime = round($playfactor*$cpref->playfreq*purebell(1/$cpref->playrand, $cpref->playrand, 1, 0.1));
             $maxin = furthest_play($cpref);
             $nexttime = min($maxin, $nexttime);
             $cpref->nextplay = $cpref->lastplay + $nexttime;
