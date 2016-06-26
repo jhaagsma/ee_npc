@@ -156,7 +156,7 @@ function out($str, $newline = true)
  */
 function debug($str, $newline = true)
 {
-    $debug = true;
+    global $debug;
     if ($debug == true) {
         out($str, $newline);
     }

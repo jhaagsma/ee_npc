@@ -1,6 +1,7 @@
 #!/usr/bin/php
 <?php namespace EENPC;
 
+$debug = false;
 include_once('communication.php');
 
 out('STARTING UP BOT');// out() is defined below
@@ -954,6 +955,7 @@ function buy_public(&$c, $quantity = array(), $price = array())
         }
         out("Tried: ".$what);
         out("Money: ".$c->money." Cost: ".$cost);
+        $c = get_advisor();
         sleep(1);
         return false;
     }
@@ -987,6 +989,8 @@ function sell_public(&$c, $quantity = array(), $price = array(), $tonm = array()
         out("Trying to sell nothing?");
         $c = get_advisor();
         $c->updateOnMarket();
+        global $debug;
+        $debug = true;
         return;
     }
     $result = ee('sell', array('quantity' => $quantity, 'price' => $price)); //ignore tonm for now, it's optional
