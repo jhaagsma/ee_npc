@@ -105,7 +105,7 @@ function selltechtime($c)
     $sum = $om = 0;
     foreach ($techlist as $tech) {
         $sum += $c->$tech;
-        $om += onmarket($tech);
+        $om += $c->onMarket($tech);
     }
     if ($om < $sum/6) {
         return true;
