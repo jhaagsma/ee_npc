@@ -101,7 +101,7 @@ function build_techer(&$c)
     return build(array('lab' => $c->bpt));
 }
 
-function selltechtime($c)
+function selltechtime(&$c)
 {
     global $techlist;
     $sum = $om = 0;
@@ -116,9 +116,11 @@ function selltechtime($c)
     return false;
 }
 
-function sell_max_tech($c)
+function sell_max_tech(&$c)
 {
     $c = get_advisor();     //UPDATE EVERYTHING
+    $c->updateOnMarket();
+
     //$market_info = get_market_info();   //get the Public Market info
     global $market;
 
@@ -138,9 +140,11 @@ function sell_max_tech($c)
 
     if (array_sum($quantity) == 0) {
         out('Techer computing Zero Sell!');
-        $debug = true;
         $c = get_advisor();
         $c->updateOnMarket();
+
+        debug('This Quantity: '.array_sum($quantity).' TotalCanSellTech: '.total_cansell_tech($c));
+        $debug = true;
         return;
     }
 
