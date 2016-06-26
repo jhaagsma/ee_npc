@@ -279,6 +279,9 @@ function defend_self(&$c, $reserve_cash = 50000)
         }
         buy_public_below_dpnw($c, $dpnw, $spend, false);
         $spend = max(0, $c->money - $reserve_cash);
+        $nlg = $c->nlg();
+        $dpa = $c->defPerAcre();
+        $c = get_advisor();     //UPDATE EVERYTHING
 
         if ($spend < 100000) {
             break;
