@@ -151,7 +151,7 @@ function sell_max_tech($c)
             debug("sell_max_tech:A:$key");
             $max = $c->goodsStuck($key) ? 0.98 : $rmax; //undercut if we have goods stuck
             debug("sell_max_tech:B:$key");
-            $price[$key] = floor($market->price($key) * purebell($rmin, $max, $rstddev, $rstep));
+            $price[$key] = min(9999, floor($market->price($key) * purebell($rmin, $max, $rstddev, $rstep)));
             debug("sell_max_tech:C:$key");
         } else {
             $price[$key] = floor(purebell($nogoods_low, $nogoods_high, $nogoods_stddev, $nogoods_step));
