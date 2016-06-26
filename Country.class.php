@@ -51,7 +51,9 @@ class Country
     public function goodsStuck($good)
     {
         $atm = 'at'.$good;
-        out("Getting $atm");
+        if (isset($this->$atm)) {
+            out("Getting $atm: {$this->$atm}");
+        }
         return isset($this->$atm) ? $this->$atm : false;
     }
 
