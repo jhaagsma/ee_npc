@@ -2,6 +2,7 @@
 <?php namespace EENPC;
 
 include_once('communication.php');
+
 out('STARTING UP BOT');// out() is defined below
 date_default_timezone_set('GMT'); //SET THE TIMEZONE FIRST
 error_reporting(E_ALL); //SET THE ERROR REPORTING TO REPORT EVERYTHING
@@ -1089,9 +1090,11 @@ function purebell($min, $max, $std_deviation, $step = 1)
     $gaussian_number = sqrt(-2 * log($rand1)) * cos(2 * pi() * $rand2);
     $mean = ($max + $min) / 2;
     $random_number = ($gaussian_number * $std_deviation) + $mean;
+    //out($random_number);
     $random_number = round($random_number / $step) * $step;
+    //out($random_number);
     if ($random_number < $min || $random_number > $max) {
-        $random_number = purebell($min, $max, $std_deviation);
+        $random_number = purebell($min, $max, $std_deviation, $step);
     }
     return $random_number;
 }
