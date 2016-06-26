@@ -136,8 +136,8 @@ function buy_indy_goals(&$c, $spend = null)
     $goals = [
         //what, goal, priority
         ['t_indy',150,8],
-        ['t_bus',178,3],
-        ['t_res',178,3],
+        ['t_bus',160,3],
+        ['t_res',160,3],
         ['t_mil',90,4],
     ];
 
