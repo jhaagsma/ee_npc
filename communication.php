@@ -145,6 +145,9 @@ function expected_result($input)
 function out($str, $newline = true)
 {
     //This just formats output strings nicely
+    if (is_object($str)) {
+        return out_data($str);
+    }
     echo ($newline ? "\n" : null)."[".date("H:i:s")."] $str";
 }
 
