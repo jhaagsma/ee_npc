@@ -305,6 +305,14 @@ class Country
             $spend_partial = $spend / 3;
         }
 
+        if ($spend_partial < 1000000) {
+            $spend_partial = 3*$spend;
+        }
+
+        if ($spend_partial < 1000000) {
+            return;
+        }
+
         global $cpref;
         $tol = $cpref->price_tolerance; //should be between 0.5 and 1.5
 
