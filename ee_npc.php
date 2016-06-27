@@ -770,7 +770,11 @@ function cash(&$c, $turns = 1)
 
 function explore(&$c, $turns = 1)
 {
-                       //this means 1 is the default number of turns if not provided
+    if ($c->empty > $c->land/2) {
+        out("We can't explore, what are we doing?");
+        return;
+    }
+    //this means 1 is the default number of turns if not provided
     $result = ee('explore', array('turns' => $turns));      //cash a certain number of turns
     if ($result === false) {
         out('Explore Fail? Update Advisor');
