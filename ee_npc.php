@@ -771,7 +771,8 @@ function cash(&$c, $turns = 1)
 function explore(&$c, $turns = 1)
 {
     if ($c->empty > $c->land/2) {
-        out("We can't explore, what are we doing?");
+        $b = $c->built();
+        out("We can't explore (Built: {$b}%), what are we doing?");
         return;
     }
     //this means 1 is the default number of turns if not provided
