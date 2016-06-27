@@ -323,7 +323,11 @@ function defend_self(&$c, $reserve_cash = 50000)
         }
 
         buy_private_below_dpnw($c, $dpnw, $spend, true);
+        $dpnwOld = $dpnw;
         $dpnw = minDpnw($c);
+        if ($dpnw <= $dpnwOld) {
+            $dpnw++;
+        }
         $c = get_advisor();     //UPDATE EVERYTHING
         $spend = max(0, $c->money - $reserve_cash);
         $nlg = $c->nlg();
