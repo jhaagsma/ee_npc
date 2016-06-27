@@ -207,7 +207,7 @@ class Country
      */
     public function built()
     {
-        return round(100*($this->land - $this->empty)/$this->land);
+        return floor(100*($this->land - $this->empty)/$this->land);
     }
 
     /**
