@@ -676,12 +676,13 @@ function update_c(&$c, $result)
 
         //out_data($turn);
 
+        $advisor_update = false;
         if (isset($turn->event)) {
             if ($turn->event == 'earthquake') {   //if an earthquake happens...
                 out("Earthquake destroyed {$turn->earthquake} Buildings! Update Advisor"); //Text for screen
 
                 //update the advisor, because we no longer know what infromation is valid
-                $c = get_advisor();
+                $advisor_update = true;
             } elseif ($turn->event == 'pciboom') {       //in the event of a pci boom, recalculate income so we don't react based on an event
                 $c->income = floor(isset($turn->taxrevenue)     ? $turn->taxrevenue/3 : 0)      - (isset($turn->expenses)       ? $turn->expenses : 0);
             } elseif ($turn->event == 'pcibad') {        //in the event of a pci bad, recalculate income so we don't react based on an event
@@ -706,6 +707,10 @@ function update_c(&$c, $result)
     }
     $c->money += $netmoney;
     $c->food += $netfood;
+
+    if ($advisor_update == true) {
+        $c = get_advisor();
+    }
 
     global $colors;
     //Text formatting (adding a + if it is positive; - will be there if it's negative already)
