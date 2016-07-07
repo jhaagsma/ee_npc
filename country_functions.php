@@ -312,6 +312,12 @@ function defend_self(&$c, $reserve_cash = 50000)
         } else {
             out("Try to buy goods at $dpnw dpnw or below to reach NLG of $nlg_target from $nlg!");  //Text for screen
         }
+        $dpnwOld = $dpnw;
+        $dpnw = minDpnw($c);
+        if ($dpnw <= $dpnwOld) {
+            $dpnw++;
+        }
+
         buy_public_below_dpnw($c, $dpnw, $spend, false);
         $spend = max(0, $c->money - $reserve_cash);
         $nlg = $c->nlg();
