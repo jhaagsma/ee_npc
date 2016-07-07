@@ -314,6 +314,7 @@ function defend_self(&$c, $reserve_cash = 50000)
         }
         $dpnwOld = $dpnw;
         $dpnw = minDpnw($c);
+        out("Old DPNW: $dpnwOld; New DPNW: $dpnw");
         if ($dpnw <= $dpnwOld) {
             $dpnw++;
         }
