@@ -316,7 +316,7 @@ function defend_self(&$c, $reserve_cash = 50000)
         $dpnw = minDpnw($c);
         out("Old DPNW: $dpnwOld; New DPNW: $dpnw");
         if ($dpnw <= $dpnwOld) {
-            $dpnw++;
+            $dpnw = $dpnwOld + 1;
         }
 
         buy_public_below_dpnw($c, $dpnw, $spend, false);
@@ -333,7 +333,7 @@ function defend_self(&$c, $reserve_cash = 50000)
         $dpnwOld = $dpnw;
         $dpnw = minDpnw($c);
         if ($dpnw <= $dpnwOld) {
-            $dpnw++;
+            $dpnw = $dpnwOld + 1;
         }
         $c = get_advisor();     //UPDATE EVERYTHING
         $spend = max(0, $c->money - $reserve_cash);
