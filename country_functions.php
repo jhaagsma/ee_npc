@@ -274,19 +274,19 @@ function minDpnw(&$c)
         $pm_info = get_pm_info();
     }
     $market->update();
-    $pub_tr = $market->price('m_tr')*$c->tax()/0.5;
+    $pub_tr = $market->price('m_tr') * $c->tax()/0.5;
     $pub_j = $market->price('m_j')*$c->tax()/0.6;
     $pub_tu = $market->price('m_tu')*$c->tax()/0.6;
     $pub_ta = $market->price('m_ta')*$c->tax()/2;
 
     $dpnws = [
-        $pm_info->buy_price->m_tr/0.5,
-        $pm_info->buy_price->m_j/0.6,
-        $pm_info->buy_price->m_tu/0.6,
-        $pm_info->buy_price->m_ta/2,
+        round($pm_info->buy_price->m_tr/0.5),
+        round($pm_info->buy_price->m_j/0.6),
+        round($pm_info->buy_price->m_tu/0.6),
+        round($pm_info->buy_price->m_ta/2),
         $pub_tr == 0 ? 9000 : $pub_tr,
-        $pub_j == 0 ? 9000 : $pub_j,
-        $pub_tu == 0 ? 9000 : $pub_tu,
+        $pub_j == 0 ?  9000 : $pub_j,
+        $pub_tu == 0 ? 9000: $pub_tu,
         $pub_ta == 0 ? 9000 : $pub_ta,
     ];
 
