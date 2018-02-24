@@ -15,7 +15,8 @@ class PublicMarket
             $this->$k = $var;
         }
         $this->updated = time();
-    }
+    }//end update()
+
 
     public function relaUpdate($which, $ordered, $got)
     {
@@ -24,7 +25,8 @@ class PublicMarket
         } else {
             $this->update();
         }
-    }
+    }//end relaUpdate()
+
 
     /**
      * Time since last update
@@ -32,8 +34,9 @@ class PublicMarket
      */
     public function elapsed()
     {
-        return time()-$this->updated;
-    }
+        return time() - $this->updated;
+    }//end elapsed()
+
 
     public function price($item = 'm_bu')
     {
@@ -41,7 +44,8 @@ class PublicMarket
             $this->update();
         }
         return $this->buy_price->$item;
-    }
+    }//end price()
+
 
     public function available($item = 'm_bu')
     {
@@ -49,5 +53,5 @@ class PublicMarket
             $this->update();
         }
         return $this->available->$item;
-    }
-}
+    }//end available()
+}//end class

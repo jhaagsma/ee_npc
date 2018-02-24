@@ -124,7 +124,8 @@ function play_farmer_turn(&$c)
     } else { //otherwise...  cash
         return cash($c);
     }
-}
+}//end play_farmer_turn()
+
 
 function sellextrafood_farmer(&$c)
 {
@@ -137,25 +138,27 @@ function sellextrafood_farmer(&$c)
 
     $quantity = array('m_bu' => $c->food); //sell it all! :)
 
-    $rmax = 1.10; //percent
-    $rmin = 0.95; //percent
-    $rstep = 0.01;
+    $rmax    = 1.10; //percent
+    $rmin    = 0.95; //percent
+    $rstep   = 0.01;
     $rstddev = 0.10;
-    $max = $c->goodsStuck('m_bu') ? 0.99 : $rmax;
-    $price = round(max($pm_info->sell_price->m_bu + 1, $market->price('m_bu') * purebell($rmin, $max, $rstddev, $rstep)));
-    $price = array('m_bu' => $price);
+    $max     = $c->goodsStuck('m_bu') ? 0.99 : $rmax;
+    $price   = round(max($pm_info->sell_price->m_bu + 1, $market->price('m_bu') * purebell($rmin, $max, $rstddev, $rstep)));
+    $price   = array('m_bu' => $price);
 
     if ($price <= max(29, $pm_info->sell_price->m_bu / $c->tax())) {
         return sell_on_pm($c, array('m_bu' => $quantity)); ///      sell_on_pm($c,array('m_bu' => $c->food));   //Sell 'em
     }
     return sell_public($c, $quantity, $price);    //Sell food!
-}
+}//end sellextrafood_farmer()
+
 
 function build_farmer(&$c)
 {
     //build farms
     return build(array('farm' => $c->bpt));
-}
+}//end build_farmer()
+
 
 
 function buy_farmer_goals(&$c, $spend = null)
@@ -163,7 +166,8 @@ function buy_farmer_goals(&$c, $spend = null)
     $goals = farmerGoals($c);
 
     $c->countryGoals($goals, $spend);
-}
+}//end buy_farmer_goals()
+
 
 function farmerGoals(&$c)
 {
@@ -176,4 +180,4 @@ function farmerGoals(&$c)
         ['nlg',$c->nlgTarget(),2],
         ['dpa',$c->defPerAcreTarget(),2],
     ];
-}
+}//end farmerGoals()

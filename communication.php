@@ -21,10 +21,10 @@ function ee($function, $parameterArray = [])
 {
     global $baseURL, $username, $aiKey, $serv, $cnum, $APICalls;
 
-    $init = $parameterArray;
-    $parameterArray['ai_key'] = $aiKey;
+    $init                       = $parameterArray;
+    $parameterArray['ai_key']   = $aiKey;
     $parameterArray['username'] = $username;
-    $parameterArray['server'] = $serv;
+    $parameterArray['server']   = $serv;
     if ($cnum) {
         $parameterArray['cnum'] = $cnum;
     }
@@ -66,10 +66,10 @@ function handle_output($serverOutput, $function)
 {
     $response = json_decode($serverOutput);
     if (!$response) {
-	out('Not acceptable response: '. $function .' - '. $serverOutput);
-	return false;
+        out('Not acceptable response: '. $function .' - '. $serverOutput);
+        return false;
     }
-    $message = key($response);
+    $message  = key($response);
     $response = isset($response->$message) ? $response->$message : null;
     //$parts = explode(':', $serverOutput, 2);
     //This will simply kill the script if EE returns with an error

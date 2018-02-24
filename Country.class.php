@@ -2,7 +2,7 @@
 
 class Country
 {
-    public $fresh = false;
+    public $fresh   = false;
     public $fetched = false;
 
     /**
@@ -12,9 +12,9 @@ class Country
     public function __construct($advisor)
     {
         $this->fetched = time();
-        $this->fresh = true;
+        $this->fresh   = true;
 
-        $this->market_info = null;
+        $this->market_info    = null;
         $this->market_fetched = null;
 
         foreach ($advisor as $k => $var) {
@@ -23,24 +23,26 @@ class Country
         }
         global $cpref;
         $cpref->networth = $this->networth;
-        $cpref->land = $this->land;
-    }
+        $cpref->land     = $this->land;
+    }//end __construct()
+
 
     public function updateMain()
     {
-        $main = get_main();                 //Grab a fresh copy of the main stats
-        $this->money = $main->money;       //might as well use the newest numbers?
-        $this->food = $main->food;         //might as well use the newest numbers?
+        $main           = get_main();                 //Grab a fresh copy of the main stats
+        $this->money    = $main->money;       //might as well use the newest numbers?
+        $this->food     = $main->food;         //might as well use the newest numbers?
         $this->networth = $main->networth; //might as well use the newest numbers?
-        $this->land = $main->land; //might as well use the newest numbers?
-        $this->oil = $main->oil;           //might as well use the newest numbers?
-        $this->pop = $main->pop;           //might as well use the newest numbers?
-        $this->turns = $main->turns;       //This is the only one we really *HAVE* to check for
-    }
+        $this->land     = $main->land; //might as well use the newest numbers?
+        $this->oil      = $main->oil;           //might as well use the newest numbers?
+        $this->pop      = $main->pop;           //might as well use the newest numbers?
+        $this->turns    = $main->turns;       //This is the only one we really *HAVE* to check for
+    }//end updateMain()
+
 
     public function updateOnMarket()
     {
-        $this->market_info = get_owned_on_market_info();  //find out what we have on the market
+        $this->market_info    = get_owned_on_market_info();  //find out what we have on the market
         $this->market_fetched = time();
 
         $this->om_total = 0;
@@ -49,14 +51,15 @@ class Country
             if (!isset($this->$omgood)) {
                 $this->$omgood = 0;
             }
-            $this->$omgood += $goods->quantity;
+            $this->$omgood  += $goods->quantity;
             $this->om_total += $goods->quantity;
 
             debug("OnMarket: $key: QIn:{$goods->quantity}/QSave:{$this->$omgood}");
             $this->stuckOnMarket($goods);
         }
         //out("Goods on Market: {$this->om_total}");
-    }
+    }//end updateOnMarket()
+
 
     public function onMarket($good = null)
     {
@@ -70,18 +73,20 @@ class Country
         }
 
         return $this->$omgood;
-    }
+    }//end onMarket()
+
 
     public function stuckOnMarket($goods)
     {
         //out_data($goods);
-        $expl = explode('_', $goods->type);
-        $good = $expl[0] == 't' ? $expl[1] : $goods->type;
-        $good = $good == 'm_bu' ? 'food' : $good;
-        $atm = 'at'.$good;
+        $expl       = explode('_', $goods->type);
+        $good       = $expl[0] == 't' ? $expl[1] : $goods->type;
+        $good       = $good == 'm_bu' ? 'food' : $good;
+        $atm        = 'at'.$good;
         $this->$atm = $goods->time < time() ? true : false;
         //out("Setting $atm: {$this->$atm}");
-    }
+    }//end stuckOnMarket()
+
 
     /**
      * Tell if $good (like m_tr) are actually FOR SALE on market.
@@ -102,7 +107,8 @@ class Country
         }
 
         return false;
-    }
+    }//end goodsStuck()
+
 
     /**
      * Set the indy production
@@ -111,21 +117,21 @@ class Country
     public function setIndy($what)
     {
         $init = [
-            'pro_spy'   =>$this->pro_spy,
-            'pro_tr'    =>$this->pro_tr,
-            'pro_j'     =>$this->pro_j,
-            'pro_tu'    =>$this->pro_tu,
-            'pro_ta'    =>$this->pro_ta,
+            'pro_spy'   => $this->pro_spy,
+            'pro_tr'    => $this->pro_tr,
+            'pro_j'     => $this->pro_j,
+            'pro_tu'    => $this->pro_tu,
+            'pro_ta'    => $this->pro_ta,
         ];
-        $new = [];
+        $new  = [];
         if (is_array($what)) {
             $sum = 0;
             foreach ($init as $item => $percentage) {
                 $new[$item] = isset($what[$item]) ? $what[$item] : 0;
-                $sum += $percentage;
+                $sum       += $percentage;
             }
         } elseif (array_key_exists($what, $init)) {
-            $new = array_fill_keys(array_keys($init), 0);
+            $new        = array_fill_keys(array_keys($init), 0);
             $new[$what] = 100;
         }
 
@@ -137,7 +143,8 @@ class Country
             out("Set indy production".(is_array($what) ? '!' : ' to '.substr($what, 4).'.'));
             set_indy($this);
         }
-    }
+    }//end setIndy()
+
 
     public function setIndyFromMarket()
     {
@@ -145,21 +152,22 @@ class Country
         global $market;
 
         $score = [
-            'pro_tr'  =>1.86*$market->price('m_tr'),
-            'pro_j'   =>1.86*$market->price('m_j'),
-            'pro_tu'  =>1.86*$market->price('m_tu'),
-            'pro_ta'  =>0.4*$market->price('m_ta')
+            'pro_tr'  => 1.86 * $market->price('m_tr'),
+            'pro_j'   => 1.86 * $market->price('m_j'),
+            'pro_tu'  => 1.86 * $market->price('m_tu'),
+            'pro_ta'  => 0.4 * $market->price('m_ta')
         ];
         arsort($score);
-        $which = key($score);
+        $which       = key($score);
         $new[$which] = 95; //set to do the most expensive of whatever other good
 
         $this->setIndy($new);
-    }
+    }//end setIndyFromMarket()
+
 
     /**
      * How much money it will cost to run turns
-     * @param  int  $turns turns we want to run (or all)
+     * @param  int $turns turns we want to run (or all)
      * @return cost        money
      */
     public function runCash($turns = null)
@@ -168,8 +176,9 @@ class Country
             $turns = $this->turns;
         }
 
-        return max(0, $this->income)*$turns;
-    }
+        return max(0, $this->income) * $turns;
+    }//end runCash()
+
 
     //GOAL functions
     /**
@@ -179,8 +188,9 @@ class Country
     public function nlgTarget()
     {
         //lets lower it from 80+turns_playwed/7, to compete
-        return floor(80 + $this->turns_played/15);
-    }
+        return floor(80 + $this->turns_played / 15);
+    }//end nlgTarget()
+
 
     /**
      * A crude Defence Per Acre number
@@ -188,8 +198,9 @@ class Country
      */
     public function defPerAcreTarget()
     {
-        return floor(15 + $this->turns_played/20);
-    }
+        return floor(15 + $this->turns_played / 20);
+    }//end defPerAcreTarget()
+
 
     /**
      * The amount of defence per Acre of Land
@@ -197,8 +208,9 @@ class Country
      */
     public function defPerAcre()
     {
-        return round((1*$this->m_tr+2*$this->m_tu+4*$this->m_ta)/$this->land);
-    }
+        return round((1 * $this->m_tr + 2 * $this->m_tu + 4 * $this->m_ta) / $this->land);
+    }//end defPerAcre()
+
 
 
     /**
@@ -207,8 +219,9 @@ class Country
      */
     public function built()
     {
-        return floor(100*($this->land - $this->empty)/$this->land);
-    }
+        return floor(100 * ($this->land - $this->empty) / $this->land);
+    }//end built()
+
 
     /**
      * Networth/(Land*Govt)
@@ -226,8 +239,9 @@ class Country
             default:
                 $govt = 1.0;
         }
-        return floor($this->networth/($this->land*$govt));
-    }
+        return floor($this->networth / ($this->land * $govt));
+    }//end nlg()
+
 
     /**
      * The float taxrate
@@ -235,50 +249,52 @@ class Country
      */
     public function tax()
     {
-        return (100+$this->g_tax)/100;
-    }
+        return (100 + $this->g_tax) / 100;
+    }//end tax()
+
 
     public function fullBuildCost()
     {
-        return $this->empty*$this->build_cost;
-    }
+        return $this->empty * $this->build_cost;
+    }//end fullBuildCost()
+
 
 
     /**
      * Find Highest Goal
-     * @param  array  $goalsan array of goals to persue
+     * @param  array $goalsan array of goals to persue
      * @return string highest goal!
      */
     public function highestGoal($goals = [], $skip = 0)
     {
         global $market;
-        $psum = 0;
+        $psum  = 0;
         $score = [];
         foreach ($goals as $goal) {
             if ($goal[0] == 't_agri') {
-                $price = $market->price('agri');
-                $price = $price > 500 ? $price : 10000;
-                $score['t_agri'] = ($goal[1]-$this->pt_agri)/($goal[1]-100)*$goal[2]*(2500/$price);
+                $price           = $market->price('agri');
+                $price           = $price > 500 ? $price : 10000;
+                $score['t_agri'] = ($goal[1] - $this->pt_agri) / ($goal[1] - 100) * $goal[2] * (2500 / $price);
             } elseif ($goal[0] == 't_indy') {
-                $price = $market->price('indy');
-                $price = $price > 500 ? $price : 10000;
-                $score['t_indy'] = ($goal[1]-$this->pt_indy)/($goal[1]-100)*$goal[2]*(2500/$price);
+                $price           = $market->price('indy');
+                $price           = $price > 500 ? $price : 10000;
+                $score['t_indy'] = ($goal[1] - $this->pt_indy) / ($goal[1] - 100) * $goal[2] * (2500 / $price);
             } elseif ($goal[0] == 't_bus') {
-                $price = $market->price('bus');
-                $price = $price > 500 ? $price : 10000;
-                $score['t_bus'] = ($goal[1]-$this->pt_bus)/($goal[1]-100)*$goal[2]*(2500/$price);
+                $price          = $market->price('bus');
+                $price          = $price > 500 ? $price : 10000;
+                $score['t_bus'] = ($goal[1] - $this->pt_bus) / ($goal[1] - 100) * $goal[2] * (2500 / $price);
             } elseif ($goal[0] == 't_res') {
-                $price = $market->price('res');
-                $price = $price > 500 ? $price : 10000;
-                $score['t_res'] = ($goal[1]-$this->pt_res)/($goal[1]-100)*$goal[2]*(2500/$price);
+                $price          = $market->price('res');
+                $price          = $price > 500 ? $price : 10000;
+                $score['t_res'] = ($goal[1] - $this->pt_res) / ($goal[1] - 100) * $goal[2] * (2500 / $price);
             } elseif ($goal[0] == 't_mil') {
-                $price = $market->price('mil');
-                $price = $price > 500 ? $price : 10000;
-                $score['t_mil'] = ($this->pt_mil-$goal[1])/(100-$goal[1])*$goal[2]*(2500/$price);
+                $price          = $market->price('mil');
+                $price          = $price > 500 ? $price : 10000;
+                $score['t_mil'] = ($this->pt_mil - $goal[1]) / (100 - $goal[1]) * $goal[2] * (2500 / $price);
             } elseif ($goal[0] == 'nlg') {
-                $score['nlg'] = ($this->nlgTarget()-$this->nlg())/$this->nlgTarget()*$goal[2];
+                $score['nlg'] = ($this->nlgTarget() - $this->nlg()) / $this->nlgTarget() * $goal[2];
             } elseif ($goal[0] == 'dpa') {
-                $score['dpa'] = ($this->defPerAcreTarget()-$this->defPerAcre())/$this->defPerAcreTarget()*$goal[2];
+                $score['dpa'] = ($this->defPerAcreTarget() - $this->defPerAcre()) / $this->defPerAcreTarget() * $goal[2];
             }
             $psum += $goal[2];
         }
@@ -292,7 +308,8 @@ class Country
         }
 
         return key($score);
-    }
+    }//end highestGoal()
+
 
     /**
      * Convoluted ladder logic to buy whichever goal is least fulfilled
@@ -329,8 +346,8 @@ class Country
 
         $what = $this->highestGoal($goals, $skip);
         //out("Highest Goal: ".$what.' Buy $'.$spend_partial);
-        $diff = 0;
-        $techprice = 8000*$tol;
+        $diff      = 0;
+        $techprice = 8000 * $tol;
         if ($what == 't_agri') {
             $o = $this->money;
             buy_tech($this, 't_agri', $spend_partial, $techprice);
@@ -370,7 +387,8 @@ class Country
         if ($spend > 10000 && $skip < count($goals) - 1) {
             $this->countryGoals($goals, $spend, $spend_partial, $skip);
         }
-    }
+    }//end countryGoals()
+
 
 
     public function countryStats($strat, $goals = [])
@@ -379,5 +397,5 @@ class Country
         out("Bus: {$this->pt_bus}%; Res: {$this->pt_res}%;  Mil: {$this->pt_mil}%; Agri: {$this->pt_agri}%; Indy: {$this->pt_indy}%;");
         out("DPA: ".$this->defPerAcre()." NLG: ".$this->nlg().' DPAT:'.$this->defPerAcreTarget().' NLGT:'.$this->nlgTarget());
         out("Done Playing ".$strat." Turns for #$this->cnum!");   //Text for screen
-    }
-}
+    }//end countryStats()
+}//end class

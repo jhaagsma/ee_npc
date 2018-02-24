@@ -2,13 +2,13 @@
 <?php namespace EENPC;
 
 $debug = false;
-include_once('communication.php');
+require_once 'communication.php';
 
 out('STARTING UP BOT');// out() is defined below
 date_default_timezone_set('GMT'); //SET THE TIMEZONE FIRST
 error_reporting(E_ALL); //SET THE ERROR REPORTING TO REPORT EVERYTHING
 out('Error Reporting and Timezone Set');
-include_once('config.php');
+require_once 'config.php';
 if (!isset($config)) {
     //ADD IN AUTOGENERATE CONFIG HERE?
     die("Config not included successfully! Do you have config.php set up properly?");
@@ -23,16 +23,16 @@ if (file_exists($config['save_settings_file'])) {
     out("No Settings File Found");
 }
 
-include_once('country_functions.php');
-include_once('Country.class.php');
-include_once('PublicMarket.class.php');
+require_once 'country_functions.php';
+require_once 'Country.class.php';
+require_once 'PublicMarket.class.php';
 
-include_once('rainbow_strat.php');
-include_once('farmer_strat.php');
-include_once('techer_strat.php');
-include_once('casher_strat.php');
-include_once('indy_strat.php');
-include_once('oiler_strat.php');
+require_once 'rainbow_strat.php';
+require_once 'farmer_strat.php';
+require_once 'techer_strat.php';
+require_once 'casher_strat.php';
+require_once 'indy_strat.php';
+require_once 'oiler_strat.php';
 
 define("RAINBOW", $colors->getColoredString("Rainbow", "purple"));
 define("FARMER", $colors->getColoredString("Farmer", "cyan"));
@@ -41,54 +41,57 @@ define("CASHER", $colors->getColoredString("Casher", "green"));
 define("INDY", $colors->getColoredString("Indy", "yellow"));
 define("OILER", $colors->getColoredString("Oiler", "red"));
 
-$username = $config['username'];    //<======== PUT IN YOUR USERNAME IN config.php
-$aiKey = $config['ai_key'];        //<======== PUT IN YOUR AI API KEY IN config.php
-$baseURL = $config['base_url'];    //<======== PUT IN THE BASE URL IN config.php
-$serv = isset($config['server']) ? $config['server'] : 'ai';
-$cnum = null;
+$username     = $config['username'];    //<======== PUT IN YOUR USERNAME IN config.php
+$aiKey        = $config['ai_key'];        //<======== PUT IN YOUR AI API KEY IN config.php
+$baseURL      = $config['base_url'];    //<======== PUT IN THE BASE URL IN config.php
+$serv         = isset($config['server']) ? $config['server'] : 'ai';
+$cnum         = null;
 $lastFunction = null;
-$turnsleep = isset($config['turnsleep']) ? $config['turnsleep'] : 500000;
-$mktinfo = null; //so we don't have to get it mkt data over and over again
-$APICalls = 0;
+$turnsleep    = isset($config['turnsleep']) ? $config['turnsleep'] : 500000;
+$mktinfo      = null; //so we don't have to get it mkt data over and over again
+$APICalls     = 0;
 
 out('Current Unix Time: '.time());
 out('Entering Infinite Loop');
 $sleepcount = $loopcount = 0;
-$played = true;
+$played     = true;
 
 $rules_loaded = $server_loaded = false;
 while (!$rules_loaded || !$server_loaded) {
-	if ($rules_loaded === false) {
-		$rules = ee('rules');
-		if ($rules !== false)
-			$rules_loaded = true;
-	}
-	if ($server_loaded === false) {
-		$server = ee('server');
-		if ($server !== false)
-			$server_loaded = true;
-	}
+    if ($rules_loaded === false) {
+        $rules = ee('rules');
+        if ($rules !== false) {
+            $rules_loaded = true;
+        }
+    }
+    if ($server_loaded === false) {
+        $server = ee('server');
+        if ($server !== false) {
+            $server_loaded = true;
+        }
+    }
 
-	if (!$rules_loaded || !$server_loaded)
-		sleep(2); //try again in 2 seconds.
+    if (!$rules_loaded || !$server_loaded) {
+        sleep(2); //try again in 2 seconds.
+    }
 }
 
-$market = new PublicMarket();
+$market              = new PublicMarket();
 $server_avg_networth = $server_avg_land = 0;
 
 while (1) {
     while ($server->alive_count < $server->countries_allowed) {
         out("Less countries than allowed! (".$server->alive_count.'/'.$server->countries_allowed.')');
-        include_once('name_generator.php');
+        include_once 'name_generator.php';
         $send_data = array('cname' => rand_name());
         out("Making new country named '".$send_data['cname']."'");
         $cnum = ee('create', $send_data);
         out($send_data['cname'].' (#'.$cnum.') created!');
         $server = ee('server');
         if ($server->reset_start > time()) {
-            $timeleft = $server->reset_start - time();
+            $timeleft      = $server->reset_start - time();
             $countriesleft = $server->countries_allowed - $server->alive_count;
-            $sleeptime = $timeleft / $countriesleft;
+            $sleeptime     = $timeleft / $countriesleft;
             out("Sleep for $sleeptime to spread countries out");
             sleep($sleeptime);
         }
@@ -148,17 +151,17 @@ while (1) {
         }
         if (!isset($cpref->playfreq) || $cpref->playfreq == null) {
             $cpref->playfreq = purebell($server->turn_rate, $server->turn_rate * $rules->maxturns, $server->turn_rate * 20, $server->turn_rate);
-            $cpref->playrand = mt_rand(10, 20)/10.0; //between 1.0 and 2.0
+            $cpref->playrand = mt_rand(10, 20) / 10.0; //between 1.0 and 2.0
             out($colors->getColoredString("Resetting Play #$cnum", 'red'));
             $save = true;
         }
 
         if (!isset($cpref->price_tolerance) || $cpref->price_tolerance == 1.00) {
             $cpref->price_tolerance = round(purebell(0.5, 1.5, 0.1, 0.01), 3); //50% to 150%, 10% std dev, steps of 1%
-            $save = true;
+            $save                   = true;
         } elseif ($cpref->price_tolerance != round($cpref->price_tolerance, 3)) {
             $cpref->price_tolerance = round($cpref->price_tolerance, 3); //round off silly numbers...
-            $save = true;
+            $save                   = true;
         }
 
         if (!isset($cpref->nextplay) || !isset($cpref->lastplay) || $cpref->lastplay < time() - $server->turn_rate * $rules->maxturns) { //maxturns
@@ -198,14 +201,14 @@ while (1) {
                         play_rainbow_strat($server, $cnum);
                 }
                 $cpref->lastplay = time();
-                $nexttime = round($playfactor * $cpref->playfreq * purebell(1 / $cpref->playrand, $cpref->playrand, 1, 0.1));
-                $maxin = furthest_play($cpref);
-                $nexttime = round(min($maxin, $nexttime));
+                $nexttime        = round($playfactor * $cpref->playfreq * purebell(1 / $cpref->playrand, $cpref->playrand, 1, 0.1));
+                $maxin           = furthest_play($cpref);
+                $nexttime        = round(min($maxin, $nexttime));
                 $cpref->nextplay = $cpref->lastplay + $nexttime;
-                $nextturns = floor($nexttime / $server->turn_rate);
+                $nextturns       = floor($nexttime / $server->turn_rate);
                 out("This country next plays in: $nexttime ($nextturns Turns)    ");
                 $played = true;
-                $save = true;
+                $save   = true;
             } catch (Exception $e) {
                 out("Caught Exception: ".$e);
             }
@@ -234,7 +237,7 @@ while (1) {
     $cnum = null;
     $loopcount++;
     $sleepturns = 25;
-    $sleep = 1;
+    $sleep      = 1;
     //sleep 10s //min($sleepturns*$server->turn_rate,max(0,$server->reset_end - 60 - time())); //sleep for $sleepturns turns
     //$sleepturns = ($sleep != $sleepturns*$server->turn_rate ? floor($sleep/$server->turn_rate) : $sleepturns);
     //out("Played 'Day' $loopcount; Sleeping for " . $sleep . " seconds ($sleepturns Turns)");
@@ -260,24 +263,26 @@ done(); //done() is defined below
 function furthest_play($cpref)
 {
     global $server, $rules;
-    $max = $rules->maxturns + $rules->maxstore;
-    $held = $cpref->lastTurns + $cpref->turnsStored;
-    $diff = $max - $held;
+    $max   = $rules->maxturns + $rules->maxstore;
+    $held  = $cpref->lastTurns + $cpref->turnsStored;
+    $diff  = $max - $held;
     $maxin = floor($diff * $server->turn_rate);
     out('Country is holding '.$held.'. Turns will max in '.$maxin);
     return $maxin;
-}
+}//end furthest_play()
+
 
 function server_start_end_notification($server)
 {
-    $start = round((time() - $server->reset_start) / 3600, 1).' hours ago';
-    $x = floor((time() - $server->reset_start) / $server->turn_rate);
+    $start  = round((time() - $server->reset_start) / 3600, 1).' hours ago';
+    $x      = floor((time() - $server->reset_start) / $server->turn_rate);
     $start .= " ($x turns)";
-    $end = round(($server->reset_end - time()) / 3600, 1).' hours';
-    $x = floor(($server->reset_end - time()) / $server->turn_rate);
-    $end .= " ($x turns)";
+    $end    = round(($server->reset_end - time()) / 3600, 1).' hours';
+    $x      = floor(($server->reset_end - time()) / $server->turn_rate);
+    $end   .= " ($x turns)";
     out("Server started ".$start.' and ends in '.$end);
-}
+}//end server_start_end_notification()
+
 
 function pickStrat($cnum)
 {
@@ -292,7 +297,8 @@ function pickStrat($cnum)
     } else {
         return 'R';
     }
-}
+}//end pickStrat()
+
 
 function playstats($countries)
 {
@@ -315,41 +321,45 @@ function playstats($countries)
     outOldest($countries);
     outFurthest($countries);
     //outNext($countries);
-}
+}//end playstats()
+
 
 function outOldest($countries)
 {
     global $server;
-    $old = oldestPlay($countries);
-    $onum = getLastPlayCNUM($countries, $old);
+    $old    = oldestPlay($countries);
+    $onum   = getLastPlayCNUM($countries, $old);
     $ostrat = txtStrat($onum);
-    $old = time() - $old;
+    $old    = time() - $old;
     out("Oldest Play: ".$old."s ago by #$onum $ostrat (".round($old / $server->turn_rate)." turns)");
     if ($old > 86400 * 2) {
         out("OLD TOO FAR: RESET NEXTPLAY");
         global $settings;
         $settings->$onum->nextplay = 0;
     }
-}
+}//end outOldest()
+
 
 function outFurthest($countries)
 {
     global $server;
     $furthest = getFurthestNext($countries);
-    $fnum = getNextPlayCNUM($countries, $furthest);
-    $fstrat = txtStrat($fnum);
+    $fnum     = getNextPlayCNUM($countries, $furthest);
+    $fstrat   = txtStrat($fnum);
     $furthest = $furthest - time();
     out("Furthest Play in ".$furthest."s for #$fnum $fstrat (".round($furthest / $server->turn_rate)." turns)");
-}
+}//end outFurthest()
+
 
 function outNext($countries, $rewrite = false)
 {
-    $next = getNextPlays($countries);
-    $xnum = getNextPlayCNUM($countries, min($next));
+    $next   = getNextPlays($countries);
+    $xnum   = getNextPlayCNUM($countries, min($next));
     $xstrat = txtStrat($xnum);
-    $next = max(0, min($next) - time());
+    $next   = max(0, min($next) - time());
     out("Next Play in ".$next.'s: #'.$xnum." $xstrat    ".($rewrite ? "\r" : null), !$rewrite);
-}
+}//end outNext()
+
 
 function txtStrat($cnum)
 {
@@ -373,17 +383,18 @@ function txtStrat($cnum)
         case 'O':
             return OILER;
     }
-}
+}//end txtStrat()
+
 
 function govtStats($countries)
 {
     $cashers = $indies = $farmers = $techers = $oilers = $rainbows = 0;
-    $undef = 0;
+    $undef   = 0;
     global $settings;
     $cNP = $fNP = $iNP = $tNP = $rNP = $oNP = 9999999;
 
     $govs = [];
-    $tnw = $tld = 0;
+    $tnw  = $tld = 0;
     foreach ($countries as $cnum) {
         if (!isset($settings->$cnum->strat)) {
             out("Picking a new strat for #$cnum");
@@ -401,17 +412,17 @@ function govtStats($countries)
         //out_data($settings->$cnum);
 
         $govs[$s][1]++;
-        $govs[$s][2] = min($settings->$cnum->nextplay - time(), $govs[$s][2]);
+        $govs[$s][2]  = min($settings->$cnum->nextplay - time(), $govs[$s][2]);
         $govs[$s][3] += $settings->$cnum->networth;
         $govs[$s][4] += $settings->$cnum->land;
-        $tnw += $settings->$cnum->networth;
-        $tld += $settings->$cnum->land;
+        $tnw         += $settings->$cnum->networth;
+        $tld         += $settings->$cnum->land;
     }
 
     global $serv, $server_avg_land, $server_avg_networth;
     //out("TNW:$tnw; TLD: $tld");
     $server_avg_networth = $tnw / count($countries);
-    $server_avg_land = $tld / count($countries);
+    $server_avg_land     = $tld / count($countries);
 
     $anw = ' [ANW:'.str_pad(round($server_avg_networth / 1000000, 2), 6, ' ', STR_PAD_LEFT).'M]';
     $ald = ' [ALnd:'.str_pad(round($server_avg_land / 1000, 2), 6, ' ', STR_PAD_LEFT).'k]';
@@ -422,12 +433,13 @@ function govtStats($countries)
     foreach ($govs as $s => $gov) {
         if ($gov[1] > 0) {
             $next = ' [Next:'.str_pad($gov[2], 5, ' ', STR_PAD_LEFT).']';
-            $anw = ' [ANW:'.str_pad(round($gov[3] / $gov[1] / 1000000, 2), 6, ' ', STR_PAD_LEFT).'M]';
-            $ald = ' [ALnd:'.str_pad(round($gov[4] / $gov[1] / 1000, 2), 6, ' ', STR_PAD_LEFT).'k]';
+            $anw  = ' [ANW:'.str_pad(round($gov[3] / $gov[1] / 1000000, 2), 6, ' ', STR_PAD_LEFT).'M]';
+            $ald  = ' [ALnd:'.str_pad(round($gov[4] / $gov[1] / 1000, 2), 6, ' ', STR_PAD_LEFT).'k]';
             out(str_pad($gov[0], 18).': '.$gov[1].$next.$anw.$ald);
         }
     }
-}
+}//end govtStats()
+
 
 function getNextPlayCNUM($countries, $time = 0)
 {
@@ -438,7 +450,8 @@ function getNextPlayCNUM($countries, $time = 0)
         }
     }
     return null;
-}
+}//end getNextPlayCNUM()
+
 
 function getLastPlayCNUM($countries, $time = 0)
 {
@@ -449,7 +462,8 @@ function getLastPlayCNUM($countries, $time = 0)
         }
     }
     return null;
-}
+}//end getLastPlayCNUM()
+
 
 function getNextPlays($countries)
 {
@@ -463,18 +477,21 @@ function getNextPlays($countries)
         }
     }
     return $nextplays;
-}
+}//end getNextPlays()
+
 
 function getFurthestNext($countries)
 {
     return max(getNextPlays($countries));
-}
+}//end getFurthestNext()
+
 
 function playtimes_stddev($countries)
 {
     $nextplays = getNextPlays($countries);
     return sd($nextplays);
-}
+}//end playtimes_stddev()
+
 
 function lastPlays($countries)
 {
@@ -488,12 +505,14 @@ function lastPlays($countries)
         }
     }
     return $lastplays;
-}
+}//end lastPlays()
+
 
 function oldestPlay($countries)
 {
     return min(lastPlays($countries));
-}
+}//end oldestPlay()
+
 
 function sd($array)
 {
@@ -512,9 +531,10 @@ function sd($array)
                 $array,
                 array_fill(0, count($array), (array_sum($array) / count($array)))
             )
-        ) / (count($array)-1)
+        ) / (count($array) - 1)
     );
-}
+}//end sd()
+
 
 
 
@@ -525,7 +545,8 @@ function onmarket($good = 'food', &$c = null)
         return out_data(debug_backtrace());
     }
     return $c->onMarket($good);
-}
+}//end onmarket()
+
 
 function onmarket_value($good = null, &$c = null)
 {
@@ -539,7 +560,7 @@ function onmarket_value($good = null, &$c = null)
     foreach ($mktinfo as $key => $goods) {
         //out_data($goods);
         if ($good != null && $goods->type == $good) {
-            $value += $goods->quantity*$goods->price;
+            $value += $goods->quantity * $goods->price;
         } elseif ($good == null) {
             $value += $goods->quantity;
         }
@@ -549,17 +570,20 @@ function onmarket_value($good = null, &$c = null)
         }
     }
     return $value;
-}
+}//end onmarket_value()
+
 
 function totaltech($c)
 {
     return $c->t_mil + $c->t_med + $c->t_bus + $c->t_res + $c->t_agri + $c->t_war + $c->t_ms + $c->t_weap + $c->t_indy + $c->t_spy + $c->t_sdi;
-}
+}//end totaltech()
+
 
 function total_military($c)
 {
     return $c->m_spy + $c->m_tr + $c->m_j + $c->m_tu + $c->m_ta;    //total_military
-}
+}//end total_military()
+
 
 function total_cansell_tech($c)
 {
@@ -574,7 +598,8 @@ function total_cansell_tech($c)
 
     debug("CANSELL TECH: $cansell");
     return $cansell;
-}
+}//end total_cansell_tech()
+
 
 function total_cansell_military($c)
 {
@@ -586,27 +611,30 @@ function total_cansell_military($c)
 
     //out("CANSELL TECH: $cansell");
     return $cansell;
-}
+}//end total_cansell_military()
+
 
 
 function can_sell_tech(&$c, $tech = 't_bus')
 {
     $onmarket = $c->onMarket($tech);
-    $tot = $c->$tech + $onmarket;
-    $sell = floor($tot*0.25) - $onmarket;
+    $tot      = $c->$tech + $onmarket;
+    $sell     = floor($tot * 0.25) - $onmarket;
     debug("Can Sell $tech: $sell; (At Home: {$c->$tech}; OnMarket: $onmarket)");
 
     return $sell > 10 ? $sell : 0;
-}
+}//end can_sell_tech()
+
 
 function can_sell_mil(&$c, $mil = 'm_tr')
 {
     $onmarket = $c->onMarket($mil);
-    $tot = $c->$mil + $onmarket;
-    $sell = floor($tot*($c->govt == 'C' ? 0.25*1.35 : 0.25)) - $onmarket;
+    $tot      = $c->$mil + $onmarket;
+    $sell     = floor($tot * ($c->govt == 'C' ? 0.25 * 1.35 : 0.25)) - $onmarket;
 
     return $sell > 5000 ? $sell : 0;
-}
+}//end can_sell_mil()
+
 
 
 //Interaction with API
@@ -624,18 +652,18 @@ function update_c(&$c, $result)
     //out_data($result);                //output data for testing
     $explain = null;                    //Text formatting
     if (isset($result->built)) {
-        $str = 'Built ';                //Text for screen
+        $str   = 'Built ';                //Text for screen
         $first = true;                  //Text formatting
-        $bpt = $tpt = false;
+        $bpt   = $tpt = false;
         foreach ($result->built as $type => $num) {     //for each type of building that we built....
             if (!$first) {                     //Text formatting
                 $str .= ' and ';        //Text formatting
             }
-            $first = false;             //Text formatting
-            $build = 'b_'.$type;        //have to convert to the advisor output, for now
+            $first      = false;             //Text formatting
+            $build      = 'b_'.$type;        //have to convert to the advisor output, for now
             $c->$build += $num;         //add buildings to keep track
-            $c->empty -= $num;          //subtract buildings from empty, to keep track
-            $str .= $num.' '.$type;     //Text for screen
+            $c->empty  -= $num;          //subtract buildings from empty, to keep track
+            $str       .= $num.' '.$type;     //Text for screen
             if ($type == 'cs' && $num > 0) {
                 $bpt = true;
             } elseif ($type == 'lab' && $num > 0) {
@@ -653,27 +681,27 @@ function update_c(&$c, $result)
             $str .= ' ('.$result->tpt.' tpt)';    //Text for screen
         }
 
-        $c->bpt = $result->bpt;             //update BPT - added this to the API so that we don't have to calculate it
-        $c->tpt = $result->tpt;             //update TPT - added this to the API so that we don't have to calculate it
+        $c->bpt    = $result->bpt;             //update BPT - added this to the API so that we don't have to calculate it
+        $c->tpt    = $result->tpt;             //update TPT - added this to the API so that we don't have to calculate it
         $c->money -= $result->cost;
     } elseif (isset($result->new_land)) {
-        $c->empty += $result->new_land;             //update empty land
-        $c->land += $result->new_land;              //update land
-        $c->build_cost = $result->build_cost;       //update Build Cost
+        $c->empty       += $result->new_land;             //update empty land
+        $c->land        += $result->new_land;              //update land
+        $c->build_cost   = $result->build_cost;       //update Build Cost
         $c->explore_rate = $result->explore_rate;   //update explore rate
-        $c->tpt = $result->tpt;                     //update TPT - added this to the API so that we don't have to calculate it
-        $str = "Explored ".$result->new_land." Acres (".$numT.'T)';  //Text for screen
-        $explain = '('.$c->land.' A)';          //Text for screen
+        $c->tpt          = $result->tpt;                     //update TPT - added this to the API so that we don't have to calculate it
+        $str             = "Explored ".$result->new_land." Acres (".$numT.'T)';  //Text for screen
+        $explain         = '('.$c->land.' A)';          //Text for screen
     } elseif (isset($result->teched)) {
         $str = 'Tech: ';
         $tot = 0;
         foreach ($result->teched as $type => $num) {    //for each type of tech that we teched....
-            $build = 't_'.$type;      //have to convert to the advisor output, for now
+            $build      = 't_'.$type;      //have to convert to the advisor output, for now
             $c->$build += $num;             //add buildings to keep track
-            $tot += $num;   //Text for screen
+            $tot       += $num;   //Text for screen
         }
-        $c->tpt = $result->tpt;             //update TPT - added this to the API so that we don't have to calculate it
-        $str .=  $tot.' '.actual_count($result->turns).' turns';
+        $c->tpt  = $result->tpt;             //update TPT - added this to the API so that we don't have to calculate it
+        $str    .= $tot.' '.actual_count($result->turns).' turns';
         $explain = '('.$c->tpt.' tpt)';     //Text for screen
     } elseif ($lastFunction == 'cash') {
         $str = "Cashed ".actual_count($result->turns)." turns";     //Text for screen
@@ -681,20 +709,20 @@ function update_c(&$c, $result)
         $str = "Put goods on market";
     }
 
-    $event = null; //Text for screen
+    $event    = null; //Text for screen
     $netmoney = $netfood = 0;
     foreach ($result->turns as $num => $turn) {
         //update stuff based on what happened this turn
-        $netfood    += $c->foodnet  = floor(isset($turn->foodproduced)  ? $turn->foodproduced : 0)  - (isset($turn->foodconsumed)   ? $turn->foodconsumed : 0);
-        $netmoney   += $c->income   = floor(isset($turn->taxrevenue)    ? $turn->taxrevenue : 0)    - (isset($turn->expenses)       ? $turn->expenses : 0);
+        $netfood  += $c->foodnet  = floor(isset($turn->foodproduced) ? $turn->foodproduced : 0) - (isset($turn->foodconsumed) ? $turn->foodconsumed : 0);
+        $netmoney += $c->income = floor(isset($turn->taxrevenue) ? $turn->taxrevenue : 0) - (isset($turn->expenses) ? $turn->expenses : 0);
 
         //the turn doesn't *always* return these things, so have to check if they exist, and add 0 if they don't
-        $c->pop     += floor(isset($turn->popgrowth)       ? $turn->popgrowth : 0);
-        $c->m_tr    += floor(isset($turn->troopsproduced)  ? $turn->troopsproduced : 0);
-        $c->m_j     += floor(isset($turn->jetsproduced)    ? $turn->jetsproduced : 0);
-        $c->m_tu    += floor(isset($turn->turretsproduced) ? $turn->turretsproduced : 0);
-        $c->m_ta    += floor(isset($turn->tanksproduced)   ? $turn->tanksproduced : 0);
-        $c->m_spy   += floor(isset($turn->spiesproduced)   ? $turn->spiesproduced : 0);
+        $c->pop   += floor(isset($turn->popgrowth) ? $turn->popgrowth : 0);
+        $c->m_tr  += floor(isset($turn->troopsproduced) ? $turn->troopsproduced : 0);
+        $c->m_j   += floor(isset($turn->jetsproduced) ? $turn->jetsproduced : 0);
+        $c->m_tu  += floor(isset($turn->turretsproduced) ? $turn->turretsproduced : 0);
+        $c->m_ta  += floor(isset($turn->tanksproduced) ? $turn->tanksproduced : 0);
+        $c->m_spy += floor(isset($turn->spiesproduced) ? $turn->spiesproduced : 0);
         $c->turns--;
 
         //out_data($turn);
@@ -707,13 +735,13 @@ function update_c(&$c, $result)
                 //update the advisor, because we no longer know what infromation is valid
                 $advisor_update = true;
             } elseif ($turn->event == 'pciboom') {       //in the event of a pci boom, recalculate income so we don't react based on an event
-                $c->income = floor(isset($turn->taxrevenue)     ? $turn->taxrevenue / 3 : 0)      - (isset($turn->expenses)       ? $turn->expenses : 0);
+                $c->income = floor(isset($turn->taxrevenue) ? $turn->taxrevenue / 3 : 0) - (isset($turn->expenses) ? $turn->expenses : 0);
             } elseif ($turn->event == 'pcibad') {        //in the event of a pci bad, recalculate income so we don't react based on an event
-                $c->income = floor(isset($turn->taxrevenue)     ? $turn->taxrevenue * 3 : 0)      - (isset($turn->expenses)       ? $turn->expenses : 0);
+                $c->income = floor(isset($turn->taxrevenue) ? $turn->taxrevenue * 3 : 0) - (isset($turn->expenses) ? $turn->expenses : 0);
             } elseif ($turn->event == 'foodboom') {      //in the event of a food boom, recalculate netfood so we don't react based on an event
-                $c->foodnet = floor(isset($turn->foodproduced)  ? $turn->foodproduced / 3 : 0)    - (isset($turn->foodconsumed)   ? $turn->foodconsumed : 0);
+                $c->foodnet = floor(isset($turn->foodproduced) ? $turn->foodproduced / 3 : 0) - (isset($turn->foodconsumed) ? $turn->foodconsumed : 0);
             } elseif ($turn->event == 'foodbad') {       //in the event of a food boom, recalculate netfood so we don't react based on an event
-                $c->foodnet = floor(isset($turn->foodproduced)  ? $turn->foodproduced * 3 : 0)    - (isset($turn->foodconsumed)   ? $turn->foodconsumed : 0);
+                $c->foodnet = floor(isset($turn->foodproduced) ? $turn->foodproduced * 3 : 0) - (isset($turn->foodconsumed) ? $turn->foodconsumed : 0);
             }
             $event .= event_text($turn->event).' ';//Text for screen
         }
@@ -729,7 +757,7 @@ function update_c(&$c, $result)
         }
     }
     $c->money += $netmoney;
-    $c->food += $netfood;
+    $c->food  += $netfood;
 
     if ($advisor_update == true) {
         $c = get_advisor();
@@ -737,10 +765,10 @@ function update_c(&$c, $result)
 
     global $colors;
     //Text formatting (adding a + if it is positive; - will be there if it's negative already)
-    $netfood = str_pad('('.($netfood > 0 ? '+' : null).$netfood.')', 10, ' ', STR_PAD_LEFT) ;
+    $netfood  = str_pad('('.($netfood > 0 ? '+' : null).$netfood.')', 10, ' ', STR_PAD_LEFT);
     $netmoney = str_pad('($'.($netmoney > 0 ? '+' : null).$netmoney.')', 12, ' ', STR_PAD_LEFT);
 
-    $str = str_pad($str, 26).str_pad($explain, 12).str_pad('$'.$c->money, 16, ' ', STR_PAD_LEFT);
+    $str  = str_pad($str, 26).str_pad($explain, 12).str_pad('$'.$c->money, 16, ' ', STR_PAD_LEFT);
     $str .= $netmoney.str_pad($c->food.' Bu', 12, ' ', STR_PAD_LEFT).$netfood; //Text for screen
 
     global $APICalls;
@@ -750,7 +778,8 @@ function update_c(&$c, $result)
     }
     out($str);
     $APICalls = 0;
-}
+}//end update_c()
+
 
 function event_text($event)
 {
@@ -776,29 +805,33 @@ function event_text($event)
         default:
             return null;
     }
-}
+}//end event_text()
+
 
 function build_cs($turns = 1)
 {
                             //default is 1 CS if not provided
     return build(array('cs' => $turns));
-}
+}//end build_cs()
+
 
 function build($buildings = array())
 {
                    //default is an empty array
     return ee('build', array('build' => $buildings));    //build a particular set of buildings
-}
+}//end build()
+
 
 function cash(&$c, $turns = 1)
 {
                           //this means 1 is the default number of turns if not provided
     return ee('cash', array('turns' => $turns));             //cash a certain number of turns
-}
+}//end cash()
+
 
 function explore(&$c, $turns = 1)
 {
-    if ($c->empty > $c->land/2) {
+    if ($c->empty > $c->land / 2) {
         $b = $c->built();
         out("We can't explore (Built: {$b}%), what are we doing?");
         return;
@@ -810,82 +843,92 @@ function explore(&$c, $turns = 1)
         $c = get_advisor();
     }
     return $result;
-}
+}//end explore()
+
 
 function tech($tech = array())
 {
                      //default is an empty array
     return ee('tech', array('tech' => $tech));   //research a particular set of techs
-}
+}//end tech()
+
 
 function get_main()
 {
     $main = ee('main');      //get and return the MAIN information
 
     global $cpref;
-    $cpref->lastTurns = $main->turns;
+    $cpref->lastTurns   = $main->turns;
     $cpref->turnsStored = $main->turns_stored;
 
     return $main;
-}
+}//end get_main()
+
 
 function get_rules()
 {
     return ee('rules');      //get and return the RULES information
-}
+}//end get_rules()
+
 
 function set_indy(&$c)
 {
     return ee(
         'indy',
         ['pro' => [
-                'pro_spy'=>$c->pro_spy,
-                'pro_tr'=>$c->pro_tr,
-                'pro_j'=>$c->pro_j,
-                'pro_tu'=>$c->pro_tu,
-                'pro_ta'=>$c->pro_ta,
+                'pro_spy' => $c->pro_spy,
+                'pro_tr' => $c->pro_tr,
+                'pro_j' => $c->pro_j,
+                'pro_tu' => $c->pro_tu,
+                'pro_ta' => $c->pro_ta,
             ]
         ]
     );      //set industrial production
-}
+}//end set_indy()
+
 
 function update_stats($number)
 {
     global $settings, $cnum;
-    $cnum = $number;
-    $advisor = ee('advisor');   //get and return the ADVISOR information
+    $cnum                      = $number;
+    $advisor                   = ee('advisor');   //get and return the ADVISOR information
     $settings->$cnum->networth = $advisor->networth;
-    $settings->$cnum->land = $advisor->land;
+    $settings->$cnum->land     = $advisor->land;
     return;
-}
+}//end update_stats()
+
 
 function get_advisor()
 {
     $advisor = ee('advisor');   //get and return the ADVISOR information
 
     global $cpref;
-    $cpref->lastTurns = $advisor->turns;
+    $cpref->lastTurns   = $advisor->turns;
     $cpref->turnsStored = $advisor->turns_stored;
 
     //out_data($advisor);
     return new Country($advisor);
-}
+}//end get_advisor()
+
 
 function get_pm_info()
 {
     return ee('pm_info');   //get and return the PRIVATE MARKET information
-}
+}//end get_pm_info()
+
 
 function get_market_info()
 {
     return ee('market');    //get and return the PUBLIC MARKET information
-}
+}//end get_market_info()
+
 
 function get_owned_on_market_info()
 {
     $goods = ee('onmarket');    //get and return the GOODS OWNED ON PUBLIC MARKET information
     return $goods->goods;
-}
+}//end get_owned_on_market_info()
+
 
 function change_govt(&$c, $govt)
 {
@@ -895,7 +938,8 @@ function change_govt(&$c, $govt)
         $c = get_advisor();     //UPDATE EVERYTHING
     }
     return $result;
-}
+}//end change_govt()
+
 
 
 function buy_on_pm(&$c, $units = array())
@@ -909,13 +953,13 @@ function buy_on_pm(&$c, $units = array())
         global $debug, $pm_info;
         debug($pm_info);
         $debug = true;
-        $c = get_advisor();     //UPDATE EVERYTHING
+        $c     = get_advisor();     //UPDATE EVERYTHING
         out("refresh money={$c->money}");
         return $result;
     }
 
     $c->money -= $result->cost;
-    $str = 'Bought ';
+    $str       = 'Bought ';
     foreach ($result->goods as $type => $amount) {
         if ($type == 'm_bu') {
             $type = 'food';
@@ -924,19 +968,20 @@ function buy_on_pm(&$c, $units = array())
         }
 
         $c->$type += $amount;
-        $str .= $amount.' '.$type.', ';
+        $str      .= $amount.' '.$type.', ';
     }
     $str .= 'for $'.$result->cost.' on PM';
     out($str);
     return $result;
-}
+}//end buy_on_pm()
+
 
 
 function sell_on_pm(&$c, $units = array())
 {
-    $result =  ee('pm', array('sell' => $units));
+    $result    = ee('pm', array('sell' => $units));
     $c->money += $result->money;
-    $str = 'Sold ';
+    $str       = 'Sold ';
     foreach ($result->goods as $type => $amount) {
         if ($type == 'm_bu') {
             $type = 'food';
@@ -945,19 +990,20 @@ function sell_on_pm(&$c, $units = array())
         }
 
         $c->$type -= $amount;
-        $str .= $amount.' '.$type.', ';
+        $str      .= $amount.' '.$type.', ';
     }
     $str .= 'for $'.$result->money.' on PM';
     out($str);
     return $result;
-}
+}//end sell_on_pm()
+
 
 function buy_public(&$c, $quantity = array(), $price = array())
 {
     global $techlist, $market;
     $result = ee('buy', array('quantity' => $quantity, 'price' => $price));
-    $str = 'Bought ';
-    $tcost = 0;
+    $str    = 'Bought ';
+    $tcost  = 0;
     foreach ($result->bought as $type => $details) {
         $ttype = 't_'.$type;
         if ($type == 'm_bu') {
@@ -971,12 +1017,12 @@ function buy_public(&$c, $quantity = array(), $price = array())
 
         $c->$type += $details->quantity;
         $c->money -= $details->cost;
-        $tcost += $details->cost;
-        $str .= $details->quantity.' '.$type.'@$'.floor($details->cost/$details->quantity);
-        $pt = 'p'.$type;
+        $tcost    += $details->cost;
+        $str      .= $details->quantity.' '.$type.'@$'.floor($details->cost / $details->quantity);
+        $pt        = 'p'.$type;
         if (isset($details->$pt)) {
             $c->$pt = $details->$pt;
-            $str.= '('.$details->$pt.'%)';
+            $str   .= '('.$details->$pt.'%)';
         }
         $str .= ', ';
 
@@ -985,7 +1031,7 @@ function buy_public(&$c, $quantity = array(), $price = array())
 
     $nothing = false;
     if ($str == 'Bought ') {
-        $str .= 'nothing ';
+        $str    .= 'nothing ';
         $nothing = true;
     }
 
@@ -994,7 +1040,7 @@ function buy_public(&$c, $quantity = array(), $price = array())
         $cost = 0;
         foreach ($quantity as $key => $q) {
             $what .= $key.$q.'@'.$price[$key].', ';
-            $cost += round($q*$price[$key]*$c->tax());
+            $cost += round($q * $price[$key] * $c->tax());
         }
         out("Tried: ".$what);
         out("Money: ".$c->money." Cost: ".$cost);
@@ -1006,7 +1052,8 @@ function buy_public(&$c, $quantity = array(), $price = array())
     $str .= 'for $'.$tcost.' on public.';
     out($str);
     return $result;
-}
+}//end buy_public()
+
 
 function sell_public(&$c, $quantity = array(), $price = array(), $tonm = array())
 {
@@ -1060,7 +1107,7 @@ function sell_public(&$c, $quantity = array(), $price = array(), $tonm = array()
 
             //$c->$omtype += $details->quantity;
             $c->$type -= $details->quantity;
-            $str .= $details->quantity.' '.$type.' @ '.$details->price.', ';
+            $str      .= $details->quantity.' '.$type.' @ '.$details->price.', ';
         }
     }
     if ($str == 'Put ') {
@@ -1070,7 +1117,8 @@ function sell_public(&$c, $quantity = array(), $price = array(), $tonm = array()
     out($str);
     //sleep(1);
     return $result;
-}
+}//end sell_public()
+
 
 
 function buy_tech(&$c, $tech = 't_bus', $spend = 0, $maxprice = 9999)
@@ -1084,7 +1132,7 @@ function buy_tech(&$c, $tech = 't_bus', $spend = 0, $maxprice = 9999)
     if ($market->price($tech) != null && $market->available($tech) > 0) {
         while ($market->price($tech) != null && $market->available($tech) > 0 && $market->price($tech) <= $maxprice && $spend > 0) {
             $price = $market->price($tech);
-            $tobuy = min(floor($spend / ($price*$c->tax())), $market->available($tech));
+            $tobuy = min(floor($spend / ($price * $c->tax())), $market->available($tech));
             if ($tobuy == 0) {
                 return;
             }
@@ -1103,39 +1151,41 @@ function buy_tech(&$c, $tech = 't_bus', $spend = 0, $maxprice = 9999)
             //out_data($result);
         }
     }
-}
+}//end buy_tech()
+
 
 
 
 function rand_country_name()
 {
     global $username;
-    $name = substr($username, 0, 2).' '; //name them by the first 2 chars of a username; should still be fairly unique on this server
-    $last = chr(32); //we just added a space
+    $name   = substr($username, 0, 2).' '; //name them by the first 2 chars of a username; should still be fairly unique on this server
+    $last   = chr(32); //we just added a space
     $length = rand(5, 24);
     for ($i = 0; $i < $length; $i++) {
         $rand = rand(0, 10);
         if ($rand == 0 && $last != chr(32)) {
             $name .= $last = chr(32); //space
-        } elseif ($rand%2) {
+        } elseif ($rand % 2) {
             $name .= $last = chr(rand(65, 90)); //A-Z
         } else {
-            $name .= $last =  chr(rand(97, 122)); //a-z
+            $name .= $last = chr(rand(97, 122)); //a-z
         }
     }
     $name = trim($name);
     return $name;
-}
+}//end rand_country_name()
+
 
 
 function purebell($min, $max, $std_deviation, $step = 1)
 {
  //box-muller-method
-    $rand1 = (float) mt_rand()/(float) mt_getrandmax();
-    $rand2 = (float) mt_rand()/(float) mt_getrandmax();
+    $rand1           = (float)mt_rand() / (float)mt_getrandmax();
+    $rand2           = (float)mt_rand() / (float)mt_getrandmax();
     $gaussian_number = sqrt(-2 * log($rand1)) * cos(2 * pi() * $rand2);
-    $mean = ($max + $min) / 2;
-    $random_number = ($gaussian_number * $std_deviation) + $mean;
+    $mean            = ($max + $min) / 2;
+    $random_number   = ($gaussian_number * $std_deviation) + $mean;
     //out($random_number);
     $random_number = round($random_number / $step) * $step;
     //out($random_number);
@@ -1143,4 +1193,4 @@ function purebell($min, $max, $std_deviation, $step = 1)
         $random_number = purebell($min, $max, $std_deviation, $step);
     }
     return $random_number;
-}
+}//end purebell()

@@ -19,7 +19,8 @@ function destock($server, $cnum)
     } else {
         out("Ran out of goods?");   //Text for screen
     }
-}
+}//end destock()
+
 
 
 
@@ -30,19 +31,19 @@ function buy_public_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false)
     global $market;
     //out_data($market_info);
     if (!$money || $money < 0) {
-        $money = $c->money;
+        $money   = $c->money;
         $reserve = 0;
     } else {
         $reserve = $c->money - $money;
     }
 
-    $tr_price = round($dpnw*0.5/$c->tax());  //THE PRICE TO BUY THEM AT
-    $j_price = $tu_price = round($dpnw*0.6/$c->tax());  //THE PRICE TO BUY THEM AT
-    $ta_price = round($dpnw*2/$c->tax());  //THE PRICE TO BUY THEM AT
+    $tr_price = round($dpnw * 0.5 / $c->tax());  //THE PRICE TO BUY THEM AT
+    $j_price  = $tu_price = round($dpnw * 0.6 / $c->tax());  //THE PRICE TO BUY THEM AT
+    $ta_price = round($dpnw * 2 / $c->tax());  //THE PRICE TO BUY THEM AT
 
-    $tr_cost =  ceil($tr_price*$c->tax());  //THE COST OF BUYING THEM
-    $j_cost = $tu_cost = ceil($tu_price*$c->tax());  //THE COST OF BUYING THEM
-    $ta_cost = ceil($ta_price*$c->tax());  //THE COST OF BUYING THEM
+    $tr_cost = ceil($tr_price * $c->tax());  //THE COST OF BUYING THEM
+    $j_cost  = $tu_cost = ceil($tu_price * $c->tax());  //THE COST OF BUYING THEM
+    $ta_cost = ceil($ta_price * $c->tax());  //THE COST OF BUYING THEM
 
     $units = array('tu','tr','ta','j');
     if ($shuffle) {
@@ -54,14 +55,14 @@ function buy_public_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false)
         $unit = 'm_'.$subunit;
         if ($market->price($unit) != null && $market->available($unit) > 0) {
             $price = $subunit.'_price';
-            $cost = $subunit.'_cost';
+            $cost  = $subunit.'_cost';
             //out("Stage 1.4");
             while ($market->price($unit) <= $$price && $money > $$cost && $market->available($unit) > 0 && $money > 50000) {
                 //out("Stage 1.4.x");
                 //out("Money: $money");
                 //out("$subunit Price: $price");
                 //out("Buy Price: {$market_info->buy_price->$unit}");
-                $quantity = min(floor($money/ceil($market->price($unit)*$c->tax())), $market->available($unit));
+                $quantity = min(floor($money / ceil($market->price($unit) * $c->tax())), $market->available($unit));
                 if ($quantity == $last) {
                     $quantity = max(0, $quantity - 1);
                 }
@@ -78,8 +79,8 @@ function buy_public_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false)
             }
         }
     }
+}//end buy_public_below_dpnw()
 
-}
 
 function buy_private_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false)
 {
@@ -87,15 +88,15 @@ function buy_private_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false)
     $pm_info = get_pm_info();   //get the PM info
 
     if (!$money || $money < 0) {
-        $money = $c->money;
+        $money   = $c->money;
         $reserve = 0;
     } else {
         $reserve = min($c->money, $c->money - $money);
     }
 
-    $tr_price = round($dpnw*0.5);
-    $j_price = $tu_price = round($dpnw*0.6);
-    $ta_price = round($dpnw*2);
+    $tr_price = round($dpnw * 0.5);
+    $j_price  = $tu_price = round($dpnw * 0.6);
+    $ta_price = round($dpnw * 2);
 
     $order = array(1,2,3,4);
     if ($shuffle) {
@@ -105,77 +106,82 @@ function buy_private_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false)
 
     foreach ($order as $o) {
         if ($o == 1 && $pm_info->buy_price->m_tr <= $tr_price && $pm_info->available->m_tr > 0 && $money > $pm_info->buy_price->m_tr) {
-            $q = min(floor($money/$pm_info->buy_price->m_tr), $pm_info->available->m_tr);
+            $q = min(floor($money / $pm_info->buy_price->m_tr), $pm_info->available->m_tr);
             debug("BUY_PM: Money: $money; Price: {$pm_info->buy_price->m_tr}; Q: ".$q);
             $result = buy_on_pm($c, ['m_tr' => $q]);
         } elseif ($o == 2 && $pm_info->buy_price->m_ta <= $ta_price && $pm_info->available->m_ta > 0 && $money > $pm_info->buy_price->m_ta) {
-            $q = min(floor($money/$pm_info->buy_price->m_ta), $pm_info->available->m_ta);
+            $q = min(floor($money / $pm_info->buy_price->m_ta), $pm_info->available->m_ta);
             debug("BUY_PM: Money: $money; Price: {$pm_info->buy_price->m_ta}; Q: ".$q);
             $result = buy_on_pm($c, ['m_ta' => $q]);
         } elseif ($o == 3 && $pm_info->buy_price->m_j <= $j_price && $pm_info->available->m_j > 0 && $money > $pm_info->buy_price->m_j) {
-            $q = min(floor($money/$pm_info->buy_price->m_j), $pm_info->available->m_j);
+            $q = min(floor($money / $pm_info->buy_price->m_j), $pm_info->available->m_j);
             debug("BUY_PM: Money: $money; Price: {$pm_info->buy_price->m_j}; Q: ".$q);
             $result = buy_on_pm($c, ['m_j' => $q]);
         } elseif ($o == 4 && $pm_info->buy_price->m_tu <= $tu_price && $pm_info->available->m_tu > 0 && $money > $pm_info->buy_price->m_tu) {
-            $q = min(floor($money/$pm_info->buy_price->m_tu), $pm_info->available->m_tu);
+            $q = min(floor($money / $pm_info->buy_price->m_tu), $pm_info->available->m_tu);
             debug("BUY_PM: Money: $money; Price: {$pm_info->buy_price->m_tu}; Q: ".$q);
             $result = buy_on_pm($c, ['m_tu' => $q]);
         }
         $money = max(0, $c->money - $reserve);
     }
-}
+}//end buy_private_below_dpnw()
+
 
 function sell_cheap_units(&$c, $unit = 'm_tr', $fraction = 1)
 {
-    $fraction = max(0, min(1, $fraction));
-    $sell_units = [$unit => floor($c->$unit*$fraction)];
+    $fraction   = max(0, min(1, $fraction));
+    $sell_units = [$unit => floor($c->$unit * $fraction)];
     if (array_sum($sell_units) == 0) {
         out("No Military!");
         return;
     }
     return sell_on_pm($c, $sell_units);  //Sell 'em
-}
+}//end sell_cheap_units()
+
 
 
 function sell_all_military(&$c, $fraction = 1)
 {
-    $fraction = max(0, min(1, $fraction));
+    $fraction   = max(0, min(1, $fraction));
     $sell_units = array(
-        'm_spy'     =>  floor($c->m_spy*$fraction),         //$fraction of spies
-        'm_tr'  =>  floor($c->m_tr*$fraction),      //$fraction of troops
-        'm_j'   =>  floor($c->m_j*$fraction),       //$fraction of jets
-        'm_tu'  =>  floor($c->m_tu*$fraction),      //$fraction of turrets
-        'm_ta'  =>  floor($c->m_ta*$fraction)       //$fraction of tanks
+        'm_spy'     => floor($c->m_spy * $fraction),         //$fraction of spies
+        'm_tr'  => floor($c->m_tr * $fraction),      //$fraction of troops
+        'm_j'   => floor($c->m_j * $fraction),       //$fraction of jets
+        'm_tu'  => floor($c->m_tu * $fraction),      //$fraction of turrets
+        'm_ta'  => floor($c->m_ta * $fraction)       //$fraction of tanks
     );
     if (array_sum($sell_units) == 0) {
         out("No Military!");
         return;
     }
     return sell_on_pm($c, $sell_units);  //Sell 'em
-}
+}//end sell_all_military()
+
 
 function turns_of_food(&$c)
 {
     if ($c->foodnet >= 0) {
         return 1000; //POSITIVE FOOD, CAN LAST FOREVER BASICALLY
     }
-    $foodloss = -1*$c->foodnet;
-    return floor($c->food/$foodloss);
-}
+    $foodloss = -1 * $c->foodnet;
+    return floor($c->food / $foodloss);
+}//end turns_of_food()
+
 
 function turns_of_money(&$c)
 {
     if ($c->income > 0) {
         return 1000; //POSITIVE INCOME
     }
-    $incomeloss = -1*$c->income;
-    return floor($c->money/$incomeloss);
-}
+    $incomeloss = -1 * $c->income;
+    return floor($c->money / $incomeloss);
+}//end turns_of_money()
+
 
 function money_management(&$c)
 {
     while (turns_of_money($c) < 4) {
-        $foodloss = -1*$c->foodnet;
+        $foodloss = -1 * $c->foodnet;
 
         if ($c->turns_stored <= 30 && total_cansell_military($c) > 7500) {
             out("Selling max military, and holding turns.");
@@ -183,7 +189,7 @@ function money_management(&$c)
             return true;
         } elseif ($c->turns_stored > 30 && total_military($c) > 1000) {
             out("We have stored turns or can't sell on public; sell 1/10 of military.");   //Text for screen
-            sell_all_military($c, 1/10);
+            sell_all_military($c, 1 / 10);
         } else {
             out("Low stored turns ({$c->turns_stored}); can't sell? (".total_cansell_military($c).')');
             return true;
@@ -191,7 +197,8 @@ function money_management(&$c)
     }
 
     return false;
-}
+}//end money_management()
+
 
 function food_management(&$c)
 {
@@ -202,20 +209,20 @@ function food_management(&$c)
     }
 
     //out("food management");
-    $foodloss = -1*$c->foodnet;
-    $turns_buy = max($reserve-turns_of_food($c), 50);
+    $foodloss  = -1 * $c->foodnet;
+    $turns_buy = max($reserve - turns_of_food($c), 50);
 
     //$c = get_advisor();     //UPDATE EVERYTHING
     global $market;
     //$market_info = get_market_info();   //get the Public Market info
     //out_data($market_info);
     $pm_info = get_pm_info();
-    while ($turns_buy > 1 && $c->food <= $turns_buy*$foodloss && $market->price('m_bu') != null) {
-        $turns_of_food = $foodloss*$turns_buy;
-        $market_price = $market->price('m_bu');
+    while ($turns_buy > 1 && $c->food <= $turns_buy * $foodloss && $market->price('m_bu') != null) {
+        $turns_of_food = $foodloss * $turns_buy;
+        $market_price  = $market->price('m_bu');
         //out("Market Price: " . $market_price);
-        if ($c->food < $turns_of_food && $c->money > $turns_of_food*$market_price*$c->tax() && $c->money - $turns_of_food*$market_price*$c->tax() + $c->income*$turns_buy > 0) { //losing food, less than turns_buy turns left, AND have the money to buy it
-            $quantity = min($foodloss*$turns_buy, $market->available('m_bu'));
+        if ($c->food < $turns_of_food && $c->money > $turns_of_food * $market_price * $c->tax() && $c->money - $turns_of_food * $market_price * $c->tax() + $c->income * $turns_buy > 0) { //losing food, less than turns_buy turns left, AND have the money to buy it
+            $quantity = min($foodloss * $turns_buy, $market->available('m_bu'));
             out("Less than $reserve turns worth of food! (".$c->foodnet."/turn) Buy $turns_buy turns of food ($quantity) off Public @\$$market_price if we can!");     //Text for screen
             $result = buy_public($c, array('m_bu' => $quantity), array('m_bu' => $market_price));     //Buy 3 turns of food off the public at or below the PM price
             if ($result === false) {
@@ -226,25 +233,25 @@ function food_management(&$c)
             $c = get_advisor();     //UPDATE EVERYTHING
         }
         /*else
-			out("$turns_buy: " . $c->food . ' < ' . $turns_of_food . '; $' . $c->money . ' > $' . $turns_of_food*$market_price);*/
+            out("$turns_buy: " . $c->food . ' < ' . $turns_of_food . '; $' . $c->money . ' > $' . $turns_of_food*$market_price);*/
 
         $turns_buy--;
     }
-    $turns_buy = min(3, max(1, $turns_buy));
-    $turns_of_food = $foodloss*$turns_buy;
+    $turns_buy     = min(3, max(1, $turns_buy));
+    $turns_of_food = $foodloss * $turns_buy;
 
     if ($c->food > $turns_of_food) {
         return false;
     }
 
     //WE HAVE MONEY, WAIT FOR FOOD ON MKT
-    if ($c->protection == 0 && $c->turns_stored < 30 && $c->income > $pm_info->buy_price->m_bu*$foodloss) {
+    if ($c->protection == 0 && $c->turns_stored < 30 && $c->income > $pm_info->buy_price->m_bu * $foodloss) {
         out("We make enough to buy food if we want to; hold turns for now, and wait for food on MKT.");   //Text for screen
         return true;
     }
 
     //WAIT FOR GOODS/TECH TO SELL
-    if ($c->protection == 0 && $c->turns_stored < 30 && onmarket_value() > $pm_info->buy_price->m_bu*$foodloss) {
+    if ($c->protection == 0 && $c->turns_stored < 30 && onmarket_value() > $pm_info->buy_price->m_bu * $foodloss) {
         out("We have goods on market; hold turns for now.");    //Text for screen
         return true;
     }
@@ -252,20 +259,21 @@ function food_management(&$c)
     //PUT GOODS/TECH ON MKT AS APPROPRIATE
 
 
-    if ($c->food < $turns_of_food && $c->money > $turns_buy*$foodloss*$pm_info->buy_price->m_bu) { //losing food, less than turns_buy turns left, AND have the money to buy it
+    if ($c->food < $turns_of_food && $c->money > $turns_buy * $foodloss * $pm_info->buy_price->m_bu) { //losing food, less than turns_buy turns left, AND have the money to buy it
         out("Less than $turns_buy turns worth of food! (".$c->foodnet."/turn) We're rich, so buy food on PM (\${$pm_info->buy_price->m_bu})!~");   //Text for screen
-        $result = buy_on_pm($c, array('m_bu' => $turns_buy*$foodloss));  //Buy 3 turns of food!
+        $result = buy_on_pm($c, array('m_bu' => $turns_buy * $foodloss));  //Buy 3 turns of food!
         return false;
     } elseif ($c->food < $turns_of_food && total_military($c) > 50) {
         out("We're too poor to buy food! Sell 1/10 of our military");   //Text for screen
-        sell_all_military($c, 1/10);     //sell 1/4 of our military
+        sell_all_military($c, 1 / 10);     //sell 1/4 of our military
         $c = get_advisor();     //UPDATE EVERYTHING
         return food_management($c); //RECURSION!
     }
 
     out('We have exhausted all food options. Valar Morguhlis.');
     return false;
-}
+}//end food_management()
+
 
 function minDpnw(&$c)
 {
@@ -274,24 +282,25 @@ function minDpnw(&$c)
         $pm_info = get_pm_info();
     }
     $market->update();
-    $pub_tr = $market->price('m_tr') * $c->tax()/0.5;
-    $pub_j = $market->price('m_j')*$c->tax()/0.6;
-    $pub_tu = $market->price('m_tu')*$c->tax()/0.6;
-    $pub_ta = $market->price('m_ta')*$c->tax()/2;
+    $pub_tr = $market->price('m_tr') * $c->tax() / 0.5;
+    $pub_j  = $market->price('m_j') * $c->tax() / 0.6;
+    $pub_tu = $market->price('m_tu') * $c->tax() / 0.6;
+    $pub_ta = $market->price('m_ta') * $c->tax() / 2;
 
     $dpnws = [
-        round($pm_info->buy_price->m_tr/0.5),
-        round($pm_info->buy_price->m_j/0.6),
-        round($pm_info->buy_price->m_tu/0.6),
-        round($pm_info->buy_price->m_ta/2),
+        round($pm_info->buy_price->m_tr / 0.5),
+        round($pm_info->buy_price->m_j / 0.6),
+        round($pm_info->buy_price->m_tu / 0.6),
+        round($pm_info->buy_price->m_ta / 2),
         $pub_tr == 0 ? 9000 : $pub_tr,
-        $pub_j == 0 ?  9000 : $pub_j,
-        $pub_tu == 0 ? 9000: $pub_tu,
+        $pub_j == 0 ? 9000 : $pub_j,
+        $pub_tu == 0 ? 9000 : $pub_tu,
         $pub_ta == 0 ? 9000 : $pub_ta,
     ];
 
     return min($dpnws);
-}
+}//end minDpnw()
+
 
 function defend_self(&$c, $reserve_cash = 50000)
 {
@@ -299,12 +308,12 @@ function defend_self(&$c, $reserve_cash = 50000)
         return;
     }
     //BUY MILITARY?
-    $spend = $c->money - $reserve_cash;
+    $spend      = $c->money - $reserve_cash;
     $nlg_target = $c->nlgTarget();
-    $dpnw = minDpnw($c);
-    $nlg = $c->nlg();
-    $dpat = $c->defPerAcreTarget();
-    $dpa = $c->defPerAcre();
+    $dpnw       = minDpnw($c);
+    $nlg        = $c->nlg();
+    $dpat       = $c->defPerAcreTarget();
+    $dpa        = $c->defPerAcre();
 
     while (($nlg < $nlg_target || $dpa < $dpat) && $spend >= 100000 && $dpnw < 380) {
         if ($dpa < $dpat) {
@@ -313,7 +322,7 @@ function defend_self(&$c, $reserve_cash = 50000)
             out("Try to buy goods at $dpnw dpnw or below to reach NLG of $nlg_target from $nlg!");  //Text for screen
         }
         $dpnwOld = $dpnw;
-        $dpnw = minDpnw($c);
+        $dpnw    = minDpnw($c);
         out("Old DPNW: $dpnwOld; New DPNW: $dpnw");
         if ($dpnw <= $dpnwOld) {
             $dpnw = $dpnwOld + 1;
@@ -321,9 +330,9 @@ function defend_self(&$c, $reserve_cash = 50000)
 
         buy_public_below_dpnw($c, $dpnw, $spend, false);
         $spend = max(0, $c->money - $reserve_cash);
-        $nlg = $c->nlg();
-        $dpa = $c->defPerAcre();
-        $c = get_advisor();     //UPDATE EVERYTHING
+        $nlg   = $c->nlg();
+        $dpa   = $c->defPerAcre();
+        $c     = get_advisor();     //UPDATE EVERYTHING
 
         if ($spend < 100000) {
             break;
@@ -331,23 +340,24 @@ function defend_self(&$c, $reserve_cash = 50000)
 
         buy_private_below_dpnw($c, $dpnw, $spend, true);
         $dpnwOld = $dpnw;
-        $dpnw = minDpnw($c);
+        $dpnw    = minDpnw($c);
         if ($dpnw <= $dpnwOld) {
             $dpnw = $dpnwOld + 1;
         }
-        $c = get_advisor();     //UPDATE EVERYTHING
+        $c     = get_advisor();     //UPDATE EVERYTHING
         $spend = max(0, $c->money - $reserve_cash);
-        $nlg = $c->nlg();
-        $dpa = $c->defPerAcre();
+        $nlg   = $c->nlg();
+        $dpa   = $c->defPerAcre();
     }
-}
+}//end defend_self()
+
 
 
 
 /*
 function food_pm_price($c){
-	$pm_info = get_pm_info();
-	return $pm_info->sell_price->m_bu;
+    $pm_info = get_pm_info();
+    return $pm_info->sell_price->m_bu;
 }*/
 
 
@@ -363,25 +373,25 @@ function sell_max_military(&$c)
         $quantity[$unit] = can_sell_mil($c, $unit);
     }
 
-    $rmax = 1.30; //percent
-    $rmin = 0.75; //percent
-    $rstep = 0.01;
+    $rmax    = 1.30; //percent
+    $rmin    = 0.75; //percent
+    $rstep   = 0.01;
     $rstddev = 0.10;
-    $price = array();
+    $price   = array();
     foreach ($quantity as $key => $q) {
         if ($q == 0) {
             $price[$key] = 0;
         } elseif ($market->price($key) == null || $market->price($key) == 0) {
             $price[$key] = floor($pm_info->buy_price->$key * purebell(0.5, 1.0, 0.3, 0.01));
         } else {
-            $max = $c->goodsStuck($key) ? 0.99 : $rmax; //undercut if we have goods stuck
+            $max         = $c->goodsStuck($key) ? 0.99 : $rmax; //undercut if we have goods stuck
             $price[$key] = min($pm_info->buy_price->$key, floor($market->price($key) * purebell($rmin, $max, $rstddev, $rstep)));
         }
 
-        if ($price[$key] > 0 && $price[$key]*$c->tax() <= $pm_info->sell_price->$key) {
+        if ($price[$key] > 0 && $price[$key] * $c->tax() <= $pm_info->sell_price->$key) {
             out("Public is to cheap for $key, sell on PM");
             sell_cheap_units($c, $key, 0.5);
-            $price[$key] = 0;
+            $price[$key]    = 0;
             $quantity[$key] = 0;
             return;
         }
@@ -404,4 +414,4 @@ function sell_max_military(&$c)
     global $mktinfo;
     $mktinfo = null;
     return $result;
-}
+}//end sell_max_military()
