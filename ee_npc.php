@@ -63,6 +63,10 @@ $market              = new PublicMarket();
 $server_avg_networth = $server_avg_land = 0;
 
 while (1) {
+    if (!is_object($server)) {
+        $server = getServer();
+    }
+
     while ($server->alive_count < $server->countries_allowed) {
         out("Less countries than allowed! (".$server->alive_count.'/'.$server->countries_allowed.')');
         include_once 'name_generator.php';

@@ -56,9 +56,9 @@ function ee($function, $parameterArray = [])
 }//end ee()
 
 /**
- * Get the server; handle it being down
+ * Get the server; handle EE being down
  *
- * @return ??? The server info
+ * @return object The server info
  */
 function getServer()
 {
@@ -67,7 +67,7 @@ function getServer()
     while (!$server_loaded) {
         if ($server_loaded === false) {
             $server = ee('server');
-            if ($server !== false) {
+            if (is_object($server)) {
                 $server_loaded = true;
             }
         }
@@ -79,7 +79,11 @@ function getServer()
     return $server;
 }//end getServer()
 
-
+/**
+ * Get the rules; handle EE being down
+ *
+ * @return object The rules
+ */
 function getRules()
 {
     $rules_loaded = false;
@@ -87,7 +91,7 @@ function getRules()
     while (!$rules_loaded) {
         if ($rules_loaded === false) {
             $rules = ee('rules');
-            if ($rules !== false) {
+            if (is_object($rules)) {
                 $rules_loaded = true;
             }
         }
