@@ -61,6 +61,10 @@ function ee($function, $parameterArray = array())
 function handle_output($serverOutput, $function)
 {
     $response = json_decode($serverOutput);
+    if (!$response) {
+	out('Not acceptable response: '. $function .' - '. $serverOutput);
+	return false;
+    }
     $message = key($response);
     $response = isset($response->$message) ? $response->$message : null;
     //$parts = explode(':', $serverOutput, 2);
@@ -175,7 +179,7 @@ function out_data($data)
     $debug = debug_backtrace();
     //out(var_export($debug, true));
     //This function is to output and format some data nicely
-    out("DATA: ({$debug[0]['file']}:{$debug[0]['line']})\n".str_replace(",\n", "\n", var_export($data, true)));
+    out("DATA: ({$debug[0]['file']}:{$debug[0]['line']})\n".json_encode($data)); //str_replace(",\n", "\n", var_export($data, true)));
 }
 
 /**
