@@ -83,7 +83,7 @@ while (1) {
     while ($server->alive_count < $server->countries_allowed) {
         out("Less countries than allowed! (".$server->alive_count.'/'.$server->countries_allowed.')');
         include_once 'name_generator.php';
-        $send_data = array('cname' => rand_name());
+        $send_data = ['cname' => rand_name()];
         out("Making new country named '".$send_data['cname']."'");
         $cnum = ee('create', $send_data);
         out($send_data['cname'].' (#'.$cnum.') created!');
@@ -96,6 +96,7 @@ while (1) {
             sleep($sleeptime);
         }
     }
+
 
 
     if ($server->reset_start > time()) {
@@ -123,7 +124,7 @@ while (1) {
         if (!isset($settings->$cnum)) {
             $settings->$cnum = json_decode(
                 json_encode(
-                    array(
+                    [
                         'strat' => null,
                         'playfreq' => null,
                         'playrand' => null,
@@ -133,7 +134,7 @@ while (1) {
                         'def' => 1.0,
                         'off' => 1.0,
                         'aggro' => 1.0
-                    )
+                    ]
                 )
             );
             out($colors->getColoredString("Resetting Settings #$cnum", 'red'));
@@ -468,7 +469,7 @@ function getLastPlayCNUM($countries, $time = 0)
 function getNextPlays($countries)
 {
     global $settings;
-    $nextplays = array();
+    $nextplays = [];
     foreach ($countries as $cnum) {
         if (isset($settings->$cnum->nextplay)) {
             $nextplays[] = $settings->$cnum->nextplay;
@@ -496,7 +497,7 @@ function playtimes_stddev($countries)
 function lastPlays($countries)
 {
     global $settings;
-    $lastplays = array();
+    $lastplays = [];
     foreach ($countries as $cnum) {
         if (isset($settings->$cnum->lastplay)) {
             $lastplays[] = $settings->$cnum->lastplay;
@@ -811,21 +812,21 @@ function event_text($event)
 function build_cs($turns = 1)
 {
                             //default is 1 CS if not provided
-    return build(array('cs' => $turns));
+    return build(['cs' => $turns]);
 }//end build_cs()
 
 
-function build($buildings = array())
+function build($buildings = [])
 {
                    //default is an empty array
-    return ee('build', array('build' => $buildings));    //build a particular set of buildings
+    return ee('build', ['build' => $buildings]);    //build a particular set of buildings
 }//end build()
 
 
 function cash(&$c, $turns = 1)
 {
                           //this means 1 is the default number of turns if not provided
-    return ee('cash', array('turns' => $turns));             //cash a certain number of turns
+    return ee('cash', ['turns' => $turns]);             //cash a certain number of turns
 }//end cash()
 
 
@@ -837,7 +838,7 @@ function explore(&$c, $turns = 1)
         return;
     }
     //this means 1 is the default number of turns if not provided
-    $result = ee('explore', array('turns' => $turns));      //cash a certain number of turns
+    $result = ee('explore', ['turns' => $turns]);      //cash a certain number of turns
     if ($result === false) {
         out('Explore Fail? Update Advisor');
         $c = get_advisor();
@@ -846,10 +847,10 @@ function explore(&$c, $turns = 1)
 }//end explore()
 
 
-function tech($tech = array())
+function tech($tech = [])
 {
                      //default is an empty array
-    return ee('tech', array('tech' => $tech));   //research a particular set of techs
+    return ee('tech', ['tech' => $tech]);   //research a particular set of techs
 }//end tech()
 
 
@@ -932,7 +933,7 @@ function get_owned_on_market_info()
 
 function change_govt(&$c, $govt)
 {
-    $result = ee('govt', array('govt' => $govt));
+    $result = ee('govt', ['govt' => $govt]);
     if (isset($result->govt)) {
         out("Govt switched to {$result->govt}!");
         $c = get_advisor();     //UPDATE EVERYTHING
@@ -942,9 +943,9 @@ function change_govt(&$c, $govt)
 
 
 
-function buy_on_pm(&$c, $units = array())
+function buy_on_pm(&$c, $units = [])
 {
-    $result = ee('pm', array('buy' => $units));
+    $result = ee('pm', ['buy' => $units]);
     if (!isset($result->cost)) {
         out("Failed to buy units on PM; money={$c->money}");
         out_data($result);
@@ -977,9 +978,9 @@ function buy_on_pm(&$c, $units = array())
 
 
 
-function sell_on_pm(&$c, $units = array())
+function sell_on_pm(&$c, $units = [])
 {
-    $result    = ee('pm', array('sell' => $units));
+    $result    = ee('pm', ['sell' => $units]);
     $c->money += $result->money;
     $str       = 'Sold ';
     foreach ($result->goods as $type => $amount) {
@@ -998,10 +999,10 @@ function sell_on_pm(&$c, $units = array())
 }//end sell_on_pm()
 
 
-function buy_public(&$c, $quantity = array(), $price = array())
+function buy_public(&$c, $quantity = [], $price = [])
 {
     global $techlist, $market;
-    $result = ee('buy', array('quantity' => $quantity, 'price' => $price));
+    $result = ee('buy', ['quantity' => $quantity, 'price' => $price]);
     $str    = 'Bought ';
     $tcost  = 0;
     foreach ($result->bought as $type => $details) {
@@ -1055,7 +1056,7 @@ function buy_public(&$c, $quantity = array(), $price = array())
 }//end buy_public()
 
 
-function sell_public(&$c, $quantity = array(), $price = array(), $tonm = array())
+function sell_public(&$c, $quantity = [], $price = [], $tonm = [])
 {
     //out_data($c);
 
@@ -1083,7 +1084,7 @@ function sell_public(&$c, $quantity = array(), $price = array(), $tonm = array()
         $debug = true;
         return;
     }
-    $result = ee('sell', array('quantity' => $quantity, 'price' => $price)); //ignore tonm for now, it's optional
+    $result = ee('sell', ['quantity' => $quantity, 'price' => $price]); //ignore tonm for now, it's optional
     $c->updateOnMarket();
     if (isset($result->error) && $result->error) {
         out('ERROR: '.$result->error);
@@ -1137,7 +1138,7 @@ function buy_tech(&$c, $tech = 't_bus', $spend = 0, $maxprice = 9999)
                 return;
             }
             //out($tech . $tobuy . "@$" . $price);
-            $result = buy_public($c, array($tech => $tobuy), array($tech => $price));     //Buy troops!
+            $result = buy_public($c, [$tech => $tobuy], [$tech => $price]);     //Buy troops!
             if ($result === false) {
                 if ($update == false) {
                     $update = true;
