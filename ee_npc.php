@@ -56,11 +56,26 @@ out('Entering Infinite Loop');
 $sleepcount = $loopcount = 0;
 $played = true;
 
-$rules = ee('rules');
-$market = new PublicMarket();
+$rules_loaded = $server_loaded = false;
+while (!$rules_loaded || !$server_loaded) {
+	if ($rules_loaded === false) {
+		$rules = ee('rules');
+		if ($rules !== false)
+			$rules_loaded = true;
+	}
+	if ($server_loaded === false) {
+		$server = ee('server');
+		if ($server !== false)
+			$server_loaded = true;
+	}
 
+	if (!$rules_loaded || !$server_loaded)
+		sleep(2); //try again in 2 seconds.
+}
+
+$market = new PublicMarket();
 $server_avg_networth = $server_avg_land = 0;
-$server = ee('server');
+
 while (1) {
     while ($server->alive_count < $server->countries_allowed) {
         out("Less countries than allowed! (".$server->alive_count.'/'.$server->countries_allowed.')');
