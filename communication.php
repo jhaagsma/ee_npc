@@ -1,6 +1,8 @@
-<?php namespace EENPC;
+<?php
 
-include_once('colors.php');
+namespace EENPC;
+
+require_once 'colors.php';
 $colors = new Colors();
 /*
 This file holds the communications with the EE server, so that we can keep
@@ -15,7 +17,7 @@ only the real bot logic in the ee_npc file...
  * @param  array  $parameterArray parameters to send
  * @return object                 a JSON object converted to class
  */
-function ee($function, $parameterArray = array())
+function ee($function, $parameterArray = [])
 {
     global $baseURL, $username, $aiKey, $serv, $cnum, $APICalls;
 
@@ -33,6 +35,7 @@ function ee($function, $parameterArray = array())
     $send = "api_function=".$function."&api_payload=".json_encode($parameterArray);
     //out($send);
     curl_setopt($ch, CURLOPT_POSTFIELDS, $send);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
 
     // receive server response ...
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -50,7 +53,8 @@ function ee($function, $parameterArray = array())
 
     //out($function);
     return $return;
-}
+}//end ee()
+
 
 /**
  * Handle the server output
@@ -80,6 +84,7 @@ function handle_output($serverOutput, $function)
         return false;
     } elseif (expected_result($function) && $message != expected_result($function)) {
         out("\n\nUnexpected Result for '$function': ".$message.':'.$response."\n\n");
+        out("Server Output: \n".$serverOutput);
 
         return false;
     } elseif (!expected_result($function)) {
@@ -89,7 +94,8 @@ function handle_output($serverOutput, $function)
     }
 
     return $response;
-}
+}//end handle_output()
+
 
 /**
  * just verifies that these things exist
@@ -138,7 +144,8 @@ function expected_result($input)
         case 'indy':
             return 'INDY';
     }
-}
+}//end expected_result()
+
 
 /**
  * Ouput strings nicely
@@ -153,7 +160,8 @@ function out($str, $newline = true)
         return out_data($str);
     }
     echo ($newline ? "\n" : null)."[".date("H:i:s")."] $str";
-}
+}//end out()
+
 
 /**
  * I need a debugging function
@@ -167,7 +175,8 @@ function debug($str, $newline = true)
     if ($debug == true) {
         out($str, $newline);
     }
-}
+}//end debug()
+
 
 /**
  * Output and format data
@@ -180,7 +189,8 @@ function out_data($data)
     //out(var_export($debug, true));
     //This function is to output and format some data nicely
     out("DATA: ({$debug[0]['file']}:{$debug[0]['line']})\n".json_encode($data)); //str_replace(",\n", "\n", var_export($data, true)));
-}
+}//end out_data()
+
 
 /**
  * Does count() in some case where it doesn't work right
@@ -196,7 +206,8 @@ function actual_count($data)
     }
 
     return $i;
-}
+}//end actual_count()
+
 
 /**
  * Exit
@@ -210,4 +221,4 @@ function done($str = null)
     }
     out("Exiting\n\n");
     exit;
-}
+}//end done()

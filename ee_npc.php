@@ -88,7 +88,7 @@ while (1) {
         if ($server->reset_start > time()) {
             $timeleft = $server->reset_start - time();
             $countriesleft = $server->countries_allowed - $server->alive_count;
-            $sleeptime = $timeleft/$countriesleft;
+            $sleeptime = $timeleft / $countriesleft;
             out("Sleep for $sleeptime to spread countries out");
             sleep($sleeptime);
         }
@@ -97,7 +97,7 @@ while (1) {
 
     if ($server->reset_start > time()) {
         out("Reset has not started!");          //done() is defined below
-        sleep(max(300, time()-$server->reset_start));        //sleep until the reset starts
+        sleep(max(300, time() - $server->reset_start));        //sleep until the reset starts
         continue;                               //return to the beginning of the loop
     } elseif ($server->reset_end < time()) {
         out("Reset is over!");
@@ -118,17 +118,21 @@ while (1) {
     foreach ($countries as $cnum) {
         $save = false;
         if (!isset($settings->$cnum)) {
-            $settings->$cnum = json_decode(json_encode(array(
-                'strat' => null,
-                'playfreq' => null,
-                'playrand' => null,
-                'lastplay' => 0,
-                'nextplay' => 0,
-                'price_tolerance' => 1.0,
-                'def' => 1.0,
-                'off' => 1.0,
-                'aggro' => 1.0
-            )));
+            $settings->$cnum = json_decode(
+                json_encode(
+                    array(
+                        'strat' => null,
+                        'playfreq' => null,
+                        'playrand' => null,
+                        'lastplay' => 0,
+                        'nextplay' => 0,
+                        'price_tolerance' => 1.0,
+                        'def' => 1.0,
+                        'off' => 1.0,
+                        'aggro' => 1.0
+                    )
+                )
+            );
             out($colors->getColoredString("Resetting Settings #$cnum", 'red'));
             file_put_contents($config['save_settings_file'], json_encode($settings));
         }
@@ -143,7 +147,7 @@ while (1) {
             $save = true;
         }
         if (!isset($cpref->playfreq) || $cpref->playfreq == null) {
-            $cpref->playfreq = purebell($server->turn_rate, $server->turn_rate*$rules->maxturns, $server->turn_rate*20, $server->turn_rate);
+            $cpref->playfreq = purebell($server->turn_rate, $server->turn_rate * $rules->maxturns, $server->turn_rate * 20, $server->turn_rate);
             $cpref->playrand = mt_rand(10, 20)/10.0; //between 1.0 and 2.0
             out($colors->getColoredString("Resetting Play #$cnum", 'red'));
             $save = true;
@@ -157,7 +161,7 @@ while (1) {
             $save = true;
         }
 
-        if (!isset($cpref->nextplay) || !isset($cpref->lastplay) || $cpref->lastplay < time() - $server->turn_rate*$rules->maxturns) { //maxturns
+        if (!isset($cpref->nextplay) || !isset($cpref->lastplay) || $cpref->lastplay < time() - $server->turn_rate * $rules->maxturns) { //maxturns
             $cpref->nextplay = 0;
             out($colors->getColoredString("Resetting Next #$cnum", 'red'));
             $save = true;
@@ -173,34 +177,38 @@ while (1) {
 
         if ($cpref->nextplay < time()) {
             $playfactor = 1;
-            switch ($cpref->strat) {
-                case 'F':
-                    play_farmer_strat($server, $cnum);
-                    $playfactor = 0.8;
-                    break;
-                case 'T':
-                    play_techer_strat($server, $cnum);
-                    $playfactor = 0.5;
-                    break;
-                case 'C':
-                    play_casher_strat($server, $cnum);
-                    break;
-                case 'I':
-                    play_indy_strat($server, $cnum);
-                    $playfactor = 0.33;
-                    break;
-                default:
-                    play_rainbow_strat($server, $cnum);
+            try {
+                switch ($cpref->strat) {
+                    case 'F':
+                        play_farmer_strat($server, $cnum);
+                        $playfactor = 0.8;
+                        break;
+                    case 'T':
+                        play_techer_strat($server, $cnum);
+                        $playfactor = 0.5;
+                        break;
+                    case 'C':
+                        play_casher_strat($server, $cnum);
+                        break;
+                    case 'I':
+                        play_indy_strat($server, $cnum);
+                        $playfactor = 0.33;
+                        break;
+                    default:
+                        play_rainbow_strat($server, $cnum);
+                }
+                $cpref->lastplay = time();
+                $nexttime = round($playfactor * $cpref->playfreq * purebell(1 / $cpref->playrand, $cpref->playrand, 1, 0.1));
+                $maxin = furthest_play($cpref);
+                $nexttime = round(min($maxin, $nexttime));
+                $cpref->nextplay = $cpref->lastplay + $nexttime;
+                $nextturns = floor($nexttime / $server->turn_rate);
+                out("This country next plays in: $nexttime ($nextturns Turns)    ");
+                $played = true;
+                $save = true;
+            } catch (Exception $e) {
+                out("Caught Exception: ".$e);
             }
-            $cpref->lastplay = time();
-            $nexttime = round($playfactor*$cpref->playfreq*purebell(1/$cpref->playrand, $cpref->playrand, 1, 0.1));
-            $maxin = furthest_play($cpref);
-            $nexttime = round(min($maxin, $nexttime));
-            $cpref->nextplay = $cpref->lastplay + $nexttime;
-            $nextturns = floor($nexttime/$server->turn_rate);
-            out("This country next plays in: $nexttime ($nextturns Turns)    ");
-            $played = true;
-            $save = true;
         }
 
         if ($save) {
@@ -220,7 +228,7 @@ while (1) {
             }
         }
         out("Sleep until end");
-        sleep(($until_end + 1)*$server->turn_rate);     //don't let them fluff things up, sleep through end of reset
+        sleep(($until_end + 1) * $server->turn_rate);     //don't let them fluff things up, sleep through end of reset
         $server = ee('server');
     }
     $cnum = null;
@@ -237,7 +245,7 @@ while (1) {
     }
 
 
-    if ($sleepcount%300 == 0) {
+    if ($sleepcount % 300 == 0) {
         $server = ee('server');
         //playstats($countries);
         //echo "\n";
@@ -255,31 +263,31 @@ function furthest_play($cpref)
     $max = $rules->maxturns + $rules->maxstore;
     $held = $cpref->lastTurns + $cpref->turnsStored;
     $diff = $max - $held;
-    $maxin = floor($diff*$server->turn_rate);
+    $maxin = floor($diff * $server->turn_rate);
     out('Country is holding '.$held.'. Turns will max in '.$maxin);
     return $maxin;
 }
 
 function server_start_end_notification($server)
 {
-    $start = round((time()-$server->reset_start)/3600, 1).' hours ago';
-    $x = floor((time()-$server->reset_start)/$server->turn_rate);
+    $start = round((time() - $server->reset_start) / 3600, 1).' hours ago';
+    $x = floor((time() - $server->reset_start) / $server->turn_rate);
     $start .= " ($x turns)";
-    $end = round(($server->reset_end-time())/3600, 1).' hours';
-    $x = floor(($server->reset_end-time())/$server->turn_rate);
+    $end = round(($server->reset_end - time()) / 3600, 1).' hours';
+    $x = floor(($server->reset_end - time()) / $server->turn_rate);
     $end .= " ($x turns)";
     out("Server started ".$start.' and ends in '.$end);
 }
 
 function pickStrat($cnum)
 {
-    if ($cnum%5 == 1) {
+    if ($cnum % 5 == 1) {
         return 'F';
-    } elseif ($cnum%5 == 2) {
+    } elseif ($cnum % 5 == 2) {
         return 'T';
-    } elseif ($cnum%5 == 3) {
+    } elseif ($cnum % 5 == 3) {
         return 'C';
-    } elseif ($cnum%5 == 4) {
+    } elseif ($cnum % 5 == 4) {
         return 'I';
     } else {
         return 'R';
@@ -292,12 +300,12 @@ function playstats($countries)
 
     global $server;
     $stddev = round(playtimes_stddev($countries));
-    out("Standard Deviation of play is: $stddev; (".round($stddev/$server->turn_rate).' turns)');
-    if ($stddev < $server->turn_rate*72/4 || $stddev > $server->turn_rate*72) {
+    out("Standard Deviation of play is: $stddev; (".round($stddev / $server->turn_rate).' turns)');
+    if ($stddev < $server->turn_rate * 72 / 4 || $stddev > $server->turn_rate * 72) {
         out('Recalculating Nextplays');
         global $settings;
         foreach ($countries as $cnum) {
-            $settings->$cnum->nextplay = time() + rand(0, $server->turn_rate*72);
+            $settings->$cnum->nextplay = time() + rand(0, $server->turn_rate * 72);
         }
 
         $stddev = round(playtimes_stddev($countries));
@@ -316,7 +324,7 @@ function outOldest($countries)
     $onum = getLastPlayCNUM($countries, $old);
     $ostrat = txtStrat($onum);
     $old = time() - $old;
-    out("Oldest Play: ".$old."s ago by #$onum $ostrat (".round($old/$server->turn_rate)." turns)");
+    out("Oldest Play: ".$old."s ago by #$onum $ostrat (".round($old / $server->turn_rate)." turns)");
     if ($old > 86400 * 2) {
         out("OLD TOO FAR: RESET NEXTPLAY");
         global $settings;
@@ -331,7 +339,7 @@ function outFurthest($countries)
     $fnum = getNextPlayCNUM($countries, $furthest);
     $fstrat = txtStrat($fnum);
     $furthest = $furthest - time();
-    out("Furthest Play in ".$furthest."s for #$fnum $fstrat (".round($furthest/$server->turn_rate)." turns)");
+    out("Furthest Play in ".$furthest."s for #$fnum $fstrat (".round($furthest / $server->turn_rate)." turns)");
 }
 
 function outNext($countries, $rewrite = false)
@@ -393,7 +401,7 @@ function govtStats($countries)
         //out_data($settings->$cnum);
 
         $govs[$s][1]++;
-        $govs[$s][2] = min($settings->$cnum->nextplay-time(), $govs[$s][2]);
+        $govs[$s][2] = min($settings->$cnum->nextplay - time(), $govs[$s][2]);
         $govs[$s][3] += $settings->$cnum->networth;
         $govs[$s][4] += $settings->$cnum->land;
         $tnw += $settings->$cnum->networth;
@@ -402,11 +410,11 @@ function govtStats($countries)
 
     global $serv, $server_avg_land, $server_avg_networth;
     //out("TNW:$tnw; TLD: $tld");
-    $server_avg_networth = $tnw/count($countries);
-    $server_avg_land = $tld/count($countries);
+    $server_avg_networth = $tnw / count($countries);
+    $server_avg_land = $tld / count($countries);
 
-    $anw = ' [ANW:'.str_pad(round($server_avg_networth/1000000, 2), 6, ' ', STR_PAD_LEFT).'M]';
-    $ald = ' [ALnd:'.str_pad(round($server_avg_land/1000, 2), 6, ' ', STR_PAD_LEFT).'k]';
+    $anw = ' [ANW:'.str_pad(round($server_avg_networth / 1000000, 2), 6, ' ', STR_PAD_LEFT).'M]';
+    $ald = ' [ALnd:'.str_pad(round($server_avg_land / 1000, 2), 6, ' ', STR_PAD_LEFT).'k]';
 
 
     out("\033[1mServer:\033[0m ".$serv);
@@ -414,8 +422,8 @@ function govtStats($countries)
     foreach ($govs as $s => $gov) {
         if ($gov[1] > 0) {
             $next = ' [Next:'.str_pad($gov[2], 5, ' ', STR_PAD_LEFT).']';
-            $anw = ' [ANW:'.str_pad(round($gov[3]/$gov[1]/1000000, 2), 6, ' ', STR_PAD_LEFT).'M]';
-            $ald = ' [ALnd:'.str_pad(round($gov[4]/$gov[1]/1000, 2), 6, ' ', STR_PAD_LEFT).'k]';
+            $anw = ' [ANW:'.str_pad(round($gov[3] / $gov[1] / 1000000, 2), 6, ' ', STR_PAD_LEFT).'M]';
+            $ald = ' [ALnd:'.str_pad(round($gov[4] / $gov[1] / 1000, 2), 6, ' ', STR_PAD_LEFT).'k]';
             out(str_pad($gov[0], 18).': '.$gov[1].$next.$anw.$ald);
         }
     }
@@ -550,7 +558,7 @@ function totaltech($c)
 
 function total_military($c)
 {
-    return $c->m_spy+$c->m_tr+$c->m_j+$c->m_tu+$c->m_ta;    //total_military
+    return $c->m_spy + $c->m_tr + $c->m_j + $c->m_tu + $c->m_ta;    //total_military
 }
 
 function total_cansell_tech($c)
@@ -613,7 +621,7 @@ function update_c(&$c, $result)
     }
 
     global $lastFunction;
-    //out_data($result);				//output data for testing
+    //out_data($result);                //output data for testing
     $explain = null;                    //Text formatting
     if (isset($result->built)) {
         $str = 'Built ';                //Text for screen
@@ -681,12 +689,12 @@ function update_c(&$c, $result)
         $netmoney   += $c->income   = floor(isset($turn->taxrevenue)    ? $turn->taxrevenue : 0)    - (isset($turn->expenses)       ? $turn->expenses : 0);
 
         //the turn doesn't *always* return these things, so have to check if they exist, and add 0 if they don't
-        $c->pop     += floor(isset($turn->popgrowth)        ? $turn->popgrowth : 0);
-        $c->m_tr    += floor(isset($turn->troopsproduced)   ? $turn->troopsproduced : 0);
-        $c->m_j     += floor(isset($turn->jetsproduced)     ? $turn->jetsproduced : 0);
-        $c->m_tu    += floor(isset($turn->turretsproduced)  ? $turn->turretsproduced : 0);
-        $c->m_ta    += floor(isset($turn->tanksproduced)    ? $turn->tanksproduced : 0);
-        $c->m_spy   += floor(isset($turn->spiesproduced)    ? $turn->spiesproduced : 0);
+        $c->pop     += floor(isset($turn->popgrowth)       ? $turn->popgrowth : 0);
+        $c->m_tr    += floor(isset($turn->troopsproduced)  ? $turn->troopsproduced : 0);
+        $c->m_j     += floor(isset($turn->jetsproduced)    ? $turn->jetsproduced : 0);
+        $c->m_tu    += floor(isset($turn->turretsproduced) ? $turn->turretsproduced : 0);
+        $c->m_ta    += floor(isset($turn->tanksproduced)   ? $turn->tanksproduced : 0);
+        $c->m_spy   += floor(isset($turn->spiesproduced)   ? $turn->spiesproduced : 0);
         $c->turns--;
 
         //out_data($turn);
@@ -699,13 +707,13 @@ function update_c(&$c, $result)
                 //update the advisor, because we no longer know what infromation is valid
                 $advisor_update = true;
             } elseif ($turn->event == 'pciboom') {       //in the event of a pci boom, recalculate income so we don't react based on an event
-                $c->income = floor(isset($turn->taxrevenue)     ? $turn->taxrevenue/3 : 0)      - (isset($turn->expenses)       ? $turn->expenses : 0);
+                $c->income = floor(isset($turn->taxrevenue)     ? $turn->taxrevenue / 3 : 0)      - (isset($turn->expenses)       ? $turn->expenses : 0);
             } elseif ($turn->event == 'pcibad') {        //in the event of a pci bad, recalculate income so we don't react based on an event
-                $c->income = floor(isset($turn->taxrevenue)     ? $turn->taxrevenue*3 : 0)      - (isset($turn->expenses)       ? $turn->expenses : 0);
+                $c->income = floor(isset($turn->taxrevenue)     ? $turn->taxrevenue * 3 : 0)      - (isset($turn->expenses)       ? $turn->expenses : 0);
             } elseif ($turn->event == 'foodboom') {      //in the event of a food boom, recalculate netfood so we don't react based on an event
-                $c->foodnet = floor(isset($turn->foodproduced)  ? $turn->foodproduced/3 : 0)    - (isset($turn->foodconsumed)   ? $turn->foodconsumed : 0);
+                $c->foodnet = floor(isset($turn->foodproduced)  ? $turn->foodproduced / 3 : 0)    - (isset($turn->foodconsumed)   ? $turn->foodconsumed : 0);
             } elseif ($turn->event == 'foodbad') {       //in the event of a food boom, recalculate netfood so we don't react based on an event
-                $c->foodnet = floor(isset($turn->foodproduced)  ? $turn->foodproduced*3 : 0)    - (isset($turn->foodconsumed)   ? $turn->foodconsumed : 0);
+                $c->foodnet = floor(isset($turn->foodproduced)  ? $turn->foodproduced * 3 : 0)    - (isset($turn->foodconsumed)   ? $turn->foodconsumed : 0);
             }
             $event .= event_text($turn->event).' ';//Text for screen
         }
@@ -1007,19 +1015,19 @@ function sell_public(&$c, $quantity = array(), $price = array(), $tonm = array()
     //out_data($quantity);
     //out_data($price);
     /*$str = 'Try selling ';
-	foreach($quantity as $type => $q){
-		if($q == 0)
-			continue;
-		if($type == 'm_bu')
-			$t2 = 'food';
-		elseif($type == 'm_oil')
-			$t2 = 'oil';
-		else
-			$t2 = $type;
-		$str .= $q . ' ' . $t2 . '@' . $price[$type] . ', ';
-	}
-	$str .= 'on market.';
-	out($str);*/
+    foreach($quantity as $type => $q){
+        if($q == 0)
+            continue;
+        if($type == 'm_bu')
+            $t2 = 'food';
+        elseif($type == 'm_oil')
+            $t2 = 'oil';
+        else
+            $t2 = $type;
+        $str .= $q . ' ' . $t2 . '@' . $price[$type] . ', ';
+    }
+    $str .= 'on market.';
+    out($str);*/
     if (array_sum($quantity) == 0) {
         out("Trying to sell nothing?");
         $c = get_advisor();
