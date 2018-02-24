@@ -55,6 +55,49 @@ function ee($function, $parameterArray = [])
     return $return;
 }//end ee()
 
+/**
+ * Get the server; handle it being down
+ *
+ * @return ??? The server info
+ */
+function getServer()
+{
+    $server_loaded = false;
+    $server        = null;
+    while (!$server_loaded) {
+        if ($server_loaded === false) {
+            $server = ee('server');
+            if ($server !== false) {
+                $server_loaded = true;
+            }
+        }
+
+        if (!$server_loaded) {
+            sleep(2); //try again in 2 seconds.
+        }
+    }
+    return $server;
+}//end getServer()
+
+
+function getRules()
+{
+    $rules_loaded = false;
+    $rules        = null;
+    while (!$rules_loaded) {
+        if ($rules_loaded === false) {
+            $rules = ee('rules');
+            if ($rules !== false) {
+                $rules_loaded = true;
+            }
+        }
+        if (!$rules_loaded) {
+            sleep(2); //try again in 2 seconds.
+        }
+    }
+    return $rules;
+}//end getRules()
+
 
 /**
  * Handle the server output

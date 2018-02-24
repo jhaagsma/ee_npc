@@ -53,29 +53,12 @@ $APICalls     = 0;
 
 out('Current Unix Time: '.time());
 out('Entering Infinite Loop');
+
 $sleepcount = $loopcount = 0;
 $played     = true;
 
-$rules_loaded = $server_loaded = false;
-while (!$rules_loaded || !$server_loaded) {
-    if ($rules_loaded === false) {
-        $rules = ee('rules');
-        if ($rules !== false) {
-            $rules_loaded = true;
-        }
-    }
-    if ($server_loaded === false) {
-        $server = ee('server');
-        if ($server !== false) {
-            $server_loaded = true;
-        }
-    }
-
-    if (!$rules_loaded || !$server_loaded) {
-        sleep(2); //try again in 2 seconds.
-    }
-}
-
+$rules               = getRules();
+$server              = getServer();
 $market              = new PublicMarket();
 $server_avg_networth = $server_avg_land = 0;
 
@@ -87,7 +70,7 @@ while (1) {
         out("Making new country named '".$send_data['cname']."'");
         $cnum = ee('create', $send_data);
         out($send_data['cname'].' (#'.$cnum.') created!');
-        $server = ee('server');
+        $server = getServer();
         if ($server->reset_start > time()) {
             $timeleft      = $server->reset_start - time();
             $countriesleft = $server->countries_allowed - $server->alive_count;
