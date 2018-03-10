@@ -5,7 +5,7 @@
  *
  * PHP Version 7
  *
- * @category Functions
+ * @category Interface
  * @package  EENPC
  * @author   Julian Haagsma aka qzjul <jhaagsma@gmail.com>
  * @license  MIT License
