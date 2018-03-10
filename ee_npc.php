@@ -274,13 +274,14 @@ function server_start_end_notification($server)
 
 function pickStrat($cnum)
 {
-    if ($cnum % 5 == 1) {
+    $rand = rand(0, 100);
+    if ($rand < 25) {
         return 'F';
-    } elseif ($cnum % 5 == 2) {
+    } elseif ($rand < 55) {
         return 'T';
-    } elseif ($cnum % 5 == 3) {
+    } elseif ($rand < 80) {
         return 'C';
-    } elseif ($cnum % 5 == 4) {
+    } elseif ($rand < 95) {
         return 'I';
     } else {
         return 'R';
