@@ -148,7 +148,7 @@ function indyGoals(&$c)
 {
     return [
         //what, goal, priority
-        ['t_indy',150,8],
+        ['t_indy',158,8],
         ['t_bus',160,3],
         ['t_res',160,3],
         ['t_mil',94,4],
