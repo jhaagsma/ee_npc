@@ -1,5 +1,16 @@
 <?php
-
+/**
+ * This file handles communication with the EE server
+ * It should be torn apart a little bit
+ *
+ * PHP Version 7
+ *
+ * @category Comms
+ * @package  EENPC
+ * @author   Julian Haagsma aka qzjul <jhaagsma@gmail.com>
+ * @license  MIT License
+ * @link     https://github.com/jhaagsma/ee_npc/
+ */
 namespace EENPC;
 
 require_once 'colors.php';
@@ -155,42 +166,33 @@ function expected_result($input)
     $lastFunction = $input;
     //This is simply a list of expected return values for each function
     //This allows us to quickly verify if an error occurred
-    switch ($input) {
-        case 'server':
-            return 'SERVER_INFO';
-        case 'create':
-            return 'CNUM';
-        case 'advisor':
-            return 'ADVISOR';
-        case 'main':
-            return 'MAIN';
-        case 'build':
-            return 'BUILD';
-        case 'explore':
-            return 'EXPLORE';
-        case 'cash':
-            return 'CASH';
-        case 'pm_info':
-            return 'PM_INFO';
-        case 'pm':
-            return 'PM';
-        case 'tech':
-            return 'TECH';
-        case 'market':
-            return 'MARKET';
-        case 'onmarket':
-            return 'ONMARKET';
-        case 'buy':
-            return 'BUY';
-        case 'sell':
-            return 'SELL';
-        case 'govt':
-            return 'GOVT';
-        case 'rules':
-            return 'RULES';
-        case 'indy':
-            return 'INDY';
-    }
+    $expected = [
+        'server' => 'SERVER_INFO',
+        'create' => 'CNUM',
+        'advisor' => 'ADVISOR',
+        'main' => 'MAIN',
+        'build' => 'BUILD',
+        'explore' => 'EXPLORE',
+        'cash' => 'CASH',
+        'pm_info' => 'PM_INFO',
+        'pm' => 'PM',
+        'tech' => 'TECH',
+        'market' => 'MARKET',
+        'onmarket' => 'ONMARKET',
+        'buy' => 'BUY',
+        'sell' => 'SELL',
+        'govt' => 'GOVT',
+        'rules' => 'RULES',
+        'indy' => 'INDY',
+        'ally/list' => 'ALLYLIST',
+        'ally/info' => 'ALLYINFO',
+        'ally/candidates' => 'ALLYCANDIDATES',
+        'ally/offer' => 'ALLYOFFER',
+        'ally/accept' => 'ALLYACCEPT',
+        'ally/cancel' => 'ALLYCANCEL',
+    ];
+
+    return $expected[$lastFunction] ?? null;
 }//end expected_result()
 
 
@@ -235,7 +237,8 @@ function out_data($data)
     $debug = debug_backtrace();
     //out(var_export($debug, true));
     //This function is to output and format some data nicely
-    out("DATA: ({$debug[0]['file']}:{$debug[0]['line']})\n".json_encode($data)); //str_replace(",\n", "\n", var_export($data, true)));
+    out("DATA: ({$debug[0]['file']}:{$debug[0]['line']})\n".json_encode($data));
+    //str_replace(",\n", "\n", var_export($data, true)));
 }//end out_data()
 
 
@@ -246,7 +249,7 @@ function out_data($data)
  */
 function actual_count($data)
 {
- //do not ask me why, but count() doesn't work on $result->turns
+    //do not ask me why, but count() doesn't work on $result->turns
     $i = 0;
     foreach ($data as $stuff) {
         $i++;
