@@ -13,3 +13,18 @@
  */
 
 namespace EENPC;
+
+class Allies
+{
+    /**
+     * Get the list of allies
+     *
+     * @return Result The result
+     */
+    public static function getList()
+    {
+        $result = ee('ally/list');
+        out("RESULT: $result->govt");
+        return $result;
+    }//end getList()
+}//end class
