@@ -68,7 +68,7 @@ function play_indy_strat($server)
             //out("Try to buy tech?");
             $spend = min($c->money, $c->money + max(20, $c->turns) * $c->income) * 0.4; //min what we'll use in max(20,turns-left) turns basically
 
-            if ($c->pt_indy < 150) {
+            if ($c->pt_indy < 158) {
                 buy_tech($c, 't_indy', $spend * 2 / 5, 3500 * $tol);
             }
             if ($c->pt_mil > 90) {
