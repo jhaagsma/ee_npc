@@ -1,6 +1,6 @@
 <?php namespace EENPC;
 
-$techlist = array('t_mil','t_med','t_bus','t_res','t_agri','t_war','t_ms','t_weap','t_indy','t_spy','t_sdi');
+$techlist = ['t_mil','t_med','t_bus','t_res','t_agri','t_war','t_ms','t_weap','t_indy','t_spy','t_sdi'];
 
 function play_techer_strat($server)
 {
@@ -87,21 +87,42 @@ function play_techer_turn(&$c)
     $mktinfo = null;
     usleep($turnsleep);
     //out($main->turns . ' turns left');
-    if (($c->empty && $c->bpt < 30 && $c->built() <= 50 && $c->money > $c->build_cost) || ($c->empty && $c->bpt < $target_bpt && $c->b_cs % 4 != 0 && $c->money > $c->build_cost)) { //otherwise... build one CS if we can afford it and are below our target BPT (80)
+
+
+    if (($c->empty && $c->bpt < 30 && $c->built() <= 50 && $c->money > $c->build_cost)
+        || ($c->empty && $c->bpt < $target_bpt && $c->b_cs % 4 != 0 && $c->money > $c->build_cost)
+    ) { //LOW BPT & CAN AFFORD TO BUILD
+        //otherwise... build one CS if we can afford it and are below our target BPT (80)
         return build_cs(); //build 1 CS
-    } elseif ($c->protection == 0 && total_cansell_tech($c) > 20 * $c->tpt && selltechtime($c) || $c->turns == 1 && total_cansell_tech($c) > 20) { //never sell less than 20 turns worth of tech
+    } elseif ($c->protection == 0 && total_cansell_tech($c) > 20 * $c->tpt && selltechtime($c)
+        || $c->turns == 1 && total_cansell_tech($c) > 20
+    ) {
+        //never sell less than 20 turns worth of tech
+        //always sell if we can????
         return sell_max_tech($c);
-    } elseif ($c->turns_played > 150 && $c->b_indy < $c->bpt && $c->empty > $c->bpt && $c->money > $c->bpt * $c->build_cost) {  //build a full BPT of indies if we have less than that, and we're out of protection
+    } elseif ($c->turns_played > 150 && $c->b_indy < $c->bpt && $c->empty > $c->bpt
+        && $c->money > $c->bpt * $c->build_cost
+    ) {
+        //build a full BPT of indies if we have less than that, and we're out of protection
         return build_indy($c);
-    } elseif ($c->empty > $c->bpt && $c->money > $c->bpt * $c->build_cost) {  //build a full BPT if we can afford it
+    } elseif ($c->empty > $c->bpt && $c->money > $c->bpt * $c->build_cost) {
+        //build a full BPT if we can afford it
         return build_techer($c);
-    } elseif ($c->turns >= 4 && $c->empty >= 4 && $c->bpt < $target_bpt && $c->money > 4 * $c->build_cost && ($c->foodnet > 0 || $c->food > $c->foodnet * -5)) { //otherwise... build 4CS if we can afford it and are below our target BPT (80)
+    } elseif ($c->turns >= 4 && $c->empty >= 4 && $c->bpt < $target_bpt && $c->money > 4 * $c->build_cost
+        && ($c->foodnet > 0 || $c->food > $c->foodnet * -5)
+    ) {
+        //otherwise... build 4CS if we can afford it and are below our target BPT (80)
         return build_cs(4); //build 4 CS
-    } elseif ($c->tpt > $c->land * 0.17 * 1.3 && rand(0, 10) > 1 && $c->tpt > 100) { //tech per turn is greater than land*0.17 -- just kindof a rough "don't tech below this" rule...
+    } elseif ($c->tpt > $c->land * 0.17 * 1.3 && $c->tpt > 100 && rand(0, 100) > 1) {
+        //tech per turn is greater than land*0.17 -- just kindof a rough "don't tech below this" rule...
         return tech_techer($c);
-    } elseif ($c->built() > 50 && ($c->land < 5000 || rand(0, 10) > 8 && $c->land < $server_avg_land)) {   //otherwise... explore if we can, for the early bits of the set
+    } elseif ($c->built() > 50
+        && ($c->land < 5000 || rand(0, 100) > 95 && $c->land < $server_avg_land)
+    ) {
+        //otherwise... explore if we can, for the early bits of the set
         return explore($c, min(max(1, $c->turns - 1), max(1, min(turns_of_money($c), turns_of_food($c)) - 3)));
-    } elseif ($c->empty && $c->bpt < $target_bpt && $c->money > $c->build_cost) { //otherwise... build one CS if we can afford it and are below our target BPT (80)
+    } elseif ($c->empty && $c->bpt < $target_bpt && $c->money > $c->build_cost) {
+        //otherwise... build one CS if we can afford it and are below our target BPT (80)
         return build_cs(); //build 1 CS
     } else { //otherwise, tech, obviously
         return tech_techer($c);
@@ -111,7 +132,7 @@ function play_techer_turn(&$c)
 
 function build_techer(&$c)
 {
-    return build(array('lab' => $c->bpt));
+    return build(['lab' => $c->bpt]);
 }//end build_techer()
 
 
@@ -139,7 +160,7 @@ function sell_max_tech(&$c)
     //$market_info = get_market_info();   //get the Public Market info
     global $market;
 
-    $quantity = array(
+    $quantity = [
         'mil' => can_sell_tech($c, 't_mil'),
         'med' => can_sell_tech($c, 't_med'),
         'bus' => can_sell_tech($c, 't_bus'),
@@ -151,7 +172,7 @@ function sell_max_tech(&$c)
         'indy' => can_sell_tech($c, 't_indy'),
         'spy' => can_sell_tech($c, 't_spy'),
         'sdi' => can_sell_tech($c, 't_sdi')
-    );
+    ];
 
     if (array_sum($quantity) == 0) {
         out('Techer computing Zero Sell!');
@@ -172,7 +193,7 @@ function sell_max_tech(&$c)
     $rmin           = 0.80; //percent
     $rstep          = 0.01;
     $rstddev        = 0.10;
-    $price          = array();
+    $price          = [];
     foreach ($quantity as $key => $q) {
         if ($q == 0) {
             $price[$key] = 0;
@@ -232,7 +253,7 @@ function tech_techer(&$c)
         die("What the hell?");
     }
 
-    return tech(array('mil' => $mil,'med' => $med,'bus' => $bus,'res' => $res,'agri' => $agri,'war' => $war,'ms' => $ms,'weap' => $weap,'indy' => $indy,'spy' => $spy,'sdi' => $sdi));
+    return tech(['mil' => $mil,'med' => $med,'bus' => $bus,'res' => $res,'agri' => $agri,'war' => $war,'ms' => $ms,'weap' => $weap,'indy' => $indy,'spy' => $spy,'sdi' => $sdi]);
 }//end tech_techer()
 
 
