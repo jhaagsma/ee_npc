@@ -39,8 +39,8 @@ class Allies
     public static function getCandidates($type = 'def')
     {
         $result = ee('ally/candidates', ['type' => $type]);
-        // out("Ally Candidates: $type");
-        // out($result);
+        out("Ally Candidates: $type");
+        out($result);
         return $result;
     }//end getCandidates()
 
