@@ -47,7 +47,7 @@ class Allies
     /**
      * Offer an alliance
      *
-     * @param int    $target Cuntry number of ally offer
+     * @param int    $target Country number of ally offer
      * @param string $type   String of ally type
      *
      * @return Result The result
@@ -63,7 +63,7 @@ class Allies
     /**
      * Accept an alliance
      *
-     * @param int    $target Cuntry number of ally offer
+     * @param int    $target Country number of ally offer
      * @param string $type   String of ally type
      *
      * @return Result The result
@@ -75,6 +75,22 @@ class Allies
         out($result);
         return $result;
     }//end accept()
+
+    /**
+     * Cancel an alliance
+     *
+     * @param int    $target Country number of ally offer
+     * @param string $type   String of ally type
+     *
+     * @return Result The result
+     */
+    public static function cancel($target, $type = 'def')
+    {
+        out("CANCEL ALLIANCE $type from $target");
+        $result = ee('ally/cancel', ['target' => $target, 'type' => $type]);
+        out($result);
+        return $result;
+    }//end cancel()
 
     /**
      * Automatically fill spots from candidates
@@ -96,6 +112,10 @@ class Allies
                 $require++;
             } elseif ($list->$name->detail == 'reject') {
                 self::accept($list->$name->cnum, $type);
+            } elseif ($list->$name->detail == 'cancel' && rand(0, 5) == 0) {
+                //put this in in case we send to a human by accident who doesn't accept
+                out("Withdraw offer randomly!");
+                self::cancel($list->$name->cnum, $type);
             }
         }
 
