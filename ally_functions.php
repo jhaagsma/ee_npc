@@ -40,7 +40,7 @@ class Allies
     {
         out("Request Ally Candidates: $type");
         $result = ee('ally/candidates', ['type' => $type]);
-        out($result);
+        //out($result);
         return $result;
     }//end getCandidates()
 
