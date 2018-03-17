@@ -110,6 +110,7 @@ class Allies
 
         for ($i = 0; $i < $require; $i++) {
             if (empty($candidates)) {
+                out("No ally candiates!");
                 return;
             }
             $candidate = array_shift($candidates);
