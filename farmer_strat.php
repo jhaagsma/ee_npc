@@ -32,6 +32,11 @@ function play_farmer_strat($server)
     $c->setIndy('pro_spy');
     //$c = get_advisor();     //c as in country! (get the advisor)
 
+
+    if ($c->m_spy > 10000) {
+        Allies::fill('m_spy');
+    }
+
     out("Agri: {$c->pt_agri}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%");
     //out_data($c) && exit;             //ouput the advisor data
     if ($c->govt == 'M') {

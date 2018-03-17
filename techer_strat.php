@@ -11,6 +11,15 @@ function play_techer_strat($server)
     $c = get_advisor();     //c as in country! (get the advisor)
     $c->setIndy('pro_spy');
 
+
+    if ($c->m_spy > 10000) {
+        Allies::fill('m_spy');
+    }
+
+    if ($c->b_lab > 2000) {
+        Allies::fill('res');
+    }
+
     out($c->turns.' turns left');
 
     if ($c->govt == 'M') {

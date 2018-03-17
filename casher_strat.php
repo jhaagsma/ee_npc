@@ -10,6 +10,11 @@ function play_casher_strat($server)
     //out_data($c) && exit;             //ouput the advisor data
 
     $c->setIndy('pro_spy');
+
+    if ($c->m_spy > 10000) {
+        Allies::fill('m_spy');
+    }
+
     out("Bus: {$c->pt_bus}%; Res: {$c->pt_res}%");
     if ($c->govt == 'M') {
         $rand = rand(0, 100);
