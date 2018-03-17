@@ -25,7 +25,7 @@ class Allies
     {
         $result = ee('ally/list');
         // out("Ally List");
-        out($result);
+        //out($result);
         return $result;
     }//end getList()
 
@@ -56,7 +56,7 @@ class Allies
     {
         out("Ally Offer of $type to $target");
         $result = ee('ally/offer', ['target' => $target, 'type' => $type]);
-        out($result);
+        //out($result);
         return $result;
     }//end offer()
 
@@ -100,6 +100,7 @@ class Allies
         }
 
         if ($require == 0) {
+            out("Allies for $type full!");
             return;
         }
 
