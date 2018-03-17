@@ -104,7 +104,7 @@ class Allies
             return;
         }
 
-        $candidates = self::getCandidates();
+        $candidates = self::getCandidates($type);
         $candidates = (array)$candidates->list;
 
 
