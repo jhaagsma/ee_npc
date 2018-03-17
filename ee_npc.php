@@ -166,7 +166,10 @@ while (1) {
             $cpref->turnStored = 0;
         }
 
+        include_once './ally_functions.php';
+
         if ($cpref->nextplay < time()) {
+            Allies::fill('def');
             $playfactor = 1;
             try {
                 switch ($cpref->strat) {
