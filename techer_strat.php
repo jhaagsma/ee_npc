@@ -113,7 +113,7 @@ function play_techer_turn(&$c)
     ) {
         //otherwise... build 4CS if we can afford it and are below our target BPT (80)
         return build_cs(4); //build 4 CS
-    } elseif ($c->tpt > $c->land * 0.17 * 1.3 && $c->tpt > 100 && rand(0, 100) > 1) {
+    } elseif ($c->tpt > $c->land * 0.17 * 1.3 && $c->tpt > 100 && rand(0, 100) > 2) {
         //tech per turn is greater than land*0.17 -- just kindof a rough "don't tech below this" rule...
         return tech_techer($c);
     } elseif ($c->built() > 50
