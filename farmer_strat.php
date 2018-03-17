@@ -34,7 +34,7 @@ function play_farmer_strat($server)
 
 
     if ($c->m_spy > 10000) {
-        Allies::fill('m_spy');
+        Allies::fill('spy');
     }
 
     out("Agri: {$c->pt_agri}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%");

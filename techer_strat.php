@@ -13,7 +13,7 @@ function play_techer_strat($server)
 
 
     if ($c->m_spy > 10000) {
-        Allies::fill('m_spy');
+        Allies::fill('spy');
     }
 
     if ($c->b_lab > 2000) {

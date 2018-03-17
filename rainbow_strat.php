@@ -40,7 +40,7 @@ function play_rainbow_strat($server)
     }
 
     if ($c->m_spy > 10000) {
-        Allies::fill('m_spy');
+        Allies::fill('spy');
     }
 
     $pm_info = get_pm_info();   //get the PM info
