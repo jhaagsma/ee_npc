@@ -109,6 +109,9 @@ class Allies
 
 
         for ($i = 0; $i < $require; $i++) {
+            if (empty($candidates)) {
+                return;
+            }
             $candidate = array_shift($candidates);
             self::offer($candidate->cnum, $type);
         }
