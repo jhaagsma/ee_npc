@@ -16,7 +16,7 @@ namespace EENPC;
 class Colors
 {
     // Set up shell colors
-    private $foreground_colors = [
+    public static $foreground_colors = [
         'black' => '0;30',
         'dark_gray' => '1;30',
         'blue' => '0;34',
@@ -35,7 +35,7 @@ class Colors
         'white' => '1;37',
     ];
 
-    private $background_colors = [
+    public static $background_colors = [
         'black' => '40',
         'red' => '41',
         'green' => '42',
