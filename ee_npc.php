@@ -154,14 +154,14 @@ while (1) {
             $save = true;
         }
         if (!isset($cpref->playfreq) || $cpref->playfreq == null) {
-            $cpref->playfreq = purebell($server->turn_rate, $server->turn_rate * $rules->maxturns, $server->turn_rate * 20, $server->turn_rate);
+            $cpref->playfreq = Math::purebell($server->turn_rate, $server->turn_rate * $rules->maxturns, $server->turn_rate * 20, $server->turn_rate);
             $cpref->playrand = mt_rand(10, 20) / 10.0; //between 1.0 and 2.0
             out("Resetting Play #$cnum", true, 'red');
             $save = true;
         }
 
         if (!isset($cpref->price_tolerance) || $cpref->price_tolerance == 1.00) {
-            $cpref->price_tolerance = round(purebell(0.5, 1.5, 0.1, 0.01), 3); //50% to 150%, 10% std dev, steps of 1%
+            $cpref->price_tolerance = round(Math::purebell(0.5, 1.5, 0.1, 0.01), 3); //50% to 150%, 10% std dev, steps of 1%
             $save                   = true;
         } elseif ($cpref->price_tolerance != round($cpref->price_tolerance, 3)) {
             $cpref->price_tolerance = round($cpref->price_tolerance, 3); //round off silly numbers...
@@ -227,7 +227,7 @@ while (1) {
                 }
 
                 $cpref->lastplay = time();
-                $nexttime        = round($playfactor * $cpref->playfreq * purebell(1 / $cpref->playrand, $cpref->playrand, 1, 0.1));
+                $nexttime        = round($playfactor * $cpref->playfreq * Math::purebell(1 / $cpref->playrand, $cpref->playrand, 1, 0.1));
                 $maxin           = furthest_play($cpref);
                 $nexttime        = round(min($maxin, $nexttime));
                 $cpref->nextplay = $cpref->lastplay + $nexttime;
@@ -355,7 +355,7 @@ function outOldest($countries)
 {
     global $server;
     $old    = oldestPlay($countries);
-    $onum   = getLastPlayCNUM($countries, $old);
+    $onum   = Bots::getLastPlayCNUM($countries, $old);
     $ostrat = txtStrat($onum);
     $old    = time() - $old;
     out("Oldest Play: ".$old."s ago by #$onum $ostrat (".round($old / $server->turn_rate)." turns)");
@@ -370,8 +370,8 @@ function outOldest($countries)
 function outFurthest($countries)
 {
     global $server;
-    $furthest = getFurthestNext($countries);
-    $fnum     = getNextPlayCNUM($countries, $furthest);
+    $furthest = Bots::getFurthestNext($countries);
+    $fnum     = Bots::getNextPlayCNUM($countries, $furthest);
     $fstrat   = txtStrat($fnum);
     $furthest = $furthest - time();
     out("Furthest Play in ".$furthest."s for #$fnum $fstrat (".round($furthest / $server->turn_rate)." turns)");
@@ -380,8 +380,8 @@ function outFurthest($countries)
 
 function outNext($countries, $rewrite = false)
 {
-    $next   = getNextPlays($countries);
-    $xnum   = getNextPlayCNUM($countries, min($next));
+    $next   = Bots::getNextPlays($countries);
+    $xnum   = Bots::getNextPlayCNUM($countries, min($next));
     $xstrat = txtStrat($xnum);
     $next   = max(0, min($next) - time());
     out("Next Play in ".$next.'s: #'.$xnum." $xstrat    ".($rewrite ? "\r" : null), !$rewrite);
@@ -468,54 +468,14 @@ function govtStats($countries)
 }//end govtStats()
 
 
-function getNextPlayCNUM($countries, $time = 0)
-{
-    global $settings;
-    foreach ($countries as $cnum) {
-        if (isset($settings->$cnum->nextplay) && $settings->$cnum->nextplay == $time) {
-            return $cnum;
-        }
-    }
-    return null;
-}//end getNextPlayCNUM()
 
 
-function getLastPlayCNUM($countries, $time = 0)
-{
-    global $settings;
-    foreach ($countries as $cnum) {
-        if (isset($settings->$cnum->lastplay) && $settings->$cnum->lastplay == $time) {
-            return $cnum;
-        }
-    }
-    return null;
-}//end getLastPlayCNUM()
 
-
-function getNextPlays($countries)
-{
-    global $settings;
-    $nextplays = [];
-    foreach ($countries as $cnum) {
-        if (isset($settings->$cnum->nextplay)) {
-            $nextplays[] = $settings->$cnum->nextplay;
-        } else {
-            $settings->$cnum->nextplay = 0; //set it?
-        }
-    }
-    return $nextplays;
-}//end getNextPlays()
-
-
-function getFurthestNext($countries)
-{
-    return max(getNextPlays($countries));
-}//end getFurthestNext()
 
 
 function playtimes_stddev($countries)
 {
-    $nextplays = getNextPlays($countries);
+    $nextplays = Bots::getNextPlays($countries);
     return sd($nextplays);
 }//end playtimes_stddev()
 
@@ -1204,19 +1164,3 @@ function rand_country_name()
 
 
 
-function purebell($min, $max, $std_deviation, $step = 1)
-{
- //box-muller-method
-    $rand1           = (float)mt_rand() / (float)mt_getrandmax();
-    $rand2           = (float)mt_rand() / (float)mt_getrandmax();
-    $gaussian_number = sqrt(-2 * log($rand1)) * cos(2 * pi() * $rand2);
-    $mean            = ($max + $min) / 2;
-    $random_number   = ($gaussian_number * $std_deviation) + $mean;
-    //out($random_number);
-    $random_number = round($random_number / $step) * $step;
-    //out($random_number);
-    if ($random_number < $min || $random_number > $max) {
-        $random_number = purebell($min, $max, $std_deviation, $step);
-    }
-    return $random_number;
-}//end purebell()

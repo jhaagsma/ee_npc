@@ -5,7 +5,7 @@ function destock($server, $cnum)
     $c = get_advisor();     //c as in country! (get the advisor)
     out("Destocking #$cnum!");  //Text for screen
     if ($c->food > 0) {
-        sell_on_pm($c, array('m_bu' => $c->food));   //Sell 'em
+        sell_on_pm($c, ['m_bu' => $c->food]);   //Sell 'em
     }
     $dpnw = 200;
     while ($c->money > 1000 && $dpnw < 500) {
@@ -45,7 +45,7 @@ function buy_public_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false)
     $j_cost  = $tu_cost = ceil($tu_price * $c->tax());  //THE COST OF BUYING THEM
     $ta_cost = ceil($ta_price * $c->tax());  //THE COST OF BUYING THEM
 
-    $units = array('tu','tr','ta','j');
+    $units = ['tu','tr','ta','j'];
     if ($shuffle) {
         shuffle($units);
     }
@@ -98,7 +98,7 @@ function buy_private_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false)
     $j_price  = $tu_price = round($dpnw * 0.6);
     $ta_price = round($dpnw * 2);
 
-    $order = array(1,2,3,4);
+    $order = [1,2,3,4];
     if ($shuffle) {
         shuffle($order);
     }
@@ -143,13 +143,13 @@ function sell_cheap_units(&$c, $unit = 'm_tr', $fraction = 1)
 function sell_all_military(&$c, $fraction = 1)
 {
     $fraction   = max(0, min(1, $fraction));
-    $sell_units = array(
+    $sell_units = [
         'm_spy'     => floor($c->m_spy * $fraction),         //$fraction of spies
         'm_tr'  => floor($c->m_tr * $fraction),      //$fraction of troops
         'm_j'   => floor($c->m_j * $fraction),       //$fraction of jets
         'm_tu'  => floor($c->m_tu * $fraction),      //$fraction of turrets
         'm_ta'  => floor($c->m_ta * $fraction)       //$fraction of tanks
-    );
+    ];
     if (array_sum($sell_units) == 0) {
         out("No Military!");
         return;
@@ -233,7 +233,7 @@ function food_management(&$c)
             );     //Text for screen
 
             //Buy 3 turns of food off the public at or below the PM price
-            $result = buy_public($c, array('m_bu' => $quantity), array('m_bu' => $market_price));
+            $result = buy_public($c, ['m_bu' => $quantity], ['m_bu' => $market_price]);
             if ($result === false) {
                 $market->update();
             }
@@ -270,7 +270,7 @@ function food_management(&$c)
 
     if ($c->food < $turns_of_food && $c->money > $turns_buy * $foodloss * $pm_info->buy_price->m_bu) { //losing food, less than turns_buy turns left, AND have the money to buy it
         out("Less than $turns_buy turns worth of food! (".$c->foodnet."/turn) We're rich, so buy food on PM (\${$pm_info->buy_price->m_bu})!~");   //Text for screen
-        $result = buy_on_pm($c, array('m_bu' => $turns_buy * $foodloss));  //Buy 3 turns of food!
+        $result = buy_on_pm($c, ['m_bu' => $turns_buy * $foodloss]);  //Buy 3 turns of food!
         return false;
     } elseif ($c->food < $turns_of_food && total_military($c) > 50) {
         out("We're too poor to buy food! Sell 1/10 of our military");   //Text for screen
@@ -377,7 +377,7 @@ function sell_max_military(&$c)
     $pm_info = get_pm_info();   //get the PM info
     global $military_list, $market;
 
-    $quantity = array();
+    $quantity = [];
     foreach ($military_list as $unit) {
         $quantity[$unit] = can_sell_mil($c, $unit);
     }
@@ -386,15 +386,15 @@ function sell_max_military(&$c)
     $rmin    = 0.75; //percent
     $rstep   = 0.01;
     $rstddev = 0.10;
-    $price   = array();
+    $price   = [];
     foreach ($quantity as $key => $q) {
         if ($q == 0) {
             $price[$key] = 0;
         } elseif ($market->price($key) == null || $market->price($key) == 0) {
-            $price[$key] = floor($pm_info->buy_price->$key * purebell(0.5, 1.0, 0.3, 0.01));
+            $price[$key] = floor($pm_info->buy_price->$key * Math::purebell(0.5, 1.0, 0.3, 0.01));
         } else {
             $max         = $c->goodsStuck($key) ? 0.99 : $rmax; //undercut if we have goods stuck
-            $price[$key] = min($pm_info->buy_price->$key, floor($market->price($key) * purebell($rmin, $max, $rstddev, $rstep)));
+            $price[$key] = min($pm_info->buy_price->$key, floor($market->price($key) * Math::purebell($rmin, $max, $rstddev, $rstep)));
         }
 
         if ($price[$key] > 0 && $price[$key] * $c->tax() <= $pm_info->sell_price->$key) {

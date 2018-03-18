@@ -205,10 +205,10 @@ function sell_max_tech(&$c)
             debug("sell_max_tech:A:$key");
             $max = $c->goodsStuck($key) ? 0.98 : $rmax; //undercut if we have goods stuck
             debug("sell_max_tech:B:$key");
-            $price[$key] = min(9999, floor($market->price($key) * purebell($rmin, $max, $rstddev, $rstep)));
+            $price[$key] = min(9999, floor($market->price($key) * Math::purebell($rmin, $max, $rstddev, $rstep)));
             debug("sell_max_tech:C:$key");
         } else {
-            $price[$key] = floor(purebell($nogoods_low, $nogoods_high, $nogoods_stddev, $nogoods_step));
+            $price[$key] = floor(Math::purebell($nogoods_low, $nogoods_high, $nogoods_stddev, $nogoods_step));
         }
     }
 
@@ -273,7 +273,7 @@ function techerGoals(&$c)
 {
     return [
         //what, goal, priority
-        ['nlg',$c->nlgTarget(),2],
         ['dpa',$c->defPerAcreTarget(),2],
+        ['nlg',$c->nlgTarget(),2],
     ];
 }//end techerGoals()

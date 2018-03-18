@@ -1,4 +1,6 @@
-<?php namespace EENPC;
+<?php
+
+namespace EENPC;
 
 class Country
 {
@@ -262,7 +264,9 @@ class Country
 
     /**
      * Find Highest Goal
-     * @param  array $goalsan array of goals to persue
+     * @param  array $goals an array of goals to persue
+     * @param  int   $skip  whtether or not to skip??
+     *
      * @return string highest goal!
      */
     public function highestGoal($goals = [], $skip = 0)
@@ -294,7 +298,9 @@ class Country
             } elseif ($goal[0] == 'nlg') {
                 $score['nlg'] = ($this->nlgTarget() - $this->nlg()) / $this->nlgTarget() * $goal[2];
             } elseif ($goal[0] == 'dpa') {
-                $score['dpa'] = ($this->defPerAcreTarget() - $this->defPerAcre()) / $this->defPerAcreTarget() * $goal[2];
+                $target       = $this->defPerAcreTarget();
+                $actual       = $this->defPerAcre();
+                $score['dpa'] = ($target - $actual) / $target * $goal[2];
             }
             $psum += $goal[2];
         }
@@ -390,12 +396,28 @@ class Country
     }//end countryGoals()
 
 
-
+    /**
+     * Output country stats
+     *
+     * @param  string $strat The strategy
+     * @param  array  $goals The goals
+     *
+     * @return null
+     */
     public function countryStats($strat, $goals = [])
     {
-        out("NW: {$this->networth}; Land: {$this->land}; Govt: {$this->govt}; Played: {$this->turns_played}; Goal: ".$this->highestGoal($goals));
-        out("Bus: {$this->pt_bus}%; Res: {$this->pt_res}%;  Mil: {$this->pt_mil}%; Agri: {$this->pt_agri}%; Indy: {$this->pt_indy}%;");
-        out("DPA: ".$this->defPerAcre()." NLG: ".$this->nlg().' DPAT:'.$this->defPerAcreTarget().' NLGT:'.$this->nlgTarget());
+        out(
+            "NW: {$this->networth}; Land: {$this->land}; Govt: {$this->govt};".
+            " Played: {$this->turns_played}; Goal: ".$this->highestGoal($goals)
+        );
+        out(
+            "Bus: {$this->pt_bus}%; Res: {$this->pt_res}%;  Mil: {$this->pt_mil}%;".
+            " Agri: {$this->pt_agri}%; Indy: {$this->pt_indy}%;"
+        );
+        out(
+            "DPA: ".$this->defPerAcre()." NLG: ".$this->nlg().
+            ' DPAT:'.$this->defPerAcreTarget().' NLGT:'.$this->nlgTarget()
+        );
         out("Done Playing ".$strat." Turns for #$this->cnum!");   //Text for screen
     }//end countryStats()
 }//end class

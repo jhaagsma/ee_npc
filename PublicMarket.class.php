@@ -1,4 +1,6 @@
-<?php namespace EENPC;
+<?php
+
+namespace EENPC;
 
 class PublicMarket
 {
