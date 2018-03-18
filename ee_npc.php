@@ -1,8 +1,14 @@
 #!/usr/bin/php
-<?php namespace EENPC;
+<?php
+
+namespace EENPC;
+
+require_once 'colors.php';
+require_once 'communication.php';
+
+out(Colors::getColoredString("Rainbow", "purple"));
 
 $debug = false;
-require_once 'communication.php';
 
 out('STARTING UP BOT');// out() is defined below
 date_default_timezone_set('GMT'); //SET THE TIMEZONE FIRST
@@ -34,15 +40,15 @@ require_once 'casher_strat.php';
 require_once 'indy_strat.php';
 require_once 'oiler_strat.php';
 
-define("RAINBOW", $colors->getColoredString("Rainbow", "purple"));
-define("FARMER", $colors->getColoredString("Farmer", "cyan"));
-define("TECHER", $colors->getColoredString("Techer", "brown"));
-define("CASHER", $colors->getColoredString("Casher", "green"));
-define("INDY", $colors->getColoredString("Indy", "yellow"));
-define("OILER", $colors->getColoredString("Oiler", "red"));
+define("RAINBOW", Colors::getColoredString("Rainbow", "purple"));
+define("FARMER", Colors::getColoredString("Farmer", "cyan"));
+define("TECHER", Colors::getColoredString("Techer", "brown"));
+define("CASHER", Colors::getColoredString("Casher", "green"));
+define("INDY", Colors::getColoredString("Indy", "yellow"));
+define("OILER", Colors::getColoredString("Oiler", "red"));
 
 $username     = $config['username'];    //<======== PUT IN YOUR USERNAME IN config.php
-$aiKey        = $config['ai_key'];        //<======== PUT IN YOUR AI API KEY IN config.php
+$aiKey        = $config['ai_key'];      //<======== PUT IN YOUR AI API KEY IN config.php
 $baseURL      = $config['base_url'];    //<======== PUT IN THE BASE URL IN config.php
 $serv         = isset($config['server']) ? $config['server'] : 'ai';
 $cnum         = null;
@@ -124,7 +130,7 @@ while (1) {
                     ]
                 )
             );
-            out($colors->getColoredString("Resetting Settings #$cnum", 'red'));
+            out(Colors::getColoredString("Resetting Settings #$cnum", 'red'));
             file_put_contents($config['save_settings_file'], json_encode($settings));
         }
         global $cpref;
@@ -134,13 +140,13 @@ while (1) {
 
         if (!isset($cpref->strat) || $cpref->strat == null) {
             $cpref->strat = pickStrat($cnum);
-            out($colors->getColoredString("Resetting Strat #$cnum", 'red'));
+            out(Colors::getColoredString("Resetting Strat #$cnum", 'red'));
             $save = true;
         }
         if (!isset($cpref->playfreq) || $cpref->playfreq == null) {
             $cpref->playfreq = purebell($server->turn_rate, $server->turn_rate * $rules->maxturns, $server->turn_rate * 20, $server->turn_rate);
             $cpref->playrand = mt_rand(10, 20) / 10.0; //between 1.0 and 2.0
-            out($colors->getColoredString("Resetting Play #$cnum", 'red'));
+            out(Colors::getColoredString("Resetting Play #$cnum", 'red'));
             $save = true;
         }
 
@@ -154,7 +160,7 @@ while (1) {
 
         if (!isset($cpref->nextplay) || !isset($cpref->lastplay) || $cpref->lastplay < time() - $server->turn_rate * $rules->maxturns) { //maxturns
             $cpref->nextplay = 0;
-            out($colors->getColoredString("Resetting Next #$cnum", 'red'));
+            out(Colors::getColoredString("Resetting Next #$cnum", 'red'));
             $save = true;
         }
 
@@ -207,7 +213,7 @@ while (1) {
 
         if ($save) {
             $settings->$cnum = $cpref;
-            out($colors->getColoredString("Saving Settings", 'purple'));
+            out(Colors::getColoredString("Saving Settings", 'purple'));
             file_put_contents($config['save_settings_file'], json_encode($settings));
             echo "\n\n";
         }
@@ -755,7 +761,6 @@ function update_c(&$c, $result)
         $c = get_advisor();
     }
 
-    global $colors;
     //Text formatting (adding a + if it is positive; - will be there if it's negative already)
     $netfood  = str_pad('('.($netfood > 0 ? '+' : null).$netfood.')', 10, ' ', STR_PAD_LEFT);
     $netmoney = str_pad('($'.($netmoney > 0 ? '+' : null).$netmoney.')', 12, ' ', STR_PAD_LEFT);
@@ -766,7 +771,7 @@ function update_c(&$c, $result)
     global $APICalls;
     $str = str_pad($c->turns, 3).' Turns - '.$str.' '.str_pad($event, 5).' API: '.$APICalls;
     if ($c->money < 0 || $c->food < 0) {
-        $str = $colors->getColoredString($str, "red");
+        $str = Colors::getColoredString($str, "red");
     }
     out($str);
     $APICalls = 0;

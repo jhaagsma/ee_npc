@@ -13,8 +13,6 @@
  */
 namespace EENPC;
 
-require_once 'colors.php';
-$colors = new Colors();
 /*
 This file holds the communications with the EE server, so that we can keep
 only the real bot logic in the ee_npc file...
@@ -198,16 +196,24 @@ function expected_result($input)
 
 /**
  * Ouput strings nicely
- * @param  string  $str     The string to format
- * @param  boolean $newline If we shoudl make a new line
+ * @param  string  $str              The string to format
+ * @param  boolean $newline          If we shoudl make a new line
+ * @param  string  $foreground_color Foreground color
+ * @param  string  $background_color Background color
+ *
  * @return void             echoes, not returns
  */
-function out($str, $newline = true)
+function out($str, $newline = true, $foreground_color = null, $background_color = null)
 {
     //This just formats output strings nicely
     if (is_object($str)) {
         return out_data($str);
     }
+
+    if ($foreground_color || $background_color) {
+        $str = Colors::getColoredString($str, $foreground_color, $background_color);
+    }
+
     echo ($newline ? "\n" : null)."[".date("H:i:s")."] $str";
 }//end out()
 
@@ -253,6 +259,7 @@ function actual_count($data)
     $i = 0;
     foreach ($data as $stuff) {
         $i++;
+        $stuff = $stuff; //keep the linter happy
     }
 
     return $i;
