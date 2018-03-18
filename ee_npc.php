@@ -3,7 +3,15 @@
 
 namespace EENPC;
 
-require_once 'colors.php';
+spl_autoload_register(
+    function ($class) {
+        if (stristr($class, "EENPC")) {
+            $parts = explode('\\', $class);
+            include end($parts) . '.class.php';
+        }
+    }
+);
+
 require_once 'communication.php';
 
 out(Colors::getColoredString("Rainbow", "purple"));
@@ -126,11 +134,13 @@ while (1) {
                         'price_tolerance' => 1.0,
                         'def' => 1.0,
                         'off' => 1.0,
-                        'aggro' => 1.0
+                        'aggro' => 1.0,
+                        'allyup' => null,
+                        'gdi' => null,
                     ]
                 )
             );
-            out(Colors::getColoredString("Resetting Settings #$cnum", 'red'));
+            out("Resetting Settings #$cnum", true, 'red');
             file_put_contents($config['save_settings_file'], json_encode($settings));
         }
         global $cpref;
@@ -140,13 +150,13 @@ while (1) {
 
         if (!isset($cpref->strat) || $cpref->strat == null) {
             $cpref->strat = pickStrat($cnum);
-            out(Colors::getColoredString("Resetting Strat #$cnum", 'red'));
+            out("Resetting Strat #$cnum", true, 'red');
             $save = true;
         }
         if (!isset($cpref->playfreq) || $cpref->playfreq == null) {
             $cpref->playfreq = purebell($server->turn_rate, $server->turn_rate * $rules->maxturns, $server->turn_rate * 20, $server->turn_rate);
             $cpref->playrand = mt_rand(10, 20) / 10.0; //between 1.0 and 2.0
-            out(Colors::getColoredString("Resetting Play #$cnum", 'red'));
+            out("Resetting Play #$cnum", true, 'red');
             $save = true;
         }
 
@@ -160,7 +170,7 @@ while (1) {
 
         if (!isset($cpref->nextplay) || !isset($cpref->lastplay) || $cpref->lastplay < time() - $server->turn_rate * $rules->maxturns) { //maxturns
             $cpref->nextplay = 0;
-            out(Colors::getColoredString("Resetting Next #$cnum", 'red'));
+            out("Resetting Next #$cnum", true, 'red');
             $save = true;
         }
 
@@ -172,31 +182,50 @@ while (1) {
             $cpref->turnStored = 0;
         }
 
-        include_once './ally_functions.php';
+        if (!isset($cpref->allyup) || $cpref->allyup == null) {
+            $cpref->allyup = (bool)(rand(0, 9) > 0);
+        }
+
+        if (!isset($cpref->gdi)) {
+            $cpref->gdi = (bool)(rand(0, 2) == 2);
+            //out("Setting GDI to ".($cpref->gdi ? "true" : "false"), true, 'brown');
+        }
 
         if ($cpref->nextplay < time()) {
-            Allies::fill('def');
+            if ($cpref->allyup) {
+                Allies::fill('def');
+            }
             $playfactor = 1;
             try {
                 switch ($cpref->strat) {
                     case 'F':
-                        play_farmer_strat($server, $cnum);
+                        $c = play_farmer_strat($server, $cnum);
+
                         $playfactor = 0.8;
                         break;
                     case 'T':
-                        play_techer_strat($server, $cnum);
+                        $c = play_techer_strat($server, $cnum);
+
                         $playfactor = 0.5;
                         break;
                     case 'C':
-                        play_casher_strat($server, $cnum);
+                        $c = play_casher_strat($server, $cnum);
                         break;
                     case 'I':
-                        play_indy_strat($server, $cnum);
+                        $c = play_indy_strat($server, $cnum);
+
                         $playfactor = 0.33;
                         break;
                     default:
-                        play_rainbow_strat($server, $cnum);
+                        $c = play_rainbow_strat($server, $cnum);
                 }
+
+                if ($cpref->gdi && !$c->gdi) {
+                    GDI::join();
+                } elseif (!$cpref->gdi && $c->gdi) {
+                    GDI::leave();
+                }
+
                 $cpref->lastplay = time();
                 $nexttime        = round($playfactor * $cpref->playfreq * purebell(1 / $cpref->playrand, $cpref->playrand, 1, 0.1));
                 $maxin           = furthest_play($cpref);
@@ -427,13 +456,13 @@ function govtStats($countries)
 
 
     out("\033[1mServer:\033[0m ".$serv);
-    out("\033[1mTotal Countries:\033[0m ".str_pad(count($countries), 6, ' ', STR_PAD_LEFT).$anw.$ald);
+    out("\033[1mTotal Countries:\033[0m ".str_pad(count($countries), 9, ' ', STR_PAD_LEFT).$anw.$ald);
     foreach ($govs as $s => $gov) {
         if ($gov[1] > 0) {
             $next = ' [Next:'.str_pad($gov[2], 5, ' ', STR_PAD_LEFT).']';
             $anw  = ' [ANW:'.str_pad(round($gov[3] / $gov[1] / 1000000, 2), 6, ' ', STR_PAD_LEFT).'M]';
             $ald  = ' [ALnd:'.str_pad(round($gov[4] / $gov[1] / 1000, 2), 6, ' ', STR_PAD_LEFT).'k]';
-            out(str_pad($gov[0], 18).': '.$gov[1].$next.$anw.$ald);
+            out(str_pad($gov[0], 18).': '.str_pad($gov[1], 4).$next.$anw.$ald);
         }
     }
 }//end govtStats()
