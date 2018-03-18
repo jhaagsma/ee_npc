@@ -37,7 +37,7 @@ class Math
         $random_number = round($random_number / $step) * $step;
         //out($random_number);
         if ($random_number < $min || $random_number > $max) {
-            $random_number = purebell($min, $max, $std_deviation, $step);
+            $random_number = self::purebell($min, $max, $std_deviation, $step);
         }
         return $random_number;
     }//end purebell()
