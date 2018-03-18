@@ -462,7 +462,7 @@ function govtStats($countries)
             $next = ' [Next:'.str_pad($gov[2], 5, ' ', STR_PAD_LEFT).']';
             $anw  = ' [ANW:'.str_pad(round($gov[3] / $gov[1] / 1000000, 2), 6, ' ', STR_PAD_LEFT).'M]';
             $ald  = ' [ALnd:'.str_pad(round($gov[4] / $gov[1] / 1000, 2), 6, ' ', STR_PAD_LEFT).'k]';
-            out(str_pad($gov[0], 18).': '.str_pad($gov[1], 4).$next.$anw.$ald);
+            out(str_pad($gov[0], 18).': '.str_pad($gov[1], 4, ' ', STR_PAD_LEFT).$next.$anw.$ald);
         }
     }
 }//end govtStats()
