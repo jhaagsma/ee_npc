@@ -232,7 +232,8 @@ function food_management(&$c)
                 'brown'
             );     //Text for screen
 
-            $result = buy_public($c, array('m_bu' => $quantity), array('m_bu' => $market_price));     //Buy 3 turns of food off the public at or below the PM price
+            //Buy 3 turns of food off the public at or below the PM price
+            $result = buy_public($c, array('m_bu' => $quantity), array('m_bu' => $market_price));
             if ($result === false) {
                 $market->update();
             }
