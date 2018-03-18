@@ -798,7 +798,7 @@ function update_c(&$c, $result)
     $str .= $netmoney.str_pad($c->food.' Bu', 12, ' ', STR_PAD_LEFT).$netfood; //Text for screen
 
     global $APICalls;
-    $str = str_pad($c->turns, 3).' Turns - '.$str.' '.str_pad($event, 5).' API: '.$APICalls;
+    $str = str_pad($c->turns, 3).' Turns - '.$str.' '.str_pad($event, 6).' API: '.$APICalls;
     if ($c->money < 0 || $c->food < 0) {
         $str = Colors::getColoredString($str, "red");
     }
