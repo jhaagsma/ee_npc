@@ -38,7 +38,7 @@ class Allies
      */
     public static function getCandidates($type = 'def')
     {
-        out("Request Ally Candidates: $type");
+        out("Request Ally Candidates: $type", true, 'blue');
         $result = ee('ally/candidates', ['type' => $type]);
         //out($result);
         return $result;
@@ -54,7 +54,7 @@ class Allies
      */
     public static function offer($target, $type = 'def')
     {
-        out("Ally Offer of $type to $target");
+        out("Ally Offer of $type to $target", true, 'blue');
         $result = ee('ally/offer', ['target' => $target, 'type' => $type]);
         //out($result);
         return $result;
@@ -70,9 +70,9 @@ class Allies
      */
     public static function accept($target, $type = 'def')
     {
-        out("Ally Accept $type from $target");
+        out("Ally Accept $type from $target", true, 'green');
         $result = ee('ally/accept', ['target' => $target, 'type' => $type]);
-        out($result);
+        //out($result);
         return $result;
     }//end accept()
 
@@ -86,9 +86,9 @@ class Allies
      */
     public static function cancel($target, $type = 'def')
     {
-        out("CANCEL ALLIANCE $type from $target");
+        out("CANCEL ALLIANCE $type from $target", true, 'yellow');
         $result = ee('ally/cancel', ['target' => $target, 'type' => $type]);
-        out($result);
+        //out($result);
         return $result;
     }//end cancel()
 
