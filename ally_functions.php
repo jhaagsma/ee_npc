@@ -38,7 +38,7 @@ class Allies
      */
     public static function getCandidates($type = 'def')
     {
-        out("Request Ally Candidates: $type", true, 'blue');
+        out("Request Ally Candidates: $type", true, 'cyan');
         $result = ee('ally/candidates', ['type' => $type]);
         //out($result);
         return $result;
@@ -54,7 +54,7 @@ class Allies
      */
     public static function offer($target, $type = 'def')
     {
-        out("Ally Offer of $type to $target", true, 'blue');
+        out("Ally Offer of $type to $target", true, 'cyan');
         $result = ee('ally/offer', ['target' => $target, 'type' => $type]);
         //out($result);
         return $result;
