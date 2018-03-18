@@ -87,6 +87,8 @@ function play_indy_strat($server)
     }
 
     $c->countryStats(INDY, indyGoals($c));
+
+    return $c;
 }//end play_indy_strat()
 
 

@@ -89,6 +89,7 @@ function play_rainbow_strat($server)
     }
 
     $c->countryStats(RAINBOW, rainbowGoals($c));
+    return $c;
 }//end play_rainbow_strat()
 
 

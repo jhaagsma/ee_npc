@@ -103,6 +103,7 @@ function play_farmer_strat($server)
     }
 
     $c->countryStats(FARMER, farmerGoals($c));
+    return $c;
 }//end play_farmer_strat()
 
 function play_farmer_turn(&$c)

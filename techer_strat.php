@@ -1,4 +1,6 @@
-<?php namespace EENPC;
+<?php
+
+namespace EENPC;
 
 $techlist = ['t_mil','t_med','t_bus','t_res','t_agri','t_war','t_ms','t_weap','t_indy','t_spy','t_sdi'];
 
@@ -76,6 +78,8 @@ function play_techer_strat($server)
         }
     }
     $c->countryStats(TECHER, techerGoals($c));
+
+    return $c;
 }//end play_techer_strat()
 
 

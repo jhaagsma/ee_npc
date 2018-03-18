@@ -69,6 +69,7 @@ function play_casher_strat($server)
     }
 
     $c->countryStats(CASHER, casherGoals($c));
+    return $c;
 }//end play_casher_strat()
 
 

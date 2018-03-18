@@ -114,13 +114,13 @@ class Allies
                 self::accept($list->$name->cnum, $type);
             } elseif ($list->$name->detail == 'cancel' && rand(0, 5) == 0) {
                 //put this in in case we send to a human by accident who doesn't accept
-                out("Withdraw offer randomly!");
+                out("Withdraw offer randomly!", true, 'dark_gray');
                 self::cancel($list->$name->cnum, $type);
             }
         }
 
         if ($require == 0) {
-            out("Allies for $type full!");
+            out("Allies for $type full!", true, 'dark_gray');
             return;
         }
 
@@ -130,7 +130,7 @@ class Allies
 
         for ($i = 0; $i < $require; $i++) {
             if (empty($candidates)) {
-                out("No ally candiates!");
+                out("No ally candiates!", true, 'yellow');
                 return;
             }
             $candidate = array_shift($candidates);
