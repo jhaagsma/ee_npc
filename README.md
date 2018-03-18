@@ -3,6 +3,7 @@ ee_npc
 
 Earth Empires Non-Player-Country Project!
 
+*Caveat: I developed this really quickly to get it going, and am now regretting that, as it's very disorganized; I will slowly be refactoring it to make it easier to use.
 
 <br /><br />
 
