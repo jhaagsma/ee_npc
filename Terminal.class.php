@@ -20,7 +20,7 @@ https://stackoverflow.com/questions/7141745/alias-class-method-as-global-functio
 You can either create a wrapper function or use create_function().
 
 function _t() {
-    call_user_func_array(array('TranslationClass', '_t'), func_get_arts());
+    call_user_func_array(array('TranslationClass', '_t'), func_get_args());
 }
 
 Or you can create a function on the fly:
@@ -33,13 +33,13 @@ print $t('Hello, World');
 
 function out()
 {
-    call_user_func_array(['Terminal', 'out'], func_get_arts());
+    call_user_func_array(['Terminal', 'out'], func_get_args());
 }//end out()
 
 
 function out_data()
 {
-    call_user_func_array(['Terminal', 'out_data'], func_get_arts());
+    call_user_func_array(['Terminal', 'out_data'], func_get_args());
 }//end out_data()
 
 
