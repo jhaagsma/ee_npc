@@ -80,16 +80,16 @@ function play_indy_strat($server)
             $spend = min($c->money, $c->money + max(20, $c->turns) * $c->income) * 0.4;
 
             if ($c->pt_indy < 158) {
-                buy_tech($c, 't_indy', $spend * 2 / 5, 3500 * $tol);
+                PublicMarket::buy_tech($c, 't_indy', $spend * 2 / 5, 3500 * $tol);
             }
             if ($c->pt_mil > 90) {
-                buy_tech($c, 't_mil', $spend * 1 / 5, 3500 * $tol);
+                PublicMarket::buy_tech($c, 't_mil', $spend * 1 / 5, 3500 * $tol);
             }
             if ($c->pt_bus < 160) {
-                buy_tech($c, 't_bus', $spend * 1 / 5, 3500 * $tol);
+                PublicMarket::buy_tech($c, 't_bus', $spend * 1 / 5, 3500 * $tol);
             }
             if ($c->pt_res < 160) {
-                buy_tech($c, 't_res', $spend * 1 / 5, 3500 * $tol);
+                PublicMarket::buy_tech($c, 't_res', $spend * 1 / 5, 3500 * $tol);
             }
         }
     }
