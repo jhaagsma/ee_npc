@@ -337,7 +337,7 @@ function food_management(&$c)
 }//end food_management()
 
 
-function minDpnw(&$c)
+function minDpnw(&$c, $onlyDef = false)
 {
     global $pm_info;
     if (!isset($pm_info->buy_price)) {
@@ -350,15 +350,20 @@ function minDpnw(&$c)
     $pub_ta = PublicMarket::price('m_ta') * $c->tax() / 2;
 
     $dpnws = [
-        round($pm_info->buy_price->m_tr / 0.5),
-        round($pm_info->buy_price->m_j / 0.6),
-        round($pm_info->buy_price->m_tu / 0.6),
-        round($pm_info->buy_price->m_ta / 2),
-        $pub_tr == 0 ? 9000 : $pub_tr,
-        $pub_j == 0 ? 9000 : $pub_j,
-        $pub_tu == 0 ? 9000 : $pub_tu,
-        $pub_ta == 0 ? 9000 : $pub_ta,
+        'pm_tr' => round($pm_info->buy_price->m_tr / 0.5),
+        'pm_j' => round($pm_info->buy_price->m_j / 0.6),
+        'pm_tu' => round($pm_info->buy_price->m_tu / 0.6),
+        'pm_ta' => round($pm_info->buy_price->m_ta / 2),
+        'pub_tr' => $pub_tr == 0 ? 9000 : $pub_tr,
+        'pub_j' => $pub_j == 0 ? 9000 : $pub_j,
+        'pub_tu' => $pub_tu == 0 ? 9000 : $pub_tu,
+        'pub_ta' => $pub_ta == 0 ? 9000 : $pub_ta,
     ];
+
+    if ($onlyDef) {
+        unset($dpnws['pm_j']);
+        unset($dpnws['pub_j']);
+    }
 
     return min($dpnws);
 }//end minDpnw()
@@ -372,7 +377,7 @@ function defend_self(&$c, $reserve_cash = 50000, $dpnwMax = 380)
     //BUY MILITARY?
     $spend      = $c->money - $reserve_cash;
     $nlg_target = $c->nlgTarget();
-    $dpnw       = minDpnw($c);
+    $dpnw       = minDpnw($c, true); //ONLY DEF
     $nlg        = $c->nlg();
     $dpat       = $c->defPerAcreTarget();
     $dpa        = $c->defPerAcre();
@@ -384,13 +389,13 @@ function defend_self(&$c, $reserve_cash = 50000, $dpnwMax = 380)
             out("Try to buy goods at $dpnw dpnw or below to reach NLG of $nlg_target from $nlg!");  //Text for screen
         }
         $dpnwOld = $dpnw;
-        $dpnw    = minDpnw($c);
+        $dpnw    = minDpnw($c, true); //ONLY DEF
         out("Old DPNW: ".round($dpnwOld, 1)."; New DPNW: ".round($dpnw, 1));
         if ($dpnw <= $dpnwOld) {
             $dpnw = $dpnwOld + 1;
         }
 
-        buy_public_below_dpnw($c, $dpnw, $spend, true, true);
+        buy_public_below_dpnw($c, $dpnw, $spend, true, true); //ONLY DEF
         $spend = max(0, $c->money - $reserve_cash);
         $nlg   = $c->nlg();
         $dpa   = $c->defPerAcre();
@@ -400,9 +405,9 @@ function defend_self(&$c, $reserve_cash = 50000, $dpnwMax = 380)
             break;
         }
 
-        buy_private_below_dpnw($c, $dpnw, $spend, true, true);
+        buy_private_below_dpnw($c, $dpnw, $spend, true, true); //ONLY DEF
         $dpnwOld = $dpnw;
-        $dpnw    = minDpnw($c);
+        $dpnw    = minDpnw($c, true); //ONLY DEF
         if ($dpnw <= $dpnwOld) {
             $dpnw = $dpnwOld + 1;
         }
