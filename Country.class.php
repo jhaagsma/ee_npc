@@ -150,7 +150,24 @@ class Country
 
     public function setIndyFromMarket($checkDPA = false)
     {
-        $new = ['pro_spy' => 3]; //just set spies to 5% for now
+
+        if ($this->m_spy < 10000) {
+            $spy = 10;
+        } elseif ($this->m_spy / $this->land < 25) {
+            $spy = 5;
+        } elseif ($this->m_spy / $this->land < 30) {
+            $spy = 4;
+        } elseif ($this->m_spy / $this->land < 35) {
+            $spy = 3;
+        } elseif ($this->m_spy / $this->land < 40) {
+            $spy = 2;
+        } else {
+            $spy = 1;
+        }
+
+        $therest = 100 - $spy;
+
+        $new = ['pro_spy' => $spy]; //just set spies to 5% for now
         global $market;
 
         $score = [
@@ -169,7 +186,7 @@ class Country
 
         arsort($score);
         $which       = key($score);
-        $new[$which] = 97; //set to do the most expensive of whatever other good
+        $new[$which] = $therest; //set to do the most expensive of whatever other good
 
         $this->setIndy($new);
     }//end setIndyFromMarket()
