@@ -478,3 +478,20 @@ function sell_max_military(&$c)
     $mktinfo = null;
     return $result;
 }//end sell_max_military()
+
+
+/**
+ * Return a url to the AI Bot spyop for admins
+ *
+ * @param  int $cnum Country Number
+ *
+ * @return string    Spyop URL
+ */
+function siteURL($cnum)
+{
+    global $config, $server;
+    $name  = $config['server'];
+    $round = $server->round_num;
+
+    return "https://qz.earthempires.com/$name/$round/ranks/$cnum";
+}//end siteURL()
