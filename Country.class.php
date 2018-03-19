@@ -356,23 +356,23 @@ class Country
         $techprice = 8000 * $tol;
         if ($what == 't_agri') {
             $o = $this->money;
-            buy_tech($this, 't_agri', $spend_partial, $techprice);
+            PublicMarket::buy_tech($this, 't_agri', $spend_partial, $techprice);
             $diff = $this->money - $o;
         } elseif ($what == 't_indy') {
             $o = $this->money;
-            buy_tech($this, 't_indy', $spend_partial, $techprice);
+            PublicMarket::buy_tech($this, 't_indy', $spend_partial, $techprice);
             $diff = $this->money - $o;
         } elseif ($what == 't_bus') {
             $o = $this->money;
-            buy_tech($this, 't_bus', $spend_partial, $techprice);
+            PublicMarket::buy_tech($this, 't_bus', $spend_partial, $techprice);
             $diff = $this->money - $o;
         } elseif ($what == 't_res') {
             $o = $this->money;
-            buy_tech($this, 't_res', $spend_partial, $techprice);
+            PublicMarket::buy_tech($this, 't_res', $spend_partial, $techprice);
             $diff = $this->money - $o;
         } elseif ($what == 't_mil') {
             $o = $this->money;
-            buy_tech($this, 't_mil', $spend_partial, $techprice);
+            PublicMarket::buy_tech($this, 't_mil', $spend_partial, $techprice);
             $diff = $this->money - $o;
         } elseif ($what == 'nlg') {
             $o = $this->money;
