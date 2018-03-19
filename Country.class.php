@@ -552,9 +552,11 @@ class Country
     /**
      * Should we build a full BPT?
      *
+     * @param int $target_bpt Target BPT
+     *
      * @return bool Yep or Nope
      */
-    public function shouldBuildFullBPT()
+    public function shouldBuildFullBPT($target_bpt = null)
     {
         if ($this->empty < $this->bpt) {
             //not enough land
@@ -563,6 +565,18 @@ class Country
 
         if ($this->money < $this->bpt * $this->build_cost + ($this->income > 0 ? 0 : $this->income * -60)) {
             //do we have enough money? This accounts for 60 turns of burn if income < 0
+            return false;
+        }
+
+        if ($target_bpt == null) {
+            //we don't care about BPT for some reason
+            return true;
+        }
+
+        if ($this->bpt / $target_bpt < 0.80 || rand(0, 1)) {
+            //basically, if we're below 80% of our target bpt
+            //we have a 50% chance of skipping building buildings
+            //so that we can actually get our BPT up
             return false;
         }
 
