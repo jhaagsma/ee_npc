@@ -3,7 +3,7 @@
 function play_casher_strat($server)
 {
     global $cnum;
-    out("Playing ".CASHER." Turns for #$cnum");
+    out("Playing ".CASHER." Turns for #$cnum ".siteURL($cnum));
     //$main = get_main();     //get the basic stats
     //out_data($main);          //output the main data
     $c = get_advisor();     //c as in country! (get the advisor)

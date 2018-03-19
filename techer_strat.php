@@ -7,7 +7,7 @@ $techlist = ['t_mil','t_med','t_bus','t_res','t_agri','t_war','t_ms','t_weap','t
 function play_techer_strat($server)
 {
     global $cnum;
-    out("Playing ".TECHER." Turns for #$cnum");
+    out("Playing ".TECHER." Turns for #$cnum ".siteURL($cnum));
     //$main = get_main();     //get the basic stats
     //out_data($main);          //output the main data
     $c = get_advisor();     //c as in country! (get the advisor)

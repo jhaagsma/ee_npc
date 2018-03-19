@@ -7,7 +7,7 @@ $military_list = ['m_tr','m_j','m_tu','m_ta'];
 function play_indy_strat($server)
 {
     global $cnum;
-    out("Playing ".INDY." Turns for #$cnum");
+    out("Playing ".INDY." Turns for #$cnum ".siteURL($cnum));
     //$main = get_main();     //get the basic stats
     //out_data($main);          //output the main data
     $c = get_advisor();     //c as in country! (get the advisor)

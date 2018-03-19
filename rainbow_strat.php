@@ -1,9 +1,11 @@
-<?php namespace EENPC;
+<?php
+
+namespace EENPC;
 
 function play_rainbow_strat($server)
 {
     global $cnum;
-    out("Playing ".RAINBOW." turns for #$cnum");
+    out("Playing ".RAINBOW." turns for #$cnum ".siteURL($cnum));
     //$main = get_main();     //get the basic stats
     //out_data($main);          //output the main data
     $c = get_advisor();     //c as in country! (get the advisor)
