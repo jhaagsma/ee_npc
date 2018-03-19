@@ -154,10 +154,10 @@ class Country
         global $market;
 
         $score = [
-            'pro_tr'  => 1.86 * $market->price('m_tr'),
-            'pro_j'   => 1.86 * $market->price('m_j'),
-            'pro_tu'  => 1.86 * $market->price('m_tu'),
-            'pro_ta'  => 0.4 * $market->price('m_ta')
+            'pro_tr'  => 1.86 * PublicMarket::price('m_tr'),
+            'pro_j'   => 1.86 * PublicMarket::price('m_j'),
+            'pro_tu'  => 1.86 * PublicMarket::price('m_tu'),
+            'pro_ta'  => 0.4 * PublicMarket::price('m_ta')
         ];
         arsort($score);
         $which       = key($score);
@@ -276,23 +276,23 @@ class Country
         $score = [];
         foreach ($goals as $goal) {
             if ($goal[0] == 't_agri') {
-                $price           = $market->price('agri');
+                $price           = PublicMarket::price('agri');
                 $price           = $price > 500 ? $price : 10000;
                 $score['t_agri'] = ($goal[1] - $this->pt_agri) / ($goal[1] - 100) * $goal[2] * (2500 / $price);
             } elseif ($goal[0] == 't_indy') {
-                $price           = $market->price('indy');
+                $price           = PublicMarket::price('indy');
                 $price           = $price > 500 ? $price : 10000;
                 $score['t_indy'] = ($goal[1] - $this->pt_indy) / ($goal[1] - 100) * $goal[2] * (2500 / $price);
             } elseif ($goal[0] == 't_bus') {
-                $price          = $market->price('bus');
+                $price          = PublicMarket::price('bus');
                 $price          = $price > 500 ? $price : 10000;
                 $score['t_bus'] = ($goal[1] - $this->pt_bus) / ($goal[1] - 100) * $goal[2] * (2500 / $price);
             } elseif ($goal[0] == 't_res') {
-                $price          = $market->price('res');
+                $price          = PublicMarket::price('res');
                 $price          = $price > 500 ? $price : 10000;
                 $score['t_res'] = ($goal[1] - $this->pt_res) / ($goal[1] - 100) * $goal[2] * (2500 / $price);
             } elseif ($goal[0] == 't_mil') {
-                $price          = $market->price('mil');
+                $price          = PublicMarket::price('mil');
                 $price          = $price > 500 ? $price : 10000;
                 $score['t_mil'] = ($this->pt_mil - $goal[1]) / (100 - $goal[1]) * $goal[2] * (2500 / $price);
             } elseif ($goal[0] == 'nlg') {
@@ -420,4 +420,152 @@ class Country
         );
         out("Done Playing ".$strat." Turns for #$this->cnum!");   //Text for screen
     }//end countryStats()
+
+
+    /**
+     * Can we afford to build a full BPT?
+     *
+     * @return bool Afford T/F
+     */
+    public function affordBuildBPT()
+    {
+        if ($this->money < $this->bpt * $this->build_cost) {
+            //not enough build money
+            return false;
+        }
+
+        if ($this->income < 0 && $this->money < $this->bpt * $this->build_cost + $this->income) {
+            //going to run out of money
+            return false;
+        }
+
+        return true;
+    }//end affordBuildBPT()
+
+
+
+    /**
+     * Check to see if we should build a single CS
+     *
+     * @param  int $target_bpt The target bpt
+     *
+     * @return bool            Build or not
+     */
+    public function shouldBuildLowCS($target_bpt = 80)
+    {
+        if (!$this->empty) {
+            //no empty land
+            return false;
+        }
+
+        if ($this->money < $this->build_cost) {
+            //not enough money to build
+            return false;
+        }
+
+        if ($this->income < 0 && $this->money < $this->build_cost + $this->income) {
+            //going to run out of money
+            return false;
+        }
+
+        if ($this->bpt < 30 && $this->built() <= 50) {
+            //you have low BPT and low Builtings
+            return true;
+        } elseif ($this->bpt < $target_bpt && $this->b_cs % 4 != 0) {
+            //you have a BPT below target, but aren't CS % 4
+            //IF NOT YOU SHOULD BUILD 4!!
+            return true;
+        }
+
+        return false;
+    }//end shouldBuildLowCS()
+
+    /**
+     * Should we build indies to make spies?
+     *
+     * @return bool Yep or Nope
+     */
+    public function shouldBuildSpyIndies()
+    {
+        if ($this->empty < $this->bpt) {
+            //not enough land
+            return false;
+        }
+
+        if (!$this->affordBuildBPT()) {
+            //can't afford to build a full BPT
+            return false;
+        }
+
+        if ($this->turns_played > 150 && $this->b_indy < $this->bpt) {
+            //We're out of protection and don't have a full BPT of indies
+            return true;
+        }
+
+        return false;
+    }//end shouldBuildSpyIndies()
+
+    /**
+     * Should we built 4 CS?
+     *
+     * @param  integer $target_bpt Target BPT
+     *
+     * @return bool                Yep or Nope
+     */
+    public function shouldBuildFourCS($target_bpt = 80)
+    {
+        if ($this->bpt >= $target_bpt) {
+            //we're at the target!
+            return false;
+        }
+
+        if ($this->turns < 4) {
+            //not enough turns...
+            return false;
+        }
+
+        if ($this->empty < 4) {
+            //not enough land...
+            return false;
+        }
+
+        if ($this->money < 4 * $this->build_cost) {
+            //not enough money...
+            return false;
+        }
+
+        if ($this->income < 0 && $this->money < 4 * $this->build_cost + 5 * $this->income) {
+            //going to run out of money
+            //use 5 because growth of military typically
+            return false;
+        }
+
+        if ($this->foodnet < 0 && $this->food < $this->foodnet * -5) {
+            //going to run out of food
+            //use 5 because growth of pop & military typically
+            return false;
+        }
+
+        return true;
+    }//end shouldBuildFourCS()
+
+    /**
+     * Should we build a full BPT?
+     *
+     * @return bool Yep or Nope
+     */
+    public function shouldBuildFullBPT()
+    {
+        if ($this->empty < $this->bpt) {
+            //not enough land
+            return false;
+        }
+
+        if ($this->money < $this->bpt * $this->build_cost + ($this->income > 0 ? 0 : $this->income * -60)) {
+            //do we have enough money? This accounts for 60 turns of burn if income < 0
+            return false;
+        }
+
+        return true;
+    }//end shouldBuildFullBPT()
 }//end class
