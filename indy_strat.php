@@ -1,6 +1,8 @@
-<?php namespace EENPC;
+<?php
 
-$military_list = array('m_tr','m_j','m_tu','m_ta');
+namespace EENPC;
+
+$military_list = ['m_tr','m_j','m_tu','m_ta'];
 
 function play_indy_strat($server)
 {
@@ -40,7 +42,7 @@ function play_indy_strat($server)
     //out_data($owned_on_market_info);  //output the Owned on Public Market info
 
     while ($c->turns > 0) {
-        //$result = buy_public($c,array('m_bu'=>100),array('m_bu'=>400));
+        //$result = PublicMarket::buy($c,array('m_bu'=>100),array('m_bu'=>400));
         $result = play_indy_turn($c);
         if ($result === false) {  //UNEXPECTED RETURN VALUE
             $c = get_advisor();     //UPDATE EVERYTHING
@@ -61,15 +63,21 @@ function play_indy_strat($server)
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
         }
 
-        if (turns_of_food($c) > 70 && turns_of_money($c) > 70 && $c->money > 3500 * 500 && ($c->built() > 80 || $c->money > $c->fullBuildCost() - $c->runCash())) { // 40 turns of food
-            buy_indy_goals($c, $c->money - $c->fullBuildCost() - $c->runCash()); //keep enough money to build out everything
+        if (turns_of_food($c) > 70 && turns_of_money($c) > 70 && $c->money > 3500 * 500 && ($c->built() > 80
+            || $c->money > $c->fullBuildCost() - $c->runCash())
+        ) {
+            // 40 turns of food
+            //keep enough money to build out everything
+            buy_indy_goals($c, $c->money - $c->fullBuildCost() - $c->runCash());
         }
 
         global $cpref;
         $tol = $cpref->price_tolerance; //should be between 0.5 and 1.5
-        if (turns_of_food($c) > 50 && turns_of_money($c) > 50 && $c->money > 3500 * 500) { // 40 turns of food, and more than 2x nw in cash on hand
+        if (turns_of_food($c) > 50 && turns_of_money($c) > 50 && $c->money > 3500 * 500) {
+        // 40 turns of food, and more than 2x nw in cash on hand
             //out("Try to buy tech?");
-            $spend = min($c->money, $c->money + max(20, $c->turns) * $c->income) * 0.4; //min what we'll use in max(20,turns-left) turns basically
+            //min what we'll use in max(20,turns-left) turns basically
+            $spend = min($c->money, $c->money + max(20, $c->turns) * $c->income) * 0.4;
 
             if ($c->pt_indy < 158) {
                 buy_tech($c, 't_indy', $spend * 2 / 5, 3500 * $tol);
@@ -99,18 +107,23 @@ function play_indy_turn(&$c)
     global $turnsleep;
     usleep($turnsleep);
     //out($main->turns . ' turns left');
-    if (($c->empty && $c->bpt < 30 && $c->built() <= 50 && $c->money > $c->build_cost) || ($c->empty && $c->bpt < $target_bpt && $c->b_cs % 4 != 0 && $c->money > $c->build_cost)) { //otherwise... build one CS if we can afford it and are below our target BPT (80)
+    if ($c->shouldBuildSingleCS($target_bpt)) {
+        //LOW BPT & CAN AFFORD TO BUILD
+        //build one CS if we can afford it and are below our target BPT
         return build_cs(); //build 1 CS
-    } elseif ($c->protection == 0 && total_cansell_military($c) > 7500 && sellmilitarytime($c) || $c->turns == 1 && total_cansell_military($c) > 7500) {
+    } elseif ($c->protection == 0 && total_cansell_military($c) > 7500 && sellmilitarytime($c)
+        || $c->turns == 1 && total_cansell_military($c) > 7500
+    ) {
         return sell_max_military($c);
-    } elseif ($c->empty > $c->bpt && $c->money > $c->bpt * $c->build_cost + ($c->income > 0 ? 0 : $c->income * -60)) {  //build a full BPT if we can afford it
+    } elseif ($c->shouldBuildFullBPT($target_bpt)) {
+        //build a full BPT if we can afford it
         return build_indy($c);
-    } elseif ($c->turns >= 4 && $c->empty >= 4 && $c->bpt < $target_bpt && $c->money > 4 * $c->build_cost && ($c->foodnet > 0 || $c->food > $c->foodnet * -5)) { //otherwise... build 4CS if we can afford it and are below our target BPT (80)
+    } elseif ($c->shouldBuildFourCS($target_bpt)) {
+        //build 4CS if we can afford it and are below our target BPT (80)
         return build_cs(4); //build 4 CS
     } elseif ($c->built() > 50) {  //otherwise... explore if we can
-        return explore($c, min(max(1, $c->turns - 1), max(1, min(turns_of_money($c) / 1.15, turns_of_food($c)) - 3))); //1.15 is my growth factor for indies
-    } elseif ($c->empty && $c->bpt < $target_bpt && $c->money > $c->build_cost) { //otherwise... build one CS if we can afford it and are below our target BPT (80)
-        return build_cs(); //build 1 CS
+        //1.15 is my growth factor for indies
+        return explore($c, min(max(1, $c->turns - 1), max(1, min(turns_of_money($c) / 1.15, turns_of_food($c)) - 3)));
     } else { //otherwise...  cash
         return cash($c);
     }
@@ -120,7 +133,7 @@ function play_indy_turn(&$c)
 function build_indy(&$c)
 {
     //build farms
-    return build(array('indy' => $c->bpt));
+    return build(['indy' => $c->bpt]);
 }//end build_indy()
 
 

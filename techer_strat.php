@@ -50,7 +50,7 @@ function play_techer_strat($server)
 
 
     while ($c->turns > 0) {
-        //$result = buy_public($c,array('m_bu'=>100),array('m_bu'=>400));
+        //$result = PublicMarket::buy($c,array('m_bu'=>100),array('m_bu'=>400));
         $result = play_techer_turn($c);
         if ($result === false) {  //UNEXPECTED RETURN VALUE
             $c = get_advisor();     //UPDATE EVERYTHING
@@ -93,10 +93,9 @@ function play_techer_turn(&$c)
     //out($main->turns . ' turns left');
 
 
-    if (($c->empty && $c->bpt < 30 && $c->built() <= 50 && $c->money > $c->build_cost)
-        || ($c->empty && $c->bpt < $target_bpt && $c->b_cs % 4 != 0 && $c->money > $c->build_cost)
-    ) { //LOW BPT & CAN AFFORD TO BUILD
-        //otherwise... build one CS if we can afford it and are below our target BPT (80)
+    if ($c->shouldBuildSingleCS($target_bpt)) {
+        //LOW BPT & CAN AFFORD TO BUILD
+        //build one CS if we can afford it and are below our target BPT
         return build_cs(); //build 1 CS
     } elseif ($c->protection == 0 && total_cansell_tech($c) > 20 * $c->tpt && selltechtime($c)
         || $c->turns == 1 && total_cansell_tech($c) > 20
@@ -104,18 +103,14 @@ function play_techer_turn(&$c)
         //never sell less than 20 turns worth of tech
         //always sell if we can????
         return sell_max_tech($c);
-    } elseif ($c->turns_played > 150 && $c->b_indy < $c->bpt && $c->empty > $c->bpt
-        && $c->money > $c->bpt * $c->build_cost
-    ) {
+    } elseif ($c->shouldBuildSpyIndies()) {
         //build a full BPT of indies if we have less than that, and we're out of protection
         return build_indy($c);
-    } elseif ($c->empty > $c->bpt && $c->money > $c->bpt * $c->build_cost) {
+    } elseif ($c->shouldBuildFullBPT($target_bpt)) {
         //build a full BPT if we can afford it
         return build_techer($c);
-    } elseif ($c->turns >= 4 && $c->empty >= 4 && $c->bpt < $target_bpt && $c->money > 4 * $c->build_cost
-        && ($c->foodnet > 0 || $c->food > $c->foodnet * -5)
-    ) {
-        //otherwise... build 4CS if we can afford it and are below our target BPT (80)
+    } elseif ($c->shouldBuildFourCS($target_bpt)) {
+        //build 4CS if we can afford it and are below our target BPT (80)
         return build_cs(4); //build 4 CS
     } elseif ($c->tpt > $c->land * 0.17 * 1.3 && $c->tpt > 100 && rand(0, 100) > 2) {
         //tech per turn is greater than land*0.17 -- just kindof a rough "don't tech below this" rule...
@@ -125,9 +120,6 @@ function play_techer_turn(&$c)
     ) {
         //otherwise... explore if we can, for the early bits of the set
         return explore($c, min(max(1, $c->turns - 1), max(1, min(turns_of_money($c), turns_of_food($c)) - 3)));
-    } elseif ($c->empty && $c->bpt < $target_bpt && $c->money > $c->build_cost) {
-        //otherwise... build one CS if we can afford it and are below our target BPT (80)
-        return build_cs(); //build 1 CS
     } else { //otherwise, tech, obviously
         return tech_techer($c);
     }
@@ -201,18 +193,18 @@ function sell_max_tech(&$c)
     foreach ($quantity as $key => $q) {
         if ($q == 0) {
             $price[$key] = 0;
-        } elseif ($market->price($key) != null) {
+        } elseif (PublicMarket::price($key) != null) {
             debug("sell_max_tech:A:$key");
             $max = $c->goodsStuck($key) ? 0.98 : $rmax; //undercut if we have goods stuck
             debug("sell_max_tech:B:$key");
-            $price[$key] = min(9999, floor($market->price($key) * Math::purebell($rmin, $max, $rstddev, $rstep)));
+            $price[$key] = min(9999, floor(PublicMarket::price($key) * Math::purebell($rmin, $max, $rstddev, $rstep)));
             debug("sell_max_tech:C:$key");
         } else {
             $price[$key] = floor(Math::purebell($nogoods_low, $nogoods_high, $nogoods_stddev, $nogoods_step));
         }
     }
 
-    $result = sell_public($c, $quantity, $price);
+    $result = PublicMarket::sell($c, $quantity, $price);
     if ($result == 'QUANTITY_MORE_THAN_CAN_SELL') {
         out("TRIED TO SELL MORE THAN WE CAN!?!");
         $c = get_advisor();     //UPDATE EVERYTHING
@@ -228,17 +220,17 @@ function tech_techer(&$c)
     //$market_info = get_market_info();   //get the Public Market info
     global $market;
 
-    $mil  = max((int)$market->price('mil') - 2000, rand(0, 300));
-    $med  = max((int)$market->price('med') - 2000, rand(0, 5));
-    $bus  = max((int)$market->price('bus') - 2000, rand(10, 400));
-    $res  = max((int)$market->price('res') - 2000, rand(10, 400));
-    $agri = max((int)$market->price('agri') - 2000, rand(10, 300));
-    $war  = max((int)$market->price('war') - 2000, rand(0, 10));
-    $ms   = max((int)$market->price('ms') - 2000, rand(0, 20));
-    $weap = max((int)$market->price('weap') - 2000, rand(0, 20));
-    $indy = max((int)$market->price('indy') - 2000, rand(5, 300));
-    $spy  = max((int)$market->price('spy') - 2000, rand(0, 10));
-    $sdi  = max((int)$market->price('sdi') - 2000, rand(2, 150));
+    $mil  = max(PublicMarket::price('mil') - 2000, rand(0, 300));
+    $med  = max(PublicMarket::price('med') - 2000, rand(0, 5));
+    $bus  = max(PublicMarket::price('bus') - 2000, rand(10, 400));
+    $res  = max(PublicMarket::price('res') - 2000, rand(10, 400));
+    $agri = max(PublicMarket::price('agri') - 2000, rand(10, 300));
+    $war  = max(PublicMarket::price('war') - 2000, rand(0, 10));
+    $ms   = max(PublicMarket::price('ms') - 2000, rand(0, 20));
+    $weap = max(PublicMarket::price('weap') - 2000, rand(0, 20));
+    $indy = max(PublicMarket::price('indy') - 2000, rand(5, 300));
+    $spy  = max(PublicMarket::price('spy') - 2000, rand(0, 10));
+    $sdi  = max(PublicMarket::price('sdi') - 2000, rand(2, 150));
     $tot  = $mil + $med + $bus + $res + $agri + $war + $ms + $weap + $indy + $spy + $sdi;
 
     $left  = $c->tpt;

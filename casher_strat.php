@@ -41,7 +41,7 @@ function play_casher_strat($server)
     //out_data($owned_on_market_info);  //output the Owned on Public Market info
 
     while ($c->turns > 0) {
-        //$result = buy_public($c,array('m_bu'=>100),array('m_bu'=>400));
+        //$result = PublicMarket::buy($c,array('m_bu'=>100),array('m_bu'=>400));
         $result = play_casher_turn($c);
         if ($result === false) {  //UNEXPECTED RETURN VALUE
             $c = get_advisor();     //UPDATE EVERYTHING
@@ -80,23 +80,22 @@ function play_casher_turn(&$c)
     global $turnsleep;
     usleep($turnsleep);
     //out($main->turns . ' turns left');
-    if (($c->empty && $c->bpt < 30 && $c->built() <= 50 && $c->money > $c->build_cost) || ($c->empty && $c->bpt < $target_bpt && $c->b_cs % 4 != 0 && $c->money > $c->build_cost)) { //otherwise... build one CS if we can afford it and are below our target BPT (80)
+    if ($c->shouldBuildSingleCS($target_bpt)) {
+        //LOW BPT & CAN AFFORD TO BUILD
+        //build one CS if we can afford it and are below our target BPT
         return build_cs(); //build 1 CS
-    } elseif ($c->turns_played > 150 && $c->b_indy < $c->bpt && $c->empty > $c->bpt && $c->money > $c->bpt * $c->build_cost) {
+    } elseif ($c->shouldBuildSpyIndies()) {
         //build a full BPT of indies if we have less than that, and we're out of protection
         return build_indy($c);
-    } elseif ($c->empty > $c->bpt && $c->money > $c->bpt * $c->build_cost && ($c->bpt / $target_bpt > 0.8 || rand(0, 1))) {
+    } elseif ($c->shouldBuildFullBPT($target_bpt)) {
         //build a full BPT if we can afford it
         return build_casher($c);
-    } elseif ($c->turns >= 4 && $c->empty >= 4 && $c->bpt < $target_bpt && $c->money > 4 * $c->build_cost && ($c->foodnet > 0 || $c->food > $c->foodnet * -5)) {
-        //otherwise... build 4CS if we can afford it and are below our target BPT (80)
+    } elseif ($c->shouldBuildFourCS($target_bpt)) {
+        //build 4CS if we can afford it and are below our target BPT (80)
         return build_cs(4); //build 4 CS
     } elseif ($c->built() > 50) {
         //otherwise... explore if we can
         return explore($c, min($c->turns, max(1, turns_of_food($c) - 3)));
-    } elseif ($c->empty && $c->bpt < $target_bpt && $c->money > $c->build_cost) {
-        //otherwise... build one CS if we can afford it and are below our target BPT (80)
-        return build_cs(); //build 1 CS
     } else {
         //otherwise...  cash
         return cash($c);

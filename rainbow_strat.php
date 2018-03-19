@@ -53,7 +53,7 @@ function play_rainbow_strat($server)
     //var_export($owned_on_market_info);
 
     while ($c->turns > 0) {
-        //$result = buy_public($c,array('m_bu'=>100),array('m_bu'=>400));
+        //$result = PublicMarket::buy($c,array('m_bu'=>100),array('m_bu'=>400));
         $result = play_rainbow_turn($c);
         if ($result === false) {  //UNEXPECTED RETURN VALUE
             $c = get_advisor();     //UPDATE EVERYTHING
@@ -96,23 +96,31 @@ function play_rainbow_strat($server)
 function play_rainbow_turn(&$c)
 {
  //c as in country!
-    $targetBPT = 65;
+    $target_bpt = 65;
     global $turnsleep;
     usleep($turnsleep);
     //out($main->turns . ' turns left');
-    if ($c->empty > $c->bpt && $c->money > $c->bpt * $c->build_cost) {  //build a full BPT if we can afford it
+    if ($c->shouldBuildSingleCS($target_bpt)) {
+        //LOW BPT & CAN AFFORD TO BUILD
+        //build one CS if we can afford it and are below our target BPT
+        return build_cs(); //build 1 CS
+    } elseif ($c->shouldBuildFullBPT($target_bpt)) {
+        //build a full BPT if we can afford it
         return build_rainbow($c);
-    } elseif ($c->turns >= 4 && $c->empty >= 4 && $c->bpt < $targetBPT && $c->money > 4 * $c->build_cost && ($c->foodnet > 0 || $c->food > $c->foodnet * -5)) { //otherwise... build 4CS if we can afford it and are below our target BPT (80)
+    } elseif ($c->shouldBuildFourCS($target_bpt)) {
+        //build 4CS if we can afford it and are below our target BPT (80)
         return build_cs(4); //build 4 CS
-    } elseif ($c->tpt > $c->land * 0.17 && rand(0, 10) > 5) { //tech per turn is greater than land*0.17 -- just kindof a rough "don't tech below this" rule...
+    } elseif ($c->tpt > $c->land * 0.17 && rand(0, 10) > 5) {
+        //tech per turn is greater than land*0.17 -- just kindof a rough "don't tech below this" rule...
         return tech_rainbow($c);
     } elseif ($c->built() > 50) {  //otherwise... explore if we can
         return explore($c, min($c->turns, max(1, min(turns_of_money($c), turns_of_food($c)) - 3)));
-    } elseif ($c->empty && $c->bpt < $targetBPT && $c->money > $c->build_cost) { //otherwise... build one CS if we can afford it and are below our target BPT (80)
-        return build_cs(); //build 1 CS
     } elseif ($c->foodnet > 0 && $c->foodnet > 3 * $c->foodcon && $c->food > 30 * $c->foodnet && $c->food > 7000) {
         return sellextrafood_rainbow($c);
-    } elseif ($c->protection == 0 && total_cansell_tech($c) > 20 * $c->tpt && selltechtime($c) || $c->turns == 1 && total_cansell_tech($c) > 20) { //never sell less than 20 turns worth of tech
+    } elseif ($c->protection == 0 && total_cansell_tech($c) > 20 * $c->tpt && selltechtime($c)
+        || $c->turns == 1 && total_cansell_tech($c) > 20
+    ) {
+        //never sell less than 20 turns worth of tech
         return sell_max_tech($c);
     } else { //otherwise...  cash
         return cash($c);
@@ -144,7 +152,7 @@ function sellextrafood_rainbow(&$c)
 
     if ($quantity > 5000 || !is_object($c)) {
         out("Sell Public ".$quantity->m_bu);
-        return sell_public($c, $quantity, $price);    //Sell food!
+        return PublicMarket::sell($c, $quantity, $price);    //Sell food!
     } else {
         out("Can't Sell!");
     }
