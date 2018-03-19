@@ -364,7 +364,7 @@ function minDpnw(&$c)
 }//end minDpnw()
 
 
-function defend_self(&$c, $reserve_cash = 50000)
+function defend_self(&$c, $reserve_cash = 50000, $dpnwMax = 380)
 {
     if ($c->protection) {
         return;
@@ -377,7 +377,7 @@ function defend_self(&$c, $reserve_cash = 50000)
     $dpat       = $c->defPerAcreTarget();
     $dpa        = $c->defPerAcre();
 
-    while (($nlg < $nlg_target || $dpa < $dpat) && $spend >= 100000 && $dpnw < 380) {
+    while (($nlg < $nlg_target || $dpa < $dpat) && $spend >= 100000 && $dpnw < $dpnwMax) {
         if ($dpa < $dpat) {
             out("Try to buy goods at $dpnw dpnw or below to reach DPA of $dpat from $dpa!");  //Text for screen
         } else {
