@@ -33,13 +33,13 @@ print $t('Hello, World');
 
 function out()
 {
-    call_user_func_array(['Terminal', 'out'], func_get_args());
+    call_user_func_array(['\EENPC\Terminal', 'out'], func_get_args());
 }//end out()
 
 
 function out_data()
 {
-    call_user_func_array(['Terminal', 'out_data'], func_get_args());
+    call_user_func_array(['\EENPC\Terminal', 'out_data'], func_get_args());
 }//end out_data()
 
 
@@ -52,7 +52,7 @@ class Terminal
      * @param  string  $foreground_color Foreground color
      * @param  string  $background_color Background color
      *
-     * @return void             echoes, not returns
+     * @return void                      echoes, not returns
      */
     public static function out($str, $newline = true, $foreground_color = null, $background_color = null)
     {
