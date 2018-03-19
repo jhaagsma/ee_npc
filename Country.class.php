@@ -418,7 +418,7 @@ class Country
             "DPA: ".$this->defPerAcre()." NLG: ".$this->nlg().
             ' DPAT:'.$this->defPerAcreTarget().' NLGT:'.$this->nlgTarget()
         );
-        out("Done Playing ".$strat." Turns for #$this->cnum!");   //Text for screen
+        out("Done Playing ".$strat." Turns for #$this->cnum! " . siteURL($this->cnum));
     }//end countryStats()
 
 
@@ -451,7 +451,7 @@ class Country
      *
      * @return bool            Build or not
      */
-    public function shouldBuildLowCS($target_bpt = 80)
+    public function shouldBuildSingleCS($target_bpt = 80)
     {
         if (!$this->empty) {
             //no empty land
@@ -478,7 +478,7 @@ class Country
         }
 
         return false;
-    }//end shouldBuildLowCS()
+    }//end shouldBuildSingleCS()
 
     /**
      * Should we build indies to make spies?
