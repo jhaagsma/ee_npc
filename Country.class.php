@@ -148,9 +148,9 @@ class Country
     }//end setIndy()
 
 
-    public function setIndyFromMarket()
+    public function setIndyFromMarket($checkDPA = false)
     {
-        $new = ['pro_spy' => 5]; //just set spies to 5% for now
+        $new = ['pro_spy' => 3]; //just set spies to 5% for now
         global $market;
 
         $score = [
@@ -159,9 +159,17 @@ class Country
             'pro_tu'  => 1.86 * PublicMarket::price('m_tu'),
             'pro_ta'  => 0.4 * PublicMarket::price('m_ta')
         ];
+
+        if ($checkDPA) {
+            if ($this->defPerAcre() < $this->defPerAcreTarget()) {
+                //below def target, don't make jets
+                unset($score['pro_j']);
+            }
+        }
+
         arsort($score);
         $which       = key($score);
-        $new[$which] = 95; //set to do the most expensive of whatever other good
+        $new[$which] = 97; //set to do the most expensive of whatever other good
 
         $this->setIndy($new);
     }//end setIndyFromMarket()
