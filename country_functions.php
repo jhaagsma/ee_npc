@@ -7,7 +7,7 @@ function destock($server, $cnum)
     $c = get_advisor();     //c as in country! (get the advisor)
     out("Destocking #$cnum!");  //Text for screen
     if ($c->food > 0) {
-        sell_on_pm($c, ['m_bu' => $c->food]);   //Sell 'em
+        PrivateMarket::sell($c, ['m_bu' => $c->food]);   //Sell 'em
     }
     $dpnw = 200;
     while ($c->money > 1000 && $dpnw < 500) {
@@ -38,13 +38,21 @@ function buy_public_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false)
         $reserve = $c->money - $money;
     }
 
-    //$tr_price = round($dpnw * 0.5 / $c->tax());  //THE PRICE TO BUY THEM AT
-    //$j_price  = $tu_price = round($dpnw * 0.6 / $c->tax());  //THE PRICE TO BUY THEM AT
-    //$ta_price = round($dpnw * 2 / $c->tax());  //THE PRICE TO BUY THEM AT
+    $tr_price = round($dpnw * 0.5 / $c->tax());  //THE PRICE TO BUY THEM AT
+    $j_price  = $tu_price = round($dpnw * 0.6 / $c->tax());  //THE PRICE TO BUY THEM AT
+    $ta_price = round($dpnw * 2 / $c->tax());  //THE PRICE TO BUY THEM AT
 
-    //$tr_cost = ceil($tr_price * $c->tax());  //THE COST OF BUYING THEM
-    //$j_cost  = $tu_cost = ceil($tu_price * $c->tax());  //THE COST OF BUYING THEM
-    //$ta_cost = ceil($ta_price * $c->tax());  //THE COST OF BUYING THEM
+    $tr_cost = ceil($tr_price * $c->tax());  //THE COST OF BUYING THEM
+    $j_cost  = $tu_cost = ceil($tu_price * $c->tax());  //THE COST OF BUYING THEM
+    $ta_cost = ceil($ta_price * $c->tax());  //THE COST OF BUYING THEM
+
+    //We should probably just do these a different way so I don't have to do BS like this
+    $bah = $j_price; //keep the linter happy; we DO use these vars, just dynamically
+    $bah = $tr_cost; //keep the linter happy; we DO use these vars, just dynamically
+    $bah = $j_cost; //keep the linter happy; we DO use these vars, just dynamically
+    $bah = $tu_cost; //keep the linter happy; we DO use these vars, just dynamically
+    $bah = $ta_cost; //keep the linter happy; we DO use these vars, just dynamically
+    $bah = $bah;
 
     $units = ['tu','tr','ta','j'];
     if ($shuffle) {
@@ -124,7 +132,7 @@ function buy_private_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false)
         ) {
             $q = min(floor($money / $pm_info->buy_price->m_tr), $pm_info->available->m_tr);
             debug("BUY_PM: Money: $money; Price: {$pm_info->buy_price->m_tr}; Q: ".$q);
-            $result = buy_on_pm($c, ['m_tr' => $q]);
+            $result = PrivateMarket::buy($c, ['m_tr' => $q]);
         } elseif ($o == 2
             && $pm_info->buy_price->m_ta <= $ta_price
             && $pm_info->available->m_ta > 0
@@ -132,7 +140,7 @@ function buy_private_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false)
         ) {
             $q = min(floor($money / $pm_info->buy_price->m_ta), $pm_info->available->m_ta);
             debug("BUY_PM: Money: $money; Price: {$pm_info->buy_price->m_ta}; Q: ".$q);
-            $result = buy_on_pm($c, ['m_ta' => $q]);
+            $result = PrivateMarket::buy($c, ['m_ta' => $q]);
         } elseif ($o == 3
             && $pm_info->buy_price->m_j <= $j_price
             && $pm_info->available->m_j > 0
@@ -140,7 +148,7 @@ function buy_private_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false)
         ) {
             $q = min(floor($money / $pm_info->buy_price->m_j), $pm_info->available->m_j);
             debug("BUY_PM: Money: $money; Price: {$pm_info->buy_price->m_j}; Q: ".$q);
-            $result = buy_on_pm($c, ['m_j' => $q]);
+            $result = PrivateMarket::buy($c, ['m_j' => $q]);
         } elseif ($o == 4
             && $pm_info->buy_price->m_tu <= $tu_price
             && $pm_info->available->m_tu > 0
@@ -148,7 +156,7 @@ function buy_private_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false)
         ) {
             $q = min(floor($money / $pm_info->buy_price->m_tu), $pm_info->available->m_tu);
             debug("BUY_PM: Money: $money; Price: {$pm_info->buy_price->m_tu}; Q: ".$q);
-            $result = buy_on_pm($c, ['m_tu' => $q]);
+            $result = PrivateMarket::buy($c, ['m_tu' => $q]);
         }
         $money = max(0, $c->money - $reserve);
     }
@@ -163,7 +171,7 @@ function sell_cheap_units(&$c, $unit = 'm_tr', $fraction = 1)
         out("No Military!");
         return;
     }
-    return sell_on_pm($c, $sell_units);  //Sell 'em
+    return PrivateMarket::sell($c, $sell_units);  //Sell 'em
 }//end sell_cheap_units()
 
 
@@ -182,7 +190,7 @@ function sell_all_military(&$c, $fraction = 1)
         out("No Military!");
         return;
     }
-    return sell_on_pm($c, $sell_units);  //Sell 'em
+    return PrivateMarket::sell($c, $sell_units);  //Sell 'em
 }//end sell_all_military()
 
 
@@ -305,7 +313,7 @@ function food_management(&$c)
             "Less than $turns_buy turns worth of food! (".$c->foodnet."/turn) ".
             "We're rich, so buy food on PM (\${$pm_info->buy_price->m_bu})!~"
         );
-        $result = buy_on_pm($c, ['m_bu' => $turns_buy * $foodloss]);  //Buy 3 turns of food!
+        $result = PrivateMarket::buy($c, ['m_bu' => $turns_buy * $foodloss]);  //Buy 3 turns of food!
         return false;
     } elseif ($c->food < $turns_of_food && total_military($c) > 50) {
         out("We're too poor to buy food! Sell 1/10 of our military");   //Text for screen
