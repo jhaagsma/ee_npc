@@ -12,6 +12,7 @@ spl_autoload_register(
     }
 );
 
+require_once 'Terminal.class.php';
 require_once 'communication.php';
 
 out(Colors::getColoredString("Rainbow", "purple"));

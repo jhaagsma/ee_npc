@@ -201,47 +201,6 @@ function expected_result($input)
 
 
 /**
- * Ouput strings nicely
- * @param  string  $str              The string to format
- * @param  boolean $newline          If we shoudl make a new line
- * @param  string  $foreground_color Foreground color
- * @param  string  $background_color Background color
- *
- * @return void             echoes, not returns
- */
-function out($str, $newline = true, $foreground_color = null, $background_color = null)
-{
-    //This just formats output strings nicely
-    if (is_object($str)) {
-        return out_data($str);
-    }
-
-    if ($foreground_color || $background_color) {
-        $str = Colors::getColoredString($str, $foreground_color, $background_color);
-    }
-
-    echo ($newline ? "\n" : null)."[".date("H:i:s")."] $str";
-}//end out()
-
-
-
-
-/**
- * Output and format data
- * @param  array,object $data Data to ouput
- * @return void
- */
-function out_data($data)
-{
-    $backtrace = debug_backtrace();
-    //out(var_export($backtrace, true));
-    //This function is to output and format some data nicely
-    out("DATA: ({$backtrace[0]['file']}:{$backtrace[0]['line']})\n".json_encode($data));
-    //str_replace(",\n", "\n", var_export($data, true)));
-}//end out_data()
-
-
-/**
  * Does count() in some case where it doesn't work right
  * @param  object $data probably a $result object
  * @return int       count of things in $data
