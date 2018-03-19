@@ -85,6 +85,7 @@ function getServer()
             sleep(2); //try again in 2 seconds.
         }
     }
+
     return $server;
 }//end getServer()
 
@@ -104,10 +105,12 @@ function getRules()
                 $rules_loaded = true;
             }
         }
+
         if (!$rules_loaded) {
             sleep(2); //try again in 2 seconds.
         }
     }
+
     return $rules;
 }//end getRules()
 
@@ -125,6 +128,7 @@ function handle_output($serverOutput, $function)
         out('Not acceptable response: '. $function .' - '. $serverOutput);
         return false;
     }
+
     $message  = key($response);
     $response = isset($response->$message) ? $response->$message : null;
     //$parts = explode(':', $serverOutput, 2);
@@ -265,6 +269,7 @@ function done($str = null)
     if ($str) {
         out($str);
     }
+
     out("Exiting\n\n");
     exit;
 }//end done()
