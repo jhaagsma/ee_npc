@@ -32,10 +32,12 @@ class PrivateMarket
             out_data($result);
             out_data($units);
             out("UPDATE EVERYTHING");
-            global $debug, $pm_info;
-            debug($pm_info);
-            $debug = true;
-            $c     = get_advisor();     //UPDATE EVERYTHING
+            global $pm_info;
+
+            Debug::on();
+            Debug::msg($pm_info);
+
+            $c = get_advisor();     //UPDATE EVERYTHING
             out("refresh money={$c->money}");
             return $result;
         }
@@ -52,6 +54,7 @@ class PrivateMarket
             $c->$type += $amount;
             $str      .= $amount.' '.$type.', ';
         }
+
         $str .= 'for $'.$result->cost.' on PM';
         out($str);
         return $result;
@@ -71,6 +74,7 @@ class PrivateMarket
         $result    = ee('pm', ['sell' => $units]);
         $c->money += $result->money;
         $str       = 'Sold ';
+
         foreach ($result->goods as $type => $amount) {
             if ($type == 'm_bu') {
                 $type = 'food';
@@ -81,6 +85,7 @@ class PrivateMarket
             $c->$type -= $amount;
             $str      .= $amount.' '.$type.', ';
         }
+
         $str .= 'for $'.$result->money.' on PM';
         out($str);
         return $result;

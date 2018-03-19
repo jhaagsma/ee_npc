@@ -30,6 +30,7 @@ class PublicMarket
         foreach ($market_info as $k => $var) {
             self::$$k = $var;
         }
+
         self::$updated = time();
     }//end update()
 
@@ -59,6 +60,7 @@ class PublicMarket
         if (self::elapsed() > 10) {
             self::update();
         }
+
         return (int)self::$buy_price->$item;
     }//end price()
 
@@ -68,6 +70,7 @@ class PublicMarket
         if (self::elapsed() > 10) {
             self::update();
         }
+
         return self::$available->$item;
     }//end available()
 
@@ -97,6 +100,7 @@ class PublicMarket
                 $c->$pt = $details->$pt;
                 $str   .= '('.$details->$pt.'%)';
             }
+
             $str .= ', ';
 
             self::relaUpdate($type, $quantity, $details->quantity);
@@ -115,6 +119,7 @@ class PublicMarket
                 $what .= $key.$q.'@'.$price[$key].', ';
                 $cost += round($q * $price[$key] * $c->tax());
             }
+
             out("Tried: ".$what);
             out("Money: ".$c->money." Cost: ".$cost);
             $c = get_advisor();
@@ -152,10 +157,10 @@ class PublicMarket
             out("Trying to sell nothing?");
             $c = get_advisor();
             $c->updateOnMarket();
-            global $debug;
-            $debug = true;
+            Debug::on();
             return;
         }
+
         $result = ee('sell', ['quantity' => $quantity, 'price' => $price]); //ignore tonm for now, it's optional
         $c->updateOnMarket();
         if (isset($result->error) && $result->error) {
@@ -163,6 +168,7 @@ class PublicMarket
             sleep(1);
             return;
         }
+
         global $techlist;
         $str = 'Put ';
         if (isset($result->sell)) {
@@ -183,6 +189,7 @@ class PublicMarket
                 $str      .= $details->quantity.' '.$type.' @ '.$details->price.', ';
             }
         }
+
         if ($str == 'Put ') {
             $str .= 'nothing on market.';
         }
@@ -212,6 +219,7 @@ class PublicMarket
                 if ($tobuy == 0) {
                     return;
                 }
+
                 //out($tech . $tobuy . "@$" . $price);
                 $result = PublicMarket::buy($c, [$tech => $tobuy], [$tech => $price]);     //Buy troops!
                 if ($result === false) {
@@ -222,6 +230,7 @@ class PublicMarket
                         return;
                     }
                 }
+
                 $spend = $c->money - $diff;
 
                 //out_data($result);

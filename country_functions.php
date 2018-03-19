@@ -141,7 +141,7 @@ function buy_private_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false, $d
             && $money > $pm_info->buy_price->m_tr
         ) {
             $q = min(floor($money / $pm_info->buy_price->m_tr), $pm_info->available->m_tr);
-            debug("BUY_PM: Money: $money; Price: {$pm_info->buy_price->m_tr}; Q: ".$q);
+            Debug::msg("BUY_PM: Money: $money; Price: {$pm_info->buy_price->m_tr}; Q: ".$q);
             $result = PrivateMarket::buy($c, ['m_tr' => $q]);
         } elseif ($o == 2
             && $pm_info->buy_price->m_ta <= $ta_price
@@ -149,7 +149,7 @@ function buy_private_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false, $d
             && $money > $pm_info->buy_price->m_ta
         ) {
             $q = min(floor($money / $pm_info->buy_price->m_ta), $pm_info->available->m_ta);
-            debug("BUY_PM: Money: $money; Price: {$pm_info->buy_price->m_ta}; Q: ".$q);
+            Debug::msg("BUY_PM: Money: $money; Price: {$pm_info->buy_price->m_ta}; Q: ".$q);
             $result = PrivateMarket::buy($c, ['m_ta' => $q]);
         } elseif ($o == 3
             && $pm_info->buy_price->m_j <= $j_price
@@ -157,7 +157,7 @@ function buy_private_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false, $d
             && $money > $pm_info->buy_price->m_j
         ) {
             $q = min(floor($money / $pm_info->buy_price->m_j), $pm_info->available->m_j);
-            debug("BUY_PM: Money: $money; Price: {$pm_info->buy_price->m_j}; Q: ".$q);
+            Debug::msg("BUY_PM: Money: $money; Price: {$pm_info->buy_price->m_j}; Q: ".$q);
             $result = PrivateMarket::buy($c, ['m_j' => $q]);
         } elseif ($o == 4
             && $pm_info->buy_price->m_tu <= $tu_price
@@ -165,7 +165,7 @@ function buy_private_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false, $d
             && $money > $pm_info->buy_price->m_tu
         ) {
             $q = min(floor($money / $pm_info->buy_price->m_tu), $pm_info->available->m_tu);
-            debug("BUY_PM: Money: $money; Price: {$pm_info->buy_price->m_tu}; Q: ".$q);
+            Debug::msg("BUY_PM: Money: $money; Price: {$pm_info->buy_price->m_tu}; Q: ".$q);
             $result = PrivateMarket::buy($c, ['m_tu' => $q]);
         }
         $money = max(0, $c->money - $reserve);

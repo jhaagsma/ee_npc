@@ -23,6 +23,7 @@ class Country
             //out("K:$k V:$var");
             $this->$k = $var;
         }
+
         global $cpref;
         $cpref->networth = $this->networth;
         $cpref->land     = $this->land;
@@ -53,12 +54,14 @@ class Country
             if (!isset($this->$omgood)) {
                 $this->$omgood = 0;
             }
+
             $this->$omgood  += $goods->quantity;
             $this->om_total += $goods->quantity;
 
-            debug("OnMarket: $key: QIn:{$goods->quantity}/QSave:{$this->$omgood}");
+            Debug::msg("OnMarket: $key: QIn: {$goods->quantity} / QSave: {$this->$omgood}");
             $this->stuckOnMarket($goods);
         }
+
         //out("Goods on Market: {$this->om_total}");
     }//end updateOnMarket()
 
@@ -266,6 +269,7 @@ class Country
             default:
                 $govt = 1.0;
         }
+
         return floor($this->networth / ($this->land * $govt));
     }//end nlg()
 
@@ -327,8 +331,10 @@ class Country
                 $actual       = $this->defPerAcre();
                 $score['dpa'] = ($target - $actual) / $target * $goal[2];
             }
+
             $psum += $goal[2];
         }
+
         //out_data($score);
 
         arsort($score);

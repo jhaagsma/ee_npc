@@ -175,8 +175,8 @@ function sell_max_tech(&$c)
         $c = get_advisor();
         $c->updateOnMarket();
 
-        debug('This Quantity: '.array_sum($quantity).' TotalCanSellTech: '.total_cansell_tech($c));
-        $debug = true;
+        Debug::on();
+        Debug::msg('This Quantity: '.array_sum($quantity).' TotalCanSellTech: '.total_cansell_tech($c));
         return;
     }
 
@@ -194,11 +194,11 @@ function sell_max_tech(&$c)
         if ($q == 0) {
             $price[$key] = 0;
         } elseif (PublicMarket::price($key) != null) {
-            debug("sell_max_tech:A:$key");
+            Debug::msg("sell_max_tech:A:$key");
             $max = $c->goodsStuck($key) ? 0.98 : $rmax; //undercut if we have goods stuck
-            debug("sell_max_tech:B:$key");
+            Debug::msg("sell_max_tech:B:$key");
             $price[$key] = min(9999, floor(PublicMarket::price($key) * Math::purebell($rmin, $max, $rstddev, $rstep)));
-            debug("sell_max_tech:C:$key");
+            Debug::msg("sell_max_tech:C:$key");
         } else {
             $price[$key] = floor(Math::purebell($nogoods_low, $nogoods_high, $nogoods_stddev, $nogoods_step));
         }

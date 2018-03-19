@@ -220,19 +220,6 @@ function out($str, $newline = true, $foreground_color = null, $background_color 
 }//end out()
 
 
-/**
- * I need a debugging function
- * @param  string  $str     Output
- * @param  boolean $newline Whether to print new lines
- * @return void             Prints text
- */
-function debug($str, $newline = true)
-{
-    global $debug;
-    if ($debug == true) {
-        out($str, $newline);
-    }
-}//end debug()
 
 
 /**
@@ -242,10 +229,10 @@ function debug($str, $newline = true)
  */
 function out_data($data)
 {
-    $debug = debug_backtrace();
-    //out(var_export($debug, true));
+    $backtrace = debug_backtrace();
+    //out(var_export($backtrace, true));
     //This function is to output and format some data nicely
-    out("DATA: ({$debug[0]['file']}:{$debug[0]['line']})\n".json_encode($data));
+    out("DATA: ({$backtrace[0]['file']}:{$backtrace[0]['line']})\n".json_encode($data));
     //str_replace(",\n", "\n", var_export($data, true)));
 }//end out_data()
 

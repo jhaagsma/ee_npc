@@ -16,8 +16,6 @@ require_once 'communication.php';
 
 out(Colors::getColoredString("Rainbow", "purple"));
 
-$debug = false;
-
 out('STARTING UP BOT');// out() is defined below
 date_default_timezone_set('GMT'); //SET THE TIMEZONE FIRST
 error_reporting(E_ALL); //SET THE ERROR REPORTING TO REPORT EVERYTHING
@@ -143,6 +141,7 @@ while (1) {
             out("Resetting Settings #$cnum", true, 'red');
             file_put_contents($config['save_settings_file'], json_encode($settings));
         }
+
         global $cpref;
         $cpref = $settings->$cnum;
 
@@ -153,6 +152,7 @@ while (1) {
             out("Resetting Strat #$cnum", true, 'red');
             $save = true;
         }
+
         if (!isset($cpref->playfreq) || $cpref->playfreq == null) {
             $cpref->playfreq = Math::purebell($server->turn_rate, $server->turn_rate * $rules->maxturns, $server->turn_rate * 20, $server->turn_rate);
             $cpref->playrand = mt_rand(10, 20) / 10.0; //between 1.0 and 2.0
@@ -195,6 +195,7 @@ while (1) {
             if ($cpref->allyup) {
                 Allies::fill('def');
             }
+
             $playfactor = 1;
             try {
                 switch ($cpref->strat) {
@@ -256,10 +257,12 @@ while (1) {
                 destock($server, $cnum);
             }
         }
+
         out("Sleep until end");
         sleep(($until_end + 1) * $server->turn_rate);     //don't let them fluff things up, sleep through end of reset
         $server = ee('server');
     }
+
     $cnum = null;
     $loopcount++;
     $sleepturns = 25;
@@ -284,6 +287,7 @@ while (1) {
     sleep($sleep); //sleep for $sleep seconds
     outNext($countries, true);
 }
+
 done(); //done() is defined below
 
 function furthest_play($cpref)
@@ -427,6 +431,7 @@ function govtStats($countries)
             out("Picking a new strat for #$cnum");
             $settings->$cnum->strat = pickStrat($cnum);
         }
+
         $s = $settings->$cnum->strat;
         if (!isset($govs[$s])) {
             $govs[$s] = [txtStrat($cnum), 0, 999999, 0, 0];
@@ -491,6 +496,7 @@ function lastPlays($countries)
             $settings->$cnum->lastplay = 0; //set it?
         }
     }
+
     return $lastplays;
 }//end lastPlays()
 
@@ -506,6 +512,7 @@ function sd($array)
     if (!$array) {
         return 0;
     }
+
     // square root of sum of squares devided by N-1
     //frikkin namespaces making my life difficult
     return sqrt(
@@ -531,6 +538,7 @@ function onmarket($good = 'food', &$c = null)
     if ($c == null) {
         return out_data(debug_backtrace());
     }
+
     return $c->onMarket($good);
 }//end onmarket()
 
@@ -541,6 +549,7 @@ function onmarket_value($good = null, &$c = null)
     if (!$mktinfo) {
         $mktinfo = get_owned_on_market_info();  //find out what we have on the market
     }
+
     //out_data($mktinfo);
     //exit;
     $value = 0;
@@ -556,6 +565,7 @@ function onmarket_value($good = null, &$c = null)
             $c->onMarket($goods);
         }
     }
+
     return $value;
 }//end onmarket_value()
 
@@ -577,13 +587,14 @@ function total_cansell_tech($c)
     if ($c->turns_played < 100) {
         return 0;
     }
+
     $cansell = 0;
     global $techlist;
     foreach ($techlist as $tech) {
         $cansell += can_sell_tech($c, $tech);
     }
 
-    debug("CANSELL TECH: $cansell");
+    Debug::msg("CANSELL TECH: $cansell");
     return $cansell;
 }//end total_cansell_tech()
 
@@ -607,7 +618,7 @@ function can_sell_tech(&$c, $tech = 't_bus')
     $onmarket = $c->onMarket($tech);
     $tot      = $c->$tech + $onmarket;
     $sell     = floor($tot * 0.25) - $onmarket;
-    debug("Can Sell $tech: $sell; (At Home: {$c->$tech}; OnMarket: $onmarket)");
+    Debug::msg("Can Sell $tech: $sell; (At Home: {$c->$tech}; OnMarket: $onmarket)");
 
     return $sell > 10 ? $sell : 0;
 }//end can_sell_tech()
@@ -630,6 +641,7 @@ function update_c(&$c, $result)
     if (!isset($result->turns) || !$result->turns) {
         return;
     }
+
     $numT = 0;
     foreach ($result->turns as $z) {
         $numT++; //this is dumb, but count wasn't working????
@@ -646,6 +658,7 @@ function update_c(&$c, $result)
             if (!$first) {                     //Text formatting
                 $str .= ' and ';        //Text formatting
             }
+
             $first      = false;             //Text formatting
             $build      = 'b_'.$type;        //have to convert to the advisor output, for now
             $c->$build += $num;         //add buildings to keep track
@@ -687,6 +700,7 @@ function update_c(&$c, $result)
             $c->$build += $num;             //add buildings to keep track
             $tot       += $num;   //Text for screen
         }
+
         $c->tpt  = $result->tpt;             //update TPT - added this to the API so that we don't have to calculate it
         $str    .= $tot.' '.actual_count($result->turns).' turns';
         $explain = '('.$c->tpt.' tpt)';     //Text for screen
@@ -730,19 +744,23 @@ function update_c(&$c, $result)
             } elseif ($turn->event == 'foodbad') {       //in the event of a food boom, recalculate netfood so we don't react based on an event
                 $c->foodnet = floor(isset($turn->foodproduced) ? $turn->foodproduced * 3 : 0) - (isset($turn->foodconsumed) ? $turn->foodconsumed : 0);
             }
+
             $event .= event_text($turn->event).' ';//Text for screen
         }
 
         if (isset($turn->cmproduced)) {//a CM was produced
             $event .= 'CM '; //Text for screen
         }
+
         if (isset($turn->nmproduced)) {//an NM was produced
             $event .= 'NM '; //Text for screen
         }
+
         if (isset($turn->emproduced)) {//an EM was produced
             $event .= 'EM '; //Text for screen
         }
     }
+
     $c->money += $netmoney;
     $c->food  += $netfood;
 
@@ -762,6 +780,7 @@ function update_c(&$c, $result)
     if ($c->money < 0 || $c->food < 0) {
         $str = Colors::getColoredString($str, "red");
     }
+
     out($str);
     $APICalls = 0;
 }//end update_c()
@@ -822,12 +841,14 @@ function explore(&$c, $turns = 1)
         out("We can't explore (Built: {$b}%), what are we doing?");
         return;
     }
+
     //this means 1 is the default number of turns if not provided
     $result = ee('explore', ['turns' => $turns]);      //cash a certain number of turns
     if ($result === false) {
         out('Explore Fail? Update Advisor');
         $c = get_advisor();
     }
+
     return $result;
 }//end explore()
 
@@ -923,6 +944,7 @@ function change_govt(&$c, $govt)
         out("Govt switched to {$result->govt}!");
         $c = get_advisor();     //UPDATE EVERYTHING
     }
+
     return $result;
 }//end change_govt()
 
@@ -936,10 +958,10 @@ function buy_on_pm(&$c, $units = [])
         out_data($result);
         out_data($units);
         out("UPDATE EVERYTHING");
-        global $debug, $pm_info;
-        debug($pm_info);
-        $debug = true;
-        $c     = get_advisor();     //UPDATE EVERYTHING
+        global $pm_info;
+        Debug::on();
+        Debug::msg($pm_info);
+        $c = get_advisor();     //UPDATE EVERYTHING
         out("refresh money={$c->money}");
         return $result;
     }
@@ -956,6 +978,7 @@ function buy_on_pm(&$c, $units = [])
         $c->$type += $amount;
         $str      .= $amount.' '.$type.', ';
     }
+
     $str .= 'for $'.$result->cost.' on PM';
     out($str);
     return $result;
@@ -978,6 +1001,7 @@ function sell_on_pm(&$c, $units = [])
         $c->$type -= $amount;
         $str      .= $amount.' '.$type.', ';
     }
+
     $str .= 'for $'.$result->money.' on PM';
     out($str);
     return $result;
@@ -1004,9 +1028,7 @@ function rand_country_name()
             $name .= $last = chr(rand(97, 122)); //a-z
         }
     }
+
     $name = trim($name);
     return $name;
 }//end rand_country_name()
-
-
-
