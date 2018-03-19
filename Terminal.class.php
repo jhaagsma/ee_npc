@@ -13,6 +13,24 @@
 
 namespace EENPC;
 
+/*
+IDEA FOR USEING out() BUT USING TERMINAL!
+
+https://stackoverflow.com/questions/7141745/alias-class-method-as-global-function
+You can either create a wrapper function or use create_function().
+
+function _t() {
+    call_user_func_array(array('TranslationClass', '_t'), func_get_arts());
+}
+
+Or you can create a function on the fly:
+
+$t = create_function('$string', 'return TranslationClass::_t($string);');
+
+// Which would be used as:
+print $t('Hello, World');
+*/
+
 class Terminal
 {
 
