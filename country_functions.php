@@ -107,7 +107,7 @@ function buy_public_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false, $de
 }//end buy_public_below_dpnw()
 
 
-function buy_private_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false)
+function buy_private_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false, $defOnly = false)
 {
     //out("Stage 2");
     $pm_info = get_pm_info();   //get the PM info
@@ -124,6 +124,11 @@ function buy_private_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false)
     $ta_price = round($dpnw * 2);
 
     $order = [1,2,3,4];
+
+    if ($defOnly) {
+        $order = [1, 2, 4];
+    }
+
     if ($shuffle) {
         shuffle($order);
     }
@@ -385,7 +390,7 @@ function defend_self(&$c, $reserve_cash = 50000)
             $dpnw = $dpnwOld + 1;
         }
 
-        buy_public_below_dpnw($c, $dpnw, $spend, false);
+        buy_public_below_dpnw($c, $dpnw, $spend, true, true);
         $spend = max(0, $c->money - $reserve_cash);
         $nlg   = $c->nlg();
         $dpa   = $c->defPerAcre();
@@ -395,7 +400,7 @@ function defend_self(&$c, $reserve_cash = 50000)
             break;
         }
 
-        buy_private_below_dpnw($c, $dpnw, $spend, true);
+        buy_private_below_dpnw($c, $dpnw, $spend, true, true);
         $dpnwOld = $dpnw;
         $dpnw    = minDpnw($c);
         if ($dpnw <= $dpnwOld) {
