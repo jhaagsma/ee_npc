@@ -94,7 +94,7 @@ function play_farmer_strat($server)
 
         if ($c->income < 0 && $c->money < -5 * $c->income) { //sell 1/4 of all military on PM
             out("Almost out of money! Sell 10 turns of income in food!");   //Text for screen
-            sell_on_pm($c, array('m_bu' => min($c->food, floor(-10 * $c->income / $pm_info->sell_price->m_bu))));     //sell 1/4 of our military
+            PrivateMarket::sell($c, array('m_bu' => min($c->food, floor(-10 * $c->income / $pm_info->sell_price->m_bu))));     //sell 1/4 of our military
         }
 
         if (turns_of_food($c) > 50 && turns_of_money($c) > 50 && $c->money > 3500 * 500 && ($c->built() > 80 || $c->money > $c->fullBuildCost())) { // 40 turns of food
@@ -161,7 +161,7 @@ function sellextrafood_farmer(&$c)
     $price   = array('m_bu' => $price);
 
     if ($price <= max(29, $pm_info->sell_price->m_bu / $c->tax())) {
-        return sell_on_pm($c, array('m_bu' => $quantity)); ///      sell_on_pm($c,array('m_bu' => $c->food));   //Sell 'em
+        return PrivateMarket::sell($c, array('m_bu' => $quantity)); ///      PrivateMarket::sell($c,array('m_bu' => $c->food));   //Sell 'em
     }
     return PublicMarket::sell($c, $quantity, $price);    //Sell food!
 }//end sellextrafood_farmer()
