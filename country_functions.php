@@ -26,7 +26,7 @@ function destock($server, $cnum)
 
 
 
-function buy_public_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false)
+function buy_public_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false, $defOnly = false)
 {
     //out("Stage 1");
     //$market_info = get_market_info();
@@ -54,7 +54,12 @@ function buy_public_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false)
     $bah = $ta_cost; //keep the linter happy; we DO use these vars, just dynamically
     $bah = $bah;
 
+
     $units = ['tu','tr','ta','j'];
+    if ($defOnly) {
+        $units = ['tu','tr','ta'];
+    }
+
     if ($shuffle) {
         shuffle($units);
     }
@@ -375,7 +380,7 @@ function defend_self(&$c, $reserve_cash = 50000)
         }
         $dpnwOld = $dpnw;
         $dpnw    = minDpnw($c);
-        out("Old DPNW: $dpnwOld; New DPNW: $dpnw");
+        out("Old DPNW: ".round($dpnwOld, 1)."; New DPNW: ".round($dpnw, 1));
         if ($dpnw <= $dpnwOld) {
             $dpnw = $dpnwOld + 1;
         }
