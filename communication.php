@@ -216,19 +216,3 @@ function actual_count($data)
 
     return $i;
 }//end actual_count()
-
-
-/**
- * Exit
- * @param  string $str Final output String
- * @return exit
- */
-function done($str = null)
-{
-    if ($str) {
-        out($str);
-    }
-
-    out("Exiting\n\n");
-    exit;
-}//end done()

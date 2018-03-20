@@ -1,4 +1,6 @@
-<?php namespace EENPC;
+<?php
+
+namespace EENPC;
 
 function play_casher_strat($server)
 {
@@ -107,7 +109,7 @@ function build_casher(&$c)
 {
     //build ent/res
     $ent = ceil($c->bpt * 1.05 / 2);
-    return build(array('ent' => $ent, 'res' => $c->bpt - $ent));
+    return build(['ent' => $ent, 'res' => $c->bpt - $ent]);
 }//end build_casher()
 
 

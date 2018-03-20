@@ -82,8 +82,7 @@ while (1) {
 
     while ($server->alive_count < $server->countries_allowed) {
         out("Less countries than allowed! (".$server->alive_count.'/'.$server->countries_allowed.')');
-        include_once 'name_generator.php';
-        $send_data = ['cname' => rand_name()];
+        $send_data = ['cname' => NameGenerator::rand_name()];
         out("Making new country named '".$send_data['cname']."'");
         $cnum = ee('create', $send_data);
         out($send_data['cname'].' (#'.$cnum.') created!');
@@ -112,8 +111,8 @@ while (1) {
     $countries = $server->cnum_list->alive;
 
     if ($played) {
-        server_start_end_notification($server);
-        playstats($countries);
+        Bots::server_start_end_notification($server);
+        Bots::playstats($countries);
         echo "\n";
     }
 
@@ -149,7 +148,7 @@ while (1) {
         $mktinfo = null;
 
         if (!isset($cpref->strat) || $cpref->strat == null) {
-            $cpref->strat = pickStrat($cnum);
+            $cpref->strat = Bots::pickStrat($cnum);
             out("Resetting Strat #$cnum", true, 'red');
             $save = true;
         }
@@ -280,142 +279,16 @@ while (1) {
 
     if ($sleepcount % 300 == 0) {
         $server = ee('server');
-        //playstats($countries);
+        //Bots::playstats($countries);
         //echo "\n";
     }
 
 
     sleep($sleep); //sleep for $sleep seconds
-    outNext($countries, true);
+    Bots::outNext($countries, true);
 }
 
 done(); //done() is defined below
-
-function furthest_play($cpref)
-{
-    global $server, $rules;
-    $max   = $rules->maxturns + $rules->maxstore;
-    $held  = $cpref->lastTurns + $cpref->turnsStored;
-    $diff  = $max - $held;
-    $maxin = floor($diff * $server->turn_rate);
-    out('Country is holding '.$held.'. Turns will max in '.$maxin);
-    return $maxin;
-}//end furthest_play()
-
-
-function server_start_end_notification($server)
-{
-    $start  = round((time() - $server->reset_start) / 3600, 1).' hours ago';
-    $x      = floor((time() - $server->reset_start) / $server->turn_rate);
-    $start .= " ($x turns)";
-    $end    = round(($server->reset_end - time()) / 3600, 1).' hours';
-    $x      = floor(($server->reset_end - time()) / $server->turn_rate);
-    $end   .= " ($x turns)";
-    out("Server started ".$start.' and ends in '.$end);
-}//end server_start_end_notification()
-
-
-function pickStrat($cnum)
-{
-    $rand = rand(0, 100);
-    if ($rand < 25) {
-        return 'F';
-    } elseif ($rand < 55) {
-        return 'T';
-    } elseif ($rand < 80) {
-        return 'C';
-    } elseif ($rand < 95) {
-        return 'I';
-    } else {
-        return 'R';
-    }
-}//end pickStrat()
-
-
-function playstats($countries)
-{
-    govtStats($countries);
-
-    global $server;
-    $stddev = round(playtimes_stddev($countries));
-    out("Standard Deviation of play is: $stddev; (".round($stddev / $server->turn_rate).' turns)');
-    if ($stddev < $server->turn_rate * 72 / 4 || $stddev > $server->turn_rate * 72) {
-        out('Recalculating Nextplays');
-        global $settings;
-        foreach ($countries as $cnum) {
-            $settings->$cnum->nextplay = time() + rand(0, $server->turn_rate * 72);
-        }
-
-        $stddev = round(playtimes_stddev($countries));
-        out("Standard Deviation of play is: $stddev");
-    }
-
-    outOldest($countries);
-    outFurthest($countries);
-    //outNext($countries);
-}//end playstats()
-
-
-function outOldest($countries)
-{
-    global $server;
-    $old    = oldestPlay($countries);
-    $onum   = Bots::getLastPlayCNUM($countries, $old);
-    $ostrat = txtStrat($onum);
-    $old    = time() - $old;
-    out("Oldest Play: ".$old."s ago by #$onum $ostrat (".round($old / $server->turn_rate)." turns)");
-    if ($old > 86400 * 2) {
-        out("OLD TOO FAR: RESET NEXTPLAY");
-        global $settings;
-        $settings->$onum->nextplay = 0;
-    }
-}//end outOldest()
-
-
-function outFurthest($countries)
-{
-    global $server;
-    $furthest = Bots::getFurthestNext($countries);
-    $fnum     = Bots::getNextPlayCNUM($countries, $furthest);
-    $fstrat   = txtStrat($fnum);
-    $furthest = $furthest - time();
-    out("Furthest Play in ".$furthest."s for #$fnum $fstrat (".round($furthest / $server->turn_rate)." turns)");
-}//end outFurthest()
-
-
-function outNext($countries, $rewrite = false)
-{
-    $next   = Bots::getNextPlays($countries);
-    $xnum   = Bots::getNextPlayCNUM($countries, min($next));
-    $xstrat = txtStrat($xnum);
-    $next   = max(0, min($next) - time());
-    out("Next Play in ".$next.'s: #'.$xnum." $xstrat    ".($rewrite ? "\r" : null), !$rewrite);
-}//end outNext()
-
-
-function txtStrat($cnum)
-{
-    global $settings;
-    if (!isset($settings->$cnum->strat)) {
-        return;
-    }
-
-    switch ($settings->$cnum->strat) {
-        case 'C':
-            return CASHER;
-        case 'F':
-            return FARMER;
-        case 'I':
-            return INDY;
-        case 'T':
-            return TECHER;
-            break;
-        case 'R':
-            return RAINBOW;
-        case 'O':
-            return OILER;
-    }
-}//end txtStrat()
 
 
 function govtStats($countries)
@@ -430,12 +303,12 @@ function govtStats($countries)
     foreach ($countries as $cnum) {
         if (!isset($settings->$cnum->strat)) {
             out("Picking a new strat for #$cnum");
-            $settings->$cnum->strat = pickStrat($cnum);
+            $settings->$cnum->strat = Bots::pickStrat($cnum);
         }
 
         $s = $settings->$cnum->strat;
         if (!isset($govs[$s])) {
-            $govs[$s] = [txtStrat($cnum), 0, 999999, 0, 0];
+            $govs[$s] = [Bots::txtStrat($cnum), 0, 999999, 0, 0];
         }
 
         if (!isset($settings->$cnum->networth) || !isset($settings->$cnum->land)) {
@@ -475,60 +348,6 @@ function govtStats($countries)
 
 
 
-
-
-
-
-function playtimes_stddev($countries)
-{
-    $nextplays = Bots::getNextPlays($countries);
-    return sd($nextplays);
-}//end playtimes_stddev()
-
-
-function lastPlays($countries)
-{
-    global $settings;
-    $lastplays = [];
-    foreach ($countries as $cnum) {
-        if (isset($settings->$cnum->lastplay)) {
-            $lastplays[] = $settings->$cnum->lastplay;
-        } else {
-            $settings->$cnum->lastplay = 0; //set it?
-        }
-    }
-
-    return $lastplays;
-}//end lastPlays()
-
-
-function oldestPlay($countries)
-{
-    return min(lastPlays($countries));
-}//end oldestPlay()
-
-
-function sd($array)
-{
-    if (!$array) {
-        return 0;
-    }
-
-    // square root of sum of squares devided by N-1
-    //frikkin namespaces making my life difficult
-    return sqrt(
-        array_sum(
-            array_map(
-                // ANONYMOUS Function to calculate square of value - mean
-                function ($x, $mean) {
-                    return pow($x - $mean, 2);
-                },
-                $array,
-                array_fill(0, count($array), (array_sum($array) / count($array)))
-            )
-        ) / (count($array) - 1)
-    );
-}//end sd()
 
 
 
@@ -715,16 +534,16 @@ function update_c(&$c, $result)
     $netmoney = $netfood = 0;
     foreach ($result->turns as $num => $turn) {
         //update stuff based on what happened this turn
-        $netfood  += $c->foodnet  = floor(isset($turn->foodproduced) ? $turn->foodproduced : 0) - (isset($turn->foodconsumed) ? $turn->foodconsumed : 0);
-        $netmoney += $c->income = floor(isset($turn->taxrevenue) ? $turn->taxrevenue : 0) - (isset($turn->expenses) ? $turn->expenses : 0);
+        $netfood  += $c->foodnet  = floor($turn->foodproduced ?? 0) - ($turn->foodconsumed ?? 0);
+        $netmoney += $c->income = floor($turn->taxrevenue ?? 0) - ($turn->expenses ?? 0);
 
         //the turn doesn't *always* return these things, so have to check if they exist, and add 0 if they don't
-        $c->pop   += floor(isset($turn->popgrowth) ? $turn->popgrowth : 0);
-        $c->m_tr  += floor(isset($turn->troopsproduced) ? $turn->troopsproduced : 0);
-        $c->m_j   += floor(isset($turn->jetsproduced) ? $turn->jetsproduced : 0);
-        $c->m_tu  += floor(isset($turn->turretsproduced) ? $turn->turretsproduced : 0);
-        $c->m_ta  += floor(isset($turn->tanksproduced) ? $turn->tanksproduced : 0);
-        $c->m_spy += floor(isset($turn->spiesproduced) ? $turn->spiesproduced : 0);
+        $c->pop   += floor($turn->popgrowth ?? 0);
+        $c->m_tr  += floor($turn->troopsproduced ?? 0);
+        $c->m_j   += floor($turn->jetsproduced ?? 0);
+        $c->m_tu  += floor($turn->turretsproduced ?? 0);
+        $c->m_ta  += floor($turn->tanksproduced ?? 0);
+        $c->m_spy += floor($turn->spiesproduced ?? 0);
         $c->turns--;
 
         //out_data($turn);
@@ -736,14 +555,18 @@ function update_c(&$c, $result)
 
                 //update the advisor, because we no longer know what infromation is valid
                 $advisor_update = true;
-            } elseif ($turn->event == 'pciboom') {       //in the event of a pci boom, recalculate income so we don't react based on an event
-                $c->income = floor(isset($turn->taxrevenue) ? $turn->taxrevenue / 3 : 0) - (isset($turn->expenses) ? $turn->expenses : 0);
-            } elseif ($turn->event == 'pcibad') {        //in the event of a pci bad, recalculate income so we don't react based on an event
-                $c->income = floor(isset($turn->taxrevenue) ? $turn->taxrevenue * 3 : 0) - (isset($turn->expenses) ? $turn->expenses : 0);
-            } elseif ($turn->event == 'foodboom') {      //in the event of a food boom, recalculate netfood so we don't react based on an event
-                $c->foodnet = floor(isset($turn->foodproduced) ? $turn->foodproduced / 3 : 0) - (isset($turn->foodconsumed) ? $turn->foodconsumed : 0);
-            } elseif ($turn->event == 'foodbad') {       //in the event of a food boom, recalculate netfood so we don't react based on an event
-                $c->foodnet = floor(isset($turn->foodproduced) ? $turn->foodproduced * 3 : 0) - (isset($turn->foodconsumed) ? $turn->foodconsumed : 0);
+            } elseif ($turn->event == 'pciboom') {
+                //in the event of a pci boom, recalculate income so we don't react based on an event
+                $c->income = floor(($turn->taxrevenue ?? 0) / 3) - ($turn->expenses ?? 0);
+            } elseif ($turn->event == 'pcibad') {
+                //in the event of a pci bad, recalculate income so we don't react based on an event
+                $c->income = floor(($turn->taxrevenue ?? 0) / 3) - ($turn->expenses ?? 0);
+            } elseif ($turn->event == 'foodboom') {
+                //in the event of a food boom, recalculate netfood so we don't react based on an event
+                $c->foodnet = floor(($turn->foodproduced ?? 0) / 3) - ($turn->foodconsumed ?? 0);
+            } elseif ($turn->event == 'foodbad') {
+                //in the event of a food boom, recalculate netfood so we don't react based on an event
+                $c->foodnet = floor($turn->foodproduced * 3 ?? 0) - ($turn->foodconsumed ?? 0);
             }
 
             $event .= event_text($turn->event).' ';//Text for screen
@@ -770,14 +593,14 @@ function update_c(&$c, $result)
     }
 
     //Text formatting (adding a + if it is positive; - will be there if it's negative already)
-    $netfood  = str_pad('('.($netfood > 0 ? '+' : null).$netfood.')', 10, ' ', STR_PAD_LEFT);
-    $netmoney = str_pad('($'.($netmoney > 0 ? '+' : null).$netmoney.')', 12, ' ', STR_PAD_LEFT);
+    $netfood  = str_pad('('.($netfood > 0 ? '+' : null).$netfood.')', 11, ' ', STR_PAD_LEFT);
+    $netmoney = str_pad('($'.($netmoney > 0 ? '+' : null).$netmoney.')', 14, ' ', STR_PAD_LEFT);
 
     $str  = str_pad($str, 26).str_pad($explain, 12).str_pad('$'.$c->money, 16, ' ', STR_PAD_LEFT);
-    $str .= $netmoney.str_pad($c->food.' Bu', 12, ' ', STR_PAD_LEFT).$netfood; //Text for screen
+    $str .= $netmoney.str_pad($c->food.' Bu', 14, ' ', STR_PAD_LEFT).$netfood; //Text for screen
 
     global $APICalls;
-    $str = str_pad($c->turns, 3).' Turns - '.$str.' '.str_pad($event, 6).' API: '.$APICalls;
+    $str = str_pad($c->turns, 3).' Turns - '.$str.' '.str_pad($event, 8).' API: '.$APICalls;
     if ($c->money < 0 || $c->food < 0) {
         $str = Colors::getColoredString($str, "red");
     }
@@ -951,85 +774,22 @@ function change_govt(&$c, $govt)
 
 
 
-function buy_on_pm(&$c, $units = [])
+
+
+/**
+ * Exit
+ * @param  string $str Final output String
+ * @return exit
+ */
+function done($str = null)
 {
-    $result = ee('pm', ['buy' => $units]);
-    if (!isset($result->cost)) {
-        out("Failed to buy units on PM; money={$c->money}");
-        out_data($result);
-        out_data($units);
-        out("UPDATE EVERYTHING");
-        global $pm_info;
-        Debug::on();
-        Debug::msg($pm_info);
-        $c = get_advisor();     //UPDATE EVERYTHING
-        out("refresh money={$c->money}");
-        return $result;
+    if ($str) {
+        out($str);
     }
 
-    $c->money -= $result->cost;
-    $str       = 'Bought ';
-    foreach ($result->goods as $type => $amount) {
-        if ($type == 'm_bu') {
-            $type = 'food';
-        } elseif ($type == 'm_oil') {
-            $type = 'oil';
-        }
-
-        $c->$type += $amount;
-        $str      .= $amount.' '.$type.', ';
-    }
-
-    $str .= 'for $'.$result->cost.' on PM';
-    out($str);
-    return $result;
-}//end buy_on_pm()
+    out("Exiting\n\n");
+    exit;
+}//end done()
 
 
 
-function sell_on_pm(&$c, $units = [])
-{
-    $result    = ee('pm', ['sell' => $units]);
-    $c->money += $result->money;
-    $str       = 'Sold ';
-    foreach ($result->goods as $type => $amount) {
-        if ($type == 'm_bu') {
-            $type = 'food';
-        } elseif ($type == 'm_oil') {
-            $type = 'oil';
-        }
-
-        $c->$type -= $amount;
-        $str      .= $amount.' '.$type.', ';
-    }
-
-    $str .= 'for $'.$result->money.' on PM';
-    out($str);
-    return $result;
-}//end sell_on_pm()
-
-
-
-
-
-
-function rand_country_name()
-{
-    global $username;
-    $name   = substr($username, 0, 2).' '; //name them by the first 2 chars of a username; should still be fairly unique on this server
-    $last   = chr(32); //we just added a space
-    $length = rand(5, 24);
-    for ($i = 0; $i < $length; $i++) {
-        $rand = rand(0, 10);
-        if ($rand == 0 && $last != chr(32)) {
-            $name .= $last = chr(32); //space
-        } elseif ($rand % 2) {
-            $name .= $last = chr(rand(65, 90)); //A-Z
-        } else {
-            $name .= $last = chr(rand(97, 122)); //a-z
-        }
-    }
-
-    $name = trim($name);
-    return $name;
-}//end rand_country_name()

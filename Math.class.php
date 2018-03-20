@@ -41,4 +41,33 @@ class Math
         }
         return $random_number;
     }//end purebell()
+
+    /**
+     * Calculate the standard deviation
+     *
+     * @param  array $array An array of numbers
+     *
+     * @return float        The standard deviation of the numbers
+     */
+    public static function standardDeviation($array)
+    {
+        if (!$array) {
+            return 0;
+        }
+
+        // square root of sum of squares devided by N-1
+        //frikkin namespaces making my life difficult
+        return sqrt(
+            array_sum(
+                array_map(
+                    // ANONYMOUS Function to calculate square of value - mean
+                    function ($x, $mean) {
+                        return pow($x - $mean, 2);
+                    },
+                    $array,
+                    array_fill(0, count($array), (array_sum($array) / count($array)))
+                )
+            ) / (count($array) - 1)
+        );
+    }//end standardDeviation()
 }//end class
