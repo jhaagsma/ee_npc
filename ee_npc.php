@@ -119,6 +119,7 @@ while (1) {
     $played = false;
     //out("Country Count: ".count($countries));
     foreach ($countries as $cnum) {
+        Debug::off(); //reset for new country
         $save = false;
         if (!isset($settings->$cnum)) {
             $settings->$cnum = json_decode(
