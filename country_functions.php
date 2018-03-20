@@ -383,17 +383,22 @@ function defend_self(&$c, $reserve_cash = 50000, $dpnwMax = 380)
     $nlg        = $c->nlg();
     $dpat       = $c->defPerAcreTarget();
     $dpa        = $c->defPerAcre();
-
-    if ($dpa < $dpat) {
-        out("--- DPA Target: $dpat (Current: $dpa)");  //Text for screen
-    } else {
-        out("--- NLG Target: $nlg_target (Current: $nlg)");  //Text for screen
-    }
+    $outonce    = false;
 
     while (($nlg < $nlg_target || $dpa < $dpat) && $spend >= 100000 && $dpnw < $dpnwMax) {
+        if (!$outonce) {
+            if ($dpa < $dpat) {
+                out("--- DPA Target: $dpat (Current: $dpa)");  //Text for screen
+            } else {
+                out("--- NLG Target: $nlg_target (Current: $nlg)");  //Text for screen
+            }
+
+            $outonce = true;
+        }
+
         $dpnwOld = $dpnw;
         $dpnw    = minDpnw($c, true); //ONLY DEF
-        out("Old DPNW: ".round($dpnwOld, 1)."; New DPNW: ".round($dpnw, 1));
+        //out("Old DPNW: ".round($dpnwOld, 1)."; New DPNW: ".round($dpnw, 1));
         if ($dpnw <= $dpnwOld) {
             $dpnw = $dpnwOld + 1;
         }
