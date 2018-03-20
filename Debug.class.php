@@ -24,9 +24,13 @@ class Debug
      */
     public static function on()
     {
+        if (!self::$debugging) {
+            out("TURNING ON DEBUGGING!");
+            out_data(debug_backtrace());
+            sleep(60);
+        }
+
         self::$debugging = true;
-        out_data(debug_backtrace());
-        sleep(60);
     }//end on()
 
 
