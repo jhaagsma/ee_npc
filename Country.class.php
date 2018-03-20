@@ -83,13 +83,13 @@ class Country
 
     public function stuckOnMarket($goods)
     {
-        out_data($goods);
+        //out_data($goods);
         $expl       = explode('_', $goods->type);
         $good       = $expl[0] == 't' ? $expl[1] : $goods->type;
         $good       = $good == 'm_bu' ? 'food' : $good;
         $atm        = 'at'.$good;
         $this->$atm = $goods->time < time() ? true : false;
-        //out("Setting $atm: {$this->$atm}");
+        out("Setting $atm: {$this->$atm};");
     }//end stuckOnMarket()
 
 
@@ -118,6 +118,8 @@ class Country
     /**
      * Set the indy production
      * @param array|string $what either the unit to set to 100%, or an array of percentages
+     *
+     * @return void
      */
     public function setIndy($what)
     {
