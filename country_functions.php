@@ -385,9 +385,9 @@ function defend_self(&$c, $reserve_cash = 50000, $dpnwMax = 380)
     $dpa        = $c->defPerAcre();
 
     if ($dpa < $dpat) {
-        out("--- Defence/Acre Goal: $dpat (Current: $dpa)");  //Text for screen
+        out("--- DPA Target: $dpat (Current: $dpa)");  //Text for screen
     } else {
-        out("--- Networth/Land*Govt Goal: $nlg_target (Current: $nlg)");  //Text for screen
+        out("--- NLG Target: $nlg_target (Current: $nlg)");  //Text for screen
     }
 
     while (($nlg < $nlg_target || $dpa < $dpat) && $spend >= 100000 && $dpnw < $dpnwMax) {
