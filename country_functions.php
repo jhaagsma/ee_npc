@@ -384,12 +384,13 @@ function defend_self(&$c, $reserve_cash = 50000, $dpnwMax = 380)
     $dpat       = $c->defPerAcreTarget();
     $dpa        = $c->defPerAcre();
 
+    if ($dpa < $dpat) {
+        out("--- Defence/Acre Goal: $dpat (Current: $dpa)");  //Text for screen
+    } else {
+        out("--- Networth/Land*Govt Goal: $nlg_target (Current: $nlg)");  //Text for screen
+    }
+
     while (($nlg < $nlg_target || $dpa < $dpat) && $spend >= 100000 && $dpnw < $dpnwMax) {
-        if ($dpa < $dpat) {
-            out("Try to buy goods at $dpnw dpnw or below to reach DPA of $dpat from $dpa!");  //Text for screen
-        } else {
-            out("Try to buy goods at $dpnw dpnw or below to reach NLG of $nlg_target from $nlg!");  //Text for screen
-        }
         $dpnwOld = $dpnw;
         $dpnw    = minDpnw($c, true); //ONLY DEF
         out("Old DPNW: ".round($dpnwOld, 1)."; New DPNW: ".round($dpnw, 1));
