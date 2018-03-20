@@ -31,24 +31,38 @@ $t = create_function('$string', 'return TranslationClass::_t($string);');
 print $t('Hello, World');
 */
 
+
+/**
+ * Function alias for Terminal::out($string)
+ *
+ * @return void
+ */
 function out()
 {
     call_user_func_array(['\EENPC\Terminal', 'out'], func_get_args());
 }//end out()
 
 
+/**
+ * Function alias for Terminal::data($data)
+ *
+ * @return void
+ */
 function out_data()
 {
-    call_user_func_array(['\EENPC\Terminal', 'out_data'], func_get_args());
+    call_user_func_array(['\EENPC\Terminal', 'data'], func_get_args());
 }//end out_data()
 
 
 class Terminal
 {
+    private static $columns  = [];
+    private static $maxwidth = 125; //don't know if I need this yet
+
     /**
      * Ouput strings nicely
      * @param  string  $str              The string to format
-     * @param  boolean $newline          If we shoudl make a new line
+     * @param  boolean $newline          If we should make a new line
      * @param  string  $foreground_color Foreground color
      * @param  string  $background_color Background color
      *
@@ -76,86 +90,28 @@ class Terminal
      * @param  array,object $data Data to ouput
      * @return void
      */
-    public static function out_data($data)
+    public static function data($data)
     {
         $backtrace = debug_backtrace();
-        //out(var_export($backtrace, true));
+        out(var_export($backtrace, true));
         //This function is to output and format some data nicely
         out("DATA: ({$backtrace[0]['file']}:{$backtrace[0]['line']})\n".json_encode($data));
         //str_replace(",\n", "\n", var_export($data, true)));
-    }//end out_data()
+    }//end data()
+
+
+    /**
+     * Initialize columsn for
+     *
+     * @param  integer $num number of columns
+     *
+     * @return void
+     */
+    public static function initColumns($num)
+    {
+        self::$columns = [];
+        for ($i = 0; $i < $num; $i++) {
+            self::$columns[$i] = null;
+        }
+    }//end initColumns()
 }//end class
-
-
-    //add this and the other ones later...
-    //<rule ref="Squiz.WhiteSpace.ControlStructureSpacing"/>
-
-/*
-<?xml version="1.0" encoding="UTF-8"?>
-<ruleset name="emphyre">
-<description>The PHPCS standard, minus some breaking things.
-</description>
-    <!-- Include the whole PSR-1 standard -->
-    <rule ref="PSR1"/>
-    <!-- Include the whole PSR-2 standard -->
-    <rule ref="PSR2"/>
-
-<rule ref="Generic.ControlStructures.InlineControlStructure"/>
-<rule ref="Generic.Files.LineEndings"/>
-<rule ref="Generic.Formatting.DisallowMultipleStatements"/>
-<rule ref="Generic.Formatting.MultipleStatementAlignment">
-    <properties>
-        <property name="error" value="false"/>
-        <property name="maxPadding" value="40"/>
-    </properties>
-</rule>
-<rule ref="Generic.Formatting.NoSpaceAfterCast"/>
-<rule ref="Generic.Functions.CallTimePassByReference"/>
-<rule ref="Generic.Functions.FunctionCallArgumentSpacing"/>
-<rule ref="Generic.Metrics.CyclomaticComplexity"/>
-<rule ref="Generic.Metrics.NestingLevel"/>
-<rule ref="Generic.NamingConventions.ConstructorName"/>
-<rule ref="Generic.NamingConventions.UpperCaseConstantName"/>
-<rule ref="Generic.PHP.DeprecatedFunctions"/>
-<rule ref="Generic.PHP.DisallowShortOpenTag"/>
-<rule ref="Generic.PHP.ForbiddenFunctions">
-    <properties>
-        <property name="error" value="false"/>
-    </properties>
-</rule>
-<rule ref="Generic.PHP.LowerCaseConstant"/>
-<rule ref="Generic.PHP.NoSilencedErrors">
-    <properties>
-        <property name="error" value="false"/>
-    </properties>
-</rule>
-<rule ref="Generic.WhiteSpace.DisallowTabIndent"/>
-<rule ref="PEAR.Classes.ClassDeclaration"/>
-<rule ref="PEAR.Commenting.FileComment"/>
-<rule ref="PEAR.Commenting.FunctionComment"/>
-<rule ref="PEAR.Commenting.InlineComment"/>
-<rule ref="PEAR.Files.IncludingFile"/>
-<rule ref="PEAR.Formatting.MultiLineAssignment"/>
-<rule ref="PEAR.Functions.FunctionCallSignature"/>
-<rule ref="PEAR.Functions.ValidDefaultValue"/>
-<rule ref="PEAR.WhiteSpace.ScopeClosingBrace"/>
-<rule ref="Squiz.PHP.DisallowObEndFlush"/>
-<rule ref="Squiz.PHP.DisallowSizeFunctionsInLoops"/>
-<rule ref="Squiz.PHP.DiscouragedFunctions"/>
-<rule ref="Squiz.PHP.Eval"/>
-<rule ref="Squiz.PHP.ForbiddenFunctions"/>
-<rule ref="Squiz.PHP.GlobalKeyword"/>
-<rule ref="Squiz.PHP.InnerFunctions"/>
-<rule ref="Squiz.PHP.LowercasePHPFunctions"/>
-<rule ref="Squiz.Scope.StaticThisUsage"/>
-<rule ref="Squiz.WhiteSpace.CastSpacing"/>
-<rule ref="Squiz.WhiteSpace.ControlStructureSpacing"/>
-<rule ref="Squiz.WhiteSpace.LanguageConstructSpacing"/>
-<rule ref="Squiz.WhiteSpace.LogicalOperatorSpacing"/>
-<rule ref="Squiz.WhiteSpace.ObjectOperatorSpacing"/>
-<rule ref="Squiz.WhiteSpace.OperatorSpacing"/>
-<rule ref="Squiz.WhiteSpace.PropertyLabelSpacing"/>
-<rule ref="Zend.Debug.CodeAnalyzer"/>
-<rule ref="Squiz.Commenting.ClosingDeclarationComment" />
-</ruleset>
- */

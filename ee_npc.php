@@ -229,7 +229,7 @@ while (1) {
 
                 $cpref->lastplay = time();
                 $nexttime        = round($playfactor * $cpref->playfreq * Math::purebell(1 / $cpref->playrand, $cpref->playrand, 1, 0.1));
-                $maxin           = furthest_play($cpref);
+                $maxin           = Bots::furthest_play($cpref);
                 $nexttime        = round(min($maxin, $nexttime));
                 $cpref->nextplay = $cpref->lastplay + $nexttime;
                 $nextturns       = floor($nexttime / $server->turn_rate);
@@ -461,7 +461,7 @@ function update_c(&$c, $result)
     if (!isset($result->turns) || !$result->turns) {
         return;
     }
-
+    $extrapad = 0;
     $numT = 0;
     foreach ($result->turns as $z) {
         $numT++; //this is dumb, but count wasn't working????
@@ -501,17 +501,20 @@ function update_c(&$c, $result)
             $str .= ' ('.$result->tpt.' tpt)';    //Text for screen
         }
 
-        $c->bpt    = $result->bpt;             //update BPT - added this to the API so that we don't have to calculate it
-        $c->tpt    = $result->tpt;             //update TPT - added this to the API so that we don't have to calculate it
+        //update BPT - added this to the API so that we don't have to calculate it
+        $c->bpt    = $result->bpt;
+        //update TPT - added this to the API so that we don't have to calculate it
+        $c->tpt    = $result->tpt;
         $c->money -= $result->cost;
     } elseif (isset($result->new_land)) {
         $c->empty       += $result->new_land;             //update empty land
         $c->land        += $result->new_land;              //update land
         $c->build_cost   = $result->build_cost;       //update Build Cost
         $c->explore_rate = $result->explore_rate;   //update explore rate
-        $c->tpt          = $result->tpt;                     //update TPT - added this to the API so that we don't have to calculate it
-        $str             = "Explored ".$result->new_land." Acres (".$numT.'T)';  //Text for screen
+        $c->tpt          = $result->tpt;
+        $str             = "Explored ".$result->new_land." Acres \033[1m(".$numT."T)\033[0m";
         $explain         = '('.$c->land.' A)';          //Text for screen
+        $extrapad        = 8;
     } elseif (isset($result->teched)) {
         $str = 'Tech: ';
         $tot = 0;
@@ -527,7 +530,7 @@ function update_c(&$c, $result)
     } elseif ($lastFunction == 'cash') {
         $str = "Cashed ".actual_count($result->turns)." turns";     //Text for screen
     } elseif (isset($result->sell)) {
-        $str = "Put goods on market";
+        $str = "Put goods on Public Market";
     }
 
     $event    = null; //Text for screen
@@ -593,11 +596,11 @@ function update_c(&$c, $result)
     }
 
     //Text formatting (adding a + if it is positive; - will be there if it's negative already)
-    $netfood  = str_pad('('.($netfood > 0 ? '+' : null).$netfood.')', 11, ' ', STR_PAD_LEFT);
-    $netmoney = str_pad('($'.($netmoney > 0 ? '+' : null).$netmoney.')', 14, ' ', STR_PAD_LEFT);
+    $netfood  = str_pad('('.($netfood > 0 ? '+' : null).engnot($netfood).')', 11, ' ', STR_PAD_LEFT);
+    $netmoney = str_pad('($'.($netmoney > 0 ? '+' : null).engnot($netmoney).')', 14, ' ', STR_PAD_LEFT);
 
-    $str  = str_pad($str, 26).str_pad($explain, 12).str_pad('$'.$c->money, 16, ' ', STR_PAD_LEFT);
-    $str .= $netmoney.str_pad($c->food.' Bu', 14, ' ', STR_PAD_LEFT).$netfood; //Text for screen
+    $str  = str_pad($str, 26 + $extrapad).str_pad($explain, 12).str_pad('$'.engnot($c->money), 16, ' ', STR_PAD_LEFT);
+    $str .= $netmoney.str_pad(engnot($c->food).' Bu', 14, ' ', STR_PAD_LEFT).engnot($netfood); //Text for screen
 
     global $APICalls;
     $str = str_pad($c->turns, 3).' Turns - '.$str.' '.str_pad($event, 8).' API: '.$APICalls;
@@ -608,6 +611,28 @@ function update_c(&$c, $result)
     out($str);
     $APICalls = 0;
 }//end update_c()
+
+
+/**
+ * Return engineering notation
+ *
+ * @param  number $number The number to round
+ *
+ * @return string         The rounded number with B/M/k
+ */
+function engnot($number)
+{
+    if (abs($number) > 1000000000) {
+        return round($number / 1000000000, $number / 1000000000 > 100 ? 0 : 1).'B';
+    } elseif (abs($number) > 1000000) {
+        return round($number / 1000000, $number / 1000000 > 100 ? 0 : 1).'M';
+    } elseif (abs($number) > 100000) {
+        return round($number / 1000, $number / 1000 > 100 ? 0 : 1).'k';
+    }
+
+    return $number;
+}//end engnot()
+
 
 
 function event_text($event)
@@ -790,6 +815,3 @@ function done($str = null)
     out("Exiting\n\n");
     exit;
 }//end done()
-
-
-

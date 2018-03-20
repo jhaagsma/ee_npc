@@ -78,8 +78,10 @@ class PublicMarket
     {
         global $techlist;
         $result = ee('buy', ['quantity' => $quantity, 'price' => $price]);
-        $str    = 'Bought ';
+        $str    = str_pad('--- BUY  Public: ', 26);
+        $str2   = null;
         $tcost  = 0;
+        $first  = true;
         foreach ($result->bought as $type => $details) {
             $ttype = 't_'.$type;
             if ($type == 'm_bu') {
@@ -94,21 +96,34 @@ class PublicMarket
             $c->$type += $details->quantity;
             $c->money -= $details->cost;
             $tcost    += $details->cost;
-            $str      .= $details->quantity.' '.$type.'@$'.floor($details->cost / $details->quantity);
-            $pt        = 'p'.$type;
+            $itemstr   = str_pad(engnot($details->quantity), 8, ' ', STR_PAD_LEFT)
+                         .' '.str_pad($type, 6, ' ', STR_PAD_LEFT)
+                         .' @'.str_pad('$'.floor($details->cost / $details->quantity), 5, ' ', STR_PAD_LEFT);
+
+            $pt = 'p'.$type;
             if (isset($details->$pt)) {
-                $c->$pt = $details->$pt;
-                $str   .= '('.$details->$pt.'%)';
+                $c->$pt   = $details->$pt;
+                $itemstr .= str_pad('('.$details->$pt.'%)', 9, ' ', STR_PAD_LEFT);
+            } else {
+                $itemstr .= str_pad(' ', 9);
             }
 
-            $str .= ', ';
+            $itemstr .= ' ';
+
+            if (!$first) {
+                $str2 .= "\n".str_pad(" ", 48);
+                $str2 .= $itemstr;
+            } else {
+                $str .= $itemstr;
+            }
+            $first = false;
 
             self::relaUpdate($type, $quantity, $details->quantity);
         }
 
         $nothing = false;
-        if ($str == 'Bought ') {
-            $str    .= 'nothing ';
+        if ($str == '--- BUY  Public: ') {
+            $str    .= 'Nothing.';
             $nothing = true;
         }
 
@@ -127,7 +142,8 @@ class PublicMarket
             return false;
         }
 
-        $str .= 'for $'.$tcost.' on public.';
+        $str .= str_pad('$'.engnot($c->money), 8, ' ', STR_PAD_LEFT);
+        $str .= str_pad('($-'.engnot($tcost).')', 14, ' ', STR_PAD_LEFT);
         out($str);
         return $result;
     }//end buy()
@@ -170,7 +186,8 @@ class PublicMarket
         }
 
         global $techlist;
-        $str = 'Put ';
+        $str   = str_pad('--- SELL Public: ', 26);
+        $first = true;
         if (isset($result->sell)) {
             foreach ($result->sell as $type => $details) {
                 //$bits = explode('_', $type);
@@ -186,12 +203,21 @@ class PublicMarket
 
                 //$c->$omtype += $details->quantity;
                 $c->$type -= $details->quantity;
-                $str      .= $details->quantity.' '.$type.' @ '.$details->price.', ';
+                if (!$first) {
+                    $str .= "\n".str_pad(" ", 37);
+                }
+
+                $itemstr = str_pad(engnot($details->quantity), 8, ' ', STR_PAD_LEFT)
+                         .' '.str_pad($type, 6, ' ', STR_PAD_LEFT)
+                         .' @'.str_pad('$'.$details->price, 5, ' ', STR_PAD_LEFT);
+
+                $str  .= $itemstr;
+                $first = false;
             }
         }
 
-        if ($str == 'Put ') {
-            $str .= 'nothing on market.';
+        if ($str == str_pad('--- SELL Public: ', 26)) {
+            $str .= 'Nothing.';
         }
 
         out($str);

@@ -269,14 +269,16 @@ function food_management(&$c)
         //out("Market Price: " . $market_price);
         if ($c->food < $turns_of_food && $c->money > $turns_of_food * $market_price * $c->tax() && $c->money - $turns_of_food * $market_price * $c->tax() + $c->income * $turns_buy > 0) { //losing food, less than turns_buy turns left, AND have the money to buy it
             $quantity = min($foodloss * $turns_buy, PublicMarket::available('m_bu'));
-            out(
-                "--- LOW FOOD: BUY".str_pad($turns_buy, 23, ' ', STR_PAD_LEFT).
-                " turns ".str_pad($quantity, 19, ' ', STR_PAD_LEFT).
-                str_pad(" @ \$".$market_price, 12, ' ', STR_PAD_LEFT).
-                " ".str_pad("(".$c->foodnet."/turn)", 21, ' ', STR_PAD_LEFT),
-                true,
-                'brown'
-            );     //Text for screen
+            // out(
+            //     "--- FOOD:  - Buy Public ".str_pad('('.$turns_buy, 17, ' ', STR_PAD_LEFT).
+            //     " turns)".str_pad(" @ \$".$market_price, 18, ' ', STR_PAD_LEFT).
+            //     str_pad($quantity. ' Bu', 28, ' ', STR_PAD_LEFT).
+            //     " ".str_pad("(".$c->foodnet."/turn)", 15, ' ', STR_PAD_LEFT),
+            //     true,
+            //     'brown'
+            // );     //Text for screen
+            out("--- LOW FOOD ---", true, 'brown'); //Text for screen
+
 
             //Buy 3 turns of food off the public at or below the PM price
             $result = PublicMarket::buy($c, ['m_bu' => $quantity], ['m_bu' => $market_price]);
