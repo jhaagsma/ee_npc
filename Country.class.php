@@ -83,7 +83,7 @@ class Country
 
     public function stuckOnMarket($goods)
     {
-        //out_data($goods);
+        out_data($goods);
         $expl       = explode('_', $goods->type);
         $good       = $expl[0] == 't' ? $expl[1] : $goods->type;
         $good       = $good == 'm_bu' ? 'food' : $good;
