@@ -26,7 +26,7 @@ class Debug
     {
         if (!self::$debugging) {
             out("TURNING ON DEBUGGING!");
-            out_data(debug_backtrace());
+            out_data(null);
             sleep(60);
         }
 
