@@ -78,7 +78,7 @@ class PublicMarket
     {
         global $techlist;
         $result = ee('buy', ['quantity' => $quantity, 'price' => $price]);
-        $str    = str_pad('--- BUY  Public: ', 26);
+        $str    = $init = str_pad('--- BUY  Public: ', 26);
         $str2   = null;
         $tcost  = 0;
         $first  = true;
@@ -122,7 +122,7 @@ class PublicMarket
         }
 
         $nothing = false;
-        if ($str == '--- BUY  Public: ') {
+        if ($str == $init) {
             $str    .= 'Nothing.';
             $nothing = true;
         }
@@ -186,7 +186,7 @@ class PublicMarket
         }
 
         global $techlist;
-        $str   = str_pad('--- SELL Public: ', 26);
+        $str   = $init = str_pad('--- SELL Public: ', 26);
         $first = true;
         if (isset($result->sell)) {
             foreach ($result->sell as $type => $details) {
@@ -216,7 +216,7 @@ class PublicMarket
             }
         }
 
-        if ($str == str_pad('--- SELL Public: ', 26)) {
+        if ($str == $init) {
             $str .= 'Nothing.';
         }
 
