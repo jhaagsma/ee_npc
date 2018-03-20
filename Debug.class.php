@@ -25,6 +25,8 @@ class Debug
     public static function on()
     {
         self::$debugging = true;
+        out_data(debug_backtrace());
+        sleep(60);
     }//end on()
 
 
