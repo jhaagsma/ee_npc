@@ -92,7 +92,7 @@ class Terminal
      */
     public static function data($data)
     {
-        $backtrace = debug_backtrace();
+        $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
         out(str_replace("\n", " ", var_export($backtrace, true)));
         //This function is to output and format some data nicely
         out("DATA: ({$backtrace[0]['file']}:{$backtrace[0]['line']})\n".json_encode($data));
