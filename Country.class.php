@@ -59,7 +59,7 @@ class Country
             $this->om_total += $goods->quantity;
 
             //Debug::msg("OnMarket: $key: QIn: {$goods->quantity} / QSave: {$this->$omgood}");
-            $this->stuckOnMarket($goods, $this->$omgood);
+            $this->stuckOnMarket($goods);
         }
 
         //out("Goods on Market: {$this->om_total}");
@@ -81,14 +81,14 @@ class Country
     }//end onMarket()
 
 
-    public function stuckOnMarket($goods, $quantity)
+    public function stuckOnMarket($goods)
     {
         //out_data($goods);
         $expl       = explode('_', $goods->type);
         $good       = $expl[0] == 't' ? $expl[1] : $goods->type;
         $good       = $good == 'm_bu' ? 'food' : $good;
         $atm        = 'at'.$good;
-        $this->$atm = $goods->time < time() ? $quantity : false;
+        $this->$atm = $goods->time < time() ? true : false;
         //out("Setting $atm: {$this->$atm};");
     }//end stuckOnMarket()
 
@@ -106,8 +106,10 @@ class Country
         //if (isset($this->$atm)) {
             //out("Getting $atm: {$this->$atm}");
         //}
+        $omgood = 'om_'.$good;
+        $om     = $this->$omgood ?? 0;
         if (isset($this->$atm) && $this->$atm) {
-            out("Goods Stuck: $good: {$this->$atm}");
+            out("Goods Stuck: $good: $om");
             return true;
         }
 
