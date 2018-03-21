@@ -266,7 +266,7 @@ while (1) {
             }
         }
         if (!$loop) {
-            while($server->reset_end + 1 <= time()) {
+            while($server->reset_end + 1 >= time()) {
                 $end = $server->reset_end - time();
                 out("Sleep until end: ".$end, false);
                 sleep(1);//don't let them fluff things up, sleep through end of reset
