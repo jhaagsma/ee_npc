@@ -253,14 +253,21 @@ while (1) {
     $until_end = 50;
     if ($server->reset_end - $server->turn_rate * $until_end - time() < 0) {
         for ($i = 0; $i < 5; $i++) {
+            $loop = false;
             foreach ($countries as $cnum) {
+                if ($settings->$cnum->lastplay > $server->turn_rate * 10) {
+                    $settings->$cnum->nextplay = 0;
+                    $loop                      = true;
+                    continue;
+                }
                 $mktinfo = null;
                 destock($server, $cnum);
             }
         }
-
-        out("Sleep until end");
-        sleep(($until_end + 1) * $server->turn_rate);     //don't let them fluff things up, sleep through end of reset
+        if (!$loop) {
+            out("Sleep until end");
+            sleep(($until_end + 1) * $server->turn_rate);     //don't let them fluff things up, sleep through end of reset
+        }
         $server = ee('server');
     }
 
@@ -463,7 +470,7 @@ function update_c(&$c, $result)
         return;
     }
     $extrapad = 0;
-    $numT = 0;
+    $numT     = 0;
     foreach ($result->turns as $z) {
         $numT++; //this is dumb, but count wasn't working????
     }
@@ -503,7 +510,7 @@ function update_c(&$c, $result)
         }
 
         //update BPT - added this to the API so that we don't have to calculate it
-        $c->bpt    = $result->bpt;
+        $c->bpt = $result->bpt;
         //update TPT - added this to the API so that we don't have to calculate it
         $c->tpt    = $result->tpt;
         $c->money -= $result->cost;
