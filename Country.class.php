@@ -441,19 +441,42 @@ class Country
      */
     public function countryStats($strat, $goals = [])
     {
-        out(
-            "NW: {$this->networth}; Land: {$this->land}; Govt: {$this->govt};".
-            " Played: {$this->turns_played}; Goal: ".$this->highestGoal($goals)
-        );
-        out(
-            "Bus: {$this->pt_bus}%; Res: {$this->pt_res}%;  Mil: {$this->pt_mil}%;".
-            " Agri: {$this->pt_agri}%; Indy: {$this->pt_indy}%;"
-        );
-        out(
-            "DPA: ".$this->defPerAcre()." NLG: ".$this->nlg().
-            ' DPAT:'.$this->defPerAcreTarget().' NLGT:'.$this->nlgTarget()
-        );
-        out("Done Playing ".$strat." Turns for #$this->cnum! " . siteURL($this->cnum));
+        $land = str_pad(engnot($this->land), 8, ' ', STR_PAD_LEFT);
+        $netw = str_pad(engnot($this->networth), 8, ' ', STR_PAD_LEFT);
+        $govt = str_pad($this->govt, 8, ' ', STR_PAD_LEFT);
+        $t_pl = str_pad($this->turns_played, 8, ' ', STR_PAD_LEFT);
+        $goal = str_pad($this->highestGoal($goals), 8, ' ', STR_PAD_LEFT);
+        $pmil = str_pad($this->pt_mil.'%', 8, ' ', STR_PAD_LEFT);
+        $pbus = str_pad($this->pt_bus.'%', 8, ' ', STR_PAD_LEFT);
+        $pres = str_pad($this->pt_res.'%', 8, ' ', STR_PAD_LEFT);
+        $pagr = str_pad($this->pt_agri.'%', 8, ' ', STR_PAD_LEFT);
+        $pind = str_pad($this->pt_indy.'%', 8, ' ', STR_PAD_LEFT);
+        $dpa  = str_pad($this->defPerAcre(), 8, ' ', STR_PAD_LEFT);
+        $dpat = str_pad($this->defPerAcreTarget(), 8, ' ', STR_PAD_LEFT);
+        $nlg  = str_pad($this->nlg(), 8, ' ', STR_PAD_LEFT);
+        $nlgt = str_pad($this->nlgTarget(), 8, ' ', STR_PAD_LEFT);
+        $cnum = $this->cnum;
+        $url  = str_pad(siteURL($this->cnum), 8, ' ', STR_PAD_LEFT);
+        $blt  = str_pad($this->built().'%', 8, ' ', STR_PAD_LEFT);
+        $bpt  = str_pad($this->bpt, 8, ' ', STR_PAD_LEFT);
+        $tpt  = str_pad($this->tpt, 8, ' ', STR_PAD_LEFT);
+        $cash = str_pad(engnot($this->money), 8, ' ', STR_PAD_LEFT);
+
+        $s = "\n|  ";
+        $e = "  |";
+
+        $str = str_pad(' '.$strat." #".$cnum.' ', 78, '-', STR_PAD_BOTH).'|';
+
+
+        $str .= $s.'Government:   '.$govt.'         NLG:        '.$nlg .'         Mil: '.$pmil.$e;
+        $str .= $s.'Networth:     '.$netw.'         NLG Target: '.$nlgt.'         Bus: '.$pbus.$e;
+        $str .= $s.'Land:         '.$land.'         DPA:        '.$dpa .'         Res: '.$pres.$e;
+        $str .= $s.'Turns Played: '.$t_pl.'         DPA Target: '.$dpat.'         Agr: '.$pagr.$e;
+        $str .= $s.'Built:        '.$blt. '         Goal:       '.$goal.'         Ind: '.$pind.$e;
+        $str .= $s.'Cash:         '.$cash.'         BPT:        '.$bpt .'         TPT: '.$tpt .$e;
+        $str .= "\n|".str_pad(' '.$url.' ', 77, '-', STR_PAD_BOTH).'|';
+
+        out($str);
     }//end countryStats()
 
 
@@ -510,35 +533,36 @@ class Country
             //you have a BPT below target, but aren't CS % 4
             //IF NOT YOU SHOULD BUILD 4!!
             return true;
-        }
+    }//end countryStats()
+
 
         return false;
-    }//end shouldBuildSingleCS()
+}//end class
 
     /**
      * Should we build indies to make spies?
      *
      * @return bool Yep or Nope
      */
-    public function shouldBuildSpyIndies()
-    {
-        if ($this->empty < $this->bpt) {
-            //not enough land
-            return false;
-        }
-
-        if (!$this->affordBuildBPT()) {
-            //can't afford to build a full BPT
-            return false;
-        }
-
-        if ($this->turns_played > 150 && $this->b_indy < $this->bpt) {
-            //We're out of protection and don't have a full BPT of indies
-            return true;
-        }
-
+public function shouldBuildSpyIndies()
+{
+    if ($this->empty < $this->bpt) {
+        //not enough land
         return false;
-    }//end shouldBuildSpyIndies()
+    }
+
+    if (!$this->affordBuildBPT()) {
+        //can't afford to build a full BPT
+        return false;
+    }
+
+    if ($this->turns_played > 150 && $this->b_indy < $this->bpt) {
+        //We're out of protection and don't have a full BPT of indies
+        return true;
+    }
+
+    return false;
+}//end shouldBuildSpyIndies()
 
     /**
      * Should we built 4 CS?
@@ -547,42 +571,42 @@ class Country
      *
      * @return bool                Yep or Nope
      */
-    public function shouldBuildFourCS($target_bpt = 80)
-    {
-        if ($this->bpt >= $target_bpt) {
-            //we're at the target!
-            return false;
-        }
+public function shouldBuildFourCS($target_bpt = 80)
+{
+    if ($this->bpt >= $target_bpt) {
+        //we're at the target!
+        return false;
+    }
 
-        if ($this->turns < 4) {
-            //not enough turns...
-            return false;
-        }
+    if ($this->turns < 4) {
+        //not enough turns...
+        return false;
+    }
 
-        if ($this->empty < 4) {
-            //not enough land...
-            return false;
-        }
+    if ($this->empty < 4) {
+        //not enough land...
+        return false;
+    }
 
-        if ($this->money < 4 * $this->build_cost) {
-            //not enough money...
-            return false;
-        }
+    if ($this->money < 4 * $this->build_cost) {
+        //not enough money...
+        return false;
+    }
 
-        if ($this->income < 0 && $this->money < 4 * $this->build_cost + 5 * $this->income) {
-            //going to run out of money
-            //use 5 because growth of military typically
-            return false;
-        }
+    if ($this->income < 0 && $this->money < 4 * $this->build_cost + 5 * $this->income) {
+        //going to run out of money
+        //use 5 because growth of military typically
+        return false;
+    }
 
-        if ($this->foodnet < 0 && $this->food < $this->foodnet * -5) {
-            //going to run out of food
-            //use 5 because growth of pop & military typically
-            return false;
-        }
+    if ($this->foodnet < 0 && $this->food < $this->foodnet * -5) {
+        //going to run out of food
+        //use 5 because growth of pop & military typically
+        return false;
+    }
 
-        return true;
-    }//end shouldBuildFourCS()
+    return true;
+}//end shouldBuildFourCS()
 
     /**
      * Should we build a full BPT?
@@ -591,30 +615,30 @@ class Country
      *
      * @return bool Yep or Nope
      */
-    public function shouldBuildFullBPT($target_bpt = null)
-    {
-        if ($this->empty < $this->bpt) {
-            //not enough land
-            return false;
-        }
+public function shouldBuildFullBPT($target_bpt = null)
+{
+    if ($this->empty < $this->bpt) {
+        //not enough land
+        return false;
+    }
 
-        if ($this->money < $this->bpt * $this->build_cost + ($this->income > 0 ? 0 : $this->income * -60)) {
-            //do we have enough money? This accounts for 60 turns of burn if income < 0
-            return false;
-        }
+    if ($this->money < $this->bpt * $this->build_cost + ($this->income > 0 ? 0 : $this->income * -60)) {
+        //do we have enough money? This accounts for 60 turns of burn if income < 0
+        return false;
+    }
 
-        if ($target_bpt == null) {
-            //we don't care about BPT for some reason
-            return true;
-        }
-
-        if ($this->bpt / $target_bpt < 0.80 || rand(0, 1)) {
-            //basically, if we're below 80% of our target bpt
-            //we have a 50% chance of skipping building buildings
-            //so that we can actually get our BPT up
-            return false;
-        }
-
+    if ($target_bpt == null) {
+        //we don't care about BPT for some reason
         return true;
-    }//end shouldBuildFullBPT()
+    }
+
+    if ($this->bpt / $target_bpt < 0.80 || rand(0, 1)) {
+        //basically, if we're below 80% of our target bpt
+        //we have a 50% chance of skipping building buildings
+        //so that we can actually get our BPT up
+        return false;
+    }
+
+    return true;
+}//end shouldBuildFullBPT()
 }//end class
