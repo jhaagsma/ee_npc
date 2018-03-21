@@ -149,7 +149,16 @@ class Country
                 $this->$item = $percentage;
             }
 
-            out("Set indy production".(is_array($what) ? '!' : ' to '.substr($what, 4).'.'));
+            $protext = null;
+            if (is_array($what)) {
+                foreach ($what as $k => $p) {
+                    $protext .= $p.'% '.$k.' ';
+                }
+            } else {
+                $protext .= '100% '.substr($what, 4);
+            }
+
+            out("--- Set indy production: ".$protext);
             set_indy($this);
         }
     }//end setIndy()
