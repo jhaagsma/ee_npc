@@ -250,12 +250,13 @@ while (1) {
         }
     }
 
+
+    $loop      = false;
     $until_end = 50;
     if ($server->reset_end - $server->turn_rate * $until_end - time() < 0) {
         for ($i = 0; $i < 5; $i++) {
-            $loop = false;
             foreach ($countries as $cnum) {
-                if ($settings->$cnum->lastplay > $server->turn_rate * 10) {
+                if ($settings->$cnum->lastplay < time() - $server->turn_rate * 10) {
                     $settings->$cnum->nextplay = 0;
                     $loop                      = true;
                     continue;
@@ -265,8 +266,11 @@ while (1) {
             }
         }
         if (!$loop) {
-            out("Sleep until end");
-            sleep(($until_end + 1) * $server->turn_rate);     //don't let them fluff things up, sleep through end of reset
+            while($server->reset_end + 1 <= time()) {
+                $end = $server->reset_end - time();
+                out("Sleep until end: ".$end, false);
+                sleep(1);//don't let them fluff things up, sleep through end of reset
+            }
         }
         $server = ee('server');
     }
