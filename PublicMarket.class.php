@@ -19,6 +19,7 @@ class PublicMarket
     public static $available = null;
     public static $buy_price = null;
     public static $so_price  = null;
+    public static $changed   = null;
 
     /**
      * Get the info on the market, update the object
