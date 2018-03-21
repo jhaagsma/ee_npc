@@ -16,6 +16,8 @@ namespace EENPC;
 
 class Allies
 {
+    private static $allowed = true;
+
     /**
      * Get the list of allies
      *
@@ -56,6 +58,10 @@ class Allies
     {
         out("Ally Offer of $type to $target", true, 'cyan');
         $result = ee('ally/offer', ['target' => $target, 'type' => $type]);
+        if (isset($result->ERROR) && $result->ERROR == "disallowed_by_server") {
+            self::$allowed = false;
+        }
+
         //out($result);
         return $result;
     }//end offer()
@@ -101,6 +107,10 @@ class Allies
      */
     public static function fill($type = 'def')
     {
+        if (!self::$allowed) {
+            return false;
+        }
+
         $list = self::getList();
         $list = $list->list;
         $max  = ['def' => 2, 'off' => 3, 'res' => 3, 'spy' => 2, 'trade' => 2];
