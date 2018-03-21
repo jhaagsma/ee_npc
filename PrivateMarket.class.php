@@ -28,22 +28,24 @@ class PrivateMarket
     {
         $result = ee('pm', ['buy' => $units]);
         if (!isset($result->cost)) {
-            out("Failed to buy units on PM; money={$c->money}");
-            out_data($result);
-            out_data($units);
-            out("UPDATE EVERYTHING");
-            global $pm_info;
+            out("--- Failed to BUY Private Market; money={$c->money}");
+            // out_data($result);
+            // out_data($units);
+            // out("UPDATE EVERYTHING");
+            // global $pm_info;
 
-            Debug::on();
-            Debug::msg($pm_info);
+            // Debug::on();
+            // Debug::msg($pm_info);
 
             $c = get_advisor();     //UPDATE EVERYTHING
-            out("refresh money={$c->money}");
+            //out("refresh money={$c->money}");
             return $result;
         }
 
         $c->money -= $result->cost;
-        $str       = 'Bought ';
+        $str       = '---  BUY Private Market: ';
+        $pad       = "\n".str_pad(' ', 34);
+        $first     = true;
         foreach ($result->goods as $type => $amount) {
             if ($type == 'm_bu') {
                 $type = 'food';
@@ -51,11 +53,24 @@ class PrivateMarket
                 $type = 'oil';
             }
 
-            $c->$type += $amount;
-            $str      .= $amount.' '.$type.', ';
+            if ($amount > 0) {
+                if (!$first) {
+                    $str .= $pad;
+                }
+                $c->$type += $amount;
+                $str      .= str_pad(engnot($amount), 8, ' ', STR_PAD_LEFT)
+                            .str_pad($type, 5, ' ', STR_PAD_LEFT);
+
+                if ($first) {
+                    $str .= str_pad('$'.engnot($c->money), 28, ' ', STR_PAD_LEFT)
+                            .str_pad('($-'.engnot($result->cost).')', 14, ' ', STR_PAD_LEFT);
+                }
+
+                $first = false;
+            }
         }
 
-        $str .= 'for $'.$result->cost.' on PM';
+        //$str .= 'for $'.$result->cost.' on PM';
         out($str);
         return $result;
     }//end buy()
