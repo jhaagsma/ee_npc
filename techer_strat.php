@@ -265,7 +265,7 @@ function techerGoals(&$c)
 {
     return [
         //what, goal, priority
-        ['dpa',$c->defPerAcreTarget() * 1.5,2],
-        ['nlg',$c->nlgTarget(),2],
+        ['dpa', $c->defPerAcreTarget(), 2],
+        ['nlg', $c->nlgTarget(),2 ],
     ];
 }//end techerGoals()

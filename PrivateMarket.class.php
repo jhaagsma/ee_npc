@@ -88,7 +88,9 @@ class PrivateMarket
     {
         $result    = ee('pm', ['sell' => $units]);
         $c->money += $result->money;
-        $str       = 'Sold ';
+        $str       = '--- SELL Private Market: ';
+        $pad       = "\n".str_pad(' ', 34);
+        $first     = true;
 
         foreach ($result->goods as $type => $amount) {
             if ($type == 'm_bu') {
@@ -97,11 +99,23 @@ class PrivateMarket
                 $type = 'oil';
             }
 
-            $c->$type -= $amount;
-            $str      .= $amount.' '.$type.', ';
+            if ($amount > 0) {
+                if (!$first) {
+                    $str .= $pad;
+                }
+                $c->$type -= $amount;
+                $str      .= str_pad(engnot($amount), 8, ' ', STR_PAD_LEFT)
+                            .str_pad($type, 5, ' ', STR_PAD_LEFT);
+
+                if ($first) {
+                    $str .= str_pad('$'.engnot($c->money), 28, ' ', STR_PAD_LEFT)
+                            .str_pad('($+'.engnot($result->money).')', 14, ' ', STR_PAD_LEFT);
+                }
+
+                $first = false;
+            }
         }
 
-        $str .= 'for $'.$result->money.' on PM';
         out($str);
         return $result;
     }//end sell()
