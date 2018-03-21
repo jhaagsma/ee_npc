@@ -43,7 +43,7 @@ class PrivateMarket
         }
 
         $c->money -= $result->cost;
-        $str       = '---  BUY Private Market: ';
+        $str       = '--- BUY  Private Market: ';
         $pad       = "\n".str_pad(' ', 34);
         $first     = true;
         foreach ($result->goods as $type => $amount) {
