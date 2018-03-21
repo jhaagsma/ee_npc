@@ -151,7 +151,7 @@ class Country
 
             $protext = null;
             if (is_array($what)) {
-                foreach ($what as $k => $p) {
+                foreach ($new as $k => $p) {
                     $protext .= $p.'% '.$k.' ';
                 }
             } else {
@@ -160,6 +160,18 @@ class Country
 
             out("--- Set indy production: ".$protext);
             set_indy($this);
+        } else {
+            $protext = null;
+            if (is_array($what)) {
+                foreach ($new as $k => $p) {
+                    $protext .= $p.'% '.$k.' ';
+                }
+            } else {
+                $protext .= '100% '.substr($what, 4);
+            }
+
+            out("--- Indy production: ".$protext);
+
         }
     }//end setIndy()
 
@@ -186,12 +198,23 @@ class Country
         $new = ['pro_spy' => $spy]; //just set spies to 5% for now
         global $market;
 
+        $p_tr = PublicMarket::price('m_tr');
+        $p_j  = PublicMarket::price('m_j');
+        $p_tu = PublicMarket::price('m_tu');
+        $p_ta = PublicMarket::price('m_ta');
+
         $score = [
-            'pro_tr'  => 1.86 * PublicMarket::price('m_tr'),
-            'pro_j'   => 1.86 * PublicMarket::price('m_j'),
-            'pro_tu'  => 1.86 * PublicMarket::price('m_tu'),
-            'pro_ta'  => 0.4 * PublicMarket::price('m_ta')
+            'pro_tr'  => 1.86 * ($p_tr == 0 ? 999 : $p_tr),
+            'pro_j'   => 1.86 * ($p_j == 0 ? 999 : $p_j),
+            'pro_tu'  => 1.86 * ($p_tu == 0 ? 999 : $p_tu),
+            'pro_ta'  => 0.4 * ($p_ta == 0 ? 999 : $p_ta),
         ];
+
+        $protext = null;
+        foreach ($score as $k => $s) {
+            $protext .= $s.' '.$k.' ';
+        }
+        out("--- Indy Scoring: ".$protext);
 
         if ($checkDPA) {
             if ($this->defPerAcre() < $this->defPerAcreTarget()) {
