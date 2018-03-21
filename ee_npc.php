@@ -627,7 +627,7 @@ function engnot($number)
         return round($number / 1000000000, $number / 1000000000 > 100 ? 0 : 1).'B';
     } elseif (abs($number) > 1000000) {
         return round($number / 1000000, $number / 1000000 > 100 ? 0 : 1).'M';
-    } elseif (abs($number) > 100000) {
+    } elseif (abs($number) > 10000) {
         return round($number / 1000, $number / 1000 > 100 ? 0 : 1).'k';
     }
 
