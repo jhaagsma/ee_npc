@@ -130,7 +130,7 @@ function handle_output($serverOutput, $function)
     }
 
     $message  = key($response);
-    $response = isset($response->$message) ? $response->$message : null;
+    $response = $response->$message ?? null;
     //$parts = explode(':', $serverOutput, 2);
     //This will simply kill the script if EE returns with an error
     //This is to avoid foulups, and to simplify the code checking above
@@ -146,7 +146,7 @@ function handle_output($serverOutput, $function)
         out("\n\nUnexpected Result for '$function': ".$message.':'.$response."\n\n");
         out("Server Output: \n".$serverOutput);
 
-        return false;
+        return $response;
     } elseif (!expected_result($function)) {
         out($message);
         out_data($response);
