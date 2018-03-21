@@ -95,8 +95,8 @@ class Terminal
         $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
         out(str_replace("\n", " ", var_export($backtrace, true)));
         //This function is to output and format some data nicely
-        $line = $backtrace[0]['line'] ?? '--';
-        $file = $backtrace[0]['file'] ?? '--';
+        $line = $backtrace[3]['line'] ?? '--';
+        $file = $backtrace[3]['file'] ?? '--';
         out("DATA: ($file:$line)\n".json_encode($data));
         //str_replace(",\n", "\n", var_export($data, true)));
     }//end data()
