@@ -58,9 +58,10 @@ class Allies
     {
         out("Ally Offer of $type to $target", true, 'cyan');
         $result = ee('ally/offer', ['target' => $target, 'type' => $type]);
-        if (isset($result->ERROR) && $result->ERROR == "disallowed_by_server") {
+        if ($result == "disallowed_by_server") {
             out("ALLIES ARE NOT ALLOWED ON THIS SERVER!");
             self::$allowed = false;
+            return;
         }
 
         //out($result);
