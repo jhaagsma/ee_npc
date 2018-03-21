@@ -93,7 +93,7 @@ class Terminal
     public static function data($data)
     {
         $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
-        out(str_replace("\n", " ", var_export($backtrace, true)));
+        //out(str_replace("\n", " ", var_export($backtrace, true)));
         //This function is to output and format some data nicely
         $line = $backtrace[3]['line'] ?? '--';
         $file = $backtrace[3]['file'] ?? '--';
