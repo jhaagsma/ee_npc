@@ -232,7 +232,7 @@ class Country
      */
     public function defPerAcreTarget()
     {
-        return floor(15 + $this->turns_played / 20);
+        return floor(25 + $this->turns_played / 10);
     }//end defPerAcreTarget()
 
 
