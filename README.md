@@ -38,6 +38,8 @@ To Run on Windows:
 11) Download or clone the ee_npc project from github: https://github.com/jhaagsma/ee_npc ( https://github.com/jhaagsma/ee_npc/archive/master.zip )
 12) Put the project somewhere like Documents, so you can find it: C:\Users\(your username)\Documents\ee_npc
 13) Copy config_example.php to config.php and fill out your information
+13.1) PLEASE SEE https://www.earthempires.com/forum/ai-development/instructions-on-how-to-use-the-ai-server-30966?t=1510387005 for further deatils
+13.2) Your AI API key can be acquired from: http://www.earthempires.com/ai/api
 14) Find ee_npc.php in your explorer, right click on it, and go to Properties, to find the Location that it is at -- in my case it is at C:\Users\qzjul\Documents\ee_npc
 15) Open a Windows Terminal
 16) (optional) Right click on the top bar / window bar, and click Properties 
