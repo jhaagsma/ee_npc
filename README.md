@@ -36,7 +36,7 @@ To Run on Windows:
 11 Install it!
 12 Go to http://www.earthempires.com/ai/api and Generate an API Key
 13) Download or clone the ee_npc project from github: https://github.com/jhaagsma/ee_npc ( https://github.com/jhaagsma/ee_npc/archive/master.zip )
-14) Put the project somewhere like Documents, so you can find it: C:\Users\(your username)\Documents\ee_npc
+14) Put the project somewhere like Documents, so you can find it: C:\Users\(your username)\ee_npc
 15) Copy config_example.php to config.php and fill out your information
 16) PLEASE SEE https://www.earthempires.com/forum/ai-development/instructions-on-how-to-use-the-ai-server-30966?t=1510387005 for further deatils
 17) Your AI API key can be acquired from: http://www.earthempires.com/ai/api
@@ -45,11 +45,12 @@ To Run on Windows:
 20) (optional) Right click on the top bar / window bar, and click Properties 
 21) (optional) Go to the Layout tab, change Screen Buffer width to 200, height to 500; change Window Size width to 200, height to 50.
 22) (optional) click OK
-23) Run (in the terminal) the following command: C:\php\php.exe "C:\Users\(your username)\Documents\ee_npc\ee_ncp.php" 
-(in my case C:\php\php.exe "C:\Users\qzjul\Documents\ee_npc\ee_npc.php" )
-24) MAGIC! it starts playing countries!
-25) To stop it, go Control-C
-26) Login and see the AI Dev forum for discussion http://www.earthempires.com/forum/ai-development or view the API details at http://www.earthempires.com/api
+23) Change directory in the terminal to the directory the script is saved in: cd C:\Users\(your username)\ee_npc
+24) Run (in the terminal) the following command: C:\php\php.exe ee_ncp.php
+(Full terminal line looks, in my case, like: C:\Users\qzjul\ee_npc>C:\php\php.exe ee_npc.php )
+25) MAGIC! it starts playing countries!
+26) To stop it, go Control-C
+27) Login and see the AI Dev forum for discussion http://www.earthempires.com/forum/ai-development or view the API details at http://www.earthempires.com/api
 
 
 To Contribute!
