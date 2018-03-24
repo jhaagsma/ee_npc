@@ -187,10 +187,10 @@ function farmerGoals(&$c)
 {
     return [
         //what, goal, priority
-        ['t_agri',215,8],
-        ['t_bus',178,4],
-        ['t_res',178,4],
-        ['t_mil',94,1],
+        ['t_agri',227,8],
+        ['t_bus',174,4],
+        ['t_res',174,4],
+        ['t_mil',95,1],
         ['nlg',$c->nlgTarget(),2],
         ['dpa',$c->defPerAcreTarget(),2],
     ];
