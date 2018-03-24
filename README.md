@@ -77,3 +77,13 @@ TO RUN ON WINDOWS:
 21) To stop it, go Control-C
 
 22) Login and see the AI Dev forum for discussion http://www.earthempires.com/forum/ai-development or view the API details at http://www.earthempires.com/api
+
+
+To Contribute!
+----
+
+Fork the project, using the fork button.
+
+Then clone it locally, make changes, and push them to github.
+
+When you're happy with them, create a pull request, and I'll merge in your changes after reviewing them. It would be better to make smaller changes at a time, so I can digest them ;-)
