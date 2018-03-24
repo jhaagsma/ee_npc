@@ -266,11 +266,14 @@ while (1) {
             }
         }
         if (!$loop) {
+            out("Sleeping!");
+            out("\n");
             while($server->reset_end + 1 >= time()) {
                 $end = $server->reset_end - time();
-                out("Sleep until end: ".$end, false);
+                out("Sleep until end: ".$end."             \r", false);
                 sleep(1);//don't let them fluff things up, sleep through end of reset
             }
+            out("Done Sleeping!\r");
         }
         $server = ee('server');
     }
