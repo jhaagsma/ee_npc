@@ -23,7 +23,8 @@ To Run on Linux
 To Run on Windows:
 ----
 
-1) DOWNLOAD PHP FOR WINDOWS: http://windows.php.net/download/
+1) DOWNLOAD PHP FOR WINDOWS: https://windows.php.net/download/
+1.1) Probably get the newest version, definitely PHP 7+
 2) Extract the zip to C:\php
 2.1) The name is important! For some reason it didn't like it when i called it PHP5 for example
 3) Go to C:\php\ext and COPY php_curl.dll; PASTE it into C:\php
