@@ -29,8 +29,8 @@ To Run on Windows:
 2.1) The name is important! For some reason it didn't like it when i called it PHP5 for example
 3) Go to C:\php\ext and COPY php_curl.dll; PASTE it into C:\php
 4) OPEN php.ini-development in an editor (notepad)
-5) Find the line: ;extension=php_curl.dll
-6) Remove the leading semi-colon / Change it to: extension=php_curl.dll
+5) Find the line: ;extension=php_curl.dll and remove the leading semi-colon / Change it to: extension=php_curl.dll
+5.1) If that line doesn't exist, add it
 7) Save the changed file as C:\php\php.ini
 8) DOWNLOAD the **x86 version** of the MS VC package: http://www.microsoft.com/download/details.aspx?id=30679
 9) Install it!
