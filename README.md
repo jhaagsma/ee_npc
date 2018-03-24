@@ -12,7 +12,7 @@ To Run on Linux
 ----
 
 1) Clone the project from github: https://github.com/jhaagsma/ee_npc
-2) Copy config_example.php to config.php and fill out your information (see 2.1)
+2) Copy config_example.php to config.php and fill out your information (see 3 & 7)
 3) Go to http://www.earthempires.com/ai/api and Generate an API Key if you don't have one
 4) Install php if you don't already have it; on ubuntu sudo apt-get install php 
 5) Run ee_npc.php in the terminal: ./ee_npc
