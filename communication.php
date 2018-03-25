@@ -145,6 +145,9 @@ function handle_output($serverOutput, $function)
     } elseif (expected_result($function) && $message != expected_result($function)) {
         out("\n\nUnexpected Result for '$function': ".$message.':'.$response."\n\n");
         out("Server Output: \n".$serverOutput);
+        if ($message == "ERROR" && $response == "MONEY") {
+            return false;
+        }
 
         return $response;
     } elseif (!expected_result($function)) {
