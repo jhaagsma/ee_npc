@@ -565,36 +565,36 @@ class Country
             //you have a BPT below target, but aren't CS % 4
             //IF NOT YOU SHOULD BUILD 4!!
             return true;
-    }//end countryStats()
+        }//end countryStats()
 
 
-        return false;
-}//end class
+            return false;
+    }//end shouldBuildSingleCS()
 
     /**
      * Should we build indies to make spies?
      *
      * @return bool Yep or Nope
      */
-public function shouldBuildSpyIndies()
-{
-    if ($this->empty < $this->bpt) {
-        //not enough land
+    public function shouldBuildSpyIndies()
+    {
+        if ($this->empty < $this->bpt) {
+            //not enough land
+            return false;
+        }
+
+        if (!$this->affordBuildBPT()) {
+            //can't afford to build a full BPT
+            return false;
+        }
+
+        if ($this->turns_played > 150 && $this->b_indy < $this->bpt) {
+            //We're out of protection and don't have a full BPT of indies
+            return true;
+        }
+
         return false;
-    }
-
-    if (!$this->affordBuildBPT()) {
-        //can't afford to build a full BPT
-        return false;
-    }
-
-    if ($this->turns_played > 150 && $this->b_indy < $this->bpt) {
-        //We're out of protection and don't have a full BPT of indies
-        return true;
-    }
-
-    return false;
-}//end shouldBuildSpyIndies()
+    }//end shouldBuildSpyIndies()
 
     /**
      * Should we built 4 CS?
@@ -603,42 +603,42 @@ public function shouldBuildSpyIndies()
      *
      * @return bool                Yep or Nope
      */
-public function shouldBuildFourCS($target_bpt = 80)
-{
-    if ($this->bpt >= $target_bpt) {
-        //we're at the target!
-        return false;
-    }
+    public function shouldBuildFourCS($target_bpt = 80)
+    {
+        if ($this->bpt >= $target_bpt) {
+            //we're at the target!
+            return false;
+        }
 
-    if ($this->turns < 4) {
-        //not enough turns...
-        return false;
-    }
+        if ($this->turns < 4) {
+            //not enough turns...
+            return false;
+        }
 
-    if ($this->empty < 4) {
-        //not enough land...
-        return false;
-    }
+        if ($this->empty < 4) {
+            //not enough land...
+            return false;
+        }
 
-    if ($this->money < 4 * $this->build_cost) {
-        //not enough money...
-        return false;
-    }
+        if ($this->money < 4 * $this->build_cost) {
+            //not enough money...
+            return false;
+        }
 
-    if ($this->income < 0 && $this->money < 4 * $this->build_cost + 5 * $this->income) {
-        //going to run out of money
-        //use 5 because growth of military typically
-        return false;
-    }
+        if ($this->income < 0 && $this->money < 4 * $this->build_cost + 5 * $this->income) {
+            //going to run out of money
+            //use 5 because growth of military typically
+            return false;
+        }
 
-    if ($this->foodnet < 0 && $this->food < $this->foodnet * -5) {
-        //going to run out of food
-        //use 5 because growth of pop & military typically
-        return false;
-    }
+        if ($this->foodnet < 0 && $this->food < $this->foodnet * -5) {
+            //going to run out of food
+            //use 5 because growth of pop & military typically
+            return false;
+        }
 
-    return true;
-}//end shouldBuildFourCS()
+        return true;
+    }//end shouldBuildFourCS()
 
     /**
      * Should we build a full BPT?
@@ -647,30 +647,30 @@ public function shouldBuildFourCS($target_bpt = 80)
      *
      * @return bool Yep or Nope
      */
-public function shouldBuildFullBPT($target_bpt = null)
-{
-    if ($this->empty < $this->bpt) {
-        //not enough land
-        return false;
-    }
+    public function shouldBuildFullBPT($target_bpt = null)
+    {
+        if ($this->empty < $this->bpt) {
+            //not enough land
+            return false;
+        }
 
-    if ($this->money < $this->bpt * $this->build_cost + ($this->income > 0 ? 0 : $this->income * -60)) {
-        //do we have enough money? This accounts for 60 turns of burn if income < 0
-        return false;
-    }
+        if ($this->money < $this->bpt * $this->build_cost + ($this->income > 0 ? 0 : $this->income * -60)) {
+            //do we have enough money? This accounts for 60 turns of burn if income < 0
+            return false;
+        }
 
-    if ($target_bpt == null) {
-        //we don't care about BPT for some reason
+        if ($target_bpt == null) {
+            //we don't care about BPT for some reason
+            return true;
+        }
+
+        if ($this->bpt / $target_bpt < 0.80 || rand(0, 1)) {
+            //basically, if we're below 80% of our target bpt
+            //we have a 50% chance of skipping building buildings
+            //so that we can actually get our BPT up
+            return false;
+        }
+
         return true;
-    }
-
-    if ($this->bpt / $target_bpt < 0.80 || rand(0, 1)) {
-        //basically, if we're below 80% of our target bpt
-        //we have a 50% chance of skipping building buildings
-        //so that we can actually get our BPT up
-        return false;
-    }
-
-    return true;
-}//end shouldBuildFullBPT()
+    }//end shouldBuildFullBPT()
 }//end class
