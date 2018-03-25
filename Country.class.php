@@ -664,7 +664,7 @@ class Country
             return true;
         }
 
-        if ($this->bpt / $target_bpt < 0.80 || rand(0, 1)) {
+        if ($this->bpt / $target_bpt < 0.80 && rand(0, 1)) {
             //basically, if we're below 80% of our target bpt
             //we have a 50% chance of skipping building buildings
             //so that we can actually get our BPT up
