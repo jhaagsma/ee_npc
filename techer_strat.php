@@ -194,11 +194,16 @@ function sell_max_tech(&$c)
         if ($q == 0) {
             $price[$key] = 0;
         } elseif (PublicMarket::price($key) != null) {
-            Debug::msg("sell_max_tech:A:$key");
-            $max = $c->goodsStuck($key) ? 0.98 : $rmax; //undercut if we have goods stuck
-            Debug::msg("sell_max_tech:B:$key");
-            $price[$key] = min(9999, floor(PublicMarket::price($key) * Math::purebell($rmin, $max, $rstddev, $rstep)));
-            Debug::msg("sell_max_tech:C:$key");
+            // additional check to make sure we aren't repeatedly undercutting with minimal goods
+            if ($q < 100 && PublicMarket::available($key) < 1000) {
+                $price[$key] = PublicMarket::price($key);
+            } else {
+                Debug::msg("sell_max_tech:A:$key");
+                $max = $c->goodsStuck($key) ? 0.98 : $rmax; //undercut if we have goods stuck
+                Debug::msg("sell_max_tech:B:$key");
+                $price[$key] = min(9999, floor(PublicMarket::price($key) * Math::purebell($rmin, $max, $rstddev, $rstep)));
+                Debug::msg("sell_max_tech:C:$key");
+            }
         } else {
             $price[$key] = floor(Math::purebell($nogoods_low, $nogoods_high, $nogoods_stddev, $nogoods_step));
         }
