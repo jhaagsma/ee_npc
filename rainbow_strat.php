@@ -10,6 +10,7 @@ function play_rainbow_strat($server)
     //out_data($main);          //output the main data
     $c = get_advisor();     //c as in country! (get the advisor)
     out($c->turns.' turns left');
+    out('Explore Rate: '.$c->explore_rate.'; Min Rate: '.$c->explore_min);
     //out_data($c) && exit;             //ouput the advisor data
     out("Agri: {$c->pt_agri}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%");
     if ($c->govt == 'M' && $c->turns_played < 100) {
@@ -116,7 +117,11 @@ function play_rainbow_turn(&$c)
         //tech per turn is greater than land*0.17 -- just kindof a rough "don't tech below this" rule...
         return tech_rainbow($c);
     } elseif ($c->built() > 50) {  //otherwise... explore if we can
-        return explore($c, min($c->turns, max(1, min(turns_of_money($c), turns_of_food($c)) - 3)));
+        if ($c->explore_rate == $c->explore_min) {
+            return explore($c, 1);
+        } else {
+            return explore($c, min(max(1, $c->turns - 1), max(1, min(turns_of_money($c), turns_of_food($c)) - 3)));
+        }
     } elseif ($c->foodnet > 0 && $c->foodnet > 3 * $c->foodcon && $c->food > 30 * $c->foodnet && $c->food > 7000) {
         return sellextrafood_rainbow($c);
     } elseif ($c->protection == 0 && total_cansell_tech($c) > 20 * $c->tpt && selltechtime($c)

@@ -34,6 +34,7 @@ function play_casher_strat($server)
     }
 
     out($c->turns.' turns left');
+    out('Explore Rate: '.$c->explore_rate.'; Min Rate: '.$c->explore_min);
     //$pm_info = get_pm_info(); //get the PM info
     //out_data($pm_info);       //output the PM info
     //$market_info = get_market_info(); //get the Public Market info
@@ -97,7 +98,11 @@ function play_casher_turn(&$c)
         return build_cs(4); //build 4 CS
     } elseif ($c->built() > 50) {
         //otherwise... explore if we can
-        return explore($c, min($c->turns, max(1, turns_of_food($c) - 3)));
+        if ($c->explore_rate == $c->explore_min) {
+            return explore($c, 1);
+        } else {
+            return explore($c, min($c->turns, max(1, turns_of_food($c) - 3)));
+        }
     } else {
         //otherwise...  cash
         return cash($c);

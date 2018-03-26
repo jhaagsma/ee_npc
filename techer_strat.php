@@ -23,6 +23,7 @@ function play_techer_strat($server)
     }
 
     out($c->turns.' turns left');
+    out('Explore Rate: '.$c->explore_rate.'; Min Rate: '.$c->explore_min);
 
     if ($c->govt == 'M') {
         $rand = rand(0, 100);
@@ -119,7 +120,11 @@ function play_techer_turn(&$c)
         && ($c->land < 5000 || rand(0, 100) > 95 && $c->land < $server_avg_land)
     ) {
         //otherwise... explore if we can, for the early bits of the set
-        return explore($c, min(max(1, $c->turns - 1), max(1, min(turns_of_money($c), turns_of_food($c)) - 3)));
+        if ($c->explore_rate == $c->explore_min) {
+            return explore($c, 1);
+        } else {
+            return explore($c, min(max(1, $c->turns - 1), max(1, min(turns_of_money($c), turns_of_food($c)) - 3)));
+        }
     } else { //otherwise, tech, obviously
         return tech_techer($c);
     }
