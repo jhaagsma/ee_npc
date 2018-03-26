@@ -1,7 +1,7 @@
 <?php
 
 /**
- * This file has all the ally functions
+ * This file has all the GDI functions
  *
  * PHP Version 7
  *

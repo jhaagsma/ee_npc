@@ -1,1 +1,3 @@
-<?php namespace EENPC;
+<?php
+
+namespace EENPC;

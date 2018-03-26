@@ -19,13 +19,13 @@ function play_indy_strat($server)
         $rand = rand(0, 100);
         switch ($rand) {
             case $rand < 5:
-                change_govt($c, 'I');
+                Government::change($c, 'I');
                 break;
             case $rand < 5:
-                change_govt($c, 'D');
+                Government::change($c, 'D');
                 break;
             default:
-                change_govt($c, 'C');
+                Government::change($c, 'C');
                 break;
         }
     }

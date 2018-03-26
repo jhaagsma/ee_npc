@@ -16,25 +16,25 @@ function play_rainbow_strat($server)
         $rand = rand(0, 100);
         switch ($rand) {
             case $rand < 4:
-                change_govt($c, 'F');
+                Government::change($c, 'F');
                 break;
             case $rand < 8:
-                change_govt($c, 'T');
+                Government::change($c, 'T');
                 break;
             case $rand < 12:
-                change_govt($c, 'I');
+                Government::change($c, 'I');
                 break;
             case $rand < 16:
-                change_govt($c, 'C');
+                Government::change($c, 'C');
                 break;
             case $rand < 20:
-                change_govt($c, 'H');
+                Government::change($c, 'H');
                 break;
             case $rand < 24:
-                change_govt($c, 'R');
+                Government::change($c, 'R');
                 break;
             case $rand < 28:
-                change_govt($c, 'D');
+                Government::change($c, 'D');
                 break;
             default:
                 break;

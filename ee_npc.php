@@ -801,21 +801,6 @@ function get_owned_on_market_info()
 }//end get_owned_on_market_info()
 
 
-function change_govt(&$c, $govt)
-{
-    $result = ee('govt', ['govt' => $govt]);
-    if (isset($result->govt)) {
-        out("Govt switched to {$result->govt}!");
-        $c = get_advisor();     //UPDATE EVERYTHING
-    }
-
-    return $result;
-}//end change_govt()
-
-
-
-
-
 /**
  * Exit
  * @param  string $str Final output String

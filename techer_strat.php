@@ -28,13 +28,13 @@ function play_techer_strat($server)
         $rand = rand(0, 100);
         switch ($rand) {
             case $rand < 40:
-                change_govt($c, 'H');
+                Government::change($c, 'H');
                 break;
             case $rand < 80:
-                change_govt($c, 'D');
+                Government::change($c, 'D');
                 break;
             default:
-                change_govt($c, 'T');
+                Government::change($c, 'T');
                 break;
         }
     }

@@ -43,16 +43,16 @@ function play_farmer_strat($server)
         $rand = rand(0, 100);
         switch ($rand) {
             case $rand < 12:
-                change_govt($c, 'D');
+                Government::change($c, 'D');
                 break;
             case $rand < 20:
-                change_govt($c, 'I');
+                Government::change($c, 'I');
                 break;
             case $rand < 50:
-                change_govt($c, 'R');
+                Government::change($c, 'R');
                 break;
             default:
-                change_govt($c, 'F');
+                Government::change($c, 'F');
                 break;
         }
     }
