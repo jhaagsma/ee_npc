@@ -19,16 +19,17 @@ class Government
     /**
      * Change Government
      *
-     * @param char $govt The government letter to change to
+     * @param object $c    The country object
+     * @param char   $govt The government letter to change to
      *
      * @return $result Game Result
      */
-    public static function change($govt)
+    public static function change(&$c, $govt)
     {
         $result = ee('govt', ['govt' => $govt]);
         if (isset($result->govt)) {
             out("Govt switched to {$result->govt}!");
-            $c = get_advisor();     //UPDATE EVERYTHING
+            $c = get_advisor(); //UPDATE EVERYTHING
         }
 
         return $result;
