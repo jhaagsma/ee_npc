@@ -30,16 +30,16 @@ class Events
 
         $types = [];
 
-        self::$results = $result['results'];
+        self::$results = $result->results;
 
-        if (isset(self::$results['events'])) {
-            self::$events = self::$results['events'];
+        if (isset(self::$results->events)) {
+            self::$events = self::$results->events;
 
             foreach (self::$events as $event) {
-                if (!isset($types[$event['type']])) {
-                    $types[$event['type']] = 1;
+                if (!isset($types[$event->type])) {
+                    $types[$event->type] = 1;
                 } else {
-                    $types[$event['type']]++;
+                    $types[$event->type]++;
                 }
             }
 
