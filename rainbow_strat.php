@@ -216,19 +216,20 @@ function tech_rainbow(&$c)
     $tot  = $mil + $med + $bus + $res + $agri + $war + $ms + $weap + $indy + $spy + $sdi;
 
     $left  = $c->tpt;
-    $left -= $mil = min($left, floor($c->tpt * ($mil / $tot)));
-    $left -= $med = min($left, floor($c->tpt * ($med / $tot)));
-    $left -= $bus = min($left, floor($c->tpt * ($bus / $tot)));
-    $left -= $res = min($left, floor($c->tpt * ($res / $tot)));
+    $left -= $mil  = min($left, floor($c->tpt * ($mil / $tot)));
+    $left -= $med  = min($left, floor($c->tpt * ($med / $tot)));
+    $left -= $bus  = min($left, floor($c->tpt * ($bus / $tot)));
+    $left -= $res  = min($left, floor($c->tpt * ($res / $tot)));
     $left -= $agri = min($left, floor($c->tpt * ($agri / $tot)));
-    $left -= $war = min($left, floor($c->tpt * ($war / $tot)));
-    $left -= $ms = min($left, floor($c->tpt * ($ms / $tot)));
+    $left -= $war  = min($left, floor($c->tpt * ($war / $tot)));
+    $left -= $ms   = min($left, floor($c->tpt * ($ms / $tot)));
     $left -= $weap = min($left, floor($c->tpt * ($weap / $tot)));
     $left -= $indy = min($left, floor($c->tpt * ($indy / $tot)));
-    $left -= $spy = min($left, floor($c->tpt * ($spy / $tot)));
+    $left -= $spy  = min($left, floor($c->tpt * ($spy / $tot)));
     $left -= $sdi = max($left, min($left, floor($c->tpt * ($spy / $tot))));
     if ($left != 0) {
-        die("What the hell?");
+        out("What the hell?");
+        return;
     }
 
     return tech(
