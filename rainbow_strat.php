@@ -114,13 +114,13 @@ function play_rainbow_turn(&$c)
     if ($c->shouldBuildSingleCS($target_bpt)) {
         //LOW BPT & CAN AFFORD TO BUILD
         //build one CS if we can afford it and are below our target BPT
-        return build_cs(); //build 1 CS
+        return Build::cs(); //build 1 CS
     } elseif ($c->shouldBuildFullBPT($target_bpt)) {
         //build a full BPT if we can afford it
         return build_rainbow($c);
     } elseif ($c->shouldBuildFourCS($target_bpt)) {
         //build 4CS if we can afford it and are below our target BPT (80)
-        return build_cs(4); //build 4 CS
+        return Build::cs(4); //build 4 CS
     } elseif ($c->tpt > $c->land * 0.17 && rand(0, 10) > 5) {
         //tech per turn is greater than land*0.17 -- just kindof a rough "don't tech below this" rule...
         return tech_rainbow($c);
@@ -177,25 +177,23 @@ function sellextrafood_rainbow(&$c)
 function build_rainbow(&$c)
 {
     if ($c->foodnet < 0) { //build farms if we are foodnet < 0
-        return Build::buildings(['farm' => $c->bpt]);
+        return Build::farmer();
     } elseif ($c->income < max(100000, 2 * $c->build_cost * $c->bpt / $c->explore_rate)) {
         //build ent/res if we're not making more than enough to keep building continually at least $100k
         if (rand(0, 100) > 50 && $c->income > $c->build_cost * $c->bpt / $c->explore_rate) {
             if (($c->tpt < $c->land && rand(0, 100) > 10) || rand(0, 100) > 40) {
-                return Build::buildings(['lab' => $c->bpt]);
+                return Build::techer();
             } else {
-                return Build::buildings(['indy' => $c->bpt]);
+                return Build::indy();
             }
         } else {
-            $res = round($c->bpt / 2.12);
-            $ent = $c->bpt - $res;
-            return Build::buildings(['ent' => $ent,'res' => $res]);
+            return Build::casher();
         }
     } else { //build indies or labs
         if (($c->tpt < $c->land && rand(0, 100) > 10) || rand(0, 100) > 40) {
-            return Build::buildings(['lab' => $c->bpt]);
+            return Build::techer();
         } else {
-            return Build::buildings(['indy' => $c->bpt]);
+            return Build::indy();
         }
     }
 }//end build_rainbow()
