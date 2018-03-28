@@ -197,6 +197,9 @@ while (1) {
                 Allies::fill('def');
             }
 
+            Events::new();
+            sleep(1);
+
             $playfactor = 1;
             try {
                 switch ($cpref->strat) {
