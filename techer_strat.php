@@ -97,7 +97,7 @@ function play_techer_turn(&$c)
     if ($c->shouldBuildSingleCS($target_bpt)) {
         //LOW BPT & CAN AFFORD TO BUILD
         //build one CS if we can afford it and are below our target BPT
-        return build_cs(); //build 1 CS
+        return Build::cs(); //build 1 CS
     } elseif ($c->protection == 0 && total_cansell_tech($c) > 20 * $c->tpt && selltechtime($c)
         || $c->turns == 1 && total_cansell_tech($c) > 20
     ) {
@@ -106,13 +106,13 @@ function play_techer_turn(&$c)
         return sell_max_tech($c);
     } elseif ($c->shouldBuildSpyIndies()) {
         //build a full BPT of indies if we have less than that, and we're out of protection
-        return build_indy($c);
+        return Build::indy($c);
     } elseif ($c->shouldBuildFullBPT($target_bpt)) {
         //build a full BPT if we can afford it
-        return build_techer($c);
+        return Build::techer($c);
     } elseif ($c->shouldBuildFourCS($target_bpt)) {
         //build 4CS if we can afford it and are below our target BPT (80)
-        return build_cs(4); //build 4 CS
+        return Build::cs(4); //build 4 CS
     } elseif ($c->tpt > $c->land * 0.17 * 1.3 && $c->tpt > 100 && rand(0, 100) > 2) {
         //tech per turn is greater than land*0.17 -- just kindof a rough "don't tech below this" rule...
         return tech_techer($c);
@@ -130,11 +130,6 @@ function play_techer_turn(&$c)
     }
 }//end play_techer_turn()
 
-
-function build_techer(&$c)
-{
-    return build(['lab' => $c->bpt]);
-}//end build_techer()
 
 
 function selltechtime(&$c)

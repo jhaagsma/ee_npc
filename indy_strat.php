@@ -111,17 +111,17 @@ function play_indy_turn(&$c)
     if ($c->shouldBuildSingleCS($target_bpt)) {
         //LOW BPT & CAN AFFORD TO BUILD
         //build one CS if we can afford it and are below our target BPT
-        return build_cs(); //build 1 CS
+        return Build::cs(); //build 1 CS
     } elseif ($c->protection == 0 && total_cansell_military($c) > 7500 && sellmilitarytime($c)
         || $c->turns == 1 && total_cansell_military($c) > 7500
     ) {
         return sell_max_military($c);
     } elseif ($c->shouldBuildFullBPT($target_bpt)) {
         //build a full BPT if we can afford it
-        return build_indy($c);
+        return Build::indy($c);
     } elseif ($c->shouldBuildFourCS($target_bpt)) {
         //build 4CS if we can afford it and are below our target BPT (80)
-        return build_cs(4); //build 4 CS
+        return Build::cs(4); //build 4 CS
     } elseif ($c->built() > 50) {  //otherwise... explore if we can
         //1.15 is my growth factor for indies
         if ($c->explore_rate == $c->explore_min) {
@@ -136,13 +136,6 @@ function play_indy_turn(&$c)
         return cash($c);
     }
 }//end play_indy_turn()
-
-
-function build_indy(&$c)
-{
-    //build farms
-    return build(['indy' => $c->bpt]);
-}//end build_indy()
 
 
 

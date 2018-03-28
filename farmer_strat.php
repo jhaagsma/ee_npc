@@ -117,7 +117,7 @@ function play_farmer_turn(&$c)
     if ($c->shouldBuildSingleCS($target_bpt)) {
         //LOW BPT & CAN AFFORD TO BUILD
         //build one CS if we can afford it and are below our target BPT
-        return build_cs(); //build 1 CS
+        return Build::cs(); //build 1 CS
     } elseif ($c->protection == 0 && $c->food > 7000
         && (
             $c->foodnet > 0 && $c->foodnet > 3 * $c->foodcon && $c->food > 30 * $c->foodnet
@@ -127,13 +127,13 @@ function play_farmer_turn(&$c)
         return sellextrafood_farmer($c);
     } elseif ($c->shouldBuildSpyIndies()) {
         //build a full BPT of indies if we have less than that, and we're out of protection
-        return build_indy($c);
+        return Build::indy($c);
     } elseif ($c->shouldBuildFullBPT($target_bpt)) {
         //build a full BPT if we can afford it
-        return build_farmer($c);
+        return Build::farmer($c);
     } elseif ($c->shouldBuildFourCS($target_bpt)) {
         //build 4CS if we can afford it and are below our target BPT (80)
-        return build_cs(4); //build 4 CS
+        return Build::cs(4); //build 4 CS
     } elseif ($c->built() > 50) {  //otherwise... explore if we can
         if ($c->explore_rate == $c->explore_min) {
             return explore($c, 1);
@@ -170,14 +170,6 @@ function sellextrafood_farmer(&$c)
     }
     return PublicMarket::sell($c, $quantity, $price);    //Sell food!
 }//end sellextrafood_farmer()
-
-
-function build_farmer(&$c)
-{
-    //build farms
-    return build(array('farm' => $c->bpt));
-}//end build_farmer()
-
 
 
 function buy_farmer_goals(&$c, $spend = null)

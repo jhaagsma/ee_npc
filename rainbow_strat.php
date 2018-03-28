@@ -46,12 +46,14 @@ function play_rainbow_strat($server)
         Allies::fill('spy');
     }
 
-    $pm_info = get_pm_info();   //get the PM info
+    //get the PM info
+    $pm_info = get_pm_info();
     //out_data($pm_info);       //output the PM info
     //$market_info = get_market_info();   //get the Public Market info
     //out_data($market_info);       //output the PM info
 
-    $owned_on_market_info = get_owned_on_market_info();     //find out what we have on the market
+    //find out what we have on the market
+    $owned_on_market_info = get_owned_on_market_info();
     //out_data($market_info);   //output the Public Market info
     //var_export($owned_on_market_info);
 
@@ -77,8 +79,14 @@ function play_rainbow_strat($server)
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
         }
 
-        if (turns_of_food($c) > 70 && turns_of_money($c) > 70 && $c->money > 3500 * 500 && ($c->built() > 80 || $c->money > $c->fullBuildCost() - $c->runCash())) { // 40 turns of food
-            buy_rainbow_goals($c, $c->money - $c->fullBuildCost() - $c->runCash()); //keep enough money to build out everything
+        if (turns_of_food($c) > 70
+            && turns_of_money($c) > 70
+            && $c->money > 3500 * 500
+            && ($c->built() > 80 || $c->money > $c->fullBuildCost() - $c->runCash())
+        ) {
+            // 40 turns of food
+            //keep enough money to build out everything
+            buy_rainbow_goals($c, $c->money - $c->fullBuildCost() - $c->runCash());
         }
 
         if ($c->income < 0 && total_military($c) > 30) { //sell 1/4 of all military on PM
@@ -153,9 +161,9 @@ function sellextrafood_rainbow(&$c)
         $market_info = get_market_info();   //get the Public Market info
     }
 
-    $quantity = array('m_bu' => $c->food); //sell it all! :)
+    $quantity = ['m_bu' => $c->food]; //sell it all! :)
     $price    = round(max($pm_info->sell_price->m_bu, $market_info->buy_price->m_bu) * rand(80, 120) / 100);
-    $price    = array('m_bu' => $price);
+    $price    = ['m_bu' => $price];
 
     if ($quantity > 5000 || !is_object($c)) {
         out("Sell Public ".$quantity->m_bu);
@@ -169,24 +177,25 @@ function sellextrafood_rainbow(&$c)
 function build_rainbow(&$c)
 {
     if ($c->foodnet < 0) { //build farms if we are foodnet < 0
-        return build(array('farm' => $c->bpt));
-    } elseif ($c->income < max(100000, 2 * $c->build_cost * $c->bpt / $c->explore_rate)) { //build ent/res if we're not making more than enough to keep building continually at least $100k
+        return Build::buildings(['farm' => $c->bpt]);
+    } elseif ($c->income < max(100000, 2 * $c->build_cost * $c->bpt / $c->explore_rate)) {
+        //build ent/res if we're not making more than enough to keep building continually at least $100k
         if (rand(0, 100) > 50 && $c->income > $c->build_cost * $c->bpt / $c->explore_rate) {
             if (($c->tpt < $c->land && rand(0, 100) > 10) || rand(0, 100) > 40) {
-                return build(array('lab' => $c->bpt));
+                return Build::buildings(['lab' => $c->bpt]);
             } else {
-                return build(array('indy' => $c->bpt));
+                return Build::buildings(['indy' => $c->bpt]);
             }
         } else {
             $res = round($c->bpt / 2.12);
             $ent = $c->bpt - $res;
-            return build(array('ent' => $ent,'res' => $res));
+            return Build::buildings(['ent' => $ent,'res' => $res]);
         }
     } else { //build indies or labs
         if (($c->tpt < $c->land && rand(0, 100) > 10) || rand(0, 100) > 40) {
-            return build(array('lab' => $c->bpt));
+            return Build::buildings(['lab' => $c->bpt]);
         } else {
-            return build(array('indy' => $c->bpt));
+            return Build::buildings(['indy' => $c->bpt]);
         }
     }
 }//end build_rainbow()
@@ -207,7 +216,7 @@ function tech_rainbow(&$c)
     $spy  = rand(0, 10);
     $sdi  = rand(2, 15);
     $tot  = $mil + $med + $bus + $res + $agri + $war + $ms + $weap + $indy + $spy + $sdi;
-    
+
     $left  = $c->tpt;
     $left -= $mil = min($left, floor($c->tpt * ($mil / $tot)));
     $left -= $med = min($left, floor($c->tpt * ($med / $tot)));
@@ -223,8 +232,22 @@ function tech_rainbow(&$c)
     if ($left != 0) {
         die("What the hell?");
     }
-    
-    return tech(array('mil' => $mil,'med' => $med,'bus' => $bus,'res' => $res,'agri' => $agri,'war' => $war,'ms' => $ms,'weap' => $weap,'indy' => $indy,'spy' => $spy,'sdi' => $sdi));
+
+    return tech(
+        [
+            'mil' => $mil,
+            'med' => $med,
+            'bus' => $bus,
+            'res' => $res,
+            'agri' => $agri,
+            'war' => $war,
+            'ms' => $ms,
+            'weap' => $weap,
+            'indy' => $indy,
+            'spy' => $spy,
+            'sdi' => $sdi
+        ]
+    );
 }//end tech_rainbow()
 
 

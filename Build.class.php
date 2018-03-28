@@ -53,7 +53,7 @@ class Build
      */
     public static function techer(&$c)
     {
-        return build(['lab' => $c->bpt]);
+        return self::buildings(['lab' => $c->bpt]);
     }//end techer()
 
 
@@ -67,7 +67,7 @@ class Build
     public static function farmer(&$c)
     {
         //build farms
-        return build(['farm' => $c->bpt]);
+        return self::buildings(['farm' => $c->bpt]);
     }//end farmer()
 
 
@@ -83,7 +83,7 @@ class Build
     {
         //build ent/res
         $ent = ceil($c->bpt * 1.05 / 2);
-        return build(['ent' => $ent, 'res' => $c->bpt - $ent]);
+        return self::buildings(['ent' => $ent, 'res' => $c->bpt - $ent]);
     }//end casher()
 
 
@@ -97,6 +97,6 @@ class Build
     public static function indy(&$c)
     {
         //build indies
-        return build(['indy' => $c->bpt]);
+        return self::buildings(['indy' => $c->bpt]);
     }//end indy()
 }//end class

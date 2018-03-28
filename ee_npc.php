@@ -677,18 +677,6 @@ function event_text($event)
 }//end event_text()
 
 
-function build_cs($turns = 1)
-{
-                            //default is 1 CS if not provided
-    return build(['cs' => $turns]);
-}//end build_cs()
-
-
-function build($buildings = [])
-{
-                   //default is an empty array
-    return ee('build', ['build' => $buildings]);    //build a particular set of buildings
-}//end build()
 
 
 function cash(&$c, $turns = 1)
