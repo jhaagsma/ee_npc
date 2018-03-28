@@ -16,9 +16,13 @@ namespace EENPC;
 
 class Events
 {
-    private static $results = [];
-    private static $events  = [];
-    private static $market  = [];
+    private static $results     = [];
+    private static $events      = [];
+    private static $market      = [];
+    private static $news        = [];
+    private static $spy         = [];
+    private static $news_losses = [];
+
     /**
      * Get new events
      *
@@ -45,6 +49,26 @@ class Events
 
             foreach ($types as $type => $count) {
                 out("Events: $count x $type");
+            }
+        }
+
+        $types = [];
+
+        if (isset(self::$results->news)) {
+            self::$news = self::$results->news;
+
+            foreach (self::$news as $item) {
+                if (!isset($types[$item->type])) {
+                    $types[$item->type] = 1;
+                } else {
+                    $types[$item->type]++;
+                }
+
+                out($item);
+            }
+
+            foreach ($types as $item => $count) {
+                out("News: $count x $type");
             }
         }
 
