@@ -177,23 +177,23 @@ function sellextrafood_rainbow(&$c)
 function build_rainbow(&$c)
 {
     if ($c->foodnet < 0) { //build farms if we are foodnet < 0
-        return Build::farmer();
+        return Build::farmer($c);
     } elseif ($c->income < max(100000, 2 * $c->build_cost * $c->bpt / $c->explore_rate)) {
         //build ent/res if we're not making more than enough to keep building continually at least $100k
         if (rand(0, 100) > 50 && $c->income > $c->build_cost * $c->bpt / $c->explore_rate) {
             if (($c->tpt < $c->land && rand(0, 100) > 10) || rand(0, 100) > 40) {
-                return Build::techer();
+                return Build::techer($c);
             } else {
-                return Build::indy();
+                return Build::indy($c);
             }
         } else {
-            return Build::casher();
+            return Build::casher($c);
         }
     } else { //build indies or labs
         if (($c->tpt < $c->land && rand(0, 100) > 10) || rand(0, 100) > 40) {
-            return Build::techer();
+            return Build::techer($c);
         } else {
-            return Build::indy();
+            return Build::indy($c);
         }
     }
 }//end build_rainbow()
