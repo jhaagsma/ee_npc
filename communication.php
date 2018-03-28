@@ -197,7 +197,7 @@ function expected_result($input)
         'ally/cancel' => 'ALLYCANCEL',
         'gdi/join' => 'GDIJOIN',
         'gdi/leave' => 'GDILEAVE',
-        'events' => 'EVENTSNEW',
+        'events' => 'NEW_EVENTS',
     ];
 
     return $expected[$lastFunction] ?? null;
