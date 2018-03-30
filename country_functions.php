@@ -6,14 +6,23 @@ function destock($server, $cnum)
 {
     $c = get_advisor();     //c as in country! (get the advisor)
     out("Destocking #$cnum!");  //Text for screen
+
     if ($c->food > 0) {
         PrivateMarket::sell($c, ['m_bu' => $c->food]);   //Sell 'em
     }
-    $dpnw = 200;
+
+    $dpnw  = 200;
     $first = true;
+    $prev  = $c->money;
+
     while ($c->money > 1000 && $dpnw < 2500) {
+        if ($c->money != $prev) {
+            $first = true;
+        }
+
+        $prev = $c->money;
         out(
-            "Try to buy goods at $dpnw dpnw or below!".($first ? null : str_pad("\r", 60, ' ', STR_PAD_LEFT)),
+            "Try to buy goods at $dpnw dpnw or below!".($first ? null : str_pad("\r", 65, ' ', STR_PAD_LEFT)),
             $first
         );    //Text for screen
         buy_public_below_dpnw($c, $dpnw);
