@@ -10,14 +10,19 @@ function destock($server, $cnum)
         PrivateMarket::sell($c, ['m_bu' => $c->food]);   //Sell 'em
     }
     $dpnw = 200;
+    $first = true;
     while ($c->money > 1000 && $dpnw < 2500) {
-        out("Try to buy goods at $dpnw dpnw or below!");    //Text for screen
+        out(
+            "Try to buy goods at $dpnw dpnw or below!".($first ? null : str_pad("\r", 60, ' ', STR_PAD_LEFT)),
+            $first
+        );    //Text for screen
         buy_public_below_dpnw($c, $dpnw);
         buy_private_below_dpnw($c, $dpnw);
         $dpnw += 4;
         if ($dpnw > 500) {
             $dpnw += 50;
         }
+        $first = false;
     }
     if ($c->money <= 1000) {
         out("Done Destocking!");    //Text for screen
