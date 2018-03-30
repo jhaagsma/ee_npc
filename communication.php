@@ -142,12 +142,12 @@ function handle_output($serverOutput, $function)
         out("Trying to sell more than owned!");
 
         return false;
+    } elseif ($message == "ERROR" && $response == "MONEY") {
+        out("Not enough Money!");
+        return false;
     } elseif (expected_result($function) && $message != expected_result($function)) {
         out("\n\nUnexpected Result for '$function': ".$message.':'.$response."\n\n");
         out("Server Output: \n".$serverOutput);
-        if ($message == "ERROR" && $response == "MONEY") {
-            return false;
-        }
 
         return $response;
     } elseif (!expected_result($function)) {
