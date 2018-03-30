@@ -36,6 +36,22 @@ class Events
 
         self::$results = $result->results;
 
+        $copyarray = (array)$result->results;
+
+        foreach ($copyarray as $mainkey => $subitems) {
+            $count_sub = count($subitems);
+            out("Events: $count_sub x $mainkey");
+
+
+            if (is_array($subitems)) {
+                foreach (array_shift($subitems) as $subkey => $item) {
+                    out("Subkeys: $subkey ex. $item");
+                }
+            }
+        }
+
+        sleep(5);
+
         if (isset(self::$results->events)) {
             self::$events = self::$results->events;
 
@@ -67,7 +83,7 @@ class Events
                 out($item);
             }
 
-            foreach ($types as $item => $count) {
+            foreach ($types as $type => $count) {
                 out("News: $count x $type");
             }
         }
