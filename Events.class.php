@@ -42,6 +42,7 @@ class Events
             $count_sub = count($subitems);
             out("Events: $count_sub x $mainkey");
 
+            $subitems = (array)$subitems;
 
             if (is_array($subitems)) {
                 foreach (array_shift($subitems) as $subkey => $item) {
