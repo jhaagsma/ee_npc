@@ -151,7 +151,7 @@ while (1) {
             $cpref->retal = [];
         }
 
-        $cpref->retal = (array)$cpref->retal;
+        $cpref->retal = json_decode(json_encode($cpref->retal), true);
 
         $mktinfo = null;
 
