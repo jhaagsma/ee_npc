@@ -419,7 +419,7 @@ function defend_self(&$c, $reserve_cash = 50000, $dpnwMax = 380)
             $outonce = true;
         }
 
-        out("0.Hash: ".spl_object_hash($c));
+        // out("0.Hash: ".spl_object_hash($c));
 
         $dpnwOld = $dpnw;
         $dpnw    = minDpnw($c, true); //ONLY DEF
@@ -430,14 +430,14 @@ function defend_self(&$c, $reserve_cash = 50000, $dpnwMax = 380)
 
         buy_public_below_dpnw($c, $dpnw, $spend, true, true); //ONLY DEF
 
-        out("7.Hash: ".spl_object_hash($c));
+        // out("7.Hash: ".spl_object_hash($c));
 
         $spend = max(0, $c->money - $reserve_cash);
         $nlg   = $c->nlg();
         $dpa   = $c->defPerAcre();
         $c     = get_advisor();     //UPDATE EVERYTHING
 
-        out("8.Hash: ".spl_object_hash($c));
+        // out("8.Hash: ".spl_object_hash($c));
 
         if ($spend < 100000) {
             break;

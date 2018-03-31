@@ -26,7 +26,7 @@ class PrivateMarket
      */
     public static function buy(&$c, $units = [])
     {
-        out("2.Hash: ".spl_object_hash($c));
+        // out("2.Hash: ".spl_object_hash($c));
 
         $result = ee('pm', ['buy' => $units]);
         if (!isset($result->cost)) {
