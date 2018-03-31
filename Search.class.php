@@ -27,8 +27,8 @@ class Search
     {
         $result = $cnum;
         $result = ee('ranks/'.(int)$cnum);
-        out("Search: $result");
+        //out("Search: $result");
 
-        return $result;
+        return $result['results'];
     }//end country()
 }//end class
