@@ -82,6 +82,7 @@ function getServer()
         }
 
         if (!$server_loaded) {
+            out("Server didn't load, try again in 2...");
             sleep(2); //try again in 2 seconds.
         }
     }
@@ -107,6 +108,7 @@ function getRules()
         }
 
         if (!$rules_loaded) {
+            out("Rules didn't load, try again in 2...");
             sleep(2); //try again in 2 seconds.
         }
     }

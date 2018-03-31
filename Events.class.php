@@ -45,13 +45,16 @@ class Events
             $subitems = (array)$subitems;
 
             if (is_array($subitems)) {
+                $key = key($subitems);
+                out("Key ex: $key");
+
                 foreach (array_shift($subitems) as $subkey => $item) {
-                    out("Subkeys: $subkey ex. $item");
+                    out("Subkeys: $subkey; ex: $item");
                 }
             }
         }
 
-        sleep(5);
+        sleep(1);
 
         if (isset(self::$results->events)) {
             self::$events = self::$results->events;

@@ -198,7 +198,7 @@ while (1) {
             }
 
             Events::new();
-            sleep(1);
+            //sleep(1);
 
             $playfactor = 1;
             try {
