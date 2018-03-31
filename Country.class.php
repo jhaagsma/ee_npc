@@ -706,7 +706,8 @@ class Country
         out("Retals Due:");
         foreach ($cpref->retal as $list) {
             out("Country: #{$list['cnum']} x {$list['num']} or {$list['land']} Acres");
-            out(Search::country($list['cnum']));
+
+            $country = Search::country($list['cnum']);
         }
 
     }

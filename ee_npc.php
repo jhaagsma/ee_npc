@@ -136,7 +136,7 @@ while (1) {
                         'aggro' => 1.0,
                         'allyup' => null,
                         'gdi' => null,
-                        'retal'=> [],
+                        'retal' => [],
                     ]
                 )
             );
