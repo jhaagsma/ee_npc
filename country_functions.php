@@ -151,7 +151,7 @@ function buy_private_below_dpnw(&$c, $dpnw, $money = 0, $shuffle = false, $defOn
     }
 
 
-    out("1.Hash: ".spl_object_hash($c));
+    // out("1.Hash: ".spl_object_hash($c));
     foreach ($order as $o) {
         $money = max(0, $c->money - $reserve);
 
@@ -189,8 +189,8 @@ function buy_private_below_dpnw(&$c, $dpnw, $money = 0, $shuffle = false, $defOn
             $result = PrivateMarket::buy($c, ['m_tu' => $q]);
         }
 
-        out("Country has \${$c->money}");
-        out("3.Hash: ".spl_object_hash($c));
+        // out("Country has \${$c->money}");
+        // out("3.Hash: ".spl_object_hash($c));
 
     }
 }//end buy_private_below_dpnw()
