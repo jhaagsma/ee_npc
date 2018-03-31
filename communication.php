@@ -137,14 +137,14 @@ function handle_output($serverOutput, $function)
     if ($message == 'COUNTRY_IS_DEAD') {
         out("Country is Dead!");
 
-        return false;
+        return null;
     } elseif ($message == 'OWNED') {
         out("Trying to sell more than owned!");
 
-        return false;
+        return null;
     } elseif ($message == "ERROR" && $response == "MONEY") {
         out("Not enough Money!");
-        return false;
+        return null;
     } elseif (expected_result($function) && $message != expected_result($function)) {
         out("\n\nUnexpected Result for '$function': ".$message.':'.$response."\n\n");
         out("Server Output: \n".$serverOutput);
