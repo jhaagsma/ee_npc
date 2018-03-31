@@ -160,6 +160,7 @@ function handle_output($serverOutput, $function)
     } elseif (!expected_result($function)) {
         out($message);
         out_data($response);
+        out("Server Output: \n".$serverOutput);
         return false;
     }
 
