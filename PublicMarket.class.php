@@ -58,7 +58,7 @@ class PublicMarket
 
     public static function price($item = 'm_bu')
     {
-        if (self::elapsed() > 10) {
+        if (self::elapsed() > 60) {
             self::update();
         }
 
@@ -68,7 +68,7 @@ class PublicMarket
 
     public static function available($item = 'm_bu')
     {
-        if (self::elapsed() > 10) {
+        if (self::elapsed() > 60) {
             self::update();
         }
 
