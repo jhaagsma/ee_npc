@@ -704,11 +704,18 @@ class Country
         }
 
         out("Retals Due:");
+
+        usort(
+            $cpref->retal,
+            function ($a, $b) {
+                return $a['land'] <=> $b['land'];
+            }
+        );
+
         foreach ($cpref->retal as $list) {
-            out("Country: #{$list['cnum']} x {$list['num']} or {$list['land']} Acres");
 
             $country = Search::country($list['cnum']);
+            out("Country: {$country->cname} #{$list['cnum']} x {$list['num']} or {$list['land']} Acres");
         }
-
     }
 }//end class
