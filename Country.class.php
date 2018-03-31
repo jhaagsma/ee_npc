@@ -717,7 +717,7 @@ class Country
             $country = Search::country($list['cnum']);
             out(
                 "Country: ".str_pad($country->cname, 32).str_pad(" (#".$list['cnum'].')', 9, ' ', STR_PAD_LEFT).
-                ' x '.str_pad($list['num'], 4, STR_PAD_LEFT).
+                ' x '.str_pad($list['num'], 4, ' ', STR_PAD_LEFT).
                 ' or '.str_pad($list['land'], 6, ' ', STR_PAD_LEFT).' Acres'
             );
         }
