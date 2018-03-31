@@ -151,6 +151,7 @@ function buy_private_below_dpnw(&$c, $dpnw, $money = 0, $shuffle = false, $defOn
     }
 
 
+    out("1.Hash: ".spl_object_hash($c));
     foreach ($order as $o) {
         $money = max(0, $c->money - $reserve);
 
@@ -189,6 +190,8 @@ function buy_private_below_dpnw(&$c, $dpnw, $money = 0, $shuffle = false, $defOn
         }
 
         out("Country has \${$c->money}");
+        out("9.Hash: ".spl_object_hash($c));
+
     }
 }//end buy_private_below_dpnw()
 

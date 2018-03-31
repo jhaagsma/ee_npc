@@ -26,21 +26,23 @@ class PrivateMarket
      */
     public static function buy(&$c, $units = [])
     {
+        out("2.Hash: ".spl_object_hash($c));
+
         $result = ee('pm', ['buy' => $units]);
         if (!isset($result->cost)) {
             out("--- Failed to BUY Private Market; money={$c->money}");
-            out_data($result);
-             out_data($units);
-             out("UPDATE EVERYTHING");
+            // out_data($result);
+            //  out_data($units);
+            //  out("UPDATE EVERYTHING");
 
-            global $pm_info;
+            // global $pm_info;
 
-            Debug::on();
-            Debug::msg($pm_info);
+            // Debug::on();
+            // Debug::msg($pm_info);
 
             $c = get_advisor();   //Do both??
             $c->updateMain();     //UPDATE EVERYTHING
-            out("refresh money={$c->money}");
+            // out("refresh money={$c->money}");
             return $result;
         }
 
