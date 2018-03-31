@@ -673,4 +673,25 @@ class Country
 
         return true;
     }//end shouldBuildFullBPT()
+
+
+    /**
+     * Add a retal to the list
+     *
+     * @param int    $cnum The country number
+     * @param string $type The attack type
+     * @param int    $land The amount of land lost
+     *
+     * @return void
+     */
+    public static function addRetalDue($cnum, $type, $land) {
+        global $cpref;
+
+        if (!isset($cpref->retal[$cnum])) {
+            $cpref->retal[$cnum] = ['cnum' => $cnum, 'num' => 1, 'land' => $land];
+        } else {
+             $cpref->retal[$cnum]['num']++;
+             $cpref->retal[$cnum]['land'] += $land;
+        }
+    }//end addRetalDue()
 }//end class
