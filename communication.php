@@ -131,10 +131,10 @@ function handle_output($serverOutput, $function)
         return false;
     }
 
-    if ($function == 'buy') {
-        out("DEBUGGING BUY");
-        out_data($response);
-    }
+    // if ($function == 'buy') {
+    //     out("DEBUGGING BUY");
+    //     out_data($response);
+    // }
 
     $message  = key($response);
     $response = $response->$message ?? null;
