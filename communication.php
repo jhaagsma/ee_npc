@@ -152,6 +152,9 @@ function handle_output($serverOutput, $function)
     } elseif ($message == "ERROR" && $response == "MONEY") {
         out("Not enough Money!");
         return null;
+    } elseif ($message == "ERROR" && $response == "NOT_ENOUGH_TURNS") {
+        out("Not enough Turns!");
+        return null;
     } elseif (expected_result($function) && $message != expected_result($function)) {
         out("\n\nUnexpected Result for '$function': ".$message.':'.$response."\n\n");
         out("Server Output: \n".$serverOutput);
