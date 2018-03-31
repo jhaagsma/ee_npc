@@ -386,6 +386,7 @@ class Country
 
     /**
      * Convoluted ladder logic to buy whichever goal is least fulfilled
+     * @param  object  $c             the country object
      * @param  array   $goals         an array of goals to persue
      * @param  int     $spend         money to spend
      * @param  int     $spend_partial intermediate money, for recursion
@@ -403,7 +404,8 @@ class Country
         }
 
         if ($spend_partial == null) {
-            $spend_partial = $spend / 3;
+            $spend_partial = $spend;
+            //$spend_partial = $spend / 3;
         }
 
         if ($spend_partial < 1000000) {
