@@ -143,7 +143,7 @@ class PublicMarket
             $c = get_advisor();
 
             if ($c->money != $thought_money) {
-                out("We thought we had ${$thought_money}, but actually have ${$c->money}");
+                out("We thought we had \$$thought_money, but actually have \${$c->money}");
             }
 
 
