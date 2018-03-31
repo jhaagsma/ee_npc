@@ -54,7 +54,7 @@ class Events
             }
         }
 
-        sleep(1);
+        //sleep(1);
 
         if (isset(self::$results->events)) {
             self::$events = self::$results->events;
@@ -84,7 +84,9 @@ class Events
                     $types[$item->type]++;
                 }
 
-                out($item);
+                Country::addRetalDue($item['attacker'], $item['type'], $item['land']);
+
+                //out($item);
             }
 
             foreach ($types as $type => $count) {

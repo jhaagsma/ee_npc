@@ -694,4 +694,20 @@ class Country
              $cpref->retal[$cnum]['land'] += $land;
         }
     }//end addRetalDue()
+
+    public static function listRetalsDue() {
+        global $cpref;
+
+        if (!$cpref->retal) {
+            out("Retals Due: None!");
+            return;
+        }
+
+        out("Retals Due:");
+        foreach ($cpref->retal as $list) {
+            out("Country: #{$list['cnum']} x {$list['num']} or {$list['land']} Acres");
+            out(Search::country($list['cnum']));
+        }
+
+    }
 }//end class

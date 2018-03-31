@@ -136,6 +136,7 @@ while (1) {
                         'aggro' => 1.0,
                         'allyup' => null,
                         'gdi' => null,
+                        'retal'=> [],
                     ]
                 )
             );
@@ -145,6 +146,8 @@ while (1) {
 
         global $cpref;
         $cpref = $settings->$cnum;
+
+        $cpref->retal = (array)$cpref->retal;
 
         $mktinfo = null;
 
@@ -175,6 +178,10 @@ while (1) {
             $save = true;
         }
 
+        if (!isset($cpref->retal)) {
+            $cpref->retal = [];
+        }
+
         if (!isset($cpref->lastTurns)) {
             $cpref->lastTurns = 0;
         }
@@ -198,6 +205,7 @@ while (1) {
             }
 
             Events::new();
+            Country::listRetalsDue();
             //sleep(1);
 
             $playfactor = 1;
