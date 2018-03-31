@@ -176,7 +176,7 @@ function buy_farmer_goals(&$c, $spend = null)
 {
     $goals = farmerGoals($c);
 
-    $c->countryGoals($goals, $spend);
+    Country::countryGoals($c, $goals, $spend);
 }//end buy_farmer_goals()
 
 

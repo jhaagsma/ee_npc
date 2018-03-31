@@ -253,7 +253,7 @@ function tech_rainbow(&$c)
 
 function buy_rainbow_goals(&$c, $spend = null)
 {
-    $c->countryGoals(rainbowGoals($c), $spend);
+    Country::countryGoals($c, rainbowGoals($c), $spend);
 }//end buy_rainbow_goals()
 
 

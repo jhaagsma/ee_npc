@@ -159,7 +159,7 @@ function buy_indy_goals(&$c, $spend = null)
 {
     $goals = indyGoals($c);
 
-    $c->countryGoals($goals, $spend);
+    Country::countryGoals($c, $goals, $spend);
 }//end buy_indy_goals()
 
 

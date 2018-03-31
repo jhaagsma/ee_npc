@@ -112,7 +112,7 @@ function play_casher_turn(&$c)
 
 function buy_casher_goals(&$c, $spend = null)
 {
-    $c->countryGoals(casherGoals($c), $spend);
+    Country::countryGoals($c, casherGoals($c), $spend);
 }//end buy_casher_goals()
 
 

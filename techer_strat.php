@@ -262,7 +262,7 @@ function tech_techer(&$c)
 function buy_techer_goals(&$c, $spend = null)
 {
     $goals = techerGoals($c);
-    $c->countryGoals($goals, $spend);
+    Country::countryGoals($c, $goals, $spend);
 }//end buy_techer_goals()
 
 
