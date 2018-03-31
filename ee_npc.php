@@ -105,6 +105,7 @@ while (1) {
     } elseif ($server->reset_end < time()) {
         out("Reset is over!");
         sleep(300);                             //wait 5 mins, see if new one is created
+        $server = ee('server');
         continue;                               //restart the loop
     }
 
