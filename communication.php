@@ -158,6 +158,7 @@ function handle_output($serverOutput, $function)
 
         return $response;
     } elseif (!expected_result($function)) {
+        out($function);
         out($message);
         out_data($response);
         out("Server Output: \n".$serverOutput);
