@@ -124,7 +124,7 @@ function buy_public_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false, $de
 }//end buy_public_below_dpnw()
 
 
-function buy_private_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false, $defOnly = false)
+function buy_private_below_dpnw(&$c, $dpnw, $money = 0, $shuffle = false, $defOnly = false)
 {
     //out("Stage 2");
     $pm_info = get_pm_info();   //get the PM info
@@ -152,6 +152,8 @@ function buy_private_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false, $d
 
 
     foreach ($order as $o) {
+        $money = max(0, $c->money - $reserve);
+
         if ($o == 1
             && $pm_info->buy_price->m_tr <= $tr_price
             && $pm_info->available->m_tr > 0
@@ -185,7 +187,6 @@ function buy_private_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false, $d
             Debug::msg("BUY_PM: Money: $money; Price: {$pm_info->buy_price->m_tu}; Q: ".$q);
             $result = PrivateMarket::buy($c, ['m_tu' => $q]);
         }
-        $money = max(0, $c->money - $reserve);
     }
 }//end buy_private_below_dpnw()
 
