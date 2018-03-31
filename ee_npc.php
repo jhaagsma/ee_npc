@@ -327,6 +327,11 @@ function govtStats($countries)
     $govs = [];
     $tnw  = $tld = 0;
     foreach ($countries as $cnum) {
+        if (!isset($settings->$cnum)) {
+            continue;
+        }
+
+
         if (!isset($settings->$cnum->strat)) {
             out("Picking a new strat for #$cnum");
             $settings->$cnum->strat = Bots::pickStrat($cnum);
@@ -349,6 +354,10 @@ function govtStats($countries)
         $govs[$s][4] += $settings->$cnum->land;
         $tnw         += $settings->$cnum->networth;
         $tld         += $settings->$cnum->land;
+    }
+
+    if ($tnw == 0) {
+        return;
     }
 
     global $serv, $server_avg_land, $server_avg_networth;
