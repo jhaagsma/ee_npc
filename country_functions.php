@@ -187,6 +187,8 @@ function buy_private_below_dpnw(&$c, $dpnw, $money = 0, $shuffle = false, $defOn
             Debug::msg("BUY_PM: Money: $money; Price: {$pm_info->buy_price->m_tu}; Q: ".$q);
             $result = PrivateMarket::buy($c, ['m_tu' => $q]);
         }
+
+        out("Country has \${$c->money}");
     }
 }//end buy_private_below_dpnw()
 
