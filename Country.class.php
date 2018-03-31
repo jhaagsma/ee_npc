@@ -705,15 +705,15 @@ class Country
 
         out("Retals Due:");
 
-        $cpref->retal = (array)$cpref->retal;
+        $retals = (array)$cpref->retal;
         usort(
-            $cpref->retal,
+            $retals,
             function ($a, $b) {
                 return $a['land'] <=> $b['land'];
             }
         );
 
-        foreach ($cpref->retal as $list) {
+        foreach ($retals as $list) {
 
             $country = Search::country($list['cnum']);
             out(
