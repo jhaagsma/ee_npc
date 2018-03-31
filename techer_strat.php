@@ -201,7 +201,12 @@ function sell_max_tech(&$c)
                 Debug::msg("sell_max_tech:A:$key");
                 $max = $c->goodsStuck($key) ? 0.98 : $rmax; //undercut if we have goods stuck
                 Debug::msg("sell_max_tech:B:$key");
-                $price[$key] = min(9999, floor(PublicMarket::price($key) * Math::purebell($rmin, $max, $rstddev, $rstep)));
+
+                $price[$key] = min(
+                    9999,
+                    floor(PublicMarket::price($key) * Math::purebell($rmin, $max, $rstddev, $rstep))
+                );
+
                 Debug::msg("sell_max_tech:C:$key");
             }
         } else {
@@ -254,7 +259,21 @@ function tech_techer(&$c)
         die("What the hell?");
     }
 
-    return tech(['mil' => $mil,'med' => $med,'bus' => $bus,'res' => $res,'agri' => $agri,'war' => $war,'ms' => $ms,'weap' => $weap,'indy' => $indy,'spy' => $spy,'sdi' => $sdi]);
+    return tech(
+        [
+            'mil' => $mil,
+            'med' => $med,
+            'bus' => $bus,
+            'res' => $res,
+            'agri' => $agri,
+            'war' => $war,
+            'ms' => $ms,
+            'weap' => $weap,
+            'indy' => $indy,
+            'spy' => $spy,
+            'sdi' => $sdi
+        ]
+    );
 }//end tech_techer()
 
 

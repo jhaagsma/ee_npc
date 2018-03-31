@@ -261,8 +261,8 @@ function rainbowGoals(&$c)
 {
     return [
         //what, goal, priority
-        ['t_agri',215,1],
-        ['t_indy',150,1],
+        ['t_agri',225,1],
+        ['t_indy',160,1],
         ['t_bus',178,1],
         ['t_res',178,1],
         ['t_mil',94,1],
