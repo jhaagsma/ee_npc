@@ -26,11 +26,8 @@ class Search
     public static function country($cnum)
     {
         $result = $cnum;
-        // $result = ee('govt', ['govt' => $govt]);
-        // if (isset($result->govt)) {
-        //     out("Govt switched to {$result->govt}!");
-        //     $c = get_advisor(); //UPDATE EVERYTHING
-        // }
+        $result = ee('/ranks/'.(int)$cnum);
+        out("Search: $result");
 
         return $result;
     }//end country()
