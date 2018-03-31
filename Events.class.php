@@ -94,10 +94,10 @@ class Events
             }
         }
 
-        foreach ((array)self::$results as $key => $values) {
-            $count = count($values);
-            out("Key: $key; $count");
-        }
+        // foreach ((array)self::$results as $key => $values) {
+        //     $count = count($values);
+        //     out("Key: $key; $count");
+        // }
 
         return $result;
     }//end new()
