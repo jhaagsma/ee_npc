@@ -174,6 +174,11 @@ function expected_result($input)
     $lastFunction = $input;
     //This is simply a list of expected return values for each function
     //This allows us to quickly verify if an error occurred
+    $bits = explode('/', $lastFunction);
+    if ($bits[0] == 'ranks' && isset($bits[1]) && is_numeric($bits[1])) {
+        $lastFunction = 'ranks/{cnum}';
+    }
+
     $expected = [
         'server' => 'SERVER_INFO',
         'create' => 'CNUM',
@@ -201,6 +206,7 @@ function expected_result($input)
         'gdi/join' => 'GDIJOIN',
         'gdi/leave' => 'GDILEAVE',
         'events' => 'EVENTSNEW',
+        'ranks/{cnum}' => 'SEARCH',
     ];
 
     return $expected[$lastFunction] ?? null;
