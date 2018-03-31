@@ -705,6 +705,7 @@ class Country
 
         out("Retals Due:");
 
+        $cpref->retal = (array)$cpref->retal;
         usort(
             $cpref->retal,
             function ($a, $b) {
