@@ -151,7 +151,7 @@ function handle_output($serverOutput, $function)
         return null;
     } elseif ($message == "ERROR" && $response == "MONEY") {
         out("Not enough Money!");
-        out_data($response);
+        out_data($serverOutput);
         return null;
     } elseif (expected_result($function) && $message != expected_result($function)) {
         out("\n\nUnexpected Result for '$function': ".$message.':'.$response."\n\n");
