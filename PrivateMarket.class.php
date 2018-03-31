@@ -37,7 +37,7 @@ class PrivateMarket
             // Debug::on();
             // Debug::msg($pm_info);
 
-            $c = get_advisor();     //UPDATE EVERYTHING
+            $c->updateMain();     //UPDATE EVERYTHING
             //out("refresh money={$c->money}");
             return $result;
         }

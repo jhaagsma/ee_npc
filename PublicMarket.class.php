@@ -140,7 +140,7 @@ class PublicMarket
 
             $thought_money = $c->money;
 
-            $c = get_advisor();
+            $c->updateMain();
 
             if ($c->money != $thought_money) {
                 out("We thought we had \$$thought_money, but actually have \${$c->money}");
@@ -184,7 +184,7 @@ class PublicMarket
         out($str);*/
         if (array_sum($quantity) == 0) {
             out("Trying to sell nothing?");
-            $c = get_advisor();
+            $c->updateMain();
             $c->updateOnMarket();
             Debug::on();
             return;
