@@ -29,7 +29,7 @@ class PrivateMarket
         $result = ee('pm', ['buy' => $units]);
         if (!isset($result->cost)) {
             out("--- Failed to BUY Private Market; money={$c->money}");
-            // out_data($result);
+            out_data($result);
             // out_data($units);
             // out("UPDATE EVERYTHING");
             // global $pm_info;
