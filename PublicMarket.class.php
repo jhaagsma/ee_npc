@@ -138,7 +138,14 @@ class PublicMarket
 
             out("Tried: ".$what."; Money: ".$c->money." Cost: ".$cost);
 
+            $thought_money = $c->money;
+
             $c = get_advisor();
+
+            if ($c->money != $thought_money) {
+                out("We thought we had ${$thought_money}, but actually have ${$c->money}");
+            }
+
 
             if ($c->money > $cost) {
                 self::update();
