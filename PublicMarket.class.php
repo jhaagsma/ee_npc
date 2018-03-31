@@ -136,10 +136,15 @@ class PublicMarket
                 $cost += round($q * $price[$key] * $c->tax());
             }
 
-            out("Tried: ".$what);
-            out("Money: ".$c->money." Cost: ".$cost);
+            out("Tried: ".$what."; Money: ".$c->money." Cost: ".$cost);
+
             $c = get_advisor();
-            sleep(1);
+
+            if ($c->money > $cost) {
+                self::update();
+            }
+
+            //sleep(1);
             return false;
         }
 
