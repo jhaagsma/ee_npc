@@ -26,7 +26,7 @@ class Search
     public static function country($cnum)
     {
         $result = $cnum;
-        $result = ee('/ranks/'.(int)$cnum);
+        $result = ee('ranks/'.(int)$cnum);
         out("Search: $result");
 
         return $result;
