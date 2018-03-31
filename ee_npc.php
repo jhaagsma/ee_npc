@@ -147,6 +147,10 @@ while (1) {
         global $cpref;
         $cpref = $settings->$cnum;
 
+        if (!isset($cpref->retal)) {
+            $cpref->retal = [];
+        }
+
         $cpref->retal = (array)$cpref->retal;
 
         $mktinfo = null;
@@ -176,10 +180,6 @@ while (1) {
             $cpref->nextplay = 0;
             out("Resetting Next #$cnum", true, 'red');
             $save = true;
-        }
-
-        if (!isset($cpref->retal)) {
-            $cpref->retal = [];
         }
 
         if (!isset($cpref->lastTurns)) {
