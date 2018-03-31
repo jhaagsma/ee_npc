@@ -136,10 +136,22 @@ class PublicMarket
                 $cost += round($q * $price[$key] * $c->tax());
             }
 
-            out("Tried: ".$what);
-            out("Money: ".$c->money." Cost: ".$cost);
-            $c = get_advisor();
-            sleep(1);
+            out("Tried: ".$what."; Money: ".$c->money." Cost: ".$cost);
+
+            $thought_money = $c->money;
+
+            $c->updateMain();
+
+            if ($c->money != $thought_money) {
+                out("We thought we had \$$thought_money, but actually have \${$c->money}");
+            }
+
+
+            if ($c->money > $cost) {
+                self::update();
+            }
+
+            //sleep(1);
             return false;
         }
 
@@ -172,7 +184,7 @@ class PublicMarket
         out($str);*/
         if (array_sum($quantity) == 0) {
             out("Trying to sell nothing?");
-            $c = get_advisor();
+            $c->updateMain();
             $c->updateOnMarket();
             Debug::on();
             return;

@@ -36,6 +36,26 @@ class Events
 
         self::$results = $result->results;
 
+        $copyarray = (array)$result->results;
+
+        foreach ($copyarray as $mainkey => $subitems) {
+            $count_sub = count($subitems);
+            out("Events: $count_sub x $mainkey");
+
+            $subitems = (array)$subitems;
+
+            if (is_array($subitems)) {
+                $key = key($subitems);
+                out("Key ex: $key");
+
+                foreach (array_shift($subitems) as $subkey => $item) {
+                    out("Subkeys: $subkey; ex: $item");
+                }
+            }
+        }
+
+        //sleep(1);
+
         if (isset(self::$results->events)) {
             self::$events = self::$results->events;
 
@@ -64,10 +84,12 @@ class Events
                     $types[$item->type]++;
                 }
 
-                out($item);
+                Country::addRetalDue($item->attacker, $item->type, $item->land);
+
+                //out($item);
             }
 
-            foreach ($types as $item => $count) {
+            foreach ($types as $type => $count) {
                 out("News: $count x $type");
             }
         }

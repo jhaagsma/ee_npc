@@ -82,6 +82,7 @@ function getServer()
         }
 
         if (!$server_loaded) {
+            out("Server didn't load, try again in 2...");
             sleep(2); //try again in 2 seconds.
         }
     }
@@ -107,6 +108,7 @@ function getRules()
         }
 
         if (!$rules_loaded) {
+            out("Rules didn't load, try again in 2...");
             sleep(2); //try again in 2 seconds.
         }
     }
@@ -129,6 +131,11 @@ function handle_output($serverOutput, $function)
         return false;
     }
 
+    // if ($function == 'buy') {
+    //     out("DEBUGGING BUY");
+    //     out_data($response);
+    // }
+
     $message  = key($response);
     $response = $response->$message ?? null;
     //$parts = explode(':', $serverOutput, 2);
@@ -137,22 +144,24 @@ function handle_output($serverOutput, $function)
     if ($message == 'COUNTRY_IS_DEAD') {
         out("Country is Dead!");
 
-        return false;
+        return null;
     } elseif ($message == 'OWNED') {
         out("Trying to sell more than owned!");
 
-        return false;
+        return null;
+    } elseif ($message == "ERROR" && $response == "MONEY") {
+        out("Not enough Money!");
+        return null;
     } elseif (expected_result($function) && $message != expected_result($function)) {
         out("\n\nUnexpected Result for '$function': ".$message.':'.$response."\n\n");
         out("Server Output: \n".$serverOutput);
-        if ($message == "ERROR" && $response == "MONEY") {
-            return false;
-        }
 
         return $response;
     } elseif (!expected_result($function)) {
+        out($function);
         out($message);
         out_data($response);
+        out("Server Output: \n".$serverOutput);
         return false;
     }
 
@@ -171,6 +180,11 @@ function expected_result($input)
     $lastFunction = $input;
     //This is simply a list of expected return values for each function
     //This allows us to quickly verify if an error occurred
+    $bits = explode('/', $lastFunction);
+    if ($bits[0] == 'ranks' && isset($bits[1]) && is_numeric($bits[1])) {
+        $lastFunction = 'ranks/{cnum}';
+    }
+
     $expected = [
         'server' => 'SERVER_INFO',
         'create' => 'CNUM',
@@ -198,6 +212,8 @@ function expected_result($input)
         'gdi/join' => 'GDIJOIN',
         'gdi/leave' => 'GDILEAVE',
         'events' => 'NEW_EVENTS',
+        'events' => 'EVENTSNEW',
+        'ranks/{cnum}' => 'SEARCH',
     ];
 
     return $expected[$lastFunction] ?? null;

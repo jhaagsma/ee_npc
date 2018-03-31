@@ -673,4 +673,53 @@ class Country
 
         return true;
     }//end shouldBuildFullBPT()
+
+
+    /**
+     * Add a retal to the list
+     *
+     * @param int    $cnum The country number
+     * @param string $type The attack type
+     * @param int    $land The amount of land lost
+     *
+     * @return void
+     */
+    public static function addRetalDue($cnum, $type, $land) {
+        global $cpref;
+
+        if (!isset($cpref->retal[$cnum])) {
+            $cpref->retal[$cnum] = ['cnum' => $cnum, 'num' => 1, 'land' => $land];
+        } else {
+             $cpref->retal[$cnum]['num']++;
+             $cpref->retal[$cnum]['land'] += $land;
+        }
+    }//end addRetalDue()
+
+    public static function listRetalsDue() {
+        global $cpref;
+
+        if (!$cpref->retal) {
+            out("Retals Due: None!");
+            return;
+        }
+
+        out("Retals Due:");
+
+        usort(
+            $cpref->retal,
+            function ($a, $b) {
+                return $a['land'] <=> $b['land'];
+            }
+        );
+
+        foreach ($cpref->retal as $list) {
+
+            $country = Search::country($list['cnum']);
+            out(
+                "Country: ".str_pad($country->cname, 32).str_pad(" (#".$list['cnum'].')', 9, ' ', STR_PAD_LEFT).
+                ' x '.str_pad($list['num'], 4, ' ', STR_PAD_LEFT).
+                ' or '.str_pad($list['land'], 6, ' ', STR_PAD_LEFT).' Acres'
+            );
+        }
+    }
 }//end class
