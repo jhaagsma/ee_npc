@@ -160,6 +160,10 @@ function handle_output($serverOutput, $function)
         Allies::$allowed = false;
         return null;
     } elseif (expected_result($function) && $message != expected_result($function)) {
+        if (is_object($message)) {
+            out_data($message);
+        }
+
         out("\n\nUnexpected Result for '$function': ".$message.':'.$response."\n\n");
         out("Server Output: \n".$serverOutput);
 
