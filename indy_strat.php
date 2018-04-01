@@ -31,7 +31,7 @@ function play_indy_strat($server)
     }
     out($c->turns.' turns left');
     out('Explore Rate: '.$c->explore_rate.'; Min Rate: '.$c->explore_min);
-    $pm_info = get_pm_info();   //get the PM info
+    //$pm_info = get_pm_info();   //get the PM info
     //out_data($pm_info);       //output the PM info
     //$market_info = get_market_info();   //get the Public Market info
     //out_data($market_info);       //output the PM info

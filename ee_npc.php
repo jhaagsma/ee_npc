@@ -15,14 +15,16 @@ spl_autoload_register(
 require_once 'Terminal.class.php';
 require_once 'communication.php';
 
-out(Colors::getColoredString("Rainbow", "purple"));
+out(Colors::getColoredString("STARTING UP BOT", "purple"));
 
-out('STARTING UP BOT');// out() is defined below
 date_default_timezone_set('GMT'); //SET THE TIMEZONE FIRST
 error_reporting(E_ALL); //SET THE ERROR REPORTING TO REPORT EVERYTHING
 out('Error Reporting and Timezone Set');
+
+$config = null;
 require_once 'config.php';
-if (!isset($config)) {
+
+if ($config === null) {
     //ADD IN AUTOGENERATE CONFIG HERE?
     die("Config not included successfully! Do you have config.php set up properly?");
 }
@@ -790,11 +792,6 @@ function get_advisor()
     return new Country($advisor);
 }//end get_advisor()
 
-
-function get_pm_info()
-{
-    return ee('pm_info');   //get and return the PRIVATE MARKET information
-}//end get_pm_info()
 
 
 function get_market_info()

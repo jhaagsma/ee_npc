@@ -127,7 +127,7 @@ function buy_public_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false, $de
 function buy_private_below_dpnw(&$c, $dpnw, $money = 0, $shuffle = false, $defOnly = false)
 {
     //out("Stage 2");
-    $pm_info = get_pm_info();   //get the PM info
+    $pm_info = PrivateMarket::getRecent($c);   //get the PM info
 
     if (!$money || $money < 0) {
         $money   = $c->money;
@@ -162,7 +162,7 @@ function buy_private_below_dpnw(&$c, $dpnw, $money = 0, $shuffle = false, $defOn
         ) {
             $q = min(floor($money / $pm_info->buy_price->m_tr), $pm_info->available->m_tr);
             Debug::msg("BUY_PM: Money: $money; Price: {$pm_info->buy_price->m_tr}; Q: ".$q);
-            $result = PrivateMarket::buy($c, ['m_tr' => $q]);
+            PrivateMarket::buy($c, ['m_tr' => $q]);
         } elseif ($o == 2
             && $pm_info->buy_price->m_ta <= $ta_price
             && $pm_info->available->m_ta > 0
@@ -170,7 +170,7 @@ function buy_private_below_dpnw(&$c, $dpnw, $money = 0, $shuffle = false, $defOn
         ) {
             $q = min(floor($money / $pm_info->buy_price->m_ta), $pm_info->available->m_ta);
             Debug::msg("BUY_PM: Money: $money; Price: {$pm_info->buy_price->m_ta}; Q: ".$q);
-            $result = PrivateMarket::buy($c, ['m_ta' => $q]);
+            PrivateMarket::buy($c, ['m_ta' => $q]);
         } elseif ($o == 3
             && $pm_info->buy_price->m_j <= $j_price
             && $pm_info->available->m_j > 0
@@ -178,7 +178,7 @@ function buy_private_below_dpnw(&$c, $dpnw, $money = 0, $shuffle = false, $defOn
         ) {
             $q = min(floor($money / $pm_info->buy_price->m_j), $pm_info->available->m_j);
             Debug::msg("BUY_PM: Money: $money; Price: {$pm_info->buy_price->m_j}; Q: ".$q);
-            $result = PrivateMarket::buy($c, ['m_j' => $q]);
+            PrivateMarket::buy($c, ['m_j' => $q]);
         } elseif ($o == 4
             && $pm_info->buy_price->m_tu <= $tu_price
             && $pm_info->available->m_tu > 0
@@ -186,7 +186,7 @@ function buy_private_below_dpnw(&$c, $dpnw, $money = 0, $shuffle = false, $defOn
         ) {
             $q = min(floor($money / $pm_info->buy_price->m_tu), $pm_info->available->m_tu);
             Debug::msg("BUY_PM: Money: $money; Price: {$pm_info->buy_price->m_tu}; Q: ".$q);
-            $result = PrivateMarket::buy($c, ['m_tu' => $q]);
+            PrivateMarket::buy($c, ['m_tu' => $q]);
         }
 
         // out("Country has \${$c->money}");
@@ -271,7 +271,7 @@ function money_management(&$c)
 
 function food_management(&$c)
 {
- //RETURNS WHETHER TO HOLD TURNS OR NOT
+    //RETURNS WHETHER TO HOLD TURNS OR NOT
     $reserve = max(130, $c->turns);
     if (turns_of_food($c) >= $reserve) {
         return false;
@@ -285,7 +285,8 @@ function food_management(&$c)
     //global $market;
     //$market_info = get_market_info();   //get the Public Market info
     //out_data($market_info);
-    $pm_info = get_pm_info();
+    $pm_info = PrivateMarket::getRecent($c);   //get the PM info
+
     while ($turns_buy > 1 && $c->food <= $turns_buy * $foodloss && PublicMarket::price('m_bu') != null) {
         $turns_of_food = $foodloss * $turns_buy;
         $market_price  = PublicMarket::price('m_bu');
@@ -364,10 +365,8 @@ function food_management(&$c)
 
 function minDpnw(&$c, $onlyDef = false)
 {
-    global $pm_info;
-    if (!isset($pm_info->buy_price)) {
-        $pm_info = get_pm_info();
-    }
+    $pm_info = PrivateMarket::getRecent($c);   //get the PM info
+
     PublicMarket::update();
     $pub_tr = PublicMarket::price('m_tr') * $c->tax() / 0.5;
     $pub_j  = PublicMarket::price('m_j') * $c->tax() / 0.6;
@@ -422,7 +421,7 @@ function defend_self(&$c, $reserve_cash = 50000, $dpnwMax = 380)
         // out("0.Hash: ".spl_object_hash($c));
 
         $dpnwOld = $dpnw;
-        $dpnw    = minDpnw($c, true); //ONLY DEF
+        $dpnw    = minDpnw($c, $dpa < $dpat); //ONLY DEF
         //out("Old DPNW: ".round($dpnwOld, 1)."; New DPNW: ".round($dpnw, 1));
         if ($dpnw <= $dpnwOld) {
             $dpnw = $dpnwOld + 1;
@@ -445,7 +444,7 @@ function defend_self(&$c, $reserve_cash = 50000, $dpnwMax = 380)
 
         buy_private_below_dpnw($c, $dpnw, $spend, true, true); //ONLY DEF
         $dpnwOld = $dpnw;
-        $dpnw    = minDpnw($c, true); //ONLY DEF
+        $dpnw    = minDpnw($c, $dpa < $dpat); //ONLY DEF if dpa < dpat
         if ($dpnw <= $dpnwOld) {
             $dpnw = $dpnwOld + 1;
         }
@@ -458,19 +457,13 @@ function defend_self(&$c, $reserve_cash = 50000, $dpnwMax = 380)
 
 
 
-
-/*
-function food_pm_price($c){
-    $pm_info = get_pm_info();
-    return $pm_info->sell_price->m_bu;
-}*/
-
-
 function sell_max_military(&$c)
 {
     $c = get_advisor();     //UPDATE EVERYTHING
     //$market_info = get_market_info();   //get the Public Market info
-    $pm_info = get_pm_info();   //get the PM info
+
+    $pm_info = PrivateMarket::getRecent($c);   //get the PM info
+
     global $military_list;
 
     $quantity = [];

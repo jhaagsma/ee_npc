@@ -47,7 +47,7 @@ function play_rainbow_strat($server)
     }
 
     //get the PM info
-    $pm_info = get_pm_info();
+    //$pm_info = get_pm_info();
     //out_data($pm_info);       //output the PM info
     //$market_info = get_market_info();   //get the Public Market info
     //out_data($market_info);       //output the PM info
@@ -145,15 +145,17 @@ function play_rainbow_turn(&$c)
 
 function sellextrafood_rainbow(&$c)
 {
-    global $market_info, $pm_info;
+    global $market_info;
 
     //out("Lots of food, let's sell some!");
+    $pm_info = PrivateMarket::getRecent();
+
     $c = get_advisor();     //UPDATE EVERYTHING
     if (!is_object($pm_info) || !is_object($pm_info->sell_price)) {
         out("Update PM");
-        $pm_info = get_pm_info();   //get the PM info
+        $pm_info = PrivateMarket::getInfo();
         //out_data($pm_info);       //output the PM info
-        out('here?');
+        //out('here?');
     }
 
     if (!is_object($market_info) || !is_object($market_info->buy_price)) {

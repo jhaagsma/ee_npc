@@ -28,8 +28,10 @@ class PublicMarket
     public static function update()
     {
         $market_info = get_market_info();   //get the Public Market info
+
         foreach ($market_info as $k => $var) {
-            self::$$k = $var;
+            //the linter can't see that I *am* using $k
+            self::$$k = $var; //this is probably bad form, but is still so awesome
         }
 
         self::$updated = time();

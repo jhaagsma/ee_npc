@@ -2,6 +2,8 @@
 /**
  * Farmer strategy
  *
+ * PHP Version 7
+ *
  * @category Strat
  *
  * @package EENPC
@@ -24,7 +26,7 @@ namespace EENPC;
  */
 function play_farmer_strat($server)
 {
-    global $cnum, $pm_info;
+    global $cnum;
     out("Playing ".FARMER." turns for #$cnum ".siteURL($cnum));
     //$main = get_main();     //get the basic stats
     //out_data($main);          //output the main data
@@ -60,7 +62,7 @@ function play_farmer_strat($server)
 
     out($c->turns.' turns left');
     out('Explore Rate: '.$c->explore_rate.'; Min Rate: '.$c->explore_min);
-    $pm_info = get_pm_info();   //get the PM info
+    //$pm_info = get_pm_info();   //get the PM info
     //out_data($pm_info);       //output the PM info
     //$market_info = get_market_info();   //get the Public Market info
     //out_data($market_info);       //output the PM info
@@ -95,10 +97,18 @@ function play_farmer_strat($server)
 
         if ($c->income < 0 && $c->money < -5 * $c->income) { //sell 1/4 of all military on PM
             out("Almost out of money! Sell 10 turns of income in food!");   //Text for screen
-            PrivateMarket::sell($c, array('m_bu' => min($c->food, floor(-10 * $c->income / $pm_info->sell_price->m_bu))));     //sell 1/4 of our military
+
+            //sell 1/4 of our military
+            $pm_info = PrivateMarket::getRecent();
+            PrivateMarket::sell($c, ['m_bu' => min($c->food, floor(-10 * $c->income / $pm_info->sell_price->m_bu))]);
         }
 
-        if (turns_of_food($c) > 50 && turns_of_money($c) > 50 && $c->money > 3500 * 500 && ($c->built() > 80 || $c->money > $c->fullBuildCost())) { // 40 turns of food
+        // 40 turns of food
+        if (turns_of_food($c) > 50
+            && turns_of_money($c) > 50
+            && $c->money > 3500 * 500
+            && ($c->built() > 80 || $c->money > $c->fullBuildCost())
+        ) {
             buy_farmer_goals($c, $c->money - $c->fullBuildCost()); //keep enough money to build out everything
         }
     }
@@ -151,22 +161,30 @@ function sellextrafood_farmer(&$c)
     //out("Lots of food, let's sell some!");
     //$pm_info = get_pm_info();
     //$market_info = get_market_info(); //get the Public Market info
-    global $market,$pm_info;
+    //global $market;
 
     $c = get_advisor();     //UPDATE EVERYTHING
 
-    $quantity = array('m_bu' => $c->food); //sell it all! :)
+    $quantity = ['m_bu' => $c->food]; //sell it all! :)
+
+    $pm_info = PrivateMarket::getRecent();
 
     $rmax    = 1.10; //percent
     $rmin    = 0.95; //percent
     $rstep   = 0.01;
     $rstddev = 0.10;
     $max     = $c->goodsStuck('m_bu') ? 0.99 : $rmax;
-    $price   = round(max($pm_info->sell_price->m_bu + 1, PublicMarket::price('m_bu') * Math::purebell($rmin, $max, $rstddev, $rstep)));
-    $price   = array('m_bu' => $price);
+    $price   = round(
+        max(
+            $pm_info->sell_price->m_bu + 1,
+            PublicMarket::price('m_bu') * Math::purebell($rmin, $max, $rstddev, $rstep)
+        )
+    );
+    $price   = ['m_bu' => $price];
 
     if ($price <= max(29, $pm_info->sell_price->m_bu / $c->tax())) {
-        return PrivateMarket::sell($c, array('m_bu' => $quantity)); ///      PrivateMarket::sell($c,array('m_bu' => $c->food));   //Sell 'em
+        return PrivateMarket::sell($c, ['m_bu' => $quantity]);
+        ///      PrivateMarket::sell($c,array('m_bu' => $c->food));   //Sell 'em
     }
     return PublicMarket::sell($c, $quantity, $price);    //Sell food!
 }//end sellextrafood_farmer()

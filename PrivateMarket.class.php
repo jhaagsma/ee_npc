@@ -16,6 +16,51 @@ namespace EENPC;
 class PrivateMarket
 {
 
+    public static $info    = [];
+    public static $updated = 0;
+    public static $cnum    = null;
+
+
+    /**
+     * Get the public market information
+     *
+     * Give the option to specify a country number, just in case
+     *
+     * @param Object $c Country object
+     *
+     * @return result EE Private Market Result
+     */
+    public static function getInfo($c = null)
+    {
+        if ($c !== null) {
+            self::$cnum = $c->cnum;
+        }
+
+        self::$info = ee('pm_info');   //get and return the PRIVATE MARKET information
+
+        self::$updated = time();
+
+        return self::$info;
+    }//end getInfo()
+
+    /**
+     * Get a recent version of the info, but don't fetch a new one
+     *
+     * Give the option to specify a country number, just in case
+     *
+     * @param Object $c Country object
+     *
+     * @return result EE Private Market Result
+     */
+    public static function getRecent($c = null)
+    {
+        if (time() - self::$updated > 20 && ($c === null || $c->cnum == self::$cnum) || self::$info == []) {
+            return self::getInfo($c);
+        }
+
+        return self::$info;
+    }//end getRecent()
+
     /**
      * Buy on the Private Market
      *
@@ -31,18 +76,12 @@ class PrivateMarket
         $result = ee('pm', ['buy' => $units]);
         if (!isset($result->cost)) {
             out("--- Failed to BUY Private Market; money={$c->money}");
-            // out_data($result);
-            //  out_data($units);
-            //  out("UPDATE EVERYTHING");
 
-            // global $pm_info;
-
-            // Debug::on();
-            // Debug::msg($pm_info);
+            self::getInfo(); //update the PM, because weird
 
             $c = get_advisor();   //Do both??
-            $c->updateMain();     //UPDATE EVERYTHING
-            // out("refresh money={$c->money}");
+            //$c->updateMain();     //UPDATE EVERYTHING
+
             return $result;
         }
 
@@ -61,9 +100,12 @@ class PrivateMarket
                 if (!$first) {
                     $str .= $pad;
                 }
-                $c->$type += $amount;
-                $str      .= str_pad(engnot($amount), 8, ' ', STR_PAD_LEFT)
-                            .str_pad($type, 5, ' ', STR_PAD_LEFT);
+
+                self::$info->available->$type -= $amount;
+                $c->$type                     += $amount;
+
+                $str .= str_pad(engnot($amount), 8, ' ', STR_PAD_LEFT)
+                        .str_pad($type, 5, ' ', STR_PAD_LEFT);
 
                 if ($first) {
                     $str .= str_pad('$'.engnot($c->money), 28, ' ', STR_PAD_LEFT)
