@@ -66,8 +66,16 @@ function play_casher_strat($server)
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
         }
 
-        if (turns_of_food($c) > 40 && $c->money > 3500 * 500 && ($c->built() > 80 || $c->money > $c->fullBuildCost())) { // 40 turns of food
-            buy_casher_goals($c, $c->money - $c->fullBuildCost()); //keep enough money to build out everything
+        if (turns_of_food($c) > 40
+            && $c->money > 3500 * 500
+            && ($c->built() > 80 || $c->money > $c->fullBuildCost())
+        ) { // 40 turns of food
+            $spend = $c->money - $c->fullBuildCost(); //keep enough money to build out everything
+
+            if ($spend > $c->income * 5) {
+                //try to batch a little bit...
+                buy_casher_goals($c, $spend);
+            }
         }
     }
 

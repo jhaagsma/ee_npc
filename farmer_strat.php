@@ -109,7 +109,12 @@ function play_farmer_strat($server)
             && $c->money > 3500 * 500
             && ($c->built() > 80 || $c->money > $c->fullBuildCost())
         ) {
-            buy_farmer_goals($c, $c->money - $c->fullBuildCost()); //keep enough money to build out everything
+            $spend = $c->money - $c->fullBuildCost(); //keep enough money to build out everything
+
+            if ($spend > abs($c->income) * 5) {
+                //try to batch a little bit...
+                buy_farmer_goals($c, $spend);
+            }
         }
     }
 
