@@ -84,9 +84,14 @@ function play_rainbow_strat($server)
             && $c->money > 3500 * 500
             && ($c->built() > 80 || $c->money > $c->fullBuildCost() - $c->runCash())
         ) {
-            // 40 turns of food
-            //keep enough money to build out everything
-            buy_rainbow_goals($c, $c->money - $c->fullBuildCost() - $c->runCash());
+            // 70 turns of food
+            // keep enough money to build out everything
+            $spend = $c->money - $c->fullBuildCost() - $c->runCash();
+
+            if ($spend > abs($c->income) * 5) {
+                //try to batch a little bit...
+                buy_rainbow_goals($c, $spend);
+            }
         }
 
         if ($c->income < 0 && total_military($c) > 30) { //sell 1/4 of all military on PM
