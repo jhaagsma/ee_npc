@@ -155,6 +155,10 @@ function handle_output($serverOutput, $function)
     } elseif ($message == "ERROR" && $response == "NOT_ENOUGH_TURNS") {
         out("Not enough Turns!");
         return null;
+    } elseif ($function == 'ally/offer' && $message == "ERROR" && $response == "disallowed_by_server") {
+        out("Allies are not allowed!");
+        Allies::$allowed = false;
+        return null;
     } elseif (expected_result($function) && $message != expected_result($function)) {
         out("\n\nUnexpected Result for '$function': ".$message.':'.$response."\n\n");
         out("Server Output: \n".$serverOutput);
