@@ -115,7 +115,7 @@ function play_techer_turn(&$c)
         return Build::cs(4); //build 4 CS
     } elseif ($c->tpt > $c->land * 0.17 * 1.3 && $c->tpt > 100 && rand(0, 100) > 2) {
         //tech per turn is greater than land*0.17 -- just kindof a rough "don't tech below this" rule...
-        return tech_techer($c);
+        return tech_techer($c, max(1, min(turns_of_money($c), turns_of_food($c), 13) - 3)); //so, 10 if they can...
     } elseif ($c->built() > 50
         && ($c->land < 5000 || rand(0, 100) > 95 && $c->land < $server_avg_land)
     ) {
@@ -126,7 +126,7 @@ function play_techer_turn(&$c)
             return explore($c, min(max(1, $c->turns - 1), max(1, min(turns_of_money($c), turns_of_food($c)) - 3)));
         }
     } else { //otherwise, tech, obviously
-        return tech_techer($c);
+        return tech_techer($c, max(1, min(turns_of_money($c), turns_of_food($c), 13) - 3));
     }
 }//end play_techer_turn()
 
@@ -154,7 +154,7 @@ function sell_max_tech(&$c)
     $c->updateOnMarket();
 
     //$market_info = get_market_info();   //get the Public Market info
-    global $market;
+    //global $market;
 
     $quantity = [
         'mil' => can_sell_tech($c, 't_mil'),
@@ -224,11 +224,19 @@ function sell_max_tech(&$c)
 }//end sell_max_tech()
 
 
-function tech_techer(&$c)
+/**
+ * Make it so we can tech multiple turns...
+ *
+ * @param  Object  $c     Country Object
+ * @param  integer $turns Number of turns to tech
+ *
+ * @return EEResult       Teching
+ */
+function tech_techer(&$c, $turns = 1)
 {
     //lets do random weighting... to some degree
     //$market_info = get_market_info();   //get the Public Market info
-    global $market;
+    //global $market;
 
     $mil  = max(PublicMarket::price('mil') - 2000, rand(0, 300));
     $med  = max(PublicMarket::price('med') - 2000, rand(0, 5));
@@ -243,7 +251,7 @@ function tech_techer(&$c)
     $sdi  = max(PublicMarket::price('sdi') - 2000, rand(2, 150));
     $tot  = $mil + $med + $bus + $res + $agri + $war + $ms + $weap + $indy + $spy + $sdi;
 
-    $left  = $c->tpt;
+    $left  = $c->tpt * max(1, min($turns, $c->turns));
     $left -= $mil = min($left, floor($c->tpt * ($mil / $tot)));
     $left -= $med = min($left, floor($c->tpt * ($med / $tot)));
     $left -= $bus = min($left, floor($c->tpt * ($bus / $tot)));
