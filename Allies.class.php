@@ -16,7 +16,7 @@ namespace EENPC;
 
 class Allies
 {
-    private static $allowed = true;
+    public static $allowed = true;
 
     /**
      * Get the list of allies
