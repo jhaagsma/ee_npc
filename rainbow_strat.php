@@ -88,7 +88,7 @@ function play_rainbow_strat($server)
             // keep enough money to build out everything
             $spend = $c->money - $c->fullBuildCost() - $c->runCash();
 
-            if ($spend > abs($c->income) * 5) {
+            if ($spend > abs($c->income) * 10) {
                 //try to batch a little bit...
                 buy_rainbow_goals($c, $spend);
             }
@@ -131,7 +131,7 @@ function play_rainbow_turn(&$c)
         return tech_rainbow($c);
     } elseif ($c->built() > 50) {  //otherwise... explore if we can
         if ($c->explore_rate == $c->explore_min) {
-            return explore($c, 1);
+            return explore($c, min(5, max(1, $c->turns - 1), max(1, min(turns_of_money($c), turns_of_food($c)) - 3)));
         } else {
             return explore($c, min(max(1, $c->turns - 1), max(1, min(turns_of_money($c), turns_of_food($c)) - 3)));
         }

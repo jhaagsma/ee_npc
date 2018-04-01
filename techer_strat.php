@@ -122,7 +122,7 @@ function play_techer_turn(&$c)
     ) {
         //otherwise... explore if we can, for the early bits of the set
         if ($c->explore_rate == $c->explore_min) {
-            return explore($c, 1);
+            return explore($c, min(5, max(1, $c->turns - 1), max(1, min(turns_of_money($c), turns_of_food($c)) - 3)));
         } else {
             return explore($c, min(max(1, $c->turns - 1), max(1, min(turns_of_money($c), turns_of_food($c)) - 3)));
         }

@@ -72,7 +72,7 @@ function play_casher_strat($server)
         ) { // 40 turns of food
             $spend = $c->money - $c->fullBuildCost(); //keep enough money to build out everything
 
-            if ($spend > $c->income * 5) {
+            if ($spend > $c->income * 7) {
                 //try to batch a little bit...
                 buy_casher_goals($c, $spend);
             }
@@ -107,7 +107,7 @@ function play_casher_turn(&$c)
     } elseif ($c->built() > 50) {
         //otherwise... explore if we can
         if ($c->explore_rate == $c->explore_min) {
-            return explore($c, 1);
+            return explore($c, min(5, $c->turns, max(1, turns_of_food($c) - 3)));
         } else {
             return explore($c, min($c->turns, max(1, turns_of_food($c) - 3)));
         }

@@ -151,7 +151,7 @@ function play_farmer_turn(&$c)
         return Build::cs(4); //build 4 CS
     } elseif ($c->built() > 50) {  //otherwise... explore if we can
         if ($c->explore_rate == $c->explore_min) {
-            return explore($c, 1);
+            return explore($c, min(5, max(1, $c->turns - 1), max(1, turns_of_money($c) - 3)));
         } else {
             return explore($c, min(max(1, $c->turns - 1), max(1, turns_of_money($c) - 3)));
         }

@@ -125,7 +125,10 @@ function play_indy_turn(&$c)
     } elseif ($c->built() > 50) {  //otherwise... explore if we can
         //1.15 is my growth factor for indies
         if ($c->explore_rate == $c->explore_min) {
-            return explore($c, 1);
+            return explore(
+                $c,
+                min(5, max(1, $c->turns - 1), max(1, min(turns_of_money($c) / 1.15, turns_of_food($c)) - 3))
+            );
         } else {
             return explore(
                 $c,
