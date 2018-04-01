@@ -115,8 +115,8 @@ function play_techer_turn(&$c)
         return Build::cs(4); //build 4 CS
     } elseif ($c->tpt > $c->land * 0.17 * 1.3 && $c->tpt > 100 && rand(0, 100) > 2) {
         //tech per turn is greater than land*0.17 -- just kindof a rough "don't tech below this" rule...
-        //so, 10 if they can...
-        return tech_techer($c, max(1, min(turns_of_money($c), turns_of_food($c), 13, $c->turns) - 3));
+        //so, 10 if they can... cap at turns - 1
+        return tech_techer($c, max(1, min(turns_of_money($c), turns_of_food($c), 13, $c->turns + 2) - 3));
     } elseif ($c->built() > 50
         && ($c->land < 5000 || rand(0, 100) > 95 && $c->land < $server_avg_land)
     ) {
@@ -127,7 +127,8 @@ function play_techer_turn(&$c)
             return explore($c, min(max(1, $c->turns - 1), max(1, min(turns_of_money($c), turns_of_food($c)) - 3)));
         }
     } else { //otherwise, tech, obviously
-        return tech_techer($c, max(1, min(turns_of_money($c), turns_of_food($c), 13, $c->turns) - 3));
+        //so, 10 if they can... cap at turns - 1
+        return tech_techer($c, max(1, min(turns_of_money($c), turns_of_food($c), 13, $c->turns + 2) - 3));
     }
 }//end play_techer_turn()
 
