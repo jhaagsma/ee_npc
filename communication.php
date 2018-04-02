@@ -149,6 +149,12 @@ function handle_output($serverOutput, $function)
         out("Trying to sell more than owned!");
 
         return null;
+    } elseif ($message == "ERROR" && $response == "MAXIMUM_COUNTRIES_REACHED") {
+        out("Already have total allowed countries!");
+        out("Refresh Server");
+        global $server; //do all this with a class sometime soon
+        $server = ee('server');
+        return null;
     } elseif ($message == "ERROR" && $response == "MONEY") {
         out("Not enough Money!");
         return null;
