@@ -264,7 +264,7 @@ function tech_techer(&$c, $turns = 1)
     $left -= $weap = min($left, floor($c->tpt * ($weap / $tot)));
     $left -= $indy = min($left, floor($c->tpt * ($indy / $tot)));
     $left -= $spy = min($left, floor($c->tpt * ($spy / $tot)));
-    $left -= $sdi = max($left, min($left, floor($c->tpt * ($spy / $tot))));
+    $left -= $sdi = max($left, min($left, floor($c->tpt * ($sdi / $tot))));
     if ($left != 0) {
         die("What the hell?");
     }
