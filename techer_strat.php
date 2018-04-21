@@ -240,31 +240,34 @@ function tech_techer(&$c, $turns = 1)
     //$market_info = get_market_info();   //get the Public Market info
     //global $market;
 
-    $mil  = max(PublicMarket::price('mil') - 2000, rand(0, 300));
-    $med  = max(PublicMarket::price('med') - 2000, rand(0, 5));
-    $bus  = max(PublicMarket::price('bus') - 2000, rand(10, 400));
-    $res  = max(PublicMarket::price('res') - 2000, rand(10, 400));
-    $agri = max(PublicMarket::price('agri') - 2000, rand(10, 300));
-    $war  = max(PublicMarket::price('war') - 2000, rand(0, 10));
-    $ms   = max(PublicMarket::price('ms') - 2000, rand(0, 20));
-    $weap = max(PublicMarket::price('weap') - 2000, rand(0, 20));
-    $indy = max(PublicMarket::price('indy') - 2000, rand(5, 300));
-    $spy  = max(PublicMarket::price('spy') - 2000, rand(0, 10));
-    $sdi  = max(PublicMarket::price('sdi') - 2000, rand(2, 150));
+    $techfloor = 800;
+
+    $mil  = max(PublicMarket::price('mil') - $techfloor, rand(0, 300));
+    $med  = max(PublicMarket::price('med') - $techfloor, rand(0, 5));
+    $bus  = max(PublicMarket::price('bus') - $techfloor, rand(10, 400));
+    $res  = max(PublicMarket::price('res') - $techfloor, rand(10, 400));
+    $agri = max(PublicMarket::price('agri') - $techfloor, rand(10, 300));
+    $war  = max(PublicMarket::price('war') - $techfloor, rand(0, 10));
+    $ms   = max(PublicMarket::price('ms') - $techfloor, rand(0, 20));
+    $weap = max(PublicMarket::price('weap') - $techfloor, rand(0, 20));
+    $indy = max(PublicMarket::price('indy') - $techfloor, rand(5, 300));
+    $spy  = max(PublicMarket::price('spy') - $techfloor, rand(0, 10));
+    $sdi  = max(PublicMarket::price('sdi') - $techfloor, rand(2, 150));
     $tot  = $mil + $med + $bus + $res + $agri + $war + $ms + $weap + $indy + $spy + $sdi;
 
-    $left  = $c->tpt * max(1, min($turns, $c->turns));
-    $left -= $mil = min($left, floor($c->tpt * ($mil / $tot)));
-    $left -= $med = min($left, floor($c->tpt * ($med / $tot)));
-    $left -= $bus = min($left, floor($c->tpt * ($bus / $tot)));
-    $left -= $res = min($left, floor($c->tpt * ($res / $tot)));
-    $left -= $agri = min($left, floor($c->tpt * ($agri / $tot)));
-    $left -= $war = min($left, floor($c->tpt * ($war / $tot)));
-    $left -= $ms = min($left, floor($c->tpt * ($ms / $tot)));
-    $left -= $weap = min($left, floor($c->tpt * ($weap / $tot)));
-    $left -= $indy = min($left, floor($c->tpt * ($indy / $tot)));
-    $left -= $spy = min($left, floor($c->tpt * ($spy / $tot)));
-    $left -= $sdi = max($left, min($left, floor($c->tpt * ($sdi / $tot))));
+    $turns = max(1, min($turns, $c->turns));
+    $left  = $c->tpt * $turns;
+    $left -= $mil = min($left, floor($c->tpt * $turns * ($mil / $tot)));
+    $left -= $med = min($left, floor($c->tpt * $turns * ($med / $tot)));
+    $left -= $bus = min($left, floor($c->tpt * $turns * ($bus / $tot)));
+    $left -= $res = min($left, floor($c->tpt * $turns * ($res / $tot)));
+    $left -= $agri = min($left, floor($c->tpt * $turns * ($agri / $tot)));
+    $left -= $war = min($left, floor($c->tpt * $turns * ($war / $tot)));
+    $left -= $ms = min($left, floor($c->tpt * $turns * ($ms / $tot)));
+    $left -= $weap = min($left, floor($c->tpt * $turns * ($weap / $tot)));
+    $left -= $indy = min($left, floor($c->tpt * $turns * ($indy / $tot)));
+    $left -= $spy = min($left, floor($c->tpt * $turns * ($spy / $tot)));
+    $left -= $sdi = max($left, min($left, floor($c->tpt * $turns * ($sdi / $tot))));
     if ($left != 0) {
         die("What the hell?");
     }
