@@ -128,10 +128,11 @@ function casherGoals(&$c)
 {
     return [
         //what, goal, priority
-        ['t_bus',178,8],
-        ['t_res',178,8],
-        ['t_mil',94,1],
-        ['nlg',$c->nlgTarget(),2],
-        ['dpa',$c->defPerAcreTarget(),2],
+        ['t_bus',178,800],
+        ['t_res',178,800],
+        ['t_mil',94,100],
+        ['nlg',$c->nlgTarget(),200],
+        ['dpa',$c->defPerAcreTarget(),800],
+        ['food', 1000000000, 1],
     ];
 }//end casherGoals()

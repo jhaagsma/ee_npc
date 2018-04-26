@@ -207,11 +207,12 @@ function farmerGoals(&$c)
 {
     return [
         //what, goal, priority
-        ['t_agri',227,8],
-        ['t_bus',174,4],
-        ['t_res',174,4],
-        ['t_mil',95,1],
-        ['nlg',$c->nlgTarget(),2],
-        ['dpa',$c->defPerAcreTarget(),2],
+        ['t_agri',227,1000],
+        ['t_bus',174,500],
+        ['t_res',174,500],
+        ['t_mil',95,200],
+        ['nlg',$c->nlgTarget(),200],
+        ['dpa',$c->defPerAcreTarget(),1000],
+        ['food', 1000000000, 5],
     ];
 }//end farmerGoals()

@@ -46,6 +46,19 @@ function play_rainbow_strat($server)
         Allies::fill('spy');
     }
 
+    if ($c->b_lab > 2000) {
+        Allies::fill('res');
+    }
+
+    if ($c->m_j > 1000000) {
+        Allies::fill('off');
+    }
+
+    //because why n
+    if ($c->govt == 'M') {
+        Allies::fill('trade');
+    }
+
     //get the PM info
     //$pm_info = get_pm_info();
     //out_data($pm_info);       //output the PM info
@@ -268,12 +281,12 @@ function rainbowGoals(&$c)
 {
     return [
         //what, goal, priority
-        ['t_agri',225,1],
-        ['t_indy',160,1],
-        ['t_bus',178,1],
-        ['t_res',178,1],
-        ['t_mil',94,1],
-        ['nlg',$c->nlgTarget(),1],
-        ['dpa',$c->defPerAcreTarget(),1],
+        ['t_agri',225,5],
+        ['t_indy',160,5],
+        ['t_bus',178,7],
+        ['t_res',178,7],
+        ['t_mil',94,5],
+        ['nlg',$c->nlgTarget(),5],
+        ['dpa',$c->defPerAcreTarget(),10],
     ];
 }//end rainbowGoals()
