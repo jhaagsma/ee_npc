@@ -139,8 +139,8 @@ function play_rainbow_turn(&$c)
     } elseif ($c->shouldBuildFourCS($target_bpt)) {
         //build 4CS if we can afford it and are below our target BPT (80)
         return Build::cs(4); //build 4 CS
-    } elseif ($c->tpt > $c->land * 0.17 && rand(0, 10) > 5) {
-        //tech per turn is greater than land*0.17 -- just kindof a rough "don't tech below this" rule...
+    } elseif ($c->tpt > $c->land * 0.10 && rand(0, 10) > 5) {
+        //tech per turn is greater than land*0.17 -- just kindof a rough "don't tech below this" rule... lower for rainbow
         return tech_rainbow($c);
     } elseif ($c->built() > 50) {  //otherwise... explore if we can
         if ($c->explore_rate == $c->explore_min) {
