@@ -240,19 +240,19 @@ function tech_techer(&$c, $turns = 1)
     //$market_info = get_market_info();   //get the Public Market info
     //global $market;
 
-    $techfloor = 800;
+    $techfloor = 600;
 
-    $mil  = max(PublicMarket::price('mil') - $techfloor, rand(0, 300));
-    $med  = max(PublicMarket::price('med') - $techfloor, rand(0, 5));
-    $bus  = max(PublicMarket::price('bus') - $techfloor, rand(10, 400));
-    $res  = max(PublicMarket::price('res') - $techfloor, rand(10, 400));
-    $agri = max(PublicMarket::price('agri') - $techfloor, rand(10, 300));
-    $war  = max(PublicMarket::price('war') - $techfloor, rand(0, 10));
-    $ms   = max(PublicMarket::price('ms') - $techfloor, rand(0, 20));
-    $weap = max(PublicMarket::price('weap') - $techfloor, rand(0, 20));
-    $indy = max(PublicMarket::price('indy') - $techfloor, rand(5, 300));
-    $spy  = max(PublicMarket::price('spy') - $techfloor, rand(0, 10));
-    $sdi  = max(PublicMarket::price('sdi') - $techfloor, rand(2, 150));
+    $mil  = max(pow(PublicMarket::price('mil') - $techfloor, 2), rand(0, 30000));
+    $med  = max(pow(PublicMarket::price('med') - $techfloor, 2), rand(0, 500));
+    $bus  = max(pow(PublicMarket::price('bus') - $techfloor, 2), rand(10, 40000));
+    $res  = max(pow(PublicMarket::price('res') - $techfloor, 2), rand(10, 40000));
+    $agri = max(pow(PublicMarket::price('agri') - $techfloor, 2), rand(10, 30000));
+    $war  = max(pow(PublicMarket::price('war') - $techfloor, 2), rand(0, 1000));
+    $ms   = max(pow(PublicMarket::price('ms') - $techfloor, 2), rand(0, 2000));
+    $weap = max(pow(PublicMarket::price('weap') - $techfloor, 2), rand(0, 2000));
+    $indy = max(pow(PublicMarket::price('indy') - $techfloor, 2), rand(5, 30000));
+    $spy  = max(pow(PublicMarket::price('spy') - $techfloor, 2), rand(0, 1000));
+    $sdi  = max(pow(PublicMarket::price('sdi') - $techfloor, 2), rand(2, 15000));
     $tot  = $mil + $med + $bus + $res + $agri + $war + $ms + $weap + $indy + $spy + $sdi;
 
     $turns = max(1, min($turns, $c->turns));
