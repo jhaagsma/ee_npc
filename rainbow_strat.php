@@ -141,7 +141,8 @@ function play_rainbow_turn(&$c)
         return Build::cs(4); //build 4 CS
     } elseif ($c->tpt > $c->land * 0.10 && rand(0, 10) > 5) {
         //tech per turn is greater than land*0.17 -- just kindof a rough "don't tech below this" rule... lower for rainbow
-        return tech_rainbow($c);
+        return tech_techer($c, max(1, min(turns_of_money($c), turns_of_food($c), 13, $c->turns + 2) - 3));
+        //return tech_rainbow($c);
     } elseif ($c->built() > 50) {  //otherwise... explore if we can
         if ($c->explore_rate == $c->explore_min) {
             return explore($c, min(5, max(1, $c->turns - 1), max(1, min(turns_of_money($c), turns_of_food($c)) - 3)));
@@ -219,7 +220,7 @@ function build_rainbow(&$c)
 }//end build_rainbow()
 
 
-function tech_rainbow(&$c)
+function tech_rainbow(&$c, $turns=1)
 {
     //lets do random weighting... to some degree
     $mil  = rand(0, 25);
@@ -265,7 +266,8 @@ function tech_rainbow(&$c)
             'indy' => $indy,
             'spy' => $spy,
             'sdi' => $sdi
-        ]
+        ],
+        $turns
     );
 }//end tech_rainbow()
 
