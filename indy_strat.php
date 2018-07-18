@@ -39,8 +39,11 @@ function play_indy_strat($server)
     if ($c->m_spy > 10000) {
         Allies::fill('spy');
     }
-    $owned_on_market_info = get_owned_on_market_info();     //find out what we have on the market
+
+    $owned_on_market_info = get_owned_on_market_info(); //find out what we have on the market
     //out_data($owned_on_market_info);  //output the Owned on Public Market info
+
+    buy_indy_goals($c, 0);
 
     while ($c->turns > 0) {
         //$result = PublicMarket::buy($c,array('m_bu'=>100),array('m_bu'=>400));
