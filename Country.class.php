@@ -263,7 +263,7 @@ class Country
      * @param float $mult      multiplication factor
      * @param float $powfactor power factor
      *
-     * @return {int} DPATarget
+     * @return int DPATarget
      */
     public function defPerAcreTarget($mult = 1.0, $powfactor = 1.2)
     {
@@ -284,7 +284,7 @@ class Country
 
     /**
      * Built Percentage
-     * @return {int} Like, 81(%)
+     * @return int Like, 81(%)
      */
     public function built()
     {
@@ -294,7 +294,7 @@ class Country
 
     /**
      * Networth/(Land*Govt)
-     * @return {int} The NLG of the country
+     * @return int The NLG of the country
      */
     public function nlg()
     {
