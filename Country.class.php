@@ -266,7 +266,7 @@ class Country
      */
     public function defPerAcreTarget($mult = 1.0)
     {
-        return floor(75 + $this->turns_played / 10) * $mult;
+        return floor(75 + pow($this->turns_played, 1.2) / 10) * $mult;
     }//end defPerAcreTarget()
 
 
