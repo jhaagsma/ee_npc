@@ -270,6 +270,12 @@ class Country
      */
     public function defPerAcreTarget($mult = 1.0, $powfactor = 1.1)
     {
+        if (isset($this->goals['dpa'])) {
+            out("DPAT: {$this->goals[dpa]}");
+
+            return $this->goals['dpa'];
+        }
+
         out("Turns Played: {$this->turns_played}");
         $dpat = floor(75 + pow($this->turns_played, $powfactor) / 10) * $mult;
         out("DPAT: $dpat");
@@ -408,6 +414,8 @@ class Country
         if (empty($goals)) {
             return;
         }
+
+        $c->goals = $goals;
 
         if (isset($goals['dpa'])) {
             $c->dpat = $goals['dpa'];
