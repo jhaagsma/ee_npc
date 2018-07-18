@@ -217,7 +217,7 @@ class Country
         out("--- Indy Scoring: ".$protext);
 
         if ($checkDPA) {
-            if ($this->defPerAcre() < $this->defPerAcreTarget()) {
+            if ($this->defPerAcre() < $this->dpat ?? $this->defPerAcreTarget()) {
                 //below def target, don't make jets
                 unset($score['pro_j']);
             }
@@ -265,7 +265,7 @@ class Country
      *
      * @return int DPATarget
      */
-    public function defPerAcreTarget($mult = 1.0, $powfactor = 1.2)
+    public function defPerAcreTarget($mult = 1.0, $powfactor = 1.1)
     {
         out("Turns Played: {$this->turns_played}");
         $dpat = floor(75 + pow($this->turns_played, $powfactor) / 10) * $mult;
@@ -369,7 +369,7 @@ class Country
             } elseif ($goal[0] == 'nlg') {
                 $score['nlg'] = ($this->nlgTarget() - $this->nlg()) / $this->nlgTarget() * $goal[2];
             } elseif ($goal[0] == 'dpa') {
-                $target       = $this->defPerAcreTarget();
+                $target       = $this->dpat ?? $this->defPerAcreTarget();
                 $actual       = $this->defPerAcre();
                 $score['dpa'] = ($target - $actual) / $target * $goal[2];
             }
@@ -450,10 +450,12 @@ class Country
             PublicMarket::buy_tech($c, 't_mil', $spend_partial, $techprice);
             $diff = $c->money - $o;
         } elseif ($what == 'nlg') {
+            $c->nlgt = $goals['nlg'];
             $o = $c->money;
             defend_self($c, floor($c->money - $spend_partial)); //second param is *RESERVE* cash
             $diff = $c->money - $o;
         } elseif ($what == 'dpa') {
+            $c->dpat = $goals['dpa'];
             $o = $c->money;
             defend_self($c, floor($c->money - $spend_partial)); //second param is *RESERVE* cash
             $diff = $c->money - $o;
@@ -498,7 +500,7 @@ class Country
         $pagr = str_pad($this->pt_agri.'%', 8, ' ', STR_PAD_LEFT);
         $pind = str_pad($this->pt_indy.'%', 8, ' ', STR_PAD_LEFT);
         $dpa  = str_pad($this->defPerAcre(), 8, ' ', STR_PAD_LEFT);
-        $dpat = str_pad($this->defPerAcreTarget(), 8, ' ', STR_PAD_LEFT);
+        $dpat = str_pad($this->dpat ?? $this->defPerAcreTarget(), 8, ' ', STR_PAD_LEFT);
         $nlg  = str_pad($this->nlg(), 8, ' ', STR_PAD_LEFT);
         $nlgt = str_pad($this->nlgTarget(), 8, ' ', STR_PAD_LEFT);
         $cnum = $this->cnum;
