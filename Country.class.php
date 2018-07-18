@@ -260,11 +260,13 @@ class Country
 
     /**
      * A crude Defence Per Acre number
+     * @param int $mult multiplication factor
+     *
      * @return {int} DPATarget
      */
-    public function defPerAcreTarget()
+    public function defPerAcreTarget($mult = 1.0)
     {
-        return floor(75 + $this->turns_played / 10);
+        return floor(75 + $this->turns_played / 10) * $mult;
     }//end defPerAcreTarget()
 
 
@@ -451,7 +453,13 @@ class Country
             $o = $c->money;
             defend_self($c, floor($c->money - $spend_partial)); //second param is *RESERVE* cash
             $diff = $c->money - $o;
-        }
+        }/* elseif ($what == 'food') {
+            $o = $c->money;
+            PublicMarket::buy($c, ['m_bu' => $quantity], ['m_bu' => $market_price]);
+
+            PublicMarket::buy($c, 't_bus', $spend_partial, $techprice);
+            $diff = $c->money - $o;
+        }*/
 
         if ($diff == 0) {
             $skip++;
