@@ -249,12 +249,14 @@ class Country
     //GOAL functions
     /**
      * [nlg_target description]
-     * @return [type] [description]
+     * @param float $powfactor Power Factor
+     *
+     * @return int nlgTarget
      */
-    public function nlgTarget()
+    public function nlgTarget($powfactor = 1.3)
     {
         //lets lower it from 80+turns_playwed/7, to compete
-        return floor(80 + $this->turns_played / 15);
+        return floor(80 + pow($this->turns_played, $powfactor) / 15);
     }//end nlgTarget()
 
 
@@ -367,7 +369,8 @@ class Country
                 $price          = $price > 500 ? $price : 10000;
                 $score['t_mil'] = ($this->pt_mil - $goal[1]) / (100 - $goal[1]) * $goal[2] * (2500 / $price);
             } elseif ($goal[0] == 'nlg') {
-                $score['nlg'] = ($this->nlgTarget() - $this->nlg()) / $this->nlgTarget() * $goal[2];
+                $target = $this->nlgt ?? $this->nlgTarget();
+                $score['nlg'] = ($target - $this->nlg()) / $target * $goal[2];
             } elseif ($goal[0] == 'dpa') {
                 $target       = $this->dpat ?? $this->defPerAcreTarget();
                 $actual       = $this->defPerAcre();
@@ -403,6 +406,14 @@ class Country
     {
         if (empty($goals)) {
             return;
+        }
+
+        if (isset($goals['dpa'])) {
+            $c->dpat = $goals['dpa'];
+        }
+
+        if (isset($goals['nlg'])) {
+            $c->nlgt = $goals['nlg'];
         }
 
         if ($spend == null) {
@@ -450,12 +461,10 @@ class Country
             PublicMarket::buy_tech($c, 't_mil', $spend_partial, $techprice);
             $diff = $c->money - $o;
         } elseif ($what == 'nlg') {
-            $c->nlgt = $goals['nlg'];
             $o = $c->money;
             defend_self($c, floor($c->money - $spend_partial)); //second param is *RESERVE* cash
             $diff = $c->money - $o;
         } elseif ($what == 'dpa') {
-            $c->dpat = $goals['dpa'];
             $o = $c->money;
             defend_self($c, floor($c->money - $spend_partial)); //second param is *RESERVE* cash
             $diff = $c->money - $o;
@@ -502,7 +511,7 @@ class Country
         $dpa  = str_pad($this->defPerAcre(), 8, ' ', STR_PAD_LEFT);
         $dpat = str_pad($this->dpat ?? $this->defPerAcreTarget(), 8, ' ', STR_PAD_LEFT);
         $nlg  = str_pad($this->nlg(), 8, ' ', STR_PAD_LEFT);
-        $nlgt = str_pad($this->nlgTarget(), 8, ' ', STR_PAD_LEFT);
+        $nlgt = str_pad($this->nlgt ?? $this->nlgTarget(), 8, ' ', STR_PAD_LEFT);
         $cnum = $this->cnum;
         $url  = str_pad(siteURL($this->cnum), 8, ' ', STR_PAD_LEFT);
         $blt  = str_pad($this->built().'%', 8, ' ', STR_PAD_LEFT);
