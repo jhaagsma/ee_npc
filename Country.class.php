@@ -217,7 +217,8 @@ class Country
         out("--- Indy Scoring: ".$protext);
 
         if ($checkDPA) {
-            if ($this->defPerAcre() < $this->dpat ?? $this->defPerAcreTarget()) {
+            $target = $this->dpat ?? $this->defPerAcreTarget();
+            if ($this->defPerAcre() < $target) {
                 //below def target, don't make jets
                 unset($score['pro_j']);
             }
