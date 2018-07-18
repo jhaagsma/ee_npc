@@ -212,7 +212,7 @@ function farmerGoals(&$c)
         ['t_res',174,500],
         ['t_mil',95,200],
         ['nlg',$c->nlgTarget(),200],
-        ['dpa',$c->defPerAcreTarget(),1000],
+        ['dpa',$c->defPerAcreTarget(1.25),1000],
         ['food', 1000000000, 5],
     ];
 }//end farmerGoals()
