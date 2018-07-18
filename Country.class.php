@@ -270,6 +270,7 @@ class Country
         out("Turns Played: {$this->turns_played}");
         $dpat = floor(75 + pow($this->turns_played, $powfactor) / 10) * $mult;
         out("DPAT: $dpat");
+        return $dpat;
     }//end defPerAcreTarget()
 
 
