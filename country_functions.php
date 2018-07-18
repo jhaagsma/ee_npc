@@ -403,7 +403,7 @@ function defend_self(&$c, $reserve_cash = 50000, $dpnwMax = 380)
     $nlg_target = $c->nlgTarget();
     $dpnw       = minDpnw($c, true); //ONLY DEF
     $nlg        = $c->nlg();
-    $dpat       = $c->defPerAcreTarget();
+    $dpat       = $this->dpat ?? $c->defPerAcreTarget();
     $dpa        = $c->defPerAcre();
     $outonce    = false;
 
