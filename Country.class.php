@@ -260,13 +260,14 @@ class Country
 
     /**
      * A crude Defence Per Acre number
-     * @param int $mult multiplication factor
+     * @param float $mult      multiplication factor
+     * @param float $powfactor power factor
      *
      * @return {int} DPATarget
      */
-    public function defPerAcreTarget($mult = 1.0)
+    public function defPerAcreTarget($mult = 1.0, $powfactor = 1.2)
     {
-        return floor(75 + pow($this->turns_played, 1.2) / 10) * $mult;
+        return floor(75 + pow($this->turns_played, $powfactor) / 10) * $mult;
     }//end defPerAcreTarget()
 
 
