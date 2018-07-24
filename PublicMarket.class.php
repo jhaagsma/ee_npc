@@ -79,6 +79,12 @@ class PublicMarket
 
     public static function buy(&$c, $quantity = [], $price = [])
     {
+        if (array_sum($quantity) == 0) {
+            out("Trying to buy nothing?");
+            $c->updateMain();
+            return;
+        }
+
         global $techlist;
         $result = ee('buy', ['quantity' => $quantity, 'price' => $price]);
         $str    = $init = str_pad('--- BUY  Public: ', 26);
