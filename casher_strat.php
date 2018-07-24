@@ -132,7 +132,7 @@ function casherGoals(&$c)
         ['t_res',178,800],
         ['t_mil',94,100],
         ['nlg',$c->nlgTarget(),200],
-        ['dpa',$c->defPerAcreTarget(1.33),800],
+        ['dpa',$c->defPerAcreTarget(1.0),400],
         ['food', 1000000000, 1],
     ];
 }//end casherGoals()
