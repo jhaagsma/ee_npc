@@ -254,7 +254,7 @@ class Country
      *
      * @return int nlgTarget
      */
-    public function nlgTarget($powfactor = 1.3)
+    public function nlgTarget($powfactor = 1.00)
     {
         //lets lower it from 80+turns_playwed/7, to compete
         return floor(80 + pow($this->turns_played, $powfactor) / 15);
