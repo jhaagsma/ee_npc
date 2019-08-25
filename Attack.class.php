@@ -16,13 +16,12 @@ namespace EENPC;
 
 class Attack
 {
-
-    public static function attack(&$c, $cnum) {
+    public static function doAttack(&$c, $cnum) {
 
     }
 
-    public static function prep(&$c, $cnum) {
-        
+    public static function prepAttack(&$c, $cnum) {
+
     }
 
     /**

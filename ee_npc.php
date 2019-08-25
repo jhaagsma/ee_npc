@@ -242,8 +242,13 @@ while (1) {
                     GDI::leave();
                 }
 
+                if ($c->turns_played < 100 && $cpref->retal) {
+                    $cpref->retal = []; //clear the damned retal thing
+                }
+
                 $cpref->lastplay = time();
-                $nexttime        = round($playfactor * $cpref->playfreq * Math::purebell(1 / $cpref->playrand, $cpref->playrand, 1, 0.1));
+                $rnd             = $cpref->playrand;
+                $nexttime        = round($playfactor * $cpref->playfreq * Math::purebell(1 / $rnd, $rnd, 1, 0.1));
                 $maxin           = Bots::furthest_play($cpref);
                 $nexttime        = round(min($maxin, $nexttime));
                 $cpref->nextplay = $cpref->lastplay + $nexttime;
