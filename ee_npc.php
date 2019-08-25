@@ -1,5 +1,16 @@
 #!/usr/bin/php
 <?php
+/**
+ * This is the main script for the EE NPC's
+ *
+ * PHP Version 7
+ *
+ * @category Main
+ * @package  EENPC
+ * @author   Julian Haagsma aka qzjul <jhaagsma@gmail.com>
+ * @license  All EENPC files are under the MIT License
+ * @link     https://github.com/jhaagsma/ee_npc
+ */
 
 namespace EENPC;
 

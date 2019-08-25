@@ -23,8 +23,12 @@ class Search
      *
      * @return $result Search Result
      */
-    public static function country($cnum)
+    public static function country($cnum = 0)
     {
+        if ($cnum == 0) {
+            return null;
+        }
+
         $result = $cnum;
         $result = ee('ranks/'.(int)$cnum);
         //out("Search: $result");

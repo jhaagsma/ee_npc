@@ -1,4 +1,15 @@
 <?php
+/**
+ * Country Class
+ *
+ * PHP Version 7
+ *
+ * @category Classes
+ * @package  EENPC
+ * @author   Julian Haagsma aka qzjul <jhaagsma@gmail.com>
+ * @license  All EENPC files are under the MIT License
+ * @link     https://github.com/jhaagsma/ee_npc
+ */
 
 namespace EENPC;
 
@@ -171,7 +182,6 @@ class Country
             }
 
             out("--- Indy production: ".$protext);
-
         }
     }//end setIndy()
 
@@ -371,7 +381,7 @@ class Country
                 $price          = $price > 500 ? $price : 10000;
                 $score['t_mil'] = ($this->pt_mil - $goal[1]) / (100 - $goal[1]) * $goal[2] * (2500 / $price);
             } elseif ($goal[0] == 'nlg') {
-                $target = $this->nlgt ?? $this->nlgTarget();
+                $target       = $this->nlgt ?? $this->nlgTarget();
                 $score['nlg'] = ($target - $this->nlg()) / $target * $goal[2];
             } elseif ($goal[0] == 'dpa') {
                 $target       = $this->dpat ?? $this->defPerAcreTarget();
@@ -713,7 +723,8 @@ class Country
      *
      * @return void
      */
-    public static function addRetalDue($cnum, $type, $land) {
+    public static function addRetalDue($cnum, $type, $land)
+    {
         global $cpref;
 
         if (!isset($cpref->retal[$cnum])) {
@@ -724,7 +735,8 @@ class Country
         }
     }//end addRetalDue()
 
-    public static function listRetalsDue() {
+    public static function listRetalsDue()
+    {
         global $cpref;
 
         if (!$cpref->retal) {
@@ -744,13 +756,16 @@ class Country
         );
 
         foreach ($retals as $list) {
-
             $country = Search::country($list['cnum']);
+            if ($country == null) {
+                continue;
+            }
+
             out(
                 "Country: ".str_pad($country->cname, 32).str_pad(" (#".$list['cnum'].')', 9, ' ', STR_PAD_LEFT).
                 ' x '.str_pad($list['num'], 4, ' ', STR_PAD_LEFT).
                 ' or '.str_pad($list['land'], 6, ' ', STR_PAD_LEFT).' Acres'
             );
         }
-    }
+    }//end listRetalsDue()
 }//end class
