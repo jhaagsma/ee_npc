@@ -21,8 +21,15 @@ To Run on Linux
 6) To Stop it go Control-C
 7) Login and see the AI Dev forum for discussion http://www.earthempires.com/forum/ai-development or view the API details at http://www.earthempires.com/api
 
+To Run on Windows *with* Windows Subsystem for Linux:
+---
+Install Windows Subsystem for Linux: https://docs.microsoft.com/en-us/windows/wsl/install-win10
+Install/Run any version of ubuntu (currently using 20.04)
+Follow the Run on Linux Instructions!!
 
-To Run on Windows:
+
+
+To Run on Windows Without Windows Subsystem Linux:
 ----
 
 1) DOWNLOAD PHP FOR WINDOWS: https://windows.php.net/download/
