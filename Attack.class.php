@@ -1,7 +1,7 @@
 <?php
 
 /**
- * This file has all the government functions
+ * This file has all the attacking functions
  *
  * PHP Version 7
  *
