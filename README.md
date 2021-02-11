@@ -23,9 +23,9 @@ To Run on Linux
 
 To Run on Windows *with* Windows Subsystem for Linux:
 ---
-Install Windows Subsystem for Linux: https://docs.microsoft.com/en-us/windows/wsl/install-win10
-Install/Run any version of ubuntu (currently using 20.04)
-Follow the Run on Linux Instructions!!
+1) Install Windows Subsystem for Linux: https://docs.microsoft.com/en-us/windows/wsl/install-win10
+2) Install/Run any version of ubuntu (currently using 20.04)
+3) Follow the Run on Linux Instructions!!
 
 
 
