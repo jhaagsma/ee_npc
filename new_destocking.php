@@ -314,7 +314,7 @@ function do_public_market_bushel_resell_loop (&$c, $max_public_market_bushel_pur
 				$c = get_advisor();
 		}			
 		else // sell what we purchased on the private market
-			PrivateMarket::sell($c, ['m_bu' => $bushels_purchased_quantity]); 
+			PrivateMarket::sell_single_good($c, 'm_bu', $bushels_purchased_quantity);
 	}
 	
 	return;
@@ -365,14 +365,7 @@ function dump_bushel_stock(&$c, $reset_minutes_remaining, $server_minutes_per_tu
 	$bushels_to_sell = $c->food; // TODO: save 10 turns of expenses
 	
 	if(should_dump_bushels_on_private_market($reset_minutes_remaining, $server_minutes_per_turn, $max_market_package_time_in_minutes, $private_market_bushel_price, $estimated_public_market_bushel_sell_price, $c->tax())) {			
-		// TODO: how do I call this?
-		PrivateMarket::sell($c, ['m_bu' => $bushels_to_sell]);
-		/*
-		PrivateMarket::sell($c, ['m_bu' => $c->food]);
-
-		$quantity = ['m_bu' => $c->food];
-		return PrivateMarket::sell($c, ['m_bu' => $quantity]);
-		*/		
+		PrivateMarket::sell_single_good($c, 'm_bu', $bushels_to_sell);
 	}
 	else { // sell on public
 		PublicMarket::sell($c, ['m_bu' => $bushels_to_sell], ['m_bu' => $estimated_public_market_bushel_sell_price]); 
@@ -414,10 +407,10 @@ PARAMETERS:
 */
 function final_dump_all_resources(&$c) {
 	// no more turns to play for the reset so sell food for any price on private market
-	PrivateMarket::sell($c, ['m_bu' => $c->food]); 	
+	PrivateMarket::sell_single_good($c, 'm_bu', $c->food);
 
 	if(true) // TODO: API call to check if oil can be sold on PM on this server
-		PrivateMarket::sell($c, ['m_oil' => $c->oil]); 	
+		PrivateMarket::sell_single_good($c, 'm_oil', $c->oil);
 
 	return;
 }

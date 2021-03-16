@@ -121,6 +121,14 @@ class PrivateMarket
         return $result;
     }//end buy()
 
+    /*
+    Simple wrapper function for sell when you just want to sell one type of unit (like food)
+    */
+    public static function sell_single_good(&$c, $type, $amount)
+    {
+        $units = [$type => [$type => $amount]];
+        return sell($c, $units);
+    } // end sell_single_good()
 
     /**
      * Sell on the Private Market
