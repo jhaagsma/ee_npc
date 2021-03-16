@@ -59,6 +59,7 @@ require_once 'techer_strat.php';
 require_once 'casher_strat.php';
 require_once 'indy_strat.php';
 require_once 'oiler_strat.php';
+require_once 'new_destocking.php';
 
 define("RAINBOW", Colors::getColoredString("Rainbow", "purple"));
 define("FARMER", Colors::getColoredString("Farmer", "cyan"));
@@ -214,52 +215,64 @@ while (1) {
         }
 
         if ($cpref->nextplay < time()) {
-            if ($cpref->allyup) {
-                Allies::fill('def');
-            }
 
-            Events::new();
-            Country::listRetalsDue();
-            //sleep(1);
+            try {    
+                // check if the country should destock
+                $earliest_destock_time = get_earliest_possible_destocking_start_time_for_country($cnum, $cpref->strat, $server->reset_start, $server->reset_end);
 
-            $playfactor = 1;
-            try {
-                switch ($cpref->strat) {
-                    case 'F':
-                        $c = play_farmer_strat($server, $cnum);
-
-                        $playfactor = 0.8;
-                        break;
-                    case 'T':
-                        $c = play_techer_strat($server, $cnum);
-
-                        $playfactor = 0.5;
-                        break;
-                    case 'C':
-                        $c = play_casher_strat($server, $cnum);
-                        break;
-                    case 'I':
-                        $c = play_indy_strat($server, $cnum);
-
-                        $playfactor = 0.33;
-                        break;
-                    default:
-                        $c = play_rainbow_strat($server, $cnum);
+                if (time() >= $earliest_destock_time) { // call special destocking code that passes back the next play time in $nexttime
+                    execute_destocking_actions($cnum, $server->reset_end, $server->turn_rate, $server->max_tt_mkt, $nexttime);
                 }
+                else { // not destocking
 
-                if ($cpref->gdi && !$c->gdi) {
-                    GDI::join();
-                } elseif (!$cpref->gdi && $c->gdi) {
-                    GDI::leave();
-                }
+                    if ($cpref->allyup) {
+                        Allies::fill('def');
+                    }
 
-                if ($c->turns_played < 100 && $cpref->retal) {
-                    $cpref->retal = []; //clear the damned retal thing
+                    Events::new();
+                    Country::listRetalsDue();
+                    //sleep(1);
+
+                    $playfactor = 1;
+
+                    switch ($cpref->strat) {
+                        case 'F':
+                            $c = play_farmer_strat($server, $cnum);
+
+                            $playfactor = 0.8;
+                            break;
+                        case 'T':
+                            $c = play_techer_strat($server, $cnum);
+
+                            $playfactor = 0.5;
+                            break;
+                        case 'C':
+                            $c = play_casher_strat($server, $cnum);
+                            break;
+                        case 'I':
+                            $c = play_indy_strat($server, $cnum);
+
+                            $playfactor = 0.33;
+                            break;
+                        default:
+                            $c = play_rainbow_strat($server, $cnum);
+                    }
+
+                    if ($cpref->gdi && !$c->gdi) {
+                        GDI::join();
+                    } elseif (!$cpref->gdi && $c->gdi) {
+                        GDI::leave();
+                    }
+
+                    if ($c->turns_played < 100 && $cpref->retal) {
+                        $cpref->retal = []; //clear the damned retal thing
+                    }
+
+                    $rnd             = $cpref->playrand;
+                    $nexttime        = round($playfactor * $cpref->playfreq * Math::purebell(1 / $rnd, $rnd, 1, 0.1));
                 }
 
                 $cpref->lastplay = time();
-                $rnd             = $cpref->playrand;
-                $nexttime        = round($playfactor * $cpref->playfreq * Math::purebell(1 / $rnd, $rnd, 1, 0.1));
                 $maxin           = Bots::furthest_play($cpref);
                 $nexttime        = round(min($maxin, $nexttime));
                 $cpref->nextplay = $cpref->lastplay + $nexttime;
@@ -281,7 +294,7 @@ while (1) {
     }
 
 
-    $loop      = false;
+/*     $loop      = false;
     $until_end = 50;
     if ($server->reset_end - $server->turn_rate * $until_end - time() < 0) {
         for ($i = 0; $i < 5; $i++) {
@@ -306,7 +319,7 @@ while (1) {
             out("Done Sleeping!\r");
         }
         $server = ee('server');
-    }
+    } */
 
     $cnum = null;
     $loopcount++;
