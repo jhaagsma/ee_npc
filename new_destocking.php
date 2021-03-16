@@ -7,6 +7,9 @@ const TURNS_TO_PASS_BEFORE_NEXT_DESTOCK_ATTEMPT = 6;
 // MAKE EVERYTHING AS TESTABLE AS POSSIBLE!
 // NEED TO LOG WAY MORE MESSAGES USING API
 
+// need function to return money for X turns, food for Y turns
+
+
 /*
 NAME: execute_destocking_actions
 PURPOSE: 
@@ -85,7 +88,7 @@ function execute_destocking_actions($cnum, $reset_end_time, $server_seconds_per_
 		$max_dpnw = calculate_maximum_dpnw_for_public_market_purchase ($reset_minutes_remaining, $server_minutes_per_turn, $pm_info->buy_price->m_tu, $c->tax());
 		buyout_up_to_public_market_dpnw($c, $max_dpnw, $max_spend, false); // don't buy tech, maybe the humans want it
 
-		// FUTURE: should consider reselling military units if theo
+		// TODO: add very simple reselling if we have the PM capacity
 		
 		// FUTURE: check if should dump tech
 		// FUTURE: dump tech
