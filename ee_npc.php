@@ -59,7 +59,7 @@ require_once 'techer_strat.php';
 require_once 'casher_strat.php';
 require_once 'indy_strat.php';
 require_once 'oiler_strat.php';
-require_once 'new_destocking.php';
+require_once 'Destocking.php';
 
 define("RAINBOW", Colors::getColoredString("Rainbow", "purple"));
 define("FARMER", Colors::getColoredString("Farmer", "cyan"));
@@ -221,7 +221,7 @@ while (1) {
                 $earliest_destock_time = get_earliest_possible_destocking_start_time_for_country($cnum, $cpref->strat, $server->reset_start, $server->reset_end);
 
                 if (time() >= $earliest_destock_time) { // call special destocking code that passes back the next play time in $nexttime
-                    execute_destocking_actions($cnum, $server->reset_end, $server->turn_rate, $server->max_tt_mkt, $nexttime);
+                    $c = execute_destocking_actions($cnum, $server->reset_end, $server->turn_rate, $server->max_tt_mkt, $server->pm_oil_sell_price, $nexttime);
                 }
                 else { // not destocking
 

@@ -19,7 +19,7 @@ PARAMETERS:
 	$
 	
 */
-function execute_destocking_actions($cnum, $reset_end_time, $server_seconds_per_turn, $max_market_package_time_in_seconds, &$next_play_time) {
+function execute_destocking_actions($cnum, $reset_end_time, $server_seconds_per_turn, $max_market_package_time_in_seconds, $pm_oil_sell_price, &$next_play_time) {
 
 	// TODO: stop converting to minutes?
 	$reset_minutes_remaining = ($server->reset_end - time()) / 60;
@@ -80,7 +80,9 @@ function execute_destocking_actions($cnum, $reset_end_time, $server_seconds_per_
 		
 		// note: a human would recall all military goods here, but I don't care if bots lose NW at the end if it allows a human to buy something
 		
-		final_dump_all_resources($c);
+		 
+
+		final_dump_all_resources($c, $pm_oil_sell_price);
 		
 		buyout_up_to_public_market_dpnw($c, 5000, $c->money, true); // buy anything ($10000 tech is 5000 dpnw)
 	}
@@ -361,7 +363,7 @@ PARAMETERS:
 	
 */
 function dump_bushel_stock(&$c, $reset_minutes_remaining, $server_minutes_per_turn, $max_market_package_time_in_minutes, $private_market_bushel_price, $estimated_public_market_bushel_sell_price) {
-	// TODO: recall bushels if profitable (API doesn't exist)
+	// FUTURE: recall bushels if profitable (API doesn't exist)
 	$bushels_to_sell = $c->food; // TODO: save 10 turns of expenses
 	
 	if(should_dump_bushels_on_private_market($reset_minutes_remaining, $server_minutes_per_turn, $max_market_package_time_in_minutes, $private_market_bushel_price, $estimated_public_market_bushel_sell_price, $c->tax())) {			
@@ -405,11 +407,11 @@ PARAMETERS:
 	$
 	
 */
-function final_dump_all_resources(&$c) {
+function final_dump_all_resources(&$c, $pm_oil_sell_price) {
 	// no more turns to play for the reset so sell food for any price on private market
 	PrivateMarket::sell_single_good($c, 'm_bu', $c->food);
 
-	if(true) // TODO: API call to check if oil can be sold on PM on this server
+	if($pm_oil_sell_price > 0) // sell oil if the server allows it
 		PrivateMarket::sell_single_good($c, 'm_oil', $c->oil);
 
 	return;
