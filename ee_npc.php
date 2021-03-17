@@ -137,10 +137,12 @@ while (1) {
         Debug::off(); //reset for new country
         $save = false;
         if (!isset($settings->$cnum)) {
+            $bot_secret_number = 1000000000 + mt_rand(0,999999999); // 9 digits out to be enough for anybody
             $settings->$cnum = json_decode(
                 json_encode(
                     [
                         'strat' => null,
+                        'bot_secret' => $bot_secret_number,
                         'playfreq' => null,
                         'playrand' => null,
                         'lastplay' => 0,
@@ -218,10 +220,10 @@ while (1) {
 
             try {    
                 // check if the country should destock
-                $earliest_destock_time = get_earliest_possible_destocking_start_time_for_country($cnum, $cpref->strat, $server->reset_start, $server->reset_end);
+                $earliest_destock_time = get_earliest_possible_destocking_start_time_for_country($cpref->bot_secret, $cpref->strat, $server->reset_start, $server->reset_end);
 
                 if (time() >= $earliest_destock_time) { // call special destocking code that passes back the next play time in $nexttime
-                    $c = execute_destocking_actions($cnum, $server->reset_end, $server->turn_rate, $server->max_tt_mkt, $server->pm_oil_sell_price, $nexttime);
+                    $c = execute_destocking_actions($cnum, $server->reset_end, $server->turn_rate, $server->max_tt_mkt, $server->pm_oil_sell_price, $server->pm_food_sell_price, $nexttime);
                 }
                 else { // not destocking
 
@@ -348,6 +350,25 @@ while (1) {
 
 done(); //done() is defined below
 
+
+
+
+// function to country info for live or later review
+// for now we just write to a screen but in the future hopefully we will save stuff to log files
+// examples of things to log: what decisions were made (and why), how turns are spent
+function log_country_message($cnum, $message) {
+    $message_to_log = "Country #$cnum: " . $message;
+    out($message_to_log);
+}
+
+
+// use to get a random number specific to each cnum that doesn't change during the reset
+// up to 9 digits supported
+function decode_bot_secret($bot_secret_number, $desired_digits) {
+    if ($desired_digits > 9)
+        return 0; // TODO: throw error
+    return $bot_secret_number % pow(10, $desired_digits);
+}
 
 function govtStats($countries)
 {

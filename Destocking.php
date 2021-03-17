@@ -4,11 +4,10 @@ namespace EENPC;
 
 const TURNS_TO_PASS_BEFORE_NEXT_DESTOCK_ATTEMPT = 6;
 
-// MAKE EVERYTHING AS TESTABLE AS POSSIBLE!
-// NEED TO LOG WAY MORE MESSAGES USING API
-
-// need function to return money for X turns, food for Y turns
-
+// TODO: finish headers
+// TODO: add debug logging and add screen logging using new API
+// log_country_message($cnum, $message)
+// Debug::msg("BUY_PM: Money: $money; Price: {$pm_info->buy_price->m_tu}; Q: ".$q);
 
 /*
 NAME: execute_destocking_actions
@@ -19,27 +18,30 @@ PARAMETERS:
 	$
 	
 */
-function execute_destocking_actions($cnum, $reset_end_time, $server_seconds_per_turn, $max_market_package_time_in_seconds, $pm_oil_sell_price, &$next_play_time) {
+function execute_destocking_actions($cnum, $reset_end_time, $server_seconds_per_turn, $max_market_package_time_in_seconds, $pm_oil_sell_price, $pm_food_sell_price, &$next_play_time) {
+	$reset_seconds_remaining = ($server->reset_end - time());
 
-	// TODO: stop converting to minutes?
-	$reset_minutes_remaining = ($server->reset_end - time()) / 60;
-	$server_minutes_per_turn = $server_seconds_per_turn / 60;
-	$max_market_package_time_in_minutes = $max_market_package_time_in_seconds / 60;
+	$c = get_advisor();	// create object
 
-	
-
-	
 	// FUTURE: cancel all SOs
 	
 	// change indy production to 100% jets
 	$c->setIndy('pro_j');
 
-	// cash_or_tech_out_turns_if_possible - should call code in another file
+	// TODO: cash_or_tech_out_turns_if_possible - should call code in another file/ techers can get mil tech?
 	
-	// TODO: buy mil tech - PM purchases, bushel reselling?, bushel selling
+	// FUTURE: replace 0.81667 (max demo mil tech) with game API call
+	// reasonable to assume that a greedy demo country will resell bushels for $2 less than max PM sell price on all servers
+	// FUTURE: use 1 dollar less than max on clan servers?
+	$estimated_public_market_bushel_sell_price = round($pm_food_sell_price / 0.81667) - 2; // subtract 2 from demo max private market sell price
+
+	// should_dump_bushels_on_private_market ($reset_seconds_remaining, $server_seconds_per_turn, $max_market_package_time_in_seconds, $private_market_bushel_price, $estimated_public_market_bushel_sell_price, $public_market_tax_rate) {
+	// FUTURE: buy mil tech - PM purchases, bushel reselling?, bushel selling - I expect this to be an annoying calculation
 	
 	// FUTURE: switch governments if that would help
 	
+	// FUTURE: recall bushels if there are enough of them compared to expenses? no API
+
 	// make sure everything is correct because destocking is important
 	$c = get_advisor();
 	
@@ -52,55 +54,104 @@ function execute_destocking_actions($cnum, $reset_end_time, $server_seconds_per_
 	if ($should_attempt_bushel_reselling)
 		do_public_market_bushel_resell_loop ($c, $max_profitable_public_market_bushel_price);
 
-	// TODO: replace 34 with API calls. this won't work after express bushel sell price changes
-	$estimated_public_market_bushel_sell_price = 34; // subtract 2 from demo max private market sell price
-	dump_bushel_stock($c, $reset_minutes_remaining, $server_minutes_per_turn, $max_market_package_time_in_minutes, $private_market_bushel_price, $estimated_public_market_bushel_sell_price);
+	dump_bushel_stock($c, $reset_seconds_remaining, $server_seconds_per_turn, $max_market_package_time_in_seconds, $private_market_bushel_price, $estimated_public_market_bushel_sell_price);
 
 	// FUTURE: consider burning oil to generate private market units
 
 	// $pm_info = PrivateMarket::getInfo(); it's ok if prices are a little wrong
 	$reserved_money_for_future_private_market_purchases = 0;
 	
-	$max_spend = $c->money; // TODO: add expenses
-	
+	$max_spend = $c->money - 50000000; // 50 M seems like a reasonable amount to keep to run turns as needed in the end
+	// we don't do an expenses calculation because expenses will grow quite rapidly as we dump our stock
+
 	// spend money on public market and private market, going in order by dpnw
-	// TODO: replenishment rates should come from game API
+	// FUTURE: replenishment rates should come from game API
 	$destock_units_to_replenishment_rate = array("m_tr" => 3.0, "m_ta" => 1.0, "m_j" => 2.5, "m_tu" => 2.5);
 	foreach($destock_units_to_replenish_rate as $military_unit => $replenishment_rate) {	
 		buyout_up_to_private_market_unit_dpnw ($c, $pm_info->buy_price->$military_unit, $military_unit, $max_spend);
 		// set aside money for future private market unit generation		
-		$reserved_money_for_future_private_market_purchases += estimate_future_private_market_capacity_for_military_unit($pm_info->buy_price->$military_unit, $c->land, $replenishment_rate, $reset_minutes_remaining, $server_minutes_per_turn);
-		$max_spend = $c->money - $reserved_money_for_future_private_market_purchases; // TODO: add expenses
+		$reserved_money_for_future_private_market_purchases += estimate_future_private_market_capacity_for_military_unit($pm_info->buy_price->$military_unit, $c->land, $replenishment_rate, $reset_seconds_remaining, $server_seconds_per_turn);
+		$max_spend = $c->money - $reserved_money_for_future_private_market_purchases;
 	}
 	
 	// check if this is our last shot at destocking
-	if(is_final_destock_attempt($reset_minutes_remaining, $server_minutes_per_turn)) {
-	// if last play:
-		// TODO: recall stuck bushels if there are enough of them compared to expenses? no API
+	if(is_final_destock_attempt($reset_seconds_remaining, $server_seconds_per_turn)) {
+		// FUTURE: recall stuck bushels if there are enough of them compared to expenses? no API
 		
 		// note: a human would recall all military goods here, but I don't care if bots lose NW at the end if it allows a human to buy something
-		
-		 
 
 		final_dump_all_resources($c, $pm_oil_sell_price);
 		
 		buyout_up_to_public_market_dpnw($c, 5000, $c->money, true); // buy anything ($10000 tech is 5000 dpnw)
 	}
 	else { // not final attempt
-		$max_dpnw = calculate_maximum_dpnw_for_public_market_purchase ($reset_minutes_remaining, $server_minutes_per_turn, $pm_info->buy_price->m_tu, $c->tax());
+		// FUTURE: use SOs and recent market data to avoid getting ripped off
+		$max_dpnw = calculate_maximum_dpnw_for_public_market_purchase ($reset_seconds_remaining, $server_seconds_per_turn, $pm_info->buy_price->m_tu, $c->tax());
 		buyout_up_to_public_market_dpnw($c, $max_dpnw, $max_spend, false); // don't buy tech, maybe the humans want it
 
 		// TODO: add very simple reselling if we have the PM capacity
 		
 		// FUTURE: check if should dump tech
-		// FUTURE: dump tech
-	
+		// FUTURE: dump tech	
 	}
 	
 	// calculate next play time
 	$next_login_time = now() + TURNS_TO_PASS_BEFORE_NEXT_DESTOCK_ATTEMPT * $server_seconds_per_turn;
 	return $c;
 }
+
+
+
+/*
+NAME: get_earliest_possible_destocking_start_time_for_country
+PURPOSE: 
+RETURNS: 
+PARAMETERS:
+	$
+	$strategy
+	
+*/
+function get_earliest_possible_destocking_start_time_for_country($bot_secret_number, $strategy, $reset_start_time, $reset_end_time) {
+	// I just made this up, can't say that they are any good - Slagpit 20210316
+	// techer is last 75% to 90% of reset
+	// rainbow and indy are last 90% to 95% of reset
+	// farmer and casher are last 95% to 98.5% of reset	
+	// note: TURNS_TO_PASS_BEFORE_NEXT_DESTOCK_ATTEMPT value should allow for at least two executions for all strategies
+
+	switch ($strategy) {
+		case 'F':
+			$window_start_time_factor = 0.95;
+			$window_end_time_factor = 0.985;
+			break;
+		case 'T':
+			$window_start_time_factor = 0.75;
+			$window_end_time_factor = 0.9;
+			break;
+		case 'C':
+			$window_start_time_factor = 0.95;
+			$window_end_time_factor = 0.985;
+			break;
+		case 'I':
+			$window_start_time_factor = 0.90;
+			$window_end_time_factor = 0.95;
+			break;
+		default:
+			$window_start_time_factor = 0.90;
+			$window_end_time_factor = 0.95;
+	}
+
+	$number_of_seconds_in_window = ($window_end_time_factor - $window_start_time_factor) * ($reset_end_time - $reset_start_time);
+	$rand_factor = 0.001 * decode_bot_secret($bot_secret_number, 3); // random number three digit number between 0.000 and 0.999 that's fixed for each country
+
+	// example of what we're doing here: suppose that start time factor is 90%, end time is 95% and random number is 0.25
+	// the earliest destock time then is after 25% has passed of the interval starting with 90% of the reset and ending with 95% of the reset
+	// so for a 100 day reset, this country should start destocking after 92.5 days have passed
+	return $reset_start_time + $window_start_time_factor * ($reset_end_time - $window_start_time_factor) + $rand_factor * $number_of_seconds_in_window;
+}
+
+
+
+
 
 
 /*
@@ -113,9 +164,9 @@ PARAMETERS:
 	
 */
 function buyout_up_to_private_market_unit_dpnw(&$c, $pm_buy_price, $unit_type, $max_spend) {
-	// TODO: error checking on $unit_type
+	// FUTURE: error checking on $unit_type
 	
-	$unit_to_nw_map = array("m_tr" => 0.5, "m_j" => 0.6, "m_tu" => 0.6, "m_ta" => 2.0); // TODO: this is stupid
+	$unit_to_nw_map = array("m_tr" => 0.5, "m_j" => 0.6, "m_tu" => 0.6, "m_ta" => 2.0); // FUTURE: this is stupid
 	$pm_unit_nw = $unit_to_nw_map($unit_type);
 	$max_dpnw = $pm_buy_price / $pm_unit_nw;
 
@@ -145,8 +196,8 @@ PARAMETERS:
 */
 function buyout_up_to_public_market_dpnw(&$c, $max_dpnw, $max_spend, $military_units_only, $total_spent = 0, $recursion_level = 0) {	
 	// do some setup to limit API calls for public market info
-	$unit_to_nw_map = array("m_tr" => 0.5, "m_j" => 0.6, "m_tu" => 0.6, "m_ta" => 2.0); // TODO: this is stupid
-	if(!$military_units_only) {	// TODO: this is also stupid
+	$unit_to_nw_map = array("m_tr" => 0.5, "m_j" => 0.6, "m_tu" => 0.6, "m_ta" => 2.0); // FUTURE: this is stupid
+	if(!$military_units_only) {	// FUTURE: this is also stupid
 		$unit_to_nw_map["mil"] = 2.0;
 		$unit_to_nw_map["med"] = 2.0;
 		$unit_to_nw_map["bus"] = 2.0;
@@ -221,56 +272,9 @@ PARAMETERS:
 	$
 	
 */
-function estimate_future_private_market_capacity_for_military_unit($m_price, $land, $replenishment_rate, $reset_minutes_remaining, $server_minutes_per_turn) {
-	return ($m_price * $land * $replenishment_rate * floor($reset_minutes_remaining / $server_minutes_per_turn));
+function estimate_future_private_market_capacity_for_military_unit($m_price, $land, $replenishment_rate, $reset_seconds_remaining, $server_seconds_per_turn) {
+	return ($m_price * $land * $replenishment_rate * floor($reset_seconds_remaining / $server_seconds_per_turn));
 }
-
-
-/*
-NAME: get_earliest_possible_destocking_start_time_for_country
-PURPOSE: 
-RETURNS: 
-PARAMETERS:
-	$
-	$strategy
-	
-*/
-function get_earliest_possible_destocking_start_time_for_country($cnum, $strategy, $reset_start_time, $reset_end_time) {
-	// TODO: get a seed in flat file, use that to spread out destocking start times more
-	// TODO: make sure TURNS_TO_PASS_BEFORE_NEXT_DESTOCK_ATTEMPT value allows for at least two executions for all strategies
-
-	// techer is last 75% to 90% of reset
-	// rainbow and indy are last 90% to 95% of reset
-	// farmer and casher are last 95% to 98.5% of reset	
-	switch ($strategy) {
-		case 'F':
-			$window_start_time_factor = 0.95;
-			$window_end_time_factor = 0.985;
-			break;
-		case 'T':
-			$window_start_time_factor = 0.75;
-			$window_end_time_factor = 0.9;
-			break;
-		case 'C':
-			$window_start_time_factor = 0.95;
-			$window_end_time_factor = 0.985;
-			break;
-		case 'I':
-			$window_start_time_factor = 0.90;
-			$window_end_time_factor = 0.95;
-			break;
-		default:
-			$window_start_time_factor = 0.90;
-			$window_end_time_factor = 0.95;
-	}
-
-	// TODO: LOG MESSAGE
-
-	// $window_end_time_factor is deliberately unused for now
-	return $reset_start_time + $window_start_time_factor * ($reset_end_time - $window_start_time_factor);
-}
-
-
 
 /*
 NAME: can_resell_bushels_from_public_market
@@ -307,10 +311,11 @@ function do_public_market_bushel_resell_loop (&$c, $max_public_market_bushel_pur
 		
 		$max_quantity_to_buy_at_once = floor($c->money / ($current_public_market_bushel_price * $c->tax()));
 
+		$previous_food = $c->food;
 		$result = PublicMarket::buy($c, ['m_bu' => $max_quantity_to_buy_at_once], ['m_bu' => $current_public_market_bushel_price]);
-		$bushels_purchased_quantity = $result->purchased[5]["quantity"]; // TODO: just use state of country, don't bother with result
+		$bushels_purchased_quantity = $c->food - $previous_food;
 		if ($bushels_purchased_quantity == 0) {
-			$current_public_market_bushel_price = PublicMarket::price('m_bu');// most likely explanation is price changed, so update it
+			$current_public_market_bushel_price = PublicMarket::price('m_bu'); // most likely explanation is price changed, so update it
 			$price_refreshes++;
 			if ($price_refreshes % 5 == 0) // maybe cash was stolen or an SO was filled, so do an expensive refresh
 				$c = get_advisor();
@@ -332,10 +337,14 @@ PARAMETERS:
 	$
 	
 */
-function calculate_maximum_dpnw_for_public_market_purchase ($reset_minutes_remaining, $server_minutes_per_turn, $private_market_turret_price, $public_market_tax_rate) {
-	// TODO: add random factor, add personality factor, actually use parameters
-	// FIX BEFORE RELEASE
-	return 499;
+function calculate_maximum_dpnw_for_public_market_purchase ($reset_seconds_remaining, $server_seconds_per_turn, $private_market_turret_price, $public_market_tax_rate) {
+	$min_dpnw = ($private_market_turret_price / 0.6) / $public_market_tax_rate; // always buy better than private turret price
+	 // FUTURE: this is stupid and players who read code can take advantage of it
+	$max_dpnw = max($min_dpnw + 10, 500 - 2 * floor($reset_seconds_remaining / $server_seconds_per_turn));
+	$std_dev = ($max_dpnw - $min_dpnw) / 4;
+	$calculated_max_dpnw = Math::purebell($pm_turret_dpnw, $min_dpnw, $std_dev);
+
+	return $calculated_max_dpnw;
 }
 
 
@@ -348,8 +357,8 @@ PARAMETERS:
 	$
 	
 */
-function is_final_destock_attempt ($reset_minutes_remaining, $server_minutes_per_turn) {
-	return ($reset_minutes_remaining / $server_minutes_per_turn < TURNS_TO_PASS_BEFORE_NEXT_DESTOCK_ATTEMPT ? true : false);
+function is_final_destock_attempt ($reset_seconds_remaining, $server_seconds_per_turn) {
+	return ($reset_seconds_remaining / $server_seconds_per_turn < TURNS_TO_PASS_BEFORE_NEXT_DESTOCK_ATTEMPT ? true : false);
 }
 
 
@@ -362,11 +371,15 @@ PARAMETERS:
 	$
 	
 */
-function dump_bushel_stock(&$c, $reset_minutes_remaining, $server_minutes_per_turn, $max_market_package_time_in_minutes, $private_market_bushel_price, $estimated_public_market_bushel_sell_price) {
+function dump_bushel_stock(&$c, $reset_seconds_remaining, $server_seconds_per_turn, $max_market_package_time_in_seconds, $private_market_bushel_price, $estimated_public_market_bushel_sell_price) {
 	// FUTURE: recall bushels if profitable (API doesn't exist)
-	$bushels_to_sell = $c->food; // TODO: save 10 turns of expenses
+
+	$bushels_to_sell = $c->food - get_conservative_food_needs(5, $c->foodpro, $c->foodcon);
+
+	if ($bushels_to_sell <= 0)
+		return;
 	
-	if(should_dump_bushels_on_private_market($reset_minutes_remaining, $server_minutes_per_turn, $max_market_package_time_in_minutes, $private_market_bushel_price, $estimated_public_market_bushel_sell_price, $c->tax())) {			
+	if(should_dump_bushels_on_private_market($reset_seconds_remaining, $server_seconds_per_turn, $max_market_package_time_in_seconds, $private_market_bushel_price, $estimated_public_market_bushel_sell_price, $c->tax())) {			
 		PrivateMarket::sell_single_good($c, 'm_bu', $bushels_to_sell);
 	}
 	else { // sell on public
@@ -385,9 +398,9 @@ PARAMETERS:
 	$
 	
 */
-function should_dump_bushels_on_private_market ($reset_minutes_remaining, $server_minutes_per_turn, $max_market_package_time_in_minutes, $private_market_bushel_price, $estimated_public_market_bushel_sell_price, $public_market_tax_rate) {
+function should_dump_bushels_on_private_market ($reset_seconds_remaining, $server_seconds_per_turn, $max_market_package_time_in_seconds, $private_market_bushel_price, $estimated_public_market_bushel_sell_price, $public_market_tax_rate) {
 	// sell on private if not enough time to sell on public
-	if ($reset_minutes_remaining < $max_market_package_time_in_minutes + TURNS_TO_PASS_BEFORE_NEXT_DESTOCK_ATTEMPT * $server_minutes_per_turn)
+	if ($reset_seconds_remaining < $max_market_package_time_in_seconds + TURNS_TO_PASS_BEFORE_NEXT_DESTOCK_ATTEMPT * $server_seconds_per_turn)
 		return true;
 
 	// sell on private if the public price isn't at least $1.5 better
