@@ -11,6 +11,7 @@ function get_conservative_food_needs($number_of_turns, $food_production, $food_c
     return max(0, $turns * ($food_production / 3 - 2 * $food_consumption));
 }
 
+
 function sell_cheap_units(&$c, $unit = 'm_tr', $fraction = 1)
 {
     $fraction   = max(0, min(1, $fraction));

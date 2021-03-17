@@ -18,7 +18,7 @@ PARAMETERS:
 	$
 	
 */
-function execute_destocking_actions($cnum, $reset_end_time, $server_seconds_per_turn, $max_market_package_time_in_seconds, $pm_oil_sell_price, $pm_food_sell_price, &$next_play_time) {
+function execute_destocking_actions($cnum, $strategy, $reset_end_time, $server_seconds_per_turn, $max_market_package_time_in_seconds, $pm_oil_sell_price, $pm_food_sell_price, &$next_play_time) {
 	$reset_seconds_remaining = ($server->reset_end - time());
 
 	$c = get_advisor();	// create object
@@ -28,8 +28,55 @@ function execute_destocking_actions($cnum, $reset_end_time, $server_seconds_per_
 	// change indy production to 100% jets
 	$c->setIndy('pro_j');
 
-	// TODO: cash_or_tech_out_turns_if_possible - should call code in another file/ techers can get mil tech?
-	
+	// keep 8 turns for possible recall tech, recall goods, double sale of goods, double sale of tech
+	// this is likely too conservative but it doesn't matter if bots lose a few turns of income at the end
+	$turns_to_keep = 8;
+	$money_to_keep = max(11 * min(0, $c->income), 55000000);
+	$food_to_keep = get_conservative_food_needs(9, $c->foodpro, $c->foodcon);
+	$current_public_market_bushel_price = PublicMarket::price('m_bu');
+
+	// TODO: hide in terrible function
+	// FUTURE: this code is overly simple and shouldn't exist here - it should call standard code used for teching and cashing
+	while($c->turns > $turns_to_keep) {
+		// expenses might be high so go turn by turn?
+
+		// check cash
+		if ($c->income < 0 and ($c->money + $c->income) < $money_to_keep) { // stop playing turns unless we can sell food
+			if($c->foodpro > $c->foodcon)
+				sell_single_good($c, 'm_bu', min($c->food, 2 * $c->foodcon));
+			
+			if (($c->money + $c->income) < $money_to_keep) // still can't play turns
+				break;
+		}
+
+		// check food
+		if (($c->foodpro - $c->foodcon) < 0 and ($c->food + $c->foodpro - $c->foodcon) < $food_to_keep) { // stop playing turns unless we can buy food
+			// buy up to $50 public food (should fix at some point)			
+			if ($current_public_market_bushel_price <= 50) {
+				$food_to_buy = min(2 * $c->foodcon, floor(($c->money + $c->income - $money_to_keep) / ($current_public_market_bushel_price * $c->tax())));
+				$prev_food = $c->food;
+				PublicMarket::buy($c, ['m_bu' => $food_to_buy], ['m_bu' => $current_public_market_bushel_price]);
+				if ($prev_food == $c->food) // refresh food price if we didn't buy any
+					$current_public_market_bushel_price = PublicMarket::price('m_bu');
+			}	
+			else
+				break; //public market food is too expensive to play turns
+
+			if ($c->food + $c->foodpro - $c->foodcon < $food_to_keep) // still not enough food, but go ahead and try another loop in case the previous food buy failed
+				continue;
+		}
+
+		// we should have enough food and money to play a turn
+		if ($strategy == 'T') {
+			tech(['mil' => $c->tpt]);	// FUTURE: adjust for earthquakes
+		}
+		else {
+			cash($c, 1); // TODO: does $c->income get refreshed after cashing? concerned about expenses rising for CIs for example
+		}
+	}
+
+	// TODO: what if we ended up somehow with near 0 money and food? so we can't sell goods? emergency sell? dump bushels on private?
+
 	// FUTURE: replace 0.81667 (max demo mil tech) with game API call
 	// reasonable to assume that a greedy demo country will resell bushels for $2 less than max PM sell price on all servers
 	// FUTURE: use 1 dollar less than max on clan servers?
@@ -60,8 +107,8 @@ function execute_destocking_actions($cnum, $reset_end_time, $server_seconds_per_
 
 	// $pm_info = PrivateMarket::getInfo(); it's ok if prices are a little wrong
 	$reserved_money_for_future_private_market_purchases = 0;
-	
-	$max_spend = $c->money - 50000000; // 50 M seems like a reasonable amount to keep to run turns as needed in the end
+
+	$max_spend = $c->money - max(10 * min(0, $c->income), 50000000); // 50 M seems like a reasonable amount to keep to run turns as needed in the end
 	// we don't do an expenses calculation because expenses will grow quite rapidly as we dump our stock
 
 	// spend money on public market and private market, going in order by dpnw
@@ -89,7 +136,23 @@ function execute_destocking_actions($cnum, $reset_end_time, $server_seconds_per_
 		$max_dpnw = calculate_maximum_dpnw_for_public_market_purchase ($reset_seconds_remaining, $server_seconds_per_turn, $pm_info->buy_price->m_tu, $c->tax());
 		buyout_up_to_public_market_dpnw($c, $max_dpnw, $max_spend, false); // don't buy tech, maybe the humans want it
 
-		// TODO: add very simple reselling if we have the PM capacity
+		// TODO: add very simple reselling if we have the PM capacity and can play a turn
+		//if ($reserved_money_for_future_private_market_purchases > )
+
+		// assume that everything currently on market will sell
+		// $owned_on_market_info = get_owned_on_market_info(); 
+		/*
+		Response:
+		goods => components:
+			array of goods on market => components:
+				type,
+				price,
+				quantity,
+				time
+		*/
+		// just grab current public prices. if profitable for reselling turrets, then use a half bell from current price to 3Xbuy, with 3 standard dev?
+
+
 		
 		// FUTURE: check if should dump tech
 		// FUTURE: dump tech	
@@ -343,6 +406,8 @@ function calculate_maximum_dpnw_for_public_market_purchase ($reset_seconds_remai
 	$max_dpnw = max($min_dpnw + 10, 500 - 2 * floor($reset_seconds_remaining / $server_seconds_per_turn));
 	$std_dev = ($max_dpnw - $min_dpnw) / 4;
 	$calculated_max_dpnw = Math::purebell($pm_turret_dpnw, $min_dpnw, $std_dev);
+	// TODO: decrease_dpnw but cut off purebell values that are below it... only supply part of the curve
+	// create half_bell_no_left_side function that takes a mean
 
 	return $calculated_max_dpnw;
 }
