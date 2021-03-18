@@ -3,12 +3,74 @@
 namespace EENPC;
 
 
-function get_conservative_food_needs($number_of_turns, $food_production, $food_consumption) {
-    // sometimes we want to be really sure we don't run out of food (like end of set)
-    // so here's a conservative way to calc food needs
+
+function get_total_value_of_on_market_goods($c, $max_price_bushels_to_include = 999) {
+    $owned_on_market_info = get_owned_on_market_info();
+
+    $total_value = 0;
+    foreach($owned_on_market_info as $market_package) {        
+        $type = $market_package['type'];
+        $price = $market_package['price'];
+        $quantity = $market_package['quantity'];
+
+        if($type <> 'm_bu' or $price <= $max_price_bushels_to_include)
+            $total_value += $price * $quantity * (2 - $c->tax());
+    }
+
+    return $total_value;
+}
+
+
+function has_money_for_turns($number_of_turns_to_play, $money, $incoming_money_per_turn, $expenses_per_turn, $money_to_reserve, $force_negative_events = false) {
+    // divide by 3 is negative cash event
+    // 1.1 is pessimistic expenses increase
+    $expected_money_change_from_turn = ($force_negative_events ? $incoming_money_per_turn / 3 : $incoming_money_per_turn) - 1.1 * $expenses_per_turn;
+
+    if ($expected_money_change_from_turn > 0) // should be ok if money is positive
+        return true;
+    
+    if ($money + $number_of_turns_to_play * $expected_money_change_from_turn < $money_to_reserve)
+        return false;
+
+    return true;
+}
+
+
+
+// tries to buy enough food to run the requested number of turns
+// stops buying food if it detects that prices are too high
+function buy_full_food_quantity_if_possible(&$c, $food_needed, $max_food_price_to_buy, $money_to_reserve, $purchase_attempt_number = 1) {
+    // FUTURE: consider private market as well (express might have cheaper food than public)
+    if ($food_needed == 0) // quit because we bought all of the food we needed
+        return true;
+
+    if ($purchase_attempt_number >= 99) // 100 is the default PHP limit, and 99 feels like more than enough
+        return false;
+
+    $current_public_market_bushel_price = PublicMarket::price('m_bu');
+    if ($current_public_market_bushel_price > $max_food_price_to_buy)
+        return false;
+
+    if($c->money - $food_needed * $c->tax() * $current_public_market_bushel_price < $money_to_reserve) // not enough money left to buy requested food
+        return false;
+
+    // try to buy food
+    $prev_food = $c->food;
+    PublicMarket::buy($c, ['m_bu' => $food_needed], ['m_bu' => $current_public_market_bushel_price]);
+    $food_diff = $c->food - $prev_food;
+    $new_food_needed = $food_needed - $food_diff;
+    $purchase_attempt_number++;
+
+    buy_full_food_quantity_if_possible($c, $new_food_needed, $max_food_price_to_buy, $money_to_reserve, $purchase_attempt_number);
+} 
+
+
+function get_food_needs_for_turns($number_of_turns_to_play, $food_production, $food_consumption, $force_negative_events = false) {
     // dividing by 3 is for food production negative events
     // multiplying by 2 is to account for military units on the market
-    return max(0, $turns * ($food_production / 3 - 2 * $food_consumption));
+    $expected_food_change_from_turn = ($force_negative_events ? $food_production / 3 : $food_production) - 2 * $food_consumption;
+
+    return max(0, $number_of_turns_to_play * $expected_food_change_from_turn);
 }
 
 
