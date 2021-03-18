@@ -136,13 +136,12 @@ while (1) {
     foreach ($countries as $cnum) {
         Debug::off(); //reset for new country
         $save = false;
-        if (!isset($settings->$cnum)) {
-            $bot_secret_number = 1000000000 + mt_rand(0,999999999); // 9 digits ought to be enough for anybody
+        if (!isset($settings->$cnum)) {            
             $settings->$cnum = json_decode(
                 json_encode(
                     [
                         'strat' => null,
-                        'bot_secret' => $bot_secret_number,
+                        'bot_secret' => null,
                         'playfreq' => null,
                         'playrand' => null,
                         'lastplay' => 0,
@@ -175,6 +174,12 @@ while (1) {
         if (!isset($cpref->strat) || $cpref->strat == null) {
             $cpref->strat = Bots::pickStrat($cnum);
             out("Resetting Strat #$cnum", true, 'red');
+            $save = true;
+        }
+
+        if (!isset($cpref->bot_secret) || $cpref->bot_secret == null) {
+            $cpref->bot_secret = 1000000000 + mt_rand(0,999999999); // 9 digits ought to be enough for anybody
+            out("Resetting bot secret number #$cnum", true, 'red');
             $save = true;
         }
 
@@ -222,10 +227,14 @@ while (1) {
                 // check if the country should destock
                 $earliest_destock_time = get_earliest_possible_destocking_start_time_for_country($cpref->bot_secret, $cpref->strat, $server->reset_start, $server->reset_end);
 
+                log_country_message($cnum, 'Earliest destock time is:' . $earliest_destock_time);
+
                 if (time() >= $earliest_destock_time) { // call special destocking code that passes back the next play time in $nexttime
+                    log_country_message($cnum, 'Doing destocking actions');
                     $c = execute_destocking_actions($cnum, $cpref->strat, $server->reset_end, $server->turn_rate, $server->max_tt_mkt, $server->pm_oil_sell_price, $server->pm_food_sell_price, $nexttime);
                 }
                 else { // not destocking
+                    log_country_message($cnum, 'Not doing destocking actions');    
 
                     if ($cpref->allyup) {
                         Allies::fill('def');

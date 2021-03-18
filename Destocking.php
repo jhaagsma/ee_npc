@@ -107,6 +107,7 @@ function execute_destocking_actions($cnum, $strategy, $reset_end_time, $server_s
 			}
 		}
 		
+		// FUTURE: techers should probably sell mil tech to help other countries
 		// FUTURE: check if should dump tech
 		// FUTURE: dump tech	
 	}
@@ -203,6 +204,7 @@ function resell_military_on_public (&$c, $target_sell_amount, $min_sell_amount =
 	}
 
 	if ($total_value_in_new_market_package > $min_sell_amount) { // don't bother with sales under $50 M
+		// FUTURE: if allowed, set market hours to be the longest possible value
 		PublicMarket::sell($c, $market_quantities, $market_prices); // FUTURE: do something with the return object
 		return true;
 	}
