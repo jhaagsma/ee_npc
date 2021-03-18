@@ -127,7 +127,7 @@ PARAMETERS:
 	
 */
 function get_earliest_possible_destocking_start_time_for_country($bot_secret_number, $strategy, $reset_start_time, $reset_end_time) {
-	// I just made this up, can't say that they are any good - Slagpit 20210316
+	// I just made this up, can't say that the ranges are any good - Slagpit 20210316
 	// techer is last 75% to 90% of reset
 	// rainbow and indy are last 90% to 95% of reset
 	// farmer and casher are last 95% to 98.5% of reset	
@@ -194,8 +194,8 @@ function resell_military_on_public (&$c, $target_sell_amount, $min_sell_amount =
 
 		$total_value_in_new_market_package += $units_to_sell * $public_price * (2 - $c->tax());
 
-		$market_quantity[] = $units_to_sell;
-		$market_prices[] = $public_price;
+		$market_quantity[$unit_type] = $units_to_sell;
+		$market_prices[$unit_type] = $public_price;
 	}
 
 	if ($total_value_in_new_market_package > $min_sell_amount) { // don't bother with sales under $50 M
