@@ -21,7 +21,9 @@ function get_total_value_of_on_market_goods($c, $max_price_bushels_to_include = 
 }
 
 
+// can't call this for many turns for CI
 function has_money_for_turns($number_of_turns_to_play, $money, $incoming_money_per_turn, $expenses_per_turn, $money_to_reserve, $force_negative_events = false) {
+    // FUTURE: add estimate based on indy production
     // divide by 3 is negative cash event
     // 1.1 is pessimistic expenses increase
     $expected_money_change_from_turn = ($force_negative_events ? $incoming_money_per_turn / 3 : $incoming_money_per_turn) - 1.1 * $expenses_per_turn;
@@ -37,11 +39,11 @@ function has_money_for_turns($number_of_turns_to_play, $money, $incoming_money_p
 
 
 
-// tries to buy enough food to run the requested number of turns
+// tries to buy the requested food within the budget
 // stops buying food if it detects that prices are too high
 function buy_full_food_quantity_if_possible(&$c, $food_needed, $max_food_price_to_buy, $money_to_reserve, $purchase_attempt_number = 1) {
     // FUTURE: consider private market as well (express might have cheaper food than public)
-    if ($food_needed == 0) // quit because we bought all of the food we needed
+    if ($food_needed <= 0) // quit because we bought all of the food we needed
         return true;
 
     if ($purchase_attempt_number >= 99) // 100 is the default PHP limit, and 99 feels like more than enough
@@ -58,10 +60,7 @@ function buy_full_food_quantity_if_possible(&$c, $food_needed, $max_food_price_t
     $prev_food = $c->food;
     PublicMarket::buy($c, ['m_bu' => $food_needed], ['m_bu' => $current_public_market_bushel_price]);
     $food_diff = $c->food - $prev_food;
-    $new_food_needed = $food_needed - $food_diff;
-    $purchase_attempt_number++;
-
-    buy_full_food_quantity_if_possible($c, $new_food_needed, $max_food_price_to_buy, $money_to_reserve, $purchase_attempt_number);
+    buy_full_food_quantity_if_possible($c, $food_needed - $food_diff, $max_food_price_to_buy, $money_to_reserve, $purchase_attempt_number + 1);
 } 
 
 

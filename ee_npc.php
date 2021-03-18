@@ -137,7 +137,7 @@ while (1) {
         Debug::off(); //reset for new country
         $save = false;
         if (!isset($settings->$cnum)) {
-            $bot_secret_number = 1000000000 + mt_rand(0,999999999); // 9 digits out to be enough for anybody
+            $bot_secret_number = 1000000000 + mt_rand(0,999999999); // 9 digits ought to be enough for anybody
             $settings->$cnum = json_decode(
                 json_encode(
                     [
