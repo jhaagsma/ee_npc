@@ -46,7 +46,7 @@ class Math
     // it's like cutting a bell curve in half and forcing the missing bottom 50% to be equal to the mean
     public static function half_bell_truncate_left_side($mean, $max, $std_deviation, $step = 1) {
         $purebell_min = $mean - ($max - $mean);
-        return max($mean, purebell($purebell_min, $max, $std_deviation, $step));
+        return max($mean, self::purebell($purebell_min, $max, $std_deviation, $step));
     }
 
     /**

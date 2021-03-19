@@ -9,9 +9,9 @@ function get_total_value_of_on_market_goods($c, $max_price_bushels_to_include = 
 
     $total_value = 0;
     foreach($owned_on_market_info as $market_package) {        
-        $type = $market_package['type'];
-        $price = $market_package['price'];
-        $quantity = $market_package['quantity'];
+        $type = $market_package->type;
+        $price = $market_package->price;
+        $quantity = $market_package->quantity;
 
         if($type <> 'm_bu' or $price <= $max_price_bushels_to_include)
             $total_value += $price * $quantity * (2 - $c->tax());

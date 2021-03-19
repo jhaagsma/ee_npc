@@ -227,11 +227,11 @@ while (1) {
                 // check if the country should destock
                 $earliest_destock_time = get_earliest_possible_destocking_start_time_for_country($cpref->bot_secret, $cpref->strat, $server->reset_start, $server->reset_end);
 
-                log_country_message($cnum, 'Earliest destock time is:' . $earliest_destock_time);
+                log_country_message($cnum, 'Earliest destock time is:' . $earliest_destock_time); // TODO: make human readable
 
                 if (time() >= $earliest_destock_time) { // call special destocking code that passes back the next play time in $nexttime
                     log_country_message($cnum, 'Doing destocking actions');
-                    $c = execute_destocking_actions($cnum, $cpref->strat, $server->reset_end, $server->turn_rate, $server->max_tt_mkt, $server->pm_oil_sell_price, $server->pm_food_sell_price, $nexttime);
+                    $c = execute_destocking_actions($cnum, $cpref->strat, $server->reset_end, $server->turn_rate, $server->max_time_to_market, $server->pm_oil_sell_price, $server->pm_food_sell_price, $nexttime);
                 }
                 else { // not destocking
                     log_country_message($cnum, 'Not doing destocking actions');    
@@ -281,11 +281,11 @@ while (1) {
 
                     $rnd             = $cpref->playrand;
                     $nexttime        = round($playfactor * $cpref->playfreq * Math::purebell(1 / $rnd, $rnd, 1, 0.1));
+                    $maxin           = Bots::furthest_play($cpref);
+                    $nexttime        = round(min($maxin, $nexttime));
                 }
 
                 $cpref->lastplay = time();
-                $maxin           = Bots::furthest_play($cpref);
-                $nexttime        = round(min($maxin, $nexttime));
                 $cpref->nextplay = $cpref->lastplay + $nexttime;
                 $nextturns       = floor($nexttime / $server->turn_rate);
                 out("This country next plays in: $nexttime ($nextturns Turns)    ");
@@ -369,6 +369,11 @@ function log_country_message($cnum, $message) {
     $message_to_log = "Country #$cnum: " . $message;
     out($message_to_log);
 }
+
+function log_translate_boolean_to_YN($boolean_value) {
+    return ($boolean_value ? 'yes' : 'no');
+}
+
 
 
 // use to get a random number specific to each cnum that doesn't change during the reset

@@ -126,8 +126,8 @@ class PrivateMarket
     */
     public static function sell_single_good(&$c, $type, $amount)
     {
-        $units = [$type => [$type => $amount]];
-        return sell($c, $units);
+        $units = [$type => $amount];
+        return self::sell($c, $units);
     } // end sell_single_good()
 
     /**
