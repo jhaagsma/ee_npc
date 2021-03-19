@@ -67,7 +67,7 @@ function buy_full_food_quantity_if_possible(&$c, $food_needed, $max_food_price_t
 function get_food_needs_for_turns($number_of_turns_to_play, $food_production, $food_consumption, $force_negative_events = false) {
     // dividing by 3 is for food production negative events
     // multiplying by 2 is to account for military units on the market
-    $expected_food_change_from_turn = ($force_negative_events ? $food_production / 3 : $food_production) - 2 * $food_consumption;
+    $expected_food_change_from_turn = floor($force_negative_events ? $food_production / 3 : $food_production) - 2 * $food_consumption;
 
     return max(0, $number_of_turns_to_play * $expected_food_change_from_turn);
 }
@@ -429,7 +429,7 @@ function siteURL($cnum)
 
 
 
-/* -- replaced by destocking.php - Slagpit 202010316
+
 function destock($server, $cnum)
 {
     $c = get_advisor();     //c as in country! (get the advisor)
@@ -621,4 +621,4 @@ function buy_private_below_dpnw(&$c, $dpnw, $money = 0, $shuffle = false, $defOn
         // out("3.Hash: ".spl_object_hash($c));
 
     }
-}//end buy_private_below_dpnw() */
+}//end buy_private_below_dpnw()

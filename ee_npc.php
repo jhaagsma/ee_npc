@@ -228,7 +228,7 @@ while (1) {
                 $earliest_destock_time = get_earliest_possible_destocking_start_time_for_country($cpref->bot_secret, $cpref->strat, $server->reset_start, $server->reset_end);
 
                 log_country_message($cnum, 'Earliest destock time is:' . $earliest_destock_time); // TODO: make human readable
-
+                
                 if (time() >= $earliest_destock_time) { // call special destocking code that passes back the next play time in $nexttime
                     log_country_message($cnum, 'Doing destocking actions');
                     $c = execute_destocking_actions($cnum, $cpref->strat, $server->reset_end, $server->turn_rate, $server->max_time_to_market, $server->pm_oil_sell_price, $server->pm_food_sell_price, $nexttime);

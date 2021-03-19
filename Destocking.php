@@ -66,8 +66,8 @@ function execute_destocking_actions($cnum, $strategy, $reset_end_time, $server_s
 	$pm_info = PrivateMarket::getInfo();
 	$private_market_bushel_price = $pm_info->sell_price->m_bu;
 	$current_public_market_bushel_price = PublicMarket::price('m_bu');
-	log_country_message($cnum, 'Current private market food price is '.$private_market_bushel_price);
-	log_country_message($cnum, 'Current public market food price is '.$current_public_market_bushel_price);
+	log_country_message($cnum, "Current private market food price is $private_market_bushel_price");
+	log_country_message($cnum, "Current public market food price is $current_public_market_bushel_price");
 	$should_attempt_bushel_reselling = can_resell_bushels_from_public_market ($private_market_bushel_price, $c->tax(), $current_public_market_bushel_price, $max_profitable_public_market_bushel_price);
 	log_country_message($cnum, 'Decision on attempting public market bushel reselling: '.log_translate_boolean_to_YN($should_attempt_bushel_reselling));
 	if ($should_attempt_bushel_reselling)
@@ -83,36 +83,39 @@ function execute_destocking_actions($cnum, $strategy, $reset_end_time, $server_s
 
 	// $pm_info = PrivateMarket::getInfo(); leave commented out because it's ok if prices are a little wrong here
 	$reserved_money_for_future_private_market_purchases = 0;
-	$max_spend = $c->money - $money_to_reserve;
+	$max_spend = max(0, $c->money - $money_to_reserve);
 
 	// spend money on public market and private market, going in order by dpnw
 	// FUTURE: replenishment rates should come from game API
 	$destock_units_to_replenishment_rate = array("m_tr" => 3.0, "m_ta" => 1.0, "m_j" => 2.5, "m_tu" => 2.5);
 	foreach($destock_units_to_replenishment_rate as $military_unit => $replenishment_rate) {
-		log_country_message($cnum, "Total money is $c->money and maximum money to spend is $max_spend");
+		log_country_message($cnum, "For $military_unit PM buying loop, total money is $c->money and budget is $max_spend");
 		
 		// TODO: not sure if $pm_info->buy_price->$military_unit is valid syntax
 		if ($max_spend > 0) {
-			log_country_message($cnum, 'Attempting to spending money on market on units equivalent to pm '.$military_unit);
+			log_country_message($cnum, "Attempting to spend money on private and public markets on units better or equal to PM $military_unit");
 			buyout_up_to_private_market_unit_dpnw ($c, $pm_info->buy_price->$military_unit, $military_unit, $max_spend);
 		}
 
 		// estimate future private market unit generation		
 		$reserved_money_for_future_private_market_purchases += estimate_future_private_market_capacity_for_military_unit($pm_info->buy_price->$military_unit, $c->land, $replenishment_rate, $reset_seconds_remaining, $server_seconds_per_turn);
-		$max_spend = $c->money - $reserved_money_for_future_private_market_purchases - $money_to_reserve;
+		$max_spend = max($c->money - $reserved_money_for_future_private_market_purchases - $money_to_reserve, 0);
 	}
+
+	log_country_message($cnum, "Completed PM purchasing. Money is $c->money, budget is $max_spend, and future pm gen capacity is $reserved_money_for_future_private_market_purchases dollars");
 	
 	// check if this is our last shot at destocking
 	if(is_final_destock_attempt($reset_seconds_remaining, $server_seconds_per_turn)) {
 		// FUTURE: recall stuck bushels if there are enough of them compared to expenses? no API
 		
 		// note: a human would recall all military goods here, but I don't care if bots lose NW at the end if it allows a human to buy something
-		log_country_message($cnum, 'This is the final destock attempt for this country');
+		log_country_message($cnum, 'This is the FINAL destock attempt for this country');
 
+		log_country_message($cnum, 'Selling all food and oil (if possible) on private market for whatever price...');
 		final_dump_all_resources($c, $pm_oil_sell_price);
 
 		if($c->money > 10000000) {
-			log_country_message($cnum, 'Buy anything available off public market');
+			log_country_message($cnum, 'Buying anything available off public market...');
 			buyout_up_to_public_market_dpnw($c, 5000, $c->money, false); // buy anything ($10000 tech is 5000 dpnw)
 		}
 		else
@@ -126,7 +129,7 @@ function execute_destocking_actions($cnum, $strategy, $reset_end_time, $server_s
 		$max_dpnw = calculate_maximum_dpnw_for_public_market_purchase ($reset_seconds_remaining, $server_seconds_per_turn, $pm_info->buy_price->m_tu, $c->tax());
 		
 		if($max_spend <= 0)
-			log_country_message($cnum, "Budget is $max_spend which means not enough money for further public market purchases up to $max_dpnw dpnw.");
+			log_country_message($cnum, "Budget is $max_spend which means not enough money for additional public market purchases up to $max_dpnw dpnw.");
 		else {
 			$money_before_purchase = $c->money;
 			buyout_up_to_public_market_dpnw($c, $max_dpnw, $max_spend, true); // don't buy tech, maybe the humans want it
@@ -138,7 +141,7 @@ function execute_destocking_actions($cnum, $strategy, $reset_end_time, $server_s
 		// consider putting up military for sale if we have money to play a turn and we expect to have at least 100 M in unspent PM capacity
 		// note: no need to reserve money in previous has_money_for_turns call - we reserved money earlier so we could spend turns like this
 		$target_sell_amount = $reserved_money_for_future_private_market_purchases - floor(get_total_value_of_on_market_goods($c));
-		log_country_message($cnum, 'Potential target sell amount for reselling is '.$target_sell_amount);
+		log_country_message($cnum, "Extra PM military capacity is estimated at $target_sell_amount dollars");
 		$reason_for_not_reselling_military = null;
 		if($target_sell_amount < 100000000)
 			$reason_for_not_reselling_military = "Target sell amount of $target_sell_amount is below minimum of 100 million";
@@ -308,14 +311,20 @@ function temporary_cash_or_tech_at_end_of_set (&$c, $strategy, $turns_to_keep, $
 			if($c->foodnet > 0)
 				sell_single_good($c, 'm_bu', min($c->food, $c->foodnet));
 			
-			if (!has_money_for_turns(1, $c->money, $incoming_money_per_turn, $c->expenses, $money_to_reserve)) // playing turns is no longer productive
+			if (!has_money_for_turns(1, $c->money, $incoming_money_per_turn, $c->expenses, $money_to_reserve)) {
+				// playing turns is no longer productive
+				log_country_message($c->cnum, "Not enough money to continue running turns. Money is $c->money and money to reserve is $money_to_reserve");
 				break;
+			}
 		}
 
 		// try to buy food if needed up to $50, quit if we can't find cheap enough food
 		// FUTURE - be smarter about picking $50
-		if(!buy_full_food_quantity_if_possible($c, get_food_needs_for_turns(1, $c->foodpro, $c->foodcon), 50, $money_to_reserve))
+		if(!buy_full_food_quantity_if_possible($c, get_food_needs_for_turns(1, $c->foodpro, $c->foodcon), 50, $money_to_reserve)) {
+			log_country_message($c->cnum, "Not enough food to continue running turns. Food is $c->food, money is $c->money, and money to reserve is $money_to_reserve");				
 			break;
+		}
+			
 
 		// TODO: cash more than 1 turn at a time if possible
 		// we should have enough food and money to play a turn
@@ -354,6 +363,7 @@ function buyout_up_to_private_market_unit_dpnw(&$c, $pm_buy_price, $unit_type, $
 	$money_before_purchase = $c->money;
 	buyout_up_to_public_market_dpnw($c, $max_dpnw, $max_spend, true);
 	$money_spent = $money_before_purchase - $c->money;
+	$max_spend -= $money_spent;
 	log_country_message($c->cnum, "Spent $money_spent money on public market military cheaper than $max_dpnw dpnw (on $unit_type pm iteration)");
 
 	$c = get_advisor(); // money must be correct because we get an error if we try to buy too much
@@ -461,7 +471,7 @@ function buyout_up_to_public_market_dpnw(&$c, $max_dpnw, $max_spend, $military_u
 
 	// some units might have shown up after we last refreshed prices, so call up to 2 more times recursively
 	if ($recursion_level < 3 and $total_spent + 10000 < $max_spend)
-		buyout_up_to_public_market_dpnw($c, $max_dpnw, $max_spend - $total_spent, $military_units_only, $total_spent, $recursion_level + 1);
+		buyout_up_to_public_market_dpnw($c, $max_dpnw, $max_spend, $military_units_only, $total_spent, $recursion_level + 1);
 
 	return $total_spent;
 }
@@ -491,7 +501,7 @@ PARAMETERS:
 	$max_profitable_public_market_bushel_price - output parameter that has the maximum public price that is still profitable
 */
 function can_resell_bushels_from_public_market ($private_market_bushel_price, $public_market_tax_rate, $current_public_market_bushel_price, &$max_profitable_public_market_bushel_price) {	
-	$max_profitable_public_market_bushel_price = floor($private_market_bushel_price / $public_market_tax_rate);	
+	$max_profitable_public_market_bushel_price = ceiling($private_market_bushel_price / $public_market_tax_rate - 1);	
 	return ($max_profitable_public_market_bushel_price >= $current_public_market_bushel_price ? true : false);
 }
 
