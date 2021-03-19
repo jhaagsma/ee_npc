@@ -5,9 +5,6 @@ namespace EENPC;
 const TURNS_TO_PASS_BEFORE_NEXT_DESTOCK_ATTEMPT = 6;
 
 // TODO: finish headers
-// TODO: add debug logging and add screen logging using new API
-// TODO: fix single quote prints to be double quote when possible
-// log_country_message($cnum, $message)
 // Debug::msg("BUY_PM: Money: $money; Price: {$pm_info->buy_price->m_tu}; Q: ".$q);
 
 /*
@@ -33,10 +30,10 @@ function execute_destocking_actions($cnum, $strategy, $reset_end_time, $server_s
 	// this is likely too conservative but it doesn't matter if bots lose a few turns of income at the end
 	$turns_to_keep = 8;
 	$money_to_reserve = max(-11 * $c->income, 55000000); // mil expenses can rise rapidly during destocking, so use 10 M per turn as a guess
-	log_country_message($cnum, 'Money to reserve is '.$money_to_reserve);
+	log_country_message($cnum, "Money is $c->money and money to reserve is $money_to_reserve");
 
-	log_country_message($c->cnum, 'Turns left: '. $c->turns);
-	log_country_message($cnum, 'Starting cashing or teching');
+	log_country_message($c->cnum, "Turns left: $c->turns");
+	log_country_message($cnum, "Starting cashing or teching");
 	temporary_cash_or_tech_at_end_of_set ($c, $strategy, $turns_to_keep, $money_to_reserve);
 	log_country_message($cnum, "Finished cashing or teching");
 
@@ -44,7 +41,7 @@ function execute_destocking_actions($cnum, $strategy, $reset_end_time, $server_s
 	// reasonable to assume that a greedy demo country will resell bushels for $2 less than max PM sell price on all servers
 	// FUTURE: use 1 dollar less than max on clan servers?
 	$estimated_public_market_bushel_sell_price = round($pm_food_sell_price / 0.81667) - 2;
-	log_country_message($cnum, 'Estimated public bushel sell price is '.$estimated_public_market_bushel_sell_price);
+	log_country_message($cnum, "Estimated public bushel sell price is $estimated_public_market_bushel_sell_price");
 
 	// FUTURE: buy mil tech - PM purchases, bushel reselling?, bushel selling - I expect this to be an annoying calculation
 	
@@ -56,9 +53,8 @@ function execute_destocking_actions($cnum, $strategy, $reset_end_time, $server_s
 	$c = get_advisor();
 
 	if($c->protection == 1) { // somehow we are in protection still
-		log_country_message($cnum, 'DESTOCK ERROR: country still in protection'); // TODO: should be an error:
+		log_country_message($cnum, "DESTOCK ERROR: country still in protection"); // TODO: should be an error
 		$next_play_time_in_seconds = TURNS_TO_PASS_BEFORE_NEXT_DESTOCK_ATTEMPT * $server_seconds_per_turn;
-		log_country_message($cnum, 'Will next login in '.$next_play_time_in_seconds.' seconds');
 		return $c;
 	}
 
@@ -69,14 +65,15 @@ function execute_destocking_actions($cnum, $strategy, $reset_end_time, $server_s
 	log_country_message($cnum, "Current private market food price is $private_market_bushel_price");
 	log_country_message($cnum, "Current public market food price is $current_public_market_bushel_price");
 	$should_attempt_bushel_reselling = can_resell_bushels_from_public_market ($private_market_bushel_price, $c->tax(), $current_public_market_bushel_price, $max_profitable_public_market_bushel_price);
-	log_country_message($cnum, 'Decision on attempting public market bushel reselling: '.log_translate_boolean_to_YN($should_attempt_bushel_reselling));
+	log_country_message($cnum, "Decision on attempting public market bushel reselling: ".log_translate_boolean_to_YN($should_attempt_bushel_reselling));
 	if ($should_attempt_bushel_reselling)
 		do_public_market_bushel_resell_loop ($c, $max_profitable_public_market_bushel_price);
 
 	// FUTURE: right now we force a private market sale if money is short, we could be smarter about this
 	// no need to worry about food because dump_bushel_stock handles it
 	$force_private_sale = ($c->turns == 0 or !has_money_for_turns(1, $c->money, $c->taxes, $c->expenses, 0) ? true : false);// note the NOT here
-	log_country_message($cnum, 'Decision on forcing a private market bushel sale: '.log_translate_boolean_to_YN($force_private_sale));
+	log_country_message($cnum, "Decision on forcing a private market bushel sale: ".log_translate_boolean_to_YN($force_private_sale));
+	log_country_message($cnum, "Attempting to dump bushel stock...");
 	dump_bushel_stock($c, $turns_to_keep, $reset_seconds_remaining, $server_seconds_per_turn, $max_market_package_time_in_seconds, $private_market_bushel_price, $estimated_public_market_bushel_sell_price, $force_private_sale);
 
 	// FUTURE: consider burning oil to generate private market units
@@ -90,10 +87,10 @@ function execute_destocking_actions($cnum, $strategy, $reset_end_time, $server_s
 	$destock_units_to_replenishment_rate = array("m_tr" => 3.0, "m_ta" => 1.0, "m_j" => 2.5, "m_tu" => 2.5);
 	foreach($destock_units_to_replenishment_rate as $military_unit => $replenishment_rate) {
 		log_country_message($cnum, "For $military_unit PM buying loop, total money is $c->money and budget is $max_spend");
-		
-		// TODO: not sure if $pm_info->buy_price->$military_unit is valid syntax
+
 		if ($max_spend > 0) {
-			log_country_message($cnum, "Attempting to spend money on private and public markets on units better or equal to PM $military_unit");
+			log_country_message($cnum, "Attempting to spend money on private and public markets on units better or equal to PM $military_unit...");
+			log_country_message($cnum, "Temp debug: PM $military_unit buy price is $pm_info->buy_price->$military_unit"); // TODO: not sure if $pm_info->buy_price->$military_unit is valid syntax
 			buyout_up_to_private_market_unit_dpnw ($c, $pm_info->buy_price->$military_unit, $military_unit, $max_spend);
 		}
 
@@ -109,13 +106,13 @@ function execute_destocking_actions($cnum, $strategy, $reset_end_time, $server_s
 		// FUTURE: recall stuck bushels if there are enough of them compared to expenses? no API
 		
 		// note: a human would recall all military goods here, but I don't care if bots lose NW at the end if it allows a human to buy something
-		log_country_message($cnum, 'This is the FINAL destock attempt for this country');
+		log_country_message($cnum, "This is the FINAL destock attempt for this country");
 
-		log_country_message($cnum, 'Selling all food and oil (if possible) on private market for whatever price...');
+		log_country_message($cnum, "Selling all food and oil (if possible) on private market for any price...");
 		final_dump_all_resources($c, $pm_oil_sell_price);
 
 		if($c->money > 10000000) {
-			log_country_message($cnum, 'Buying anything available off public market...');
+			log_country_message($cnum, "Buying anything available off public market...");
 			buyout_up_to_public_market_dpnw($c, 5000, $c->money, false); // buy anything ($10000 tech is 5000 dpnw)
 		}
 		else
@@ -123,7 +120,7 @@ function execute_destocking_actions($cnum, $strategy, $reset_end_time, $server_s
 
 	}
 	else { // not final attempt
-		log_country_message($cnum, 'This is NOT the final destock attempt for this country');
+		log_country_message($cnum, "This is NOT the final destock attempt for this country");
 
 		// FUTURE: use SOs and recent market data to avoid getting ripped off
 		$max_dpnw = calculate_maximum_dpnw_for_public_market_purchase ($reset_seconds_remaining, $server_seconds_per_turn, $pm_info->buy_price->m_tu, $c->tax());
@@ -162,6 +159,7 @@ function execute_destocking_actions($cnum, $strategy, $reset_end_time, $server_s
 		}
 
 		if($reason_for_not_reselling_military == null) {
+			log_country_message($cnum, "Calculating the public market package for military reselling...");
 			$did_resell = resell_military_on_public($c, $target_sell_amount);
 			if(!$did_resell)
 				$reason_for_not_reselling_military = "Couldn't put at least 50 million of goods for sale";
@@ -337,7 +335,7 @@ function temporary_cash_or_tech_at_end_of_set (&$c, $strategy, $turns_to_keep, $
 		$turns_remaining--;	
 
 		if($turns_remaining % 10 == 0)
-			log_country_message($c->cnum, 'Inside cash or tech loop. Country turns remaining: '.$turns_remaining);
+			log_country_message($c->cnum, "Inside cash or tech loop. Country turns remaining: $turns_remaining");
 	}
 }
 
@@ -590,8 +588,10 @@ function dump_bushel_stock(&$c, $turns_to_keep, $reset_seconds_remaining, $serve
 
 	$bushels_to_sell = $c->food - get_food_needs_for_turns($turns_to_keep, $c->foodpro, $c->foodcon, true);
 
-	if ($bushels_to_sell < 5000) // don't bother if below min quantity
+	if ($bushels_to_sell < 5000) { // don't bother if below min quantity
+		log_country_message($c->cnum, "Food is $c->food which is less than 5000 so don't bother selling");
 		return;
+	}
 	
 	if($force_private_sale or should_dump_bushels_on_private_market($reset_seconds_remaining, $server_seconds_per_turn, $max_market_package_time_in_seconds, $private_market_bushel_price, $estimated_public_market_bushel_sell_price, $c->tax())) {			
 		PrivateMarket::sell_single_good($c, 'm_bu', $bushels_to_sell);
