@@ -30,10 +30,10 @@ function execute_destocking_actions($cnum, $strategy, $reset_end_time, $server_s
 	// this is likely too conservative but it doesn't matter if bots lose a few turns of income at the end
 	$turns_to_keep = 8;
 	$money_to_reserve = max(-11 * $c->income, 55000000); // mil expenses can rise rapidly during destocking, so use 10 M per turn as a guess
-	log_country_message($cnum, "Money is $c->money and money to reserve is $money_to_reserve");
+	log_country_message($cnum, "Money is $c->money and calculated money to reserve is $money_to_reserve");
 
 	log_country_message($c->cnum, "Turns left: $c->turns");
-	log_country_message($cnum, "Starting cashing or teching");
+	log_country_message($cnum, "Starting cashing or teching...");
 	temporary_cash_or_tech_at_end_of_set ($c, $strategy, $turns_to_keep, $money_to_reserve);
 	log_country_message($cnum, "Finished cashing or teching");
 
@@ -66,8 +66,11 @@ function execute_destocking_actions($cnum, $strategy, $reset_end_time, $server_s
 	log_country_message($cnum, "Current public market food price is $current_public_market_bushel_price");
 	$should_attempt_bushel_reselling = can_resell_bushels_from_public_market ($private_market_bushel_price, $c->tax(), $current_public_market_bushel_price, $max_profitable_public_market_bushel_price);
 	log_country_message($cnum, "Decision on attempting public market bushel reselling: ".log_translate_boolean_to_YN($should_attempt_bushel_reselling));
-	if ($should_attempt_bushel_reselling)
+	if ($should_attempt_bushel_reselling) {
 		do_public_market_bushel_resell_loop ($c, $max_profitable_public_market_bushel_price);
+		log_country_message($cnum, "Done with bushel reselling");
+	}
+
 
 	// FUTURE: right now we force a private market sale if money is short, we could be smarter about this
 	// no need to worry about food because dump_bushel_stock handles it
@@ -75,6 +78,7 @@ function execute_destocking_actions($cnum, $strategy, $reset_end_time, $server_s
 	log_country_message($cnum, "Decision on forcing a private market bushel sale: ".log_translate_boolean_to_YN($force_private_sale));
 	log_country_message($cnum, "Attempting to dump bushel stock...");
 	dump_bushel_stock($c, $turns_to_keep, $reset_seconds_remaining, $server_seconds_per_turn, $max_market_package_time_in_seconds, $private_market_bushel_price, $estimated_public_market_bushel_sell_price, $force_private_sale);
+	log_country_message($cnum, "Done dumping bushel stock");
 
 	// FUTURE: consider burning oil to generate private market units
 
@@ -99,15 +103,19 @@ function execute_destocking_actions($cnum, $strategy, $reset_end_time, $server_s
 		$max_spend = max($c->money - $reserved_money_for_future_private_market_purchases - $money_to_reserve, 0);
 	}
 
-	log_country_message($cnum, "Completed PM purchasing. Money is $c->money, budget is $max_spend, and future pm gen capacity is $reserved_money_for_future_private_market_purchases dollars");
+	log_country_message($cnum, "Completed all PM purchasing. Money is $c->money and budget is $max_spend.");
+	log_country_message($cnum, "Estimated future PM gen capacity is $reserved_money_for_future_private_market_purchases dollars");
 	
+	$debug_force_final_attempt = false; // change to force final attempt
+
 	// check if this is our last shot at destocking
-	if(is_final_destock_attempt($reset_seconds_remaining, $server_seconds_per_turn)) {
+	if($debug_force_final_attempt or is_final_destock_attempt($reset_seconds_remaining, $server_seconds_per_turn)) {
+
 		// FUTURE: recall stuck bushels if there are enough of them compared to expenses? no API
 		
 		// note: a human would recall all military goods here, but I don't care if bots lose NW at the end if it allows a human to buy something
-		log_country_message($cnum, "This is the FINAL destock attempt for this country");
-
+		
+		log_country_message($cnum, "This is the FINAL destock attempt for this country". log_translate_forced_debug($debug_force_final_attempt));
 		log_country_message($cnum, "Selling all food and oil (if possible) on private market for any price...");
 		final_dump_all_resources($c, $pm_oil_sell_price);
 
@@ -128,17 +136,18 @@ function execute_destocking_actions($cnum, $strategy, $reset_end_time, $server_s
 		if($max_spend <= 0)
 			log_country_message($cnum, "Budget is $max_spend which means not enough money for additional public market purchases up to $max_dpnw dpnw.");
 		else {
+			log_country_message($c->cnum, "Attempting to spend budget of $max_spend on public market military goods at or below $max_dpnw dpnw...");
 			$money_before_purchase = $c->money;
 			buyout_up_to_public_market_dpnw($c, $max_dpnw, $max_spend, true); // don't buy tech, maybe the humans want it
 			$money_spent = $money_before_purchase - $c->money;
-			log_country_message($c->cnum, "Budget was $max_spend and spent $money_spent money on public market goods at or below $max_dpnw dpnw");
+			log_country_message($c->cnum, "Completed public market purchasing. Budget was $max_spend and spent $money_spent money.");
 		}
 
 		// TODO: create function to check if there's time for public market sale (include parameter for additional seconds and check it here)
 		// consider putting up military for sale if we have money to play a turn and we expect to have at least 100 M in unspent PM capacity
 		// note: no need to reserve money in previous has_money_for_turns call - we reserved money earlier so we could spend turns like this
 		$target_sell_amount = $reserved_money_for_future_private_market_purchases - floor(get_total_value_of_on_market_goods($c));
-		log_country_message($cnum, "Extra PM military capacity is estimated at $target_sell_amount dollars");
+		log_country_message($cnum, "Considering military reselling. Extra PM military capacity is estimated at $target_sell_amount dollars");
 		$reason_for_not_reselling_military = null;
 		if($target_sell_amount < 100000000)
 			$reason_for_not_reselling_military = "Target sell amount of $target_sell_amount is below minimum of 100 million";
@@ -159,7 +168,7 @@ function execute_destocking_actions($cnum, $strategy, $reset_end_time, $server_s
 		}
 
 		if($reason_for_not_reselling_military == null) {
-			log_country_message($cnum, "Calculating the public market package for military reselling...");
+			log_country_message($cnum, "Attempting to build a public market package for military reselling...");
 			$did_resell = resell_military_on_public($c, $target_sell_amount);
 			if(!$did_resell)
 				$reason_for_not_reselling_military = "Couldn't put at least 50 million of goods for sale";
@@ -362,7 +371,7 @@ function buyout_up_to_private_market_unit_dpnw(&$c, $pm_buy_price, $unit_type, $
 	buyout_up_to_public_market_dpnw($c, $max_dpnw, $max_spend, true);
 	$money_spent = $money_before_purchase - $c->money;
 	$max_spend -= $money_spent;
-	log_country_message($c->cnum, "Spent $money_spent money on public market military cheaper than $max_dpnw dpnw (on $unit_type pm iteration)");
+	log_country_message($c->cnum, "Spent $money_spent money on public market military cheaper than $max_dpnw dpnw (on $unit_type pm iteration(s))");
 
 	$c = get_advisor(); // money must be correct because we get an error if we try to buy too much
 	
@@ -407,7 +416,7 @@ function buyout_up_to_public_market_dpnw(&$c, $max_dpnw, $max_spend, $military_u
 
 	$public_market_tax_rate = $c->tax();
 	
-	log_country_message($c->cnum, "Iteration $recursion_level (out of 3) for public market purchasing with budget $max_spend at or below $max_dpnw dpnw");
+	log_country_message($c->cnum, "Iteration $recursion_level for public market purchasing with budget $max_spend at or below $max_dpnw dpnw");
 
 	// this is written like this to try to limit public market API calls
 	$candidate_purchase_prices_by_unit = [];
@@ -419,10 +428,10 @@ function buyout_up_to_public_market_dpnw(&$c, $max_dpnw, $max_spend, $military_u
 			// log_country_message($c->cnum, "unit:$unit_name, price:$public_market_price");
 			$unit_dpnw = round($public_market_tax_rate * $public_market_price / $unit_to_nw_map[$unit_name]);
 			$candidate_dpnw_by_unit[$unit_name] = $unit_dpnw;
-			log_country_message($c->cnum, "Initial public market conditions for $unit_name are price $public_market_price and dpnw $unit_dpnw");
+			log_country_message($c->cnum, "Iteration $recursion_level initial public market conditions for $unit_name are price $public_market_price and dpnw $unit_dpnw");
 		}
 		else {
-			log_country_message($c->cnum, "Initial public market conditions for $unit_name are nothing on market!");
+			log_country_message($c->cnum, "Iteration $recursion_level initial public market conditions for $unit_name are nothing on market");
 		}
 	}	
 	

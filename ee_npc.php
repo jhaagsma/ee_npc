@@ -227,10 +227,12 @@ while (1) {
                 // check if the country should destock
                 $earliest_destock_time = get_earliest_possible_destocking_start_time_for_country($cpref->bot_secret, $cpref->strat, $server->reset_start, $server->reset_end);
 
-                log_country_message($cnum, 'Earliest destock time is:' . $earliest_destock_time); // TODO: make human readable
+                log_country_message($cnum, 'Earliest destock time is:' . log_translate_instant_to_human_readable($earliest_destock_time)); // TODO: make human readable
                 
-                if (time() >= $earliest_destock_time) { // call special destocking code that passes back the next play time in $nexttime
-                    log_country_message($cnum, 'Doing destocking actions');
+                $debug_force_destocking = false; // change to force destocking code to run
+
+                if ($debug_force_destocking or time() >= $earliest_destock_time) { // call special destocking code that passes back the next play time in $nexttime
+                    log_country_message($cnum, 'Doing destocking actions' . ($debug_force_destocking ? ' forced by debug variable' : ''));
                     $c = execute_destocking_actions($cnum, $cpref->strat, $server->reset_end, $server->turn_rate, $server->max_time_to_market, $server->pm_oil_sell_price, $server->pm_food_sell_price, $nexttime);
                 }
                 else { // not destocking
@@ -361,7 +363,7 @@ done(); //done() is defined below
 
 
 
-
+// TODO: move all logging functions to separate file
 // function to country info for live or later review
 // for now we just write to a screen but in the future hopefully we will save stuff to log files
 // examples of things to log: what decisions were made (and why), how turns are spent
@@ -370,9 +372,20 @@ function log_country_message($cnum, $message) {
     out($message_to_log);
 }
 
+function log_translate_forced_debug($boolean_value) {
+    return ($boolean_value ? ' forced by debug variable' : '');
+}
+
 function log_translate_boolean_to_YN($boolean_value) {
     return ($boolean_value ? 'yes' : 'no');
 }
+
+function log_translate_instant_to_human_readable($instant) {
+    return date('m/d/Y H:i:s', $instant);
+}
+
+
+
 
 
 
