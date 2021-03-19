@@ -227,12 +227,12 @@ while (1) {
                 // check if the country should destock
                 $earliest_destock_time = get_earliest_possible_destocking_start_time_for_country($cpref->bot_secret, $cpref->strat, $server->reset_start, $server->reset_end);
 
-                log_country_message($cnum, 'Earliest destock time is:' . log_translate_instant_to_human_readable($earliest_destock_time)); // TODO: make human readable
+                log_country_message($cnum, 'Earliest destock time is: ' . log_translate_instant_to_human_readable($earliest_destock_time)); // TODO: make human readable
                 
                 $debug_force_destocking = false; // change to force destocking code to run
 
                 if ($debug_force_destocking or time() >= $earliest_destock_time) { // call special destocking code that passes back the next play time in $nexttime
-                    log_country_message($cnum, 'Doing destocking actions' . ($debug_force_destocking ? ' forced by debug variable' : ''));
+                    log_country_message($cnum, 'Doing destocking actions' . log_translate_forced_debug($debug_force_destocking));
                     $c = execute_destocking_actions($cnum, $cpref->strat, $server->reset_end, $server->turn_rate, $server->max_time_to_market, $server->pm_oil_sell_price, $server->pm_food_sell_price, $nexttime);
                 }
                 else { // not destocking

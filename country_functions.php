@@ -43,24 +43,36 @@ function has_money_for_turns($number_of_turns_to_play, $money, $incoming_money_p
 // stops buying food if it detects that prices are too high
 function buy_full_food_quantity_if_possible(&$c, $food_needed, $max_food_price_to_buy, $money_to_reserve, $purchase_attempt_number = 1) {
     // FUTURE: consider private market as well (express might have cheaper food than public)
-    if ($food_needed <= 0) // quit because we bought all of the food we needed
+    if ($food_needed <= 0) {// quit because we bought all of the food we needed
         return true;
+    }
 
-    if ($purchase_attempt_number >= 99) // 100 is the default PHP limit, and 99 feels like more than enough
+    if ($purchase_attempt_number >= 99) { // 100 is the default PHP limit, and 99 feels like more than enough
+        log_country_message($c->cnum, "Could not purchase food because code hit recursion limit of 99");
         return false;
+    }
 
     $current_public_market_bushel_price = PublicMarket::price('m_bu');
-    if ($current_public_market_bushel_price > $max_food_price_to_buy)
+    if ($current_public_market_bushel_price == 0 or $current_public_market_bushel_price == null) {
+        log_country_message($c->cnum, "Could not purchase food because public market is empty");
         return false;
+    }
 
-    if($c->money - $food_needed * $c->tax() * $current_public_market_bushel_price < $money_to_reserve) // not enough money left to buy requested food
+    if ($current_public_market_bushel_price > $max_food_price_to_buy) {
+        log_country_message($c->cnum, "Could not purchase food because public market price is too high");
         return false;
+    }    
+
+    if(($c->money - $money_to_reserve) < ($food_needed * $c->tax() * $current_public_market_bushel_price)) {
+        log_country_message($c->cnum, "Could not purchase food because ran out of money");
+        return false;
+    }
 
     // try to buy food
     $prev_food = $c->food;
     PublicMarket::buy($c, ['m_bu' => $food_needed], ['m_bu' => $current_public_market_bushel_price]);
     $food_diff = $c->food - $prev_food;
-    buy_full_food_quantity_if_possible($c, $food_needed - $food_diff, $max_food_price_to_buy, $money_to_reserve, $purchase_attempt_number + 1);
+    return buy_full_food_quantity_if_possible($c, $food_needed - $food_diff, $max_food_price_to_buy, $money_to_reserve, $purchase_attempt_number + 1);
 } 
 
 
@@ -69,7 +81,7 @@ function get_food_needs_for_turns($number_of_turns_to_play, $food_production, $f
     // multiplying by 2 is to account for military units on the market
     $expected_food_change_from_turn = floor($force_negative_events ? $food_production / 3 : $food_production) - 2 * $food_consumption;
 
-    return max(0, $number_of_turns_to_play * $expected_food_change_from_turn);
+    return max(0, -1 * $number_of_turns_to_play * $expected_food_change_from_turn);
 }
 
 
