@@ -64,7 +64,7 @@ function buy_full_food_quantity_if_possible(&$c, $food_needed, $max_food_price_t
     }    
 
     if(($c->money - $money_to_reserve) < ($food_needed * $c->tax() * $current_public_market_bushel_price)) {
-        log_country_message($c->cnum, "Could not purchase food because ran out of money");
+        log_country_message($c->cnum, "Could not purchase food because not enough money");
         return false;
     }
 

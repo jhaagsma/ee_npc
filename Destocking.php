@@ -29,7 +29,7 @@ function execute_destocking_actions($cnum, $strategy, $reset_end_time, $server_s
 
 	// keep 8 turns for possible recall tech, recall goods, double sale of goods, double sale of tech
 	// this is likely too conservative but it doesn't matter if bots lose a few turns of income at the end
-	$turns_to_keep = 198; // TODO: change back to 8
+	$turns_to_keep = 190; // TODO: change back to 8
 	$money_to_reserve = max(-11 * $c->income, 55000000); // mil expenses can rise rapidly during destocking, so use 10 M per turn as a guess
 	log_country_message($cnum, "Money is $c->money and calculated money to reserve is $money_to_reserve");
 
@@ -124,6 +124,7 @@ function execute_destocking_actions($cnum, $strategy, $reset_end_time, $server_s
 		if($c->money > 10000000) {
 			log_country_message($cnum, "Buying anything available off public market...");
 			buyout_up_to_public_market_dpnw($c, 5000, $c->money, false); // buy anything ($10000 tech is 5000 dpnw)
+			log_country_message($cnum, "Done with public market purchases. Money is $c->money");
 		}
 		else
 			log_country_message($cnum, "Less than 10 million in cash so not attempting to spend on public market");
@@ -152,7 +153,7 @@ function execute_destocking_actions($cnum, $strategy, $reset_end_time, $server_s
 		$value_of_public_market_goods = floor(get_total_value_of_on_market_goods($c));
 		log_country_message($cnum, "Considering military reselling...");
 		log_country_message($cnum, "Money is $c->money, on-market value is $value_of_public_market_goods, and future PM gen is $reserved_money_for_future_private_market_purchases");
-		$target_sell_amount = $reserved_money_for_future_private_market_purchases - $value_of_public_market_goods;
+		$target_sell_amount = max(0, $reserved_money_for_future_private_market_purchases - $value_of_public_market_goods - $c->money);
 		log_country_message($cnum, "Future free PM military capacity is estimated at $target_sell_amount dollars");
 		$reason_for_not_reselling_military = null;
 		if($target_sell_amount < 100000000)
@@ -260,7 +261,7 @@ PARAMETERS:
 */
 function resell_military_on_public (&$c, $target_sell_amount, $min_sell_amount = 50000000) {
 	// sell in an opposite order from what I expect humans to do: first sell turrets, then jets, then tanks, than troops
-	log_country_message($c->cnum, "Goal is to sell military units with value of least $min_sell_amount dollars and not more than $target_sell_amount dollars");
+	log_country_message($c->cnum, "Want to sell mil units with min value of $min_sell_amount dollars and max of $target_sell_amount dollars");
 
 	$total_value_in_new_market_package = 0;
 	$pm_info = PrivateMarket::getRecent();
@@ -275,7 +276,7 @@ function resell_military_on_public (&$c, $target_sell_amount, $min_sell_amount =
 		// we're basically just throwing military up at a somewhat expensive price
 		$public_price = Math::half_bell_truncate_left_side(floor(1.2 * $pm_price), 3 * $pm_price, $pm_price);
 		$max_sell_amount = can_sell_mil($c, $unit_type); // FUTURE - this function should account for increased express package sizes
-		log_country_message($c->cnum, "Considering sale of $unit_type. PM price is $pm_price, our calc sell price is $public_price, and max sell is $max_sell_amount units");
+		log_country_message($c->cnum, "Calc sale of $unit_type: PM price is $pm_price, our sell price is $public_price, and max sell is $max_sell_amount units");
 
 		$units_to_sell = min($max_sell_amount, floor(($target_sell_amount - $total_value_in_new_market_package) / ((2 - $c->tax()) * $public_price)));
 		if ($units_to_sell < 5000) // FUTURE: game API call
@@ -283,13 +284,13 @@ function resell_military_on_public (&$c, $target_sell_amount, $min_sell_amount =
 
 		$additional_value_from_unit = round($units_to_sell * $public_price * (2 - $c->tax()));
 		$total_value_in_new_market_package += $additional_value_from_unit;
-		log_country_message($c->cnum, "For $unit_type unit, sell volume recalculated as $units_to_sell and package value is $additional_value_from_unit");
+		log_country_message($c->cnum, "For $unit_type: sell volume recalculated as $units_to_sell and package value is $additional_value_from_unit");
 
 		$market_quantities[$unit_type] = $units_to_sell;
 		$market_prices[$unit_type] = $public_price;
 	}
 
-	log_country_message($c->cnum, "After checking all military unit types, the total package value is $total_value_in_new_market_package");	
+	log_country_message($c->cnum, "After checking all military unit types, the total package value is $total_value_in_new_market_package dollars");	
 	if ($total_value_in_new_market_package > $min_sell_amount) { // don't bother with sales under $50 M
 		// FUTURE: if allowed, set market hours to be the longest possible value
 		foreach($market_quantities as $unit_type => $units_to_sell) {
@@ -375,7 +376,7 @@ function buyout_up_to_private_market_unit_dpnw(&$c, $pm_buy_price, $unit_type, $
 	
 	$unit_to_nw_map = array("m_tr" => 0.5, "m_j" => 0.6, "m_tu" => 0.6, "m_ta" => 2.0); // FUTURE: this is stupid
 	$pm_unit_nw = $unit_to_nw_map[$unit_type];
-	$max_dpnw = $pm_buy_price / $pm_unit_nw;
+	$max_dpnw = floor($pm_buy_price / $pm_unit_nw);
 
 	$c = get_advisor();	// money must be correct because we get an error if we try to buy too much
 
@@ -546,6 +547,7 @@ function do_public_market_bushel_resell_loop (&$c, $max_public_market_bushel_pur
 
 		$previous_food = $c->food;
 		$result = PublicMarket::buy($c, ['m_bu' => $max_quantity_to_buy_at_once], ['m_bu' => $current_public_market_bushel_price]);
+		// TODO: sometimes see an error here with an unexpected price (1 below last) - expected?
 		$bushels_purchased_quantity = $c->food - $previous_food;
 		if ($bushels_purchased_quantity == 0) {
 			 // most likely explanation is price changed, so update it
@@ -575,6 +577,8 @@ function calculate_maximum_dpnw_for_public_market_purchase ($reset_seconds_remai
 	$min_dpnw = ($private_market_turret_price / 0.6) / $public_market_tax_rate; // always buy better than private turret price	
 	$max_dpnw = max($min_dpnw + 10, 500 - 2 * floor($reset_seconds_remaining / $server_seconds_per_turn)); // FUTURE: this is stupid and players who read code can take advantage of it
 	$std_dev = ($max_dpnw - $min_dpnw) / 2;
+
+	// TODO: seems to often return 330 or 350?
 
 	return floor(Math::half_bell_truncate_left_side($min_dpnw, $max_dpnw, $std_dev));
 }

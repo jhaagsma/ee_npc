@@ -226,6 +226,9 @@ while (1) {
             try {    
                 // check if the country should destock
                 $earliest_destock_time = get_earliest_possible_destocking_start_time_for_country($cpref->bot_secret, $cpref->strat, $server->reset_start, $server->reset_end);
+                // TODO: might be possible for countries to miss their entire destocking window
+                // TODO: nextplay time isn't always respected
+                // TODO: make bots not play in the last few minutes of the server for server load reasons and to avoid hurting players
 
                 log_country_message($cnum, 'Earliest destock time is: ' . log_translate_instant_to_human_readable($earliest_destock_time)); // TODO: make human readable
                 
