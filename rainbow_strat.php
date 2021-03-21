@@ -2,9 +2,9 @@
 
 namespace EENPC;
 
-function play_rainbow_strat($server)
+function play_rainbow_strat($server, $cnum, $rules)
 {
-    global $cnum;
+    //global $cnum;
     out("Playing ".RAINBOW." turns for #$cnum ".siteURL($cnum));
     //$main = get_main();     //get the basic stats
     //out_data($main);          //output the main data
@@ -72,7 +72,7 @@ function play_rainbow_strat($server)
 
     while ($c->turns > 0) {
         //$result = PublicMarket::buy($c,array('m_bu'=>100),array('m_bu'=>400));
-        $result = play_rainbow_turn($c);
+        $result = play_rainbow_turn($c, $rules->market_autobuy_tech_price, $rules->max_possible_market_sell);
         if ($result === false) {  //UNEXPECTED RETURN VALUE
             $c = get_advisor();     //UPDATE EVERYTHING
             continue;
@@ -82,7 +82,7 @@ function play_rainbow_strat($server)
             $c->updateMain(); //we probably don't need to do this *EVERY* turn
         }
 
-        $hold = money_management($c);
+        $hold = money_management($c, $rules->max_possible_market_sell);
         if ($hold) {
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
         }
@@ -122,7 +122,7 @@ function play_rainbow_strat($server)
 }//end play_rainbow_strat()
 
 
-function play_rainbow_turn(&$c)
+function play_rainbow_turn(&$c, $market_autobuy_tech_price, $server_max_possible_market_sell)
 {
  //c as in country!
     $target_bpt = 65;
@@ -151,11 +151,11 @@ function play_rainbow_turn(&$c)
         }
     } elseif ($c->foodnet > 0 && $c->foodnet > 3 * $c->foodcon && $c->food > 30 * $c->foodnet && $c->food > 7000) {
         return sellextrafood_rainbow($c);
-    } elseif ($c->protection == 0 && total_cansell_tech($c) > 20 * $c->tpt && selltechtime($c)
-        || $c->turns == 1 && total_cansell_tech($c) > 20
+    } elseif ($c->protection == 0 && total_cansell_tech($c, $server_max_possible_market_sell) > 20 * $c->tpt && selltechtime($c)
+        || $c->turns == 1 && total_cansell_tech($c, $server_max_possible_market_sell) > 20
     ) {
         //never sell less than 20 turns worth of tech
-        return sell_max_tech($c);
+        return sell_max_tech($c, $market_autobuy_tech_price, $server_max_possible_market_sell);
     } else { //otherwise...  cash
         return cash($c);
     }

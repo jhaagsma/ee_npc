@@ -2,9 +2,9 @@
 
 namespace EENPC;
 
-function play_casher_strat($server)
+function play_casher_strat($server, $cnum, $rules)
 {
-    global $cnum;
+    //global $cnum;
     out("Playing ".CASHER." Turns for #$cnum ".siteURL($cnum));
     //$main = get_main();     //get the basic stats
     //out_data($main);          //output the main data
@@ -56,7 +56,7 @@ function play_casher_strat($server)
         }
 
 
-        $hold = money_management($c);
+        $hold = money_management($c, $rules->max_possible_market_sell);
         if ($hold) {
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
         }

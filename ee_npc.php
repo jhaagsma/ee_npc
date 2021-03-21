@@ -225,18 +225,15 @@ while (1) {
 
             try {    
                 // check if the country should destock
+                
                 $earliest_destock_time = get_earliest_possible_destocking_start_time_for_country($cpref->bot_secret, $cpref->strat, $server->reset_start, $server->reset_end);
-                // TODO: might be possible for countries to miss their entire destocking window
-                // TODO: nextplay time isn't always respected
-                // TODO: make bots not play in the last few minutes of the server for server load reasons and to avoid hurting players
-
-                log_country_message($cnum, 'Earliest destock time is: ' . log_translate_instant_to_human_readable($earliest_destock_time)); // TODO: make human readable
+                log_country_message($cnum, 'Earliest destock time is: ' . log_translate_instant_to_human_readable($earliest_destock_time));
                 
                 $debug_force_destocking = false; // change to force destocking code to run
 
                 if ($debug_force_destocking or time() >= $earliest_destock_time) { // call special destocking code that passes back the next play time in $nexttime
                     log_country_message($cnum, 'Doing destocking actions' . log_translate_forced_debug($debug_force_destocking));
-                    $c = execute_destocking_actions($cnum, $cpref->strat, $server->reset_end, $server->turn_rate, $server->max_time_to_market, $server->pm_oil_sell_price, $server->pm_food_sell_price, $nexttime);
+                    $c = execute_destocking_actions($cnum, $cpref->strat, $server, $rules, $nexttime);
                 }
                 else { // not destocking
                     log_country_message($cnum, 'Not doing destocking actions');    
@@ -249,29 +246,31 @@ while (1) {
                     Country::listRetalsDue();
                     //sleep(1);
 
-                    $playfactor = 1;
+                    //$playfactor = 1; // now handled in calculate_next_play_in_seconds
+                    $nexttime = null;
 
+                    // TODO: careful with the $cnum global removal, maybe this breaks things
                     switch ($cpref->strat) {
                         case 'F':
-                            $c = play_farmer_strat($server, $cnum);
+                            $c = play_farmer_strat($server, $cnum, $rules);
 
-                            $playfactor = 0.8;
+                            //$playfactor = 0.8;
                             break;
                         case 'T':
-                            $c = play_techer_strat($server, $cnum);
+                            $c = play_techer_strat($server, $cnum, $rules);
 
-                            $playfactor = 0.5;
+                            //$playfactor = 0.5;
                             break;
                         case 'C':
-                            $c = play_casher_strat($server, $cnum);
+                            $c = play_casher_strat($server, $cnum, $rules);
                             break;
                         case 'I':
-                            $c = play_indy_strat($server, $cnum);
+                            $c = play_indy_strat($server, $cnum, $rules);
 
-                            $playfactor = 0.33;
+                            //$playfactor = 0.33;
                             break;
                         default:
-                            $c = play_rainbow_strat($server, $cnum);
+                            $c = play_rainbow_strat($server, $cnum, $rules);
                     }
 
                     if ($cpref->gdi && !$c->gdi) {
@@ -284,16 +283,15 @@ while (1) {
                         $cpref->retal = []; //clear the damned retal thing
                     }
 
-                    $rnd             = $cpref->playrand;
-                    $nexttime        = round($playfactor * $cpref->playfreq * Math::purebell(1 / $rnd, $rnd, 1, 0.1));
-                    $maxin           = Bots::furthest_play($cpref);
-                    $nexttime        = round(min($maxin, $nexttime));
+                    // $maxin           = Bots::furthest_play($cpref); // now handled in calculate_next_play_in_seconds
+                    // $nexttime        = round(min($maxin, $nexttime));
                 }
 
+                $seconds_to_next_play = calculate_next_play_in_seconds($nexttime, $cpref->strat, $rules->is_clan_server, $rules->max_time_to_market, $rules->max_possible_market_sell, $cpref->playrand, $server->reset_start, $server->reset_end, $server->turn_rate, $cpref->lastTurns, $rules->maxturns, $cpref->turnsStored, $rules->maxstore);
                 $cpref->lastplay = time();
-                $cpref->nextplay = $cpref->lastplay + $nexttime;
-                $nextturns       = floor($nexttime / $server->turn_rate);
-                out("This country next plays in: $nexttime ($nextturns Turns)    ");
+                $cpref->nextplay = $cpref->lastplay + $seconds_to_next_play;
+                $nextturns       = floor($seconds_to_next_play / $server->turn_rate);
+                out("This country next plays in: $seconds_to_next_play ($nextturns Turns)    ");
                 $played = true;
                 $save   = true;
             } catch (Exception $e) {
@@ -308,6 +306,20 @@ while (1) {
             echo "\n\n";
         }
     }
+
+    // don't let bots play during the final minute to reduce server load and avoid market surprises for players
+    $until_end = 50;
+    if (time() + 60 >= $server->reset_end) {
+        out("Sleeping until end of reset!");
+        out("\n");
+        while($server->reset_end + 1 >= time()) {
+            $end = $server->reset_end - time();
+            out("Sleep until end: ".$end."             \r", false);
+            sleep(1);//don't let them fluff things up, sleep through end of reset
+        }
+        out("Done Sleeping!\r");
+    }
+    $server = ee('server');
 
 
 /*     $loop      = false;
@@ -363,6 +375,124 @@ while (1) {
 }
 
 done(); //done() is defined below
+
+
+
+
+
+function calculate_next_play_in_seconds($cnum, $nexttime, $strat, $is_clan_server, $max_time_to_market, $max_possible_market_sell, $country_play_rand_factor, $server_reset_start, $server_reset_end, $server_turn_rate, $country_max_turns, $server_max_turns, $country_stored_turns, $server_stored_turns) {
+    if($nexttime <> null) {
+        log_country_message($cnum, "Next play seconds was passed in as $nexttime");
+        return $nexttime; // always return $nexttime if it's passed on
+    }
+
+    /*
+    indy start standard window: ($max_possible_market_sell/25) * (1 hour + max market time + 3 turns)
+    indy end standard window: ($max_possible_market_sell/25) * ( 1 hour + max market time + 27 turns)
+    express range is 3 hours to 5.85 hours
+    alliance range is 7 hours to 15 hours
+
+    techer start standard window: ($max_possible_market_sell/25) * (1 hour + max market time + 15 turns)
+    techer end standard window: ($max_possible_market_sell/25) * (1 hour + max market time + 39 turns)
+    express range is 4 hours to 7.29 hours
+    alliance range is 11 hours to 19 hours
+
+    casher start standard window: 0.3 * ($server_max_turns * $server_turn_rate)
+    casher end standard window: 0.9 * ($server_max_turns * $server_turn_rate)
+    express range is 7.2 hours to 21.6 hours
+    alliance range is 12 hours to 36 hours
+
+    rainbow start standard window: 0.3 * ($server_max_turns * $server_turn_rate)
+    rainbow end standard window: 0.9 * ($server_max_turns * $server_turn_rate)
+    express range is 7.2 hours to 21.6 hours
+    alliance range is 12 hours to 36 hours
+
+    farmer start standard window: 3 hours + max market time
+    farmer end standard window: 0.6 * ($server_max_turns * $server_turn_rate)
+    express range is 3.45 hours to 12 hours
+    alliance range is 8.45 hours to 24 hours
+    */
+    switch($strat) {
+        case 'F':
+            $play_seconds_minimum = $max_time_to_market + 3 * 3600;
+            $play_seconds_maximum = round(0.6 * $server_turn_rate * $server_max_turns);
+
+            if ($play_seconds_minimum > $play_seconds_maximum) // won't happen with any current servers, but just in case
+                $play_seconds_minimum = round(0.3 * $server_turn_rate * $server_max_turns);
+            break;
+        case 'T':
+            $play_seconds_minimum = round(($max_possible_market_sell / 25) * (3600 + $max_time_to_market + 15 * $server_turn_rate));
+            $play_seconds_maximum = round(($max_possible_market_sell / 25) * (3600 + $max_time_to_market + 39 * $server_turn_rate));
+            break;
+        case 'C':
+            $play_seconds_minimum = round(0.3 * $server_turn_rate * $server_max_turns);
+            //$play_seconds_maximum = round(0.9 * $server_turn_rate * $server_max_turns); // TODO - change to this once express bot count and market stuff is fixed
+            $play_seconds_maximum = round(0.6 * $server_turn_rate * $server_max_turns);
+            break;
+        case 'I':
+            $play_seconds_minimum = round(($max_possible_market_sell / 25) * (3600 + $max_time_to_market + 3 * $server_turn_rate));
+            $play_seconds_maximum = round(($max_possible_market_sell / 25) * (3600 + $max_time_to_market + 27 * $server_turn_rate));
+            break;
+        default:
+            $play_seconds_minimum = round(0.3 * $server_turn_rate * $server_max_turns);
+            // $play_seconds_maximum = round(0.9 * $server_turn_rate * $server_max_turns); // TODO - change to this once express bot count and market stuff is fixed
+            $play_seconds_maximum = round(0.6 * $server_turn_rate * $server_max_turns);
+    }
+
+    log_country_message($cnum, "For strategy $strat, min play seconds is $play_seconds_minimum and max play seconds is $play_seconds_maximum");
+
+    // shrink the window up to 25% based on the country's preference for play
+    // $country_play_rand_factor is random number in range (1, 2)
+    $seconds_to_subtract_from_max = round(0.25 * ($country_play_rand_factor - 1) * ($play_seconds_maximum - $play_seconds_minimum));
+    log_country_message($cnum, "Country preference is $country_play_rand_factor, so adjusting max down by $seconds_to_subtract_from_max seconds");
+    $play_seconds_maximum -= $seconds_to_subtract_from_max;
+
+    $std_dev = round($play_seconds_maximum - $play_seconds_minimum) / 4; // 2.5% chance of min and max values
+    $bell_random_seconds = round(Math::purebell($play_seconds_minimum, $play_seconds_maximum, $std_dev));
+    log_country_message($cnum, "Bell random play seconds calculated as $bell_random_seconds");
+
+    // if the next play time would mean that additional turns start going into storage, adjust it forward
+    $free_turns = $server_max_turns - $country_max_turns;
+    $depleted_stored_turns = round(min(0.5 * $free_turns, $country_stored_turns));
+    $approx_seconds_until_new_turns_go_to_stored = $server_turn_rate * ($free_turns - $depleted_stored_turns);
+    log_country_message($cnum, "Free turns is $free_turns, depleted stored turns is $depleted_stored_turns");
+ 
+    $seconds_until_next_play = $bell_random_seconds;
+    if ($approx_seconds_until_new_turns_go_to_stored < $bell_random_seconds) {
+        $seconds_until_next_play = $approx_seconds_until_new_turns_go_to_stored;
+        log_country_message($cnum, "Bell random seconds would result in additional stored turns, so changing play time to $seconds_until_next_play");
+    }
+
+    // don't allow bots to login more frequently than 4 * turn rate under normal conditions
+    if (4 * $server_turn_rate > $seconds_until_next_play) { 
+        log_country_message($cnum, "$seconds_until_next_play is less than 4 times the turn rate, so adjusting down");
+        $seconds_until_next_play = 4 * $server_turn_rate;        
+    }
+
+    // if next play time is after 99.5% of the reset is done, country might miss its chance to destock
+    // the destocking code always sets next play, so we'll never get here if the country already started destocking
+    $seconds_in_reset = $server_reset_end - $server_reset_start;
+    // FUTURE: get magic numbers from a destocking.php function
+    if (time() + $seconds_until_next_play > $server_reset_start + 0.995 * $seconds_in_reset) {
+        $target_play_time_range_start = $server_reset_start + 0.985 * $seconds_in_reset;
+        $target_play_time_range_end = $server_reset_start + 0.995 * $seconds_in_reset;
+
+        log_country_message($cnum, "Previous calculated value of $seconds_until_next_play is too close to the end of the set");
+ 
+        // random range between 98.5% and 99.5% of reset
+        $seconds_until_next_play = $server_reset_start + 0.01 * mt_rand(0, 100) * (0.995 - 0.985) * $seconds_in_reset - time();
+
+        if ($seconds_until_next_play <= 0) {
+            $seconds_until_next_play = 1800; // not sure how we could get here, but set it to half an hour
+            // TODO: log error
+        }
+        log_country_message($cnum, "Next play changed to $seconds_until_next_play to allow for destocking");
+    }
+    
+    log_country_message($cnum, "The final value for seconds to next play is: $seconds_until_next_play");
+
+    return $seconds_until_next_play;
+}                
 
 
 
@@ -481,6 +611,7 @@ function onmarket($good = 'food', &$c = null)
 }//end onmarket()
 
 
+// FUTURE: both this and get_total_value_of_on_market_goods() shouldn't exist
 function onmarket_value($good = null, &$c = null)
 {
     global $mktinfo;
@@ -520,7 +651,7 @@ function total_military($c)
 }//end total_military()
 
 
-function total_cansell_tech($c)
+function total_cansell_tech($c, $server_max_possible_market_sell)
 {
     if ($c->turns_played < 100) {
         return 0;
@@ -529,7 +660,7 @@ function total_cansell_tech($c)
     $cansell = 0;
     global $techlist;
     foreach ($techlist as $tech) {
-        $cansell += can_sell_tech($c, $tech);
+        $cansell += can_sell_tech($c, $tech, $server_max_possible_market_sell);
     }
 
     Debug::msg("CANSELL TECH: $cansell");
@@ -537,12 +668,12 @@ function total_cansell_tech($c)
 }//end total_cansell_tech()
 
 
-function total_cansell_military($c)
+function total_cansell_military($c, $server_max_possible_market_sell)
 {
     $cansell = 0;
     global $military_list;
     foreach ($military_list as $mil) {
-        $cansell += can_sell_mil($c, $mil);
+        $cansell += can_sell_mil($c, $mil, $server_max_possible_market_sell);
     }
 
     //out("CANSELL TECH: $cansell");
@@ -551,22 +682,22 @@ function total_cansell_military($c)
 
 
 
-function can_sell_tech(&$c, $tech = 't_bus')
+function can_sell_tech(&$c, $tech = 't_bus', $server_max_possible_market_sell = 25)
 {
     $onmarket = $c->onMarket($tech);
     $tot      = $c->$tech + $onmarket;
-    $sell     = floor($tot * 0.25) - $onmarket;
+    $sell     = floor($tot * 0.01 * $server_max_possible_market_sell) - $onmarket; // FUTURE: make work for commie
     //Debug::msg("Can Sell $tech: $sell; (At Home: {$c->$tech}; OnMarket: $onmarket)");
 
     return $sell > 10 ? $sell : 0;
 }//end can_sell_tech()
 
 
-function can_sell_mil(&$c, $mil = 'm_tr')
+function can_sell_mil(&$c, $mil = 'm_tr', $server_max_possible_market_sell = 25)
 {
     $onmarket = $c->onMarket($mil);
     $tot      = $c->$mil + $onmarket;
-    $sell     = floor($tot * ($c->govt == 'C' ? 0.25 * 1.35 : 0.25)) - $onmarket;
+    $sell     = floor($tot * ($c->govt == 'C' ? 0.01 * $server_max_possible_market_sell * 1.35 : 0.01 * $server_max_possible_market_sell)) - $onmarket;
 
     return $sell > 5000 ? $sell : 0;
 }//end can_sell_mil()
@@ -704,6 +835,18 @@ function update_c(&$c, $result)
         if (isset($turn->emproduced)) {//an EM was produced
             $event .= 'EM '; //Text for screen
         }
+
+        // TODO: make advisor ALWAYS update these:
+        /*
+        $c->cashing
+        $c->income
+        $turn->taxrevenue 
+        $turn->expenses
+        $c->foodnet
+        $turn->foodproduced
+        $turn->foodconsumed
+        */
+
     }
 
     $c->money += $netmoney;

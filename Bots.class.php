@@ -93,13 +93,13 @@ class Bots
     public static function pickStrat($cnum)
     {
         $rand = rand(0, 100);
-        if ($rand < 25) {
+        if ($rand < 20) { // used to be 25
             return 'F';
-        } elseif ($rand < 55) {
+        } elseif ($rand < 40) { // used to be 55
             return 'T';
-        } elseif ($rand < 80) {
+        } elseif ($rand < 60) { // used to be 80
             return 'C';
-        } elseif ($rand < 95) {
+        } elseif ($rand < 80) { // used to be 95
             return 'I';
         } else {
             return 'R';
@@ -114,6 +114,10 @@ class Bots
         global $server;
         $stddev = round(self::playtimes_stddev($countries));
         out("Standard Deviation of play is: $stddev; (".round($stddev / $server->turn_rate).' turns)');
+        /* 
+        // no longer resetting because we want to set nextplay based on country status now
+        // for example, if a country stops playing turns because there's no food on the public market then we want it to login again
+        // soon to try to buy food and play turns
         if ($stddev < $server->turn_rate * 72 / 4 || $stddev > $server->turn_rate * 72) {
             out('Recalculating Nextplays');
             global $settings;
@@ -124,6 +128,7 @@ class Bots
             $stddev = round(self::playtimes_stddev($countries));
             out("Standard Deviation of play is: $stddev");
         }
+        */
 
         self::outOldest($countries);
         self::outFurthest($countries);

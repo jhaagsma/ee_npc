@@ -4,15 +4,14 @@ namespace EENPC;
 
 $military_list = ['m_tr','m_j','m_tu','m_ta'];
 
-function play_indy_strat($server)
+function play_indy_strat($server, $cnum, $rules)
 {
-    global $cnum;
+    //global $cnum;
     out("Playing ".INDY." Turns for #$cnum ".siteURL($cnum));
     //$main = get_main();     //get the basic stats
     //out_data($main);          //output the main data
     $c = get_advisor();     //c as in country! (get the advisor)
-    $c->setIndyFromMarket(true); //CHECK DPA
-    //$c = get_advisor();     //c as in country! (get the advisor)
+    $c->setIndyFromMarket(false); // changing to not check DPA - Slagpit 20210321
     out("Indy: {$c->pt_indy}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%");
     //out_data($c) && exit;             //ouput the advisor data
     if ($c->govt == 'M') {
@@ -43,11 +42,12 @@ function play_indy_strat($server)
     $owned_on_market_info = get_owned_on_market_info(); //find out what we have on the market
     //out_data($owned_on_market_info);  //output the Owned on Public Market info
 
-    buy_indy_goals($c, 0);
+    // indies buy tech instead of building when no limit on goals here- Slagpit 20210321
+    buy_indy_goals($c, $c->money - $c->fullBuildCost() - $c->runCash());
 
     while ($c->turns > 0) {
         //$result = PublicMarket::buy($c,array('m_bu'=>100),array('m_bu'=>400));
-        $result = play_indy_turn($c);
+        $result = play_indy_turn($c, $rules->max_possible_market_sell);
         if ($result === false) {  //UNEXPECTED RETURN VALUE
             $c = get_advisor();     //UPDATE EVERYTHING
             continue;
@@ -57,7 +57,7 @@ function play_indy_strat($server)
             $c->updateMain(); //we probably don't need to do this *EVERY* turn
         }
 
-        $hold = money_management($c);
+        $hold = money_management($c, $rules->max_possible_market_sell);
         if ($hold) {
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
         }
@@ -67,14 +67,16 @@ function play_indy_strat($server)
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
         }
 
+        // why 70 instead of something like 15 + turns???
         if (turns_of_food($c) > 70 && turns_of_money($c) > 70 && $c->money > 3500 * 500 && ($c->built() > 80
-            || $c->money > $c->fullBuildCost() - $c->runCash())
+           || $c->money > $c->fullBuildCost() - $c->runCash())
         ) {
-            // 40 turns of food
             //keep enough money to build out everything
             buy_indy_goals($c, $c->money - $c->fullBuildCost() - $c->runCash());
         }
 
+        // why does this code exist???
+        /*
         global $cpref;
         $tol = $cpref->price_tolerance; //should be between 0.5 and 1.5
         if (turns_of_food($c) > 50 && turns_of_money($c) > 50 && $c->money > 3500 * 500) {
@@ -95,7 +97,9 @@ function play_indy_strat($server)
             if ($c->pt_res < 160) {
                 PublicMarket::buy_tech($c, 't_res', $spend * 1 / 5, 3500 * $tol);
             }
+            
         }
+        */
     }
 
     $c->countryStats(INDY, indyGoals($c));
@@ -104,7 +108,7 @@ function play_indy_strat($server)
 }//end play_indy_strat()
 
 
-function play_indy_turn(&$c)
+function play_indy_turn(&$c, $server_max_possible_market_sell)
 {
  //c as in country!
     $target_bpt = 65;
@@ -115,10 +119,10 @@ function play_indy_turn(&$c)
         //LOW BPT & CAN AFFORD TO BUILD
         //build one CS if we can afford it and are below our target BPT
         return Build::cs(); //build 1 CS
-    } elseif ($c->protection == 0 && total_cansell_military($c) > 7500 && sellmilitarytime($c)
-        || $c->turns == 1 && total_cansell_military($c) > 7500
+    } elseif ($c->protection == 0 && total_cansell_military($c, $server_max_possible_market_sell) > 7500 && sellmilitarytime($c)
+        || $c->turns == 1 && total_cansell_military($c, $server_max_possible_market_sell) > 7500
     ) {
-        return sell_max_military($c);
+        return sell_max_military($c, $server_max_possible_market_sell);
     } elseif ($c->shouldBuildFullBPT($target_bpt)) {
         //build a full BPT if we can afford it
         return Build::indy($c);
