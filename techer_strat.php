@@ -84,7 +84,7 @@ function play_techer_strat($server, $cnum, $rules)
 }//end play_techer_strat()
 
 
-function play_techer_turn(&$c, $market_autobuy_tech_price)
+function play_techer_turn(&$c, $market_autobuy_tech_price, $server_max_possible_market_sell)
 {
  //c as in country!
     $target_bpt = 65;

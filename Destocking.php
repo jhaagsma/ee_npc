@@ -184,8 +184,6 @@ function get_earliest_possible_destocking_start_time_for_country($bot_secret_num
 	// farmer and casher are last 95% to 98.5% of reset	
 	// note: TURNS_TO_PASS_BEFORE_NEXT_DESTOCK_ATTEMPT value should allow for at least two executions for all strategies
 
-	$number_of_seconds_in_set = $reset_end_time - $reset_start_time;
-	$number_of_seconds_in_window = ($window_end_time_factor - $window_start_time_factor) * $number_of_seconds_in_set;
 	$country_specific_interval_wait = 0.001 * decode_bot_secret($bot_secret_number, 3); // random number three digit number between 0.000 and 0.999 that's fixed for each country
 
 	switch ($strategy) {
@@ -211,6 +209,9 @@ function get_earliest_possible_destocking_start_time_for_country($bot_secret_num
 			$window_start_time_factor = 0.90;
 			$window_end_time_factor = 0.95;
 	}
+
+	$number_of_seconds_in_set = $reset_end_time - $reset_start_time;
+	$number_of_seconds_in_window = ($window_end_time_factor - $window_start_time_factor) * $number_of_seconds_in_set;
 	
 	// example of what we're doing here: suppose that start time factor is 90%, end time is 95% and interval wait is 0.25
 	// the earliest destock time then is after 25% has passed of the interval starting with 90% of the reset and ending with 95% of the reset

@@ -136,20 +136,20 @@ function turns_of_money(&$c)
 }//end turns_of_money()
 
 
-function money_management(&$c)
+function money_management(&$c, $server_max_possible_market_sell)
 {
     while (turns_of_money($c) < 4) {
         //$foodloss = -1 * $c->foodnet;
 
-        if ($c->turns_stored <= 30 && total_cansell_military($c) > 7500) {
+        if ($c->turns_stored <= 30 && total_cansell_military($c, $server_max_possible_market_sell) > 7500) {
             out("Selling max military, and holding turns.");
-            sell_max_military($c);
+            sell_max_military($c, $server_max_possible_market_sell);
             return true;
         } elseif ($c->turns_stored > 30 && total_military($c) > 1000) {
             out("We have stored turns or can't sell on public; sell 1/10 of military.");   //Text for screen
             sell_all_military($c, 1 / 10);
         } else {
-            out("Low stored turns ({$c->turns_stored}); can't sell? (".total_cansell_military($c).')');
+            out("Low stored turns ({$c->turns_stored}); can't sell? (".total_cansell_military($c, $server_max_possible_market_sell).')');
             return true;
         }
     }
@@ -282,6 +282,7 @@ function minDpnw(&$c, $onlyDef = false)
 }//end minDpnw()
 
 
+// TODO: this code can get stuck in a very long loop? maybe if PM is empty and public is empty?
 function defend_self(&$c, $reserve_cash = 50000, $dpnwMax = 380)
 {
     if ($c->protection) {
@@ -313,7 +314,7 @@ function defend_self(&$c, $reserve_cash = 50000, $dpnwMax = 380)
         $dpnw    = minDpnw($c, $dpa < $dpat); //ONLY DEF
         //out("Old DPNW: ".round($dpnwOld, 1)."; New DPNW: ".round($dpnw, 1));
         if ($dpnw <= $dpnwOld) {
-            $dpnw = $dpnwOld + 1;
+            $dpnw = $dpnwOld + 10; // fewer loops - hoping this helps with empty market scenarios - Slagpit 20210321
         }
 
         buy_public_below_dpnw($c, $dpnw, $spend, true, true); //ONLY DEF
@@ -335,7 +336,7 @@ function defend_self(&$c, $reserve_cash = 50000, $dpnwMax = 380)
         $dpnwOld = $dpnw;
         $dpnw    = minDpnw($c, $dpa < $dpat); //ONLY DEF if dpa < dpat
         if ($dpnw <= $dpnwOld) {
-            $dpnw = $dpnwOld + 1;
+            $dpnw = $dpnwOld + 10; // fewer loops - hoping this helps with empty market scenarios  - Slagpit 20210321
         }
         $c     = get_advisor();     //UPDATE EVERYTHING
         $spend = max(0, $c->money - $reserve_cash);
@@ -346,7 +347,7 @@ function defend_self(&$c, $reserve_cash = 50000, $dpnwMax = 380)
 
 
 
-function sell_max_military(&$c)
+function sell_max_military(&$c, $server_max_possible_market_sell)
 {
     $c = get_advisor();     //UPDATE EVERYTHING
     //$market_info = get_market_info();   //get the Public Market info
@@ -357,7 +358,7 @@ function sell_max_military(&$c)
 
     $quantity = [];
     foreach ($military_list as $unit) {
-        $quantity[$unit] = can_sell_mil($c, $unit);
+        $quantity[$unit] = can_sell_mil($c, $unit, $server_max_possible_market_sell);
     }
 
     $rmax    = 1.30; //percent

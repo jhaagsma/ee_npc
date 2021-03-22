@@ -214,10 +214,10 @@ class Country
         $p_ta = PublicMarket::price('m_ta');
 
         $score = [
-            'pro_tr'  => 1.86 * ($p_tr == 0 ? 999 : $p_tr),
-            'pro_j'   => 1.86 * ($p_j == 0 ? 999 : $p_j),
-            'pro_tu'  => 1.86 * ($p_tu == 0 ? 999 : $p_tu),
-            'pro_ta'  => 0.4 * ($p_ta == 0 ? 999 : $p_ta),
+            'pro_tr'  => 1.86 * ($p_tr == 0 ? 144 : $p_tr),
+            'pro_j'   => 1.86 * ($p_j == 0 ? 192 : $p_j),
+            'pro_tu'  => 1.86 * ($p_tu == 0 ? 210 : $p_tu),
+            'pro_ta'  => 0.4 * ($p_ta == 0 ? 588 : $p_ta),
         ];
 
         $protext = null;
