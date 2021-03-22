@@ -28,6 +28,8 @@ function execute_destocking_actions($cnum, $strategy, $server, $rules, &$next_pl
 
 	$c = get_advisor();	// create object
 
+	// TODO: fix "We're rich" in country_functions - PM might empty, so check quantity - also return true to hold turns at the end
+
 	// FUTURE: cancel all SOs
 	
 	// change indy production to 100% jets
@@ -35,15 +37,15 @@ function execute_destocking_actions($cnum, $strategy, $server, $rules, &$next_pl
 
 	// keep 8 turns for possible recall tech, recall goods, double sale of goods, double sale of tech
 	// this is likely too conservative but it doesn't matter if bots lose a few turns of income at the end
-	$turns_to_keep = 8; // TODO: change back to 8
+	$turns_to_keep = 8;
 	$money_to_reserve = max(-11 * $c->income, 55000000); // mil expenses can rise rapidly during destocking, so use 10 M per turn as a guess
 	log_country_message($cnum, "Money is $c->money and calculated money to reserve is $money_to_reserve");
 
 	log_country_message($c->cnum, "Turns left: $c->turns");
 	log_country_message($cnum, "Starting cashing or teching...");
+	// TODO: add very basic income check to make sure cashing and teching is worth it
 	temporary_cash_or_tech_at_end_of_set ($c, $strategy, $turns_to_keep, $money_to_reserve);
 	log_country_message($cnum, "Finished cashing or teching");
-	$turns_to_keep = 8; // here to make debugging easier
 
 	// FUTURE: replace 0.81667 (max demo mil tech) with game API call
 	// reasonable to assume that a greedy demo country will resell bushels for $2 less than max PM sell price on all servers
@@ -419,6 +421,7 @@ function temporary_cash_or_tech_at_end_of_set (&$c, $strategy, $turns_to_keep, $
 		if($c->turns - $turns_to_keep < 10)
 			$turns_to_play_at_once = 1;
 
+		// TODO: don't use the +1 hack for 1 turn at a time
 		if(!food_and_money_for_turns($c, $turns_to_play_at_once + 1, $money_to_reserve, $is_cashing)){ // add 1 to reduce chance of running out
 			if($turns_to_play_at_once == 10) {
 				$turns_to_play_at_once = 1;

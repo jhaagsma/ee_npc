@@ -21,11 +21,14 @@ function play_casher_strat($server, $cnum, $rules)
     if ($c->govt == 'M') {
         $rand = rand(0, 100);
         switch ($rand) {
-            case $rand < 12:
+            case $rand < 10:
                 Government::change($c, 'I');
                 break;
-            case $rand < 12:
+            case $rand < 25:
                 Government::change($c, 'D');
+                break;
+            case $rand < 40:
+                Government::change($c, 'H');
                 break;
             default:
                 Government::change($c, 'R');

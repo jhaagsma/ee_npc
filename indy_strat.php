@@ -18,9 +18,6 @@ function play_indy_strat($server, $cnum, $rules)
         $rand = rand(0, 100);
         switch ($rand) {
             case $rand < 5:
-                Government::change($c, 'I');
-                break;
-            case $rand < 5:
                 Government::change($c, 'D');
                 break;
             default:

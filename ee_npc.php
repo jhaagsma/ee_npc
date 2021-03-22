@@ -83,6 +83,7 @@ out('Entering Infinite Loop');
 
 $sleepcount = $loopcount = 0;
 $played     = true;
+$checked_for_non_ai = false;;
 
 $rules  = getRules();
 $server = getServer();
@@ -94,6 +95,7 @@ while (1) {
         $server = getServer();
     }
 
+    $total_countries_to_create = $server->countries_allowed - $server->alive_count;
     while ($server->alive_count < $server->countries_allowed) {
         out("Less countries than allowed! (".$server->alive_count.'/'.$server->countries_allowed.')');
         $send_data = ['cname' => NameGenerator::rand_name()];
@@ -123,9 +125,34 @@ while (1) {
         continue;                               //restart the loop
     }
 
-    $countries = $server->cnum_list->alive;
+    // $countries = $server->cnum_list->alive;
+    
+    // remove non-AI countries from $countries - useful on debug servers with human countries
+    // TODO: only call on debug servers
+    $countries = [];
+    if (!$checked_for_non_ai) {
+        foreach($server->cnum_list->alive as $cnum) {
+            //out($cnum);
+            // need a cheap call to auth - using pm_info for now
+            $result = ee('pm_info');
+            if($result <> 'NOT_AN_AI_COUNTRY')
+                $countries[] = $cnum;
+            else
+                $non_ai_countries[$cnum] = 1;     
+        }
+        $checked_for_non_ai = true;
+    }
+    else { // $checked_for_non_ai is true
+         foreach($server->cnum_list->alive as $cnum) {
+            if(!isset($non_ai_countries[$cnum]))
+                $countries[] = $cnum;
+        }
+    }
 
-    // TODO: good way to filter out human countries to avoid false positive errors?
+    //foreach ($countries as $cnum) {
+    //    out("cnum is $cnum");
+    //}
+    //return;
 
     if ($played) {
         Bots::server_start_end_notification($server);
@@ -377,9 +404,6 @@ while (1) {
 }
 
 done(); //done() is defined below
-
-
-
 
 
 function calculate_next_play_in_seconds($cnum, $nexttime, $strat, $is_clan_server, $max_time_to_market, $max_possible_market_sell, $country_play_rand_factor, $server_reset_start, $server_reset_end, $server_turn_rate, $country_max_turns, $server_max_turns, $country_stored_turns, $server_stored_turns) {
@@ -1009,6 +1033,7 @@ function update_stats($number)
     global $settings, $cnum;
     $cnum                      = $number;
     $advisor                   = ee('advisor');   //get and return the ADVISOR information
+
     $settings->$cnum->networth = $advisor->networth;
     $settings->$cnum->land     = $advisor->land;
     return;

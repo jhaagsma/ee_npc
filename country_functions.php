@@ -282,7 +282,6 @@ function minDpnw(&$c, $onlyDef = false)
 }//end minDpnw()
 
 
-// TODO: this code can get stuck in a very long loop? maybe if PM is empty and public is empty?
 function defend_self(&$c, $reserve_cash = 50000, $dpnwMax = 380)
 {
     if ($c->protection) {
@@ -314,7 +313,7 @@ function defend_self(&$c, $reserve_cash = 50000, $dpnwMax = 380)
         $dpnw    = minDpnw($c, $dpa < $dpat); //ONLY DEF
         //out("Old DPNW: ".round($dpnwOld, 1)."; New DPNW: ".round($dpnw, 1));
         if ($dpnw <= $dpnwOld) {
-            $dpnw = $dpnwOld + 10; // fewer loops - hoping this helps with empty market scenarios - Slagpit 20210321
+            $dpnw = $dpnwOld + 10; // fewer loops - hoping this helps with code running for ~60 s under empty market scenarios - Slagpit 20210321
         }
 
         buy_public_below_dpnw($c, $dpnw, $spend, true, true); //ONLY DEF
