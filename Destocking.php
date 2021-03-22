@@ -423,8 +423,7 @@ function temporary_cash_or_tech_at_end_of_set (&$c, $strategy, $turns_to_keep, $
 
 		// we should have enough food and money to play turns
 		if ($strategy == 'T') {
-			for ($i = 1; $i <= $turns_to_play_at_once; $i++)
-				$turn_result = tech(['mil' => $c->tpt]);	// FUTURE: tech more than one turn at a time, adjust for earthquakes
+			$turn_result = tech(['mil' => $turns_to_play_at_once * $c->tpt]);
 		}
 		else {
 			$turn_result = cash($c, $turns_to_play_at_once);
