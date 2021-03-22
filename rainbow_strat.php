@@ -72,16 +72,6 @@ function play_rainbow_strat($server, $cnum, $rules)
 
     while ($c->turns > 0) {
         //$result = PublicMarket::buy($c,array('m_bu'=>100),array('m_bu'=>400));
-        $result = play_rainbow_turn($c, $rules->market_autobuy_tech_price, $rules->max_possible_market_sell);
-        if ($result === false) {  //UNEXPECTED RETURN VALUE
-            $c = get_advisor();     //UPDATE EVERYTHING
-            continue;
-        }
-        update_c($c, $result);
-        if (!$c->turns % 5) {                   //Grab new copy every 5 turns
-            $c->updateMain(); //we probably don't need to do this *EVERY* turn
-        }
-
         $hold = money_management($c, $rules->max_possible_market_sell);
         if ($hold) {
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
@@ -90,6 +80,16 @@ function play_rainbow_strat($server, $cnum, $rules)
         $hold = food_management($c);
         if ($hold) {
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
+        }
+                
+        $result = play_rainbow_turn($c, $rules->market_autobuy_tech_price, $rules->max_possible_market_sell);
+        if ($result === false) {  //UNEXPECTED RETURN VALUE
+            $c = get_advisor();     //UPDATE EVERYTHING
+            continue;
+        }
+        update_c($c, $result);
+        if (!$c->turns % 5) {                   //Grab new copy every 5 turns
+            $c->updateMain(); //we probably don't need to do this *EVERY* turn
         }
 
         if (turns_of_food($c) > 70

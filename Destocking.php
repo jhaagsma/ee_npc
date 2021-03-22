@@ -110,8 +110,9 @@ function execute_destocking_actions($cnum, $strategy, $server, $rules, &$next_pl
 	log_country_message($cnum, "Completed all PM purchasing. Money is $c->money and budget is $max_spend");
 	log_country_message($cnum, "Estimated future PM gen capacity is $reserved_money_for_future_private_market_purchases dollars");
 	
-	$debug_force_final_attempt = false; // change to force final attempt
+	$debug_force_final_attempt = false; // change to true to force final attempt
 
+	$did_resell_military = false;
 	// check if this is our last shot at destocking
 	if($debug_force_final_attempt or is_final_destock_attempt($reset_seconds_remaining, $server_seconds_per_turn)) {
 
@@ -125,6 +126,7 @@ function execute_destocking_actions($cnum, $strategy, $server, $rules, &$next_pl
 
 		if($c->money > 10000000) {
 			log_country_message($cnum, "Buying anything available off public market...");
+			// FUTURE: buyout private again too? can end up with 55 M that could be better spent on private
 			buyout_up_to_public_market_dpnw($c, 5000, $c->money, false); // buy anything ($10000 tech is 5000 dpnw)
 			log_country_message($cnum, "Done with public market purchases. Money is $c->money");
 		}
@@ -234,6 +236,7 @@ PARAMETERS:
 function dump_tech($c, $strategy, $market_autobuy_tech_price, $server_max_possible_market_sell) {
 	$food_needed = max(0, get_food_needs_for_turns(1, $c->foodpro, $c->foodcon, true) - $c->food);
 
+	$reason_for_not_selling_tech = null;
 	if ($strategy <> 'T')
 		$reason_for_not_selling_tech = "No support for non-techers at this time"; // FUTURE: add support
 	elseif($market_autobuy_tech_price < 700)
@@ -247,7 +250,7 @@ function dump_tech($c, $strategy, $market_autobuy_tech_price, $server_max_possib
 
 	if($reason_for_not_selling_tech == null) {
 		$tech_quantities = [
-			//'mil' => 0,
+			'mil' => 0,
 			'med' => can_sell_tech($c, 't_med', $server_max_possible_market_sell),
 			'bus' => can_sell_tech($c, 't_bus', $server_max_possible_market_sell),
 			'res' => can_sell_tech($c, 't_res', $server_max_possible_market_sell),
@@ -264,7 +267,9 @@ function dump_tech($c, $strategy, $market_autobuy_tech_price, $server_max_possib
 
 		$money_from_tech_sale = (2 - $c->tax()) * $market_autobuy_tech_price * $total_tech_to_sell;
 		if($money_from_tech_sale > $c->income) {
-			$result = PublicMarket::sell($c, $tech_quantitie, $market_autobuy_tech_price);
+			// create matching array of prices
+			$prices = array_combine(array_keys($tech_quantities), array_fill(0, count($tech_quantities), $market_autobuy_tech_price));
+			$result = PublicMarket::sell($c, $tech_quantities, $prices);
 			update_c($c, $result);
 			log_country_message($c->cnum, "Sold $total_tech_to_sell tech points at autobuy prices");
 			return true;
@@ -404,15 +409,17 @@ PARAMETERS:
 function temporary_cash_or_tech_at_end_of_set (&$c, $strategy, $turns_to_keep, $money_to_reserve) {
 	// FUTURE: this code is overly simple and shouldn't exist here - it should call standard code used for teching and cashing
 	$current_public_market_bushel_price = PublicMarket::price('m_bu');
-	$is_cashing = ($strategy = 'T' ? false : true);
+	$is_cashing = ($strategy == 'T' ? false : true);
 	$turns_to_play_at_once = 10;
 
 	while($c->turns > $turns_to_keep) {
 		// first try to play in blocks of 10 turns, if that fails then go to turn by turn
+		// TODO: a farmer can sell on private and should end up being able to cash 10X turn at a time
+		// TODO: shouldn't farmers avoid decay on express?
 		if($c->turns - $turns_to_keep < 10)
 			$turns_to_play_at_once = 1;
 
-		if(!food_and_money_for_turns($c, $turns_to_play_at_once, $money_to_reserve, $is_cashing)){
+		if(!food_and_money_for_turns($c, $turns_to_play_at_once + 1, $money_to_reserve, $is_cashing)){ // add 1 to reduce chance of running out
 			if($turns_to_play_at_once == 10) {
 				$turns_to_play_at_once = 1;
 				continue;
@@ -444,17 +451,19 @@ PARAMETERS:
 	$
 	
 */
-function food_and_money_for_turns(&$c, $turn_to_play, $money_to_reserve, $is_cashing) {
+function food_and_money_for_turns(&$c, $turns_to_play, $money_to_reserve, $is_cashing) {
 	$incoming_money_per_turn = ($is_cashing ? 1.0 : 1.2) * $c->taxes;
 	// check money
-	if(!has_money_for_turns($turn_to_play, $c->money, $incoming_money_per_turn, $c->expenses, $money_to_reserve)) {
+	if(!has_money_for_turns($turns_to_play, $c->money, $incoming_money_per_turn, $c->expenses, $money_to_reserve)) {
 		// not enough money to play a turn - can we make up the difference by selling a turn's worth of food production?
-		if($c->foodnet > 0)
-			PrivateMarket::sell_single_good($c, 'm_bu', min($c->food, $turns * $c->foodnet));
+		if($c->food > 0 and $c->foodnet > 0) {
+			log_country_message($c->cnum, "TEMP DEBUG: Food is ".$c->food);
+			PrivateMarket::sell_single_good($c, 'm_bu', min($c->food, $turns_to_play * $c->foodnet));
+		}
 		
-		if (!has_money_for_turns($turn_to_play, $c->money, $incoming_money_per_turn, $c->expenses, $money_to_reserve)) {
+		if (!has_money_for_turns($turns_to_play, $c->money, $incoming_money_per_turn, $c->expenses, $money_to_reserve)) {
 			// playing turns is no longer productive
-			log_country_message($c->cnum, "Not enough money to play $turn_to_play turns. Money is $c->money and money to reserve is $money_to_reserve");
+			log_country_message($c->cnum, "Not enough money to play $turns_to_play turns. Money is $c->money and money to reserve is $money_to_reserve");
 			return false;
 		}
 	}
@@ -462,11 +471,11 @@ function food_and_money_for_turns(&$c, $turn_to_play, $money_to_reserve, $is_cas
 	// try to buy food if needed up to $60, quit if we can't find cheap enough food
 	// FUTURE - be smarter about picking $60
 
-	$food_needed = max(0, get_food_needs_for_turns($turn_to_play, $c->foodpro, $c->foodcon) - $c->food);
+	$food_needed = max(0, get_food_needs_for_turns($turns_to_play, $c->foodpro, $c->foodcon) - $c->food);
 	//log_country_message($c->cnum, "Food is $c->food and calculated food needs are $food_needed");	
 			
 	if(!buy_full_food_quantity_if_possible($c, $food_needed, 60, $money_to_reserve)) {
-		log_country_message($c->cnum, "Not enough food to play $turn_to_play turns. Food is $c->food, money is $c->money, and money to reserve is $money_to_reserve");				
+		log_country_message($c->cnum, "Not enough food to play $turns_to_play turns. Food is $c->food, money is $c->money, and money to reserve is $money_to_reserve");				
 		return false;
 	}
 
@@ -584,6 +593,8 @@ function buyout_up_to_public_market_dpnw(&$c, $max_dpnw, $max_spend, $military_u
 		// log_country_message($c->cnum, "Best unit:$best_unit, quantity:$best_unit_quantity, price:$best_unit_price ");
 
 		$money_before_purchase = $c->money;
+		// NOTE: might log some weird looking purchases here with the quantity slowly decreasing
+		// this can happen if the country buys off private instead of public
 		PublicMarket::buy($c, [$best_unit => $best_unit_quantity], [$best_unit => $best_unit_price]);
 		$diff = $money_before_purchase - $c->money; // I don't like this but the return structure of PublicMarket::buy is tough to deal with
 		$total_spent += $diff;
@@ -663,7 +674,7 @@ function do_public_market_bushel_resell_loop (&$c, $max_public_market_bushel_pur
 
 		$previous_food = $c->food;
 		$result = PublicMarket::buy($c, ['m_bu' => $max_quantity_to_buy_at_once], ['m_bu' => $current_public_market_bushel_price]);
-		// TODO: sometimes see an error here with an unexpected price (1 below last) - expected?
+		// TODO: sometimes see an error here with an unexpected price (1 below last) - expected? taxes?
 		$bushels_purchased_quantity = $c->food - $previous_food;
 		if ($bushels_purchased_quantity == 0) {
 			 // most likely explanation is price changed, so update it
@@ -735,7 +746,7 @@ function dump_bushel_stock(&$c, $turns_to_keep, $reset_seconds_remaining, $serve
 	
 	if($estimated_public_market_bushel_sell_price * (2 - $c->tax()) < 1.5 + $private_market_bushel_price) {
 		$sold_bushels_on_public = false;
-		$sold_on_private_reason = 'bad price';
+		$sold_on_private_reason = 'can get more money on private';
 	}
 
 	if($c->turns == 0) {
@@ -747,16 +758,19 @@ function dump_bushel_stock(&$c, $turns_to_keep, $reset_seconds_remaining, $serve
 
 	if(!$sold_bushels_on_public) {
 		log_country_message($c->cnum, "Not selling bushels on public for reason: $sold_on_private_reason");
-		$bushels_to_sell = $c->food - get_food_needs_for_turns($turns_to_keep, $c->foodpro, $c->foodcon, true);
-		PrivateMarket::sell_single_good($c, 'm_bu', $bushels_to_sell);
+		$bushels_to_sell = min(0, $c->food - get_food_needs_for_turns($turns_to_keep, $c->foodpro, $c->foodcon, true));
+		if ($bushels_to_sell > 0)
+			PrivateMarket::sell_single_good($c, 'm_bu', $bushels_to_sell);
 		return;
 	}
 
 	// if low money, sell some bushels on private
 	if(!has_money_for_turns(1, $c->money, $c->taxes, $c->expenses, 0)) {
 		$bushels_to_sell_to_play_turn = min($c->food, ceil(($c->expenses - $c->taxes - $c->money) / $private_market_bushel_price));
-		log_country_message($c->cnum, "Selling bushels on private to get money to play a turn");
-		PrivateMarket::sell_single_good($c, 'm_bu', $bushels_to_sell_to_play_turn);
+		if($bushels_to_sell_to_play_turn > 0) {
+			log_country_message($c->cnum, "Selling bushels on private to get money to play a turn");
+			PrivateMarket::sell_single_good($c, 'm_bu', $bushels_to_sell_to_play_turn);
+		}
 	}
 
 	$bushels_to_sell = $c->food - get_food_needs_for_turns($turns_to_keep, $c->foodpro, $c->foodcon, true);
@@ -799,7 +813,7 @@ function final_dump_all_resources(&$c, $is_oil_on_pm) {
 	if($c->food > 0)
 		PrivateMarket::sell_single_good($c, 'm_bu', $c->food);
 
-	if($is_oil_on_pm) // sell oil if the server allows it
+	if($is_oil_on_pm and $c->oil > 0) // sell oil if the server allows it
 		PrivateMarket::sell_single_good($c, 'm_oil', $c->oil);
 
 	return;
