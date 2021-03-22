@@ -344,46 +344,79 @@ PARAMETERS:
 function temporary_cash_or_tech_at_end_of_set (&$c, $strategy, $turns_to_keep, $money_to_reserve) {
 	// FUTURE: this code is overly simple and shouldn't exist here - it should call standard code used for teching and cashing
 	$current_public_market_bushel_price = PublicMarket::price('m_bu');
+	$is_cashing = ($strategy = 'T' ? false : true);
+	$turns_to_play_at_once = 10;
 
 	while($c->turns > $turns_to_keep) {
-		// TODO: first try to play in blocks of 10 tens, if that fails then go to turn by turn
-		// need ee_npc update to account for rising military expenses (like with indy)
+		// first try to play in blocks of 10 turns, if that fails then go to turn by turn
+		if($c->turns - $turns_to_keep < 10)
+			$turns_to_play_at_once = 1;
 
-		$incoming_money_per_turn = ($strategy == 'T' ? 1.0 : 1.2) * $c->taxes;
-		// check cash
-		if(!has_money_for_turns(1, $c->money, $incoming_money_per_turn, $c->expenses, $money_to_reserve)) {
-			// not enough money to play a turn - can we make up the difference by selling a turn's worth of food production?
-			if($c->foodnet > 0)
-				PrivateMarket::sell_single_good($c, 'm_bu', min($c->food, $c->foodnet));
-			
-			if (!has_money_for_turns(1, $c->money, $incoming_money_per_turn, $c->expenses, $money_to_reserve)) {
-				// playing turns is no longer productive
-				log_country_message($c->cnum, "Not enough money to continue running turns. Money is $c->money and money to reserve is $money_to_reserve");
-				break;
+		if(!food_and_money_for_turns($c, $turn_to_play, $money_to_reserve, $is_cashing)){
+			if($turns_to_play_at_once == 10) {
+				$turns_to_play_at_once = 1;
+				continue;
 			}
+			else
+				break; // couldn't get money or food for playing a single turn, so stop
 		}
 
-		// try to buy food if needed up to $50, quit if we can't find cheap enough food
-		// FUTURE - be smarter about picking $50
-
-		$food_needed = max(0, get_food_needs_for_turns(1, $c->foodpro, $c->foodcon) - $c->food);
-		//log_country_message($c->cnum, "Food is $c->food and calculated food needs are $food_needed");	
-			
-		if(!buy_full_food_quantity_if_possible($c, $food_needed, 50, $money_to_reserve)) {
-			log_country_message($c->cnum, "Not enough food to continue running turns. Food is $c->food, money is $c->money, and money to reserve is $money_to_reserve");				
-			break;
-		}
-
-		// we should have enough food and money to play a turn
+		// we should have enough food and money to play turns
 		if ($strategy == 'T') {
-			$turn_result = tech(['mil' => $c->tpt]);	// FUTURE: adjust for earthquakes
+			for ($i = 1; $i <= $turns_to_play_at_once; $i++)
+				$turn_result = tech(['mil' => $c->tpt]);	// FUTURE: tech more than one turn at a time, adjust for earthquakes
 		}
 		else {
-			$turn_result = cash($c, 1);
+			$turn_result = cash($c, $turns_to_play_at_once);
 		}
 		update_c($c, $turn_result);
 	}
+
+	return;
 }
+
+
+/*
+NAME: temporary_cash_or_tech_at_end_of_set
+PURPOSE: 
+RETURNS: 
+PARAMETERS:
+	$
+	$
+	
+*/
+function food_and_money_for_turns(&$c, $turn_to_play, $money_to_reserve, $is_cashing) {
+	$incoming_money_per_turn = ($is_cashing ? 1.0 : 1.2) * $c->taxes;
+	// check money
+	if(!has_money_for_turns($turn_to_play, $c->money, $incoming_money_per_turn, $c->expenses, $money_to_reserve)) {
+		// not enough money to play a turn - can we make up the difference by selling a turn's worth of food production?
+		if($c->foodnet > 0)
+			PrivateMarket::sell_single_good($c, 'm_bu', min($c->food, $turns * $c->foodnet));
+		
+		if (!has_money_for_turns($turn_to_play, $c->money, $incoming_money_per_turn, $c->expenses, $money_to_reserve)) {
+			// playing turns is no longer productive
+			log_country_message($c->cnum, "Not enough money to play $turn_to_play turns. Money is $c->money and money to reserve is $money_to_reserve");
+			return false;
+		}
+	}
+
+	// try to buy food if needed up to $60, quit if we can't find cheap enough food
+	// FUTURE - be smarter about picking $60
+
+	$food_needed = max(0, get_food_needs_for_turns($turn_to_play, $c->foodpro, $c->foodcon) - $c->food);
+	//log_country_message($c->cnum, "Food is $c->food and calculated food needs are $food_needed");	
+			
+	if(!buy_full_food_quantity_if_possible($c, $food_needed, 60, $money_to_reserve)) {
+		log_country_message($c->cnum, "Not enough food to play $turn_to_play turns. Food is $c->food, money is $c->money, and money to reserve is $money_to_reserve");				
+		return false;
+	}
+
+	return true;
+}
+
+
+
+
 
 
 /*

@@ -484,7 +484,7 @@ function calculate_next_play_in_seconds($cnum, $nexttime, $strat, $is_clan_serve
 
         if ($seconds_until_next_play <= 0) {
             $seconds_until_next_play = 1800; // not sure how we could get here, but set it to half an hour
-            // TODO: log error
+            // FUTURE: log error
         }
         log_country_message($cnum, "Next play changed to $seconds_until_next_play to allow for destocking");
     }
@@ -496,7 +496,7 @@ function calculate_next_play_in_seconds($cnum, $nexttime, $strat, $is_clan_serve
 
 
 
-// TODO: move all logging functions to separate file
+// FUTURE: move all logging functions to separate file
 // function to country info for live or later review
 // for now we just write to a screen but in the future hopefully we will save stuff to log files
 // examples of things to log: what decisions were made (and why), how turns are spent
@@ -526,7 +526,7 @@ function log_translate_instant_to_human_readable($instant) {
 // up to 9 digits supported
 function decode_bot_secret($bot_secret_number, $desired_digits) {
     if ($desired_digits > 9)
-        return 0; // TODO: throw error
+        return 0; // FUTURE: throw error
     return $bot_secret_number % pow(10, $desired_digits);
 }
 
@@ -800,25 +800,35 @@ function update_c(&$c, $result)
 
         //out_data($turn);
 
+        // might need to override income if we got a certain type of event - see code below
+        $latest_taxrevenue = $turn->taxrevenue;
+        $latest_expenses = $turn->expenses;
+        $latest_foodproduced = $turn->foodproduced;
+        $latest_foodconsumed = $turn->foodconsumed;
+
         $advisor_update = false;
         if (isset($turn->event)) {
             if ($turn->event == 'earthquake') {   //if an earthquake happens...
                 out("Earthquake destroyed {$turn->earthquake} Buildings! Update Advisor"); //Text for screen
 
-                //update the advisor, because we no longer know what infromation is valid
+                //update the advisor, because we no longer know what information is valid
                 $advisor_update = true;
             } elseif ($turn->event == 'pciboom') {
                 //in the event of a pci boom, recalculate income so we don't react based on an event
-                $c->income = floor(($turn->taxrevenue ?? 0) / 3) - ($turn->expenses ?? 0);
+                $latest_taxrevenue = floor(($turn->taxrevenue ?? 0) / 3);
+                //$c->income = floor(($turn->taxrevenue ?? 0) / 3) - ($turn->expenses ?? 0);
             } elseif ($turn->event == 'pcibad') {
                 //in the event of a pci bad, recalculate income so we don't react based on an event
-                $c->income = floor(($turn->taxrevenue ?? 0) / 3) - ($turn->expenses ?? 0);
+                $latest_taxrevenue = floor($turn->taxrevenue * 3 ?? 0);
+                // $c->income = floor(($turn->taxrevenue * 3 ?? 0) - ($turn->expenses ?? 0);
             } elseif ($turn->event == 'foodboom') {
                 //in the event of a food boom, recalculate netfood so we don't react based on an event
-                $c->foodnet = floor(($turn->foodproduced ?? 0) / 3) - ($turn->foodconsumed ?? 0);
+                $latest_foodproduced = floor(($turn->foodproduced ?? 0) / 3);
+                //$c->foodnet = floor(($turn->foodproduced ?? 0) / 3) - ($turn->foodconsumed ?? 0);
             } elseif ($turn->event == 'foodbad') {
                 //in the event of a food boom, recalculate netfood so we don't react based on an event
-                $c->foodnet = floor($turn->foodproduced * 3 ?? 0) - ($turn->foodconsumed ?? 0);
+                $latest_foodproduced = floor($turn->foodproduced * 3 ?? 0);
+                //$c->foodnet = floor($turn->foodproduced * 3 ?? 0) - ($turn->foodconsumed ?? 0);
             }
 
             $event .= event_text($turn->event).' ';//Text for screen
@@ -836,18 +846,18 @@ function update_c(&$c, $result)
             $event .= 'EM '; //Text for screen
         }
 
-        // TODO: make advisor ALWAYS update these:
-        /*
-        $c->cashing
-        $c->income
-        $turn->taxrevenue 
-        $turn->expenses
-        $c->foodnet
-        $turn->foodproduced
-        $turn->foodconsumed
-        */
 
     }
+
+    // always update these to make country management simpler
+    // for example, expenses rise every turn for an indy so it's good to have the latest info
+    $c->taxrevenue = $latest_taxrevenue;
+    $c->expenses = $latest_expenses;
+    $c->income = $latest_taxrevenue - $latest_expenses;
+    $c->cashing = floor(1.2 * $latest_taxrevenue - $latest_expenses); // should be fine is slightly wrong
+    $c->foodproduced = $latest_foodproduced;
+    $c->foodconsumed = $latest_foodconsumed;
+    $c->foodnet = $latest_foodproduced - $latest_foodconsumed;
 
     $c->money += $netmoney;
     $c->food  += $netfood;
