@@ -150,11 +150,10 @@ function execute_destocking_actions($cnum, $strategy, $server, $rules, &$next_pl
 		// note: no need to reserve money in previous has_money_for_turns call - we reserved money earlier so we could spend turns like this
 		$value_of_public_market_goods = floor(get_total_value_of_on_market_goods($c));
 		log_country_message($cnum, "Considering military reselling...");
-		$did_resell_military = consider_and_do_military_reselling($c, $value_of_public_market_goods, $reserved_money_for_future_private_market_purchases);
+		$did_resell_military = consider_and_do_military_reselling($c, $value_of_public_market_goods, $reserved_money_for_future_private_market_purchases, $rules->max_possible_market_sell);
 
-		// FUTURE: techers should probably sell mil tech to help other countries
-		// FUTURE: check if should dump tech
-		// FUTURE: dump tech	
+		log_country_message($cnum, "Considering tech sale...");
+		dump_tech($c, $strategy, $market_autobuy_tech_price, $rules->max_possible_market_sell);
 	}
 	
 	// calculate next play time
@@ -221,6 +220,63 @@ function get_earliest_possible_destocking_start_time_for_country($bot_secret_num
 
 
 /*
+NAME: get_earliest_possible_destocking_start_time_for_country
+PURPOSE: 
+RETURNS: 
+PARAMETERS:
+	$
+	$strategy
+	
+*/
+function dump_tech($c, $strategy, $market_autobuy_tech_price, $server_max_possible_market_sell) {
+	$food_needed = max(0, get_food_needs_for_turns(1, $c->foodpro, $c->foodcon, true) - $c->food);
+
+	if ($strategy <> 'T')
+		$reason_for_not_selling_tech = "No support for non-techers at this time"; // FUTURE: add support
+	elseif($market_autobuy_tech_price < 700)
+		$reason_for_not_selling_tech = "Autobuy price of $market_autobuy_tech_price is too low"; // FUTURE: allow for sales above autoprice??
+	elseif(!buy_full_food_quantity_if_possible($c, $food_needed, 80, 0))
+		$reason_for_not_selling_tech = "Not enough food";
+	elseif(!has_money_for_turns(1, $c->money, $c->taxes, $c->expenses, 0, true)) // note the NOT
+		$reason_for_not_selling_tech = "Not enough money to play a turn";			
+	elseif($c->turns == 0)
+		$reason_for_not_selling_tech = "No turns";	
+
+	if($reason_for_not_selling_tech == null) {
+		$tech_quantities = [
+			//'mil' => 0,
+			'med' => can_sell_tech($c, 't_med', $server_max_possible_market_sell),
+			'bus' => can_sell_tech($c, 't_bus', $server_max_possible_market_sell),
+			'res' => can_sell_tech($c, 't_res', $server_max_possible_market_sell),
+			'agri' => can_sell_tech($c, 't_agri', $server_max_possible_market_sell),
+			'war' => can_sell_tech($c, 't_war', $server_max_possible_market_sell),
+			'ms' => can_sell_tech($c, 't_ms', $server_max_possible_market_sell),
+			'weap' => can_sell_tech($c, 't_weap', $server_max_possible_market_sell),
+			'indy' => can_sell_tech($c, 't_indy', $server_max_possible_market_sell),
+			'spy' => can_sell_tech($c, 't_spy', $server_max_possible_market_sell),
+			'sdi' => can_sell_tech($c, 't_sdi', $server_max_possible_market_sell)
+		];
+
+		$total_tech_to_sell = array_sum($tech_quantities);
+
+		$money_from_tech_sale = (2 - $c->tax()) * $market_autobuy_tech_price * $total_tech_to_sell;
+		if($money_from_tech_sale > $c->income) {
+			$result = PublicMarket::sell($c, $tech_quantitie, $market_autobuy_tech_price);
+			update_c($c, $result);
+			log_country_message($cnum, "Sold $total_tech_to_sell tech points at autobuy prices");
+			return true;
+		}
+		else
+			$reason_for_not_selling_tech = "Selling $total_tech_to_sell tech points at autobuy prices isn't profitable";	
+	}
+
+	if($reason_for_not_selling_tech <> null)
+		log_country_message($cnum, "Did not sell tech for reason: $reason_for_not_selling_tech");
+	return false;
+}
+
+
+/*
 NAME: consider_and_do_military_reselling
 PURPOSE: 
 RETURNS: 
@@ -229,7 +285,7 @@ PARAMETERS:
 	$
 	
 */
-function consider_and_do_military_reselling(&$c, $value_of_public_market_goods, $reserved_money_for_future_private_market_purchases) {
+function consider_and_do_military_reselling(&$c, $value_of_public_market_goods, $reserved_money_for_future_private_market_purchases, $server_max_possible_market_sell) {
 	log_country_message($c->cnum, "Money is $c->money, on-market value is $value_of_public_market_goods, and future PM gen is $reserved_money_for_future_private_market_purchases");
 	$target_sell_amount = max(0, $reserved_money_for_future_private_market_purchases - $value_of_public_market_goods - $c->money);
 	log_country_message($c->cnum, "Future free PM military capacity is estimated at $target_sell_amount dollars");
@@ -239,6 +295,7 @@ function consider_and_do_military_reselling(&$c, $value_of_public_market_goods, 
 		$reason_for_not_reselling_military = "Not enough time left in set for military resell";	
 	elseif($target_sell_amount < 100000000)
 		$reason_for_not_reselling_military = "Target sell amount of $target_sell_amount is below minimum of 100 million";
+		//TODO: food first
 	elseif(!has_money_for_turns(1, $c->money, $c->taxes, $c->expenses, 0, true)) // note the NOT
 		$reason_for_not_reselling_military = "Not enough money to play a turn";			
 
@@ -257,7 +314,7 @@ function consider_and_do_military_reselling(&$c, $value_of_public_market_goods, 
 
 	if($reason_for_not_reselling_military == null) {
 		log_country_message($c->cnum, "Attempting to build a public market package for military reselling...");
-		$did_resell = resell_military_on_public($c, $rules->max_possible_market_sell, $target_sell_amount);
+		$did_resell = resell_military_on_public($c, $server_max_possible_market_sell, $target_sell_amount);
 		if(!$did_resell)
 			$reason_for_not_reselling_military = "Couldn't put at least 50 million of goods for sale";
 	}
