@@ -234,6 +234,7 @@ function food_management(&$c)
     if ($c->food < $turns_of_food && $c->money > $turns_buy * $foodloss * $pm_info->buy_price->m_bu) {
         //losing food, less than turns_buy turns left, AND have the money to buy it
         //Text for screen
+        // FUTURE: need to check quantity of food available on private market
         out(
             "Less than $turns_buy turns worth of food! (".$c->foodnet."/turn) ".
             "We're rich, so buy food on PM (\${$pm_info->buy_price->m_bu})!~"
@@ -248,7 +249,7 @@ function food_management(&$c)
     }
 
     out('We have exhausted all food options. Valar Morguhlis.');
-    return false;
+    return false; // FUTURE: why isn't this true? better to save turns than to commit suicide by running turns with no food?
 }//end food_management()
 
 

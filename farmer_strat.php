@@ -94,7 +94,7 @@ function play_farmer_strat($server, $cnum, $rules)
             $c->updateMain(); //we probably don't need to do this *EVERY* turn
         }
 
-        // TODO: sell food when needed even if income is positive, such as not enough money to build
+        // FUTURE: sell food when needed even if income is positive, such as not enough money to build
         if ($c->income < 0 && $c->money < -5 * $c->income) { //sell 1/4 of all military on PM
             out("Almost out of money! Sell 10 turns of income in food!");   //Text for screen
 

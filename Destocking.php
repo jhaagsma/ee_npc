@@ -28,8 +28,6 @@ function execute_destocking_actions($cnum, $strategy, $server, $rules, &$next_pl
 
 	$c = get_advisor();	// create object
 
-	// TODO: fix "We're rich" in country_functions - PM might empty, so check quantity - also return true to hold turns at the end
-
 	// FUTURE: cancel all SOs
 	
 	// change indy production to 100% jets
@@ -40,10 +38,10 @@ function execute_destocking_actions($cnum, $strategy, $server, $rules, &$next_pl
 	$turns_to_keep = 8;
 	$money_to_reserve = max(-11 * $c->income, 55000000); // mil expenses can rise rapidly during destocking, so use 10 M per turn as a guess
 	log_country_message($cnum, "Money is $c->money and calculated money to reserve is $money_to_reserve");
-
 	log_country_message($c->cnum, "Turns left: $c->turns");
 	log_country_message($cnum, "Starting cashing or teching...");
 	// TODO: add very basic income check to make sure cashing and teching is worth it
+
 	temporary_cash_or_tech_at_end_of_set ($c, $strategy, $turns_to_keep, $money_to_reserve);
 	log_country_message($cnum, "Finished cashing or teching");
 
@@ -168,7 +166,6 @@ function execute_destocking_actions($cnum, $strategy, $server, $rules, &$next_pl
 	else
 		$next_play_time_in_seconds = TURNS_TO_PASS_BEFORE_NEXT_DESTOCK_ATTEMPT * $server_seconds_per_turn;
 	
-	// $next_play_time_in_seconds = 30; // TODO: TEMP DEBUG TO MAKE THEM ALWAYS KEEP PLAYING
 	//log_country_message($cnum, "Will next login in $next_play_time_in_seconds seconds");
 	return $c;
 }
@@ -305,21 +302,18 @@ function consider_and_do_military_reselling(&$c, $value_of_public_market_goods, 
 		$reason_for_not_reselling_military = "Not enough time left in set for military resell";	
 	elseif($target_sell_amount < 100000000)
 		$reason_for_not_reselling_military = "Target sell amount of $target_sell_amount is below minimum of 100 million";
-		//TODO: food first
-	elseif(!has_money_for_turns(1, $c->money, $c->taxes, $c->expenses, 0, true)) // note the NOT
-		$reason_for_not_reselling_military = "Not enough money to play a turn";			
+	elseif($c->turns == 0)
+		$reason_for_not_reselling_military = "No turns";	
 
 	if($reason_for_not_reselling_military == null) {
-		if($c->turns == 0)
-			$reason_for_not_reselling_military = "No turns";	
-		else {
-			// buy food to play a turn if needed up to $80 in price
-			// it's food for one turn so I don't care if players know about this behavior
-			$food_needed = max(0, get_food_needs_for_turns(1, $c->foodpro, $c->foodcon, true) - $c->food);
-			if(!buy_full_food_quantity_if_possible($c, $food_needed, 80, 0)) {
-				$reason_for_not_reselling_military = "Not enough food";
-			}
-		}	
+		// buy food to play a turn if needed up to $80 in price
+		// it's food for one turn so I don't care if players know about this behavior
+		$food_needed = max(0, get_food_needs_for_turns(1, $c->foodpro, $c->foodcon, true) - $c->food);
+		if(!buy_full_food_quantity_if_possible($c, $food_needed, 80, 0))
+			$reason_for_not_reselling_military = "Not enough food";
+		elseif(!has_money_for_turns(1, $c->money, $c->taxes, $c->expenses, 0, true)) // note the NOT
+			$reason_for_not_reselling_military = "Not enough money to play a turn";		
+
 	}
 
 	if($reason_for_not_reselling_military == null) {
@@ -399,6 +393,27 @@ function resell_military_on_public (&$c, $server_max_possible_market_sell, $targ
 }
 
 
+
+/*
+NAME: temporary_check_if_cash_or_tech_is_profitable
+PURPOSE: 
+RETURNS: 
+PARAMETERS:
+	$
+	$
+	
+*/
+function temporary_check_if_cash_or_tech_is_profitable ($strategy, $income, $cashing, $tpt, $foodnet) {
+	// very rough calculations - don't care if this is inaccurate
+	if ($strategy == 'I')
+		return true; // future: calc indy production to check something
+	elseif ($strategy == 'T')
+		return ($income + 700 * $tpt + 34 * $foodnet > 0 ? true: false);
+	else
+		return ($cashing + 34 * $foodnet > 0 ? true: false);
+}
+
+
 /*
 NAME: temporary_cash_or_tech_at_end_of_set
 PURPOSE: 
@@ -410,18 +425,24 @@ PARAMETERS:
 */
 function temporary_cash_or_tech_at_end_of_set (&$c, $strategy, $turns_to_keep, $money_to_reserve) {
 	// FUTURE: this code is overly simple and shouldn't exist here - it should call standard code used for teching and cashing
+
+	$should_play_turns = temporary_check_if_cash_or_tech_is_profitable($strategy, $c->income, $c->cashing, $c->tpt, $c->foodnet);
+	if(!$should_play_turns) {
+		log_country_message($c->cnum, "Not cashing or teching turns because runing turns it not expected to be profitable");
+		return;
+	}
+
 	$current_public_market_bushel_price = PublicMarket::price('m_bu');
 	$is_cashing = ($strategy == 'T' ? false : true);
 	$turns_to_play_at_once = 10;
 
 	while($c->turns > $turns_to_keep) {
 		// first try to play in blocks of 10 turns, if that fails then go to turn by turn
-		// TODO: a farmer can sell on private and should end up being able to cash 10X turn at a time
-		// FUTURE: shouldn't farmers avoid decay on express?
+		// FUTURE: a farmer can sell on private and should end up being able to cash 10X turn at a time
+		// FUTURE: shouldn't farmers avoid decay?
 		if($c->turns - $turns_to_keep < 10)
 			$turns_to_play_at_once = 1;
 
-		// TODO: don't use the +1 hack for 1 turn at a time
 		if(!food_and_money_for_turns($c, $turns_to_play_at_once + 1, $money_to_reserve, $is_cashing)){ // add 1 to reduce chance of running out
 			if($turns_to_play_at_once == 10) {
 				$turns_to_play_at_once = 1;
@@ -456,15 +477,16 @@ PARAMETERS:
 */
 function food_and_money_for_turns(&$c, $turns_to_play, $money_to_reserve, $is_cashing) {
 	$incoming_money_per_turn = ($is_cashing ? 1.0 : 1.2) * $c->taxes;
+	$additional_turns_for_expenses_growth = floor($turns_to_play / 7); // FUTURE: this is a wild guess
 	// check money
-	if(!has_money_for_turns($turns_to_play, $c->money, $incoming_money_per_turn, $c->expenses, $money_to_reserve)) {
+	if(!has_money_for_turns($turns_to_play + $additional_turns_for_expenses_growth, $c->money, $incoming_money_per_turn, $c->expenses, $money_to_reserve)) {
 		// not enough money to play a turn - can we make up the difference by selling a turn's worth of food production?
 		if($c->food > 0 and $c->foodnet > 0) {
-			log_country_message($c->cnum, "TEMP DEBUG: Food is ".$c->food); // TODO: figure out why this errors sometimes?
-			PrivateMarket::sell_single_good($c, 'm_bu', min($c->food, $turns_to_play * $c->foodnet));
+			// log_country_message($c->cnum, "TEMP DEBUG: Food is ".$c->food); // TODO: figure out why this errors sometimes?
+			PrivateMarket::sell_single_good($c, 'm_bu', min($c->food, ($turns_to_play + $additional_turns_for_expenses_growth) * $c->foodnet));
 		}
 		
-		if (!has_money_for_turns($turns_to_play, $c->money, $incoming_money_per_turn, $c->expenses, $money_to_reserve)) {
+		if (!has_money_for_turns($turns_to_play + $additional_turns_for_expenses_growth, $c->money, $incoming_money_per_turn, $c->expenses, $money_to_reserve)) {
 			// playing turns is no longer productive
 			log_country_message($c->cnum, "Not enough money to play $turns_to_play turns. Money is $c->money and money to reserve is $money_to_reserve");
 			return false;
@@ -474,7 +496,7 @@ function food_and_money_for_turns(&$c, $turns_to_play, $money_to_reserve, $is_ca
 	// try to buy food if needed up to $60, quit if we can't find cheap enough food
 	// FUTURE - be smarter about picking $60
 
-	$food_needed = max(0, get_food_needs_for_turns($turns_to_play, $c->foodpro, $c->foodcon) - $c->food);
+	$food_needed = max(0, get_food_needs_for_turns($turns_to_play + $additional_turns_for_expenses_growth, $c->foodpro, $c->foodcon) - $c->food);
 	//log_country_message($c->cnum, "Food is $c->food and calculated food needs are $food_needed");	
 			
 	if(!buy_full_food_quantity_if_possible($c, $food_needed, 60, $money_to_reserve)) {

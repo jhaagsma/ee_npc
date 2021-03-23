@@ -270,7 +270,7 @@ while (1) {
                     //$playfactor = 1; // now handled in calculate_next_play_in_seconds
                     $nexttime = null;
 
-                    // TODO: careful with the $cnum global removal, maybe this breaks things
+                    // FUTURE: careful with the $cnum global removal, maybe this breaks things? seems fine so far - 20210323
                     switch ($cpref->strat) {
                         case 'F':
                             $c = play_farmer_strat($server, $cnum, $rules);
@@ -329,7 +329,7 @@ while (1) {
     }
 
     // don't let bots play during the final minute to reduce server load and avoid market surprises for players
-    if (time() + 10 >= $server->reset_end) { // TODO: change to 60
+    if (time() + 60 >= $server->reset_end) {
         out("Sleeping until end of reset!");
         out("\n");
         while($server->reset_end + 1 >= time()) {
@@ -443,7 +443,7 @@ function calculate_next_play_in_seconds($cnum, $nexttime, $strat, $is_clan_serve
             break;
         case 'C':
             $play_seconds_minimum = round(0.3 * $server_turn_rate * $server_max_turns);
-            //$play_seconds_maximum = round(0.9 * $server_turn_rate * $server_max_turns); // TODO - change to this once express bot count and market stuff is fixed
+            //$play_seconds_maximum = round(0.9 * $server_turn_rate * $server_max_turns); // FUTURE - change to this once express bot count and market stuff is fixed
             $play_seconds_maximum = round(0.6 * $server_turn_rate * $server_max_turns);
             break;
         case 'I':
@@ -452,7 +452,7 @@ function calculate_next_play_in_seconds($cnum, $nexttime, $strat, $is_clan_serve
             break;
         default:
             $play_seconds_minimum = round(0.3 * $server_turn_rate * $server_max_turns);
-            // $play_seconds_maximum = round(0.9 * $server_turn_rate * $server_max_turns); // TODO - change to this once express bot count and market stuff is fixed
+            // $play_seconds_maximum = round(0.9 * $server_turn_rate * $server_max_turns); // FUTURE - change to this once express bot count and market stuff is fixed
             $play_seconds_maximum = round(0.6 * $server_turn_rate * $server_max_turns);
     }
 
