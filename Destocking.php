@@ -335,7 +335,7 @@ function consider_and_do_military_reselling(&$c, $value_of_public_market_goods, 
 	}
 	else {
 		log_country_message($c->cnum, "Did not resell military for reason: $reason_for_not_reselling_military");
-		return true;
+		return false;
 	}
 }
 
@@ -417,7 +417,7 @@ function temporary_cash_or_tech_at_end_of_set (&$c, $strategy, $turns_to_keep, $
 	while($c->turns > $turns_to_keep) {
 		// first try to play in blocks of 10 turns, if that fails then go to turn by turn
 		// TODO: a farmer can sell on private and should end up being able to cash 10X turn at a time
-		// TODO: shouldn't farmers avoid decay on express?
+		// FUTURE: shouldn't farmers avoid decay on express?
 		if($c->turns - $turns_to_keep < 10)
 			$turns_to_play_at_once = 1;
 
@@ -460,7 +460,7 @@ function food_and_money_for_turns(&$c, $turns_to_play, $money_to_reserve, $is_ca
 	if(!has_money_for_turns($turns_to_play, $c->money, $incoming_money_per_turn, $c->expenses, $money_to_reserve)) {
 		// not enough money to play a turn - can we make up the difference by selling a turn's worth of food production?
 		if($c->food > 0 and $c->foodnet > 0) {
-			log_country_message($c->cnum, "TEMP DEBUG: Food is ".$c->food);
+			log_country_message($c->cnum, "TEMP DEBUG: Food is ".$c->food); // TODO: figure out why this errors sometimes?
 			PrivateMarket::sell_single_good($c, 'm_bu', min($c->food, $turns_to_play * $c->foodnet));
 		}
 		
@@ -761,7 +761,7 @@ function dump_bushel_stock(&$c, $turns_to_keep, $reset_seconds_remaining, $serve
 
 	if(!$sold_bushels_on_public) {
 		log_country_message($c->cnum, "Not selling bushels on public for reason: $sold_on_private_reason");
-		$bushels_to_sell = min(0, $c->food - get_food_needs_for_turns($turns_to_keep, $c->foodpro, $c->foodcon, true));
+		$bushels_to_sell = max(0, $c->food - get_food_needs_for_turns($turns_to_keep, $c->foodpro, $c->foodcon, true));
 		if ($bushels_to_sell > 0)
 			PrivateMarket::sell_single_good($c, 'm_bu', $bushels_to_sell);
 		return;

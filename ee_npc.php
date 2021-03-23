@@ -95,7 +95,6 @@ while (1) {
         $server = getServer();
     }
 
-    $total_countries_to_create = $server->countries_allowed - $server->alive_count;
     while ($server->alive_count < $server->countries_allowed) {
         out("Less countries than allowed! (".$server->alive_count.'/'.$server->countries_allowed.')');
         $send_data = ['cname' => NameGenerator::rand_name()];
@@ -112,8 +111,6 @@ while (1) {
         }
     }
 
-
-
     if ($server->reset_start > time()) {
         out("Reset has not started!");          //done() is defined below
         sleep(max(300, time() - $server->reset_start));        //sleep until the reset starts
@@ -125,34 +122,29 @@ while (1) {
         continue;                               //restart the loop
     }
 
-    // $countries = $server->cnum_list->alive;
-    
-    // remove non-AI countries from $countries - useful on debug servers with human countries
-    // TODO: only call on debug servers
-    $countries = [];
-    if (!$checked_for_non_ai) {
-        foreach($server->cnum_list->alive as $cnum) {
-            //out($cnum);
-            // need a cheap call to auth - using pm_info for now
-            $result = ee('pm_info');
-            if($result <> 'NOT_AN_AI_COUNTRY')
-                $countries[] = $cnum;
-            else
-                $non_ai_countries[$cnum] = 1;     
+    if($server->is_debug) { // remove non-AI countries from $countries - useful on debug servers with human countries 
+        $countries = [];
+        if (!$checked_for_non_ai) {
+            foreach($server->cnum_list->alive as $cnum) {
+                // need a cheap call to auth - using pm_info for now
+                $result = ee('pm_info');
+                if($result <> 'NOT_AN_AI_COUNTRY')
+                    $countries[] = $cnum;
+                else
+                    $non_ai_countries[$cnum] = 1;     
+            }
+            $checked_for_non_ai = true;
         }
-        $checked_for_non_ai = true;
-    }
-    else { // $checked_for_non_ai is true
-         foreach($server->cnum_list->alive as $cnum) {
-            if(!isset($non_ai_countries[$cnum]))
-                $countries[] = $cnum;
+        else { // $checked_for_non_ai is true
+            foreach($server->cnum_list->alive as $cnum) {
+                if(!isset($non_ai_countries[$cnum]))
+                    $countries[] = $cnum;
+            }
         }
     }
-
-    //foreach ($countries as $cnum) {
-    //    out("cnum is $cnum");
-    //}
-    //return;
+    else { // not debug
+        $countries = $server->cnum_list->alive;
+    }
 
     if ($played) {
         Bots::server_start_end_notification($server);
@@ -337,8 +329,7 @@ while (1) {
     }
 
     // don't let bots play during the final minute to reduce server load and avoid market surprises for players
-    $until_end = 50;
-    if (time() + 60 >= $server->reset_end) {
+    if (time() + 10 >= $server->reset_end) { // TODO: change to 60
         out("Sleeping until end of reset!");
         out("\n");
         while($server->reset_end + 1 >= time()) {
