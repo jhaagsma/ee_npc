@@ -32,8 +32,6 @@ function play_farmer_strat($server, $cnum, $rules)
     //out_data($main);          //output the main data
     $c = get_advisor();     //c as in country! (get the advisor)
     $c->setIndy('pro_spy');
-    //$c = get_advisor();     //c as in country! (get the advisor)
-
 
     if ($c->m_spy > 10000) {
         Allies::fill('spy');
@@ -101,6 +99,16 @@ function play_farmer_strat($server, $cnum, $rules)
             //sell 1/4 of our military
             $pm_info = PrivateMarket::getRecent();
             PrivateMarket::sell($c, ['m_bu' => min($c->food, floor(-10 * $c->income / $pm_info->sell_price->m_bu))]);
+            /* TODO: $c->food gets out of sync?
+[21:54:35] Almost out of money! Sell 10 turns of income in food!
+[21:54:36]
+
+Unexpected Result for 'pm': ERROR:OWNED
+
+PHP Notice:  Trying to get property 'money' of non-object in /mnt/c/Users/joe/Documents/GitHub/ee_npc/PrivateMarket.class.php on line 146
+PHP Notice:  Trying to get property 'goods' of non-object in /mnt/c/Users/joe/Documents/GitHub/ee_npc/PrivateMarket.class.php on line 151
+PHP Warning:  Invalid argument supplied for foreach() in /mnt/c/Users/joe/Documents/GitHub/ee_npc/PrivateMarket.class.php on line 151
+*/
         }
 
         // 40 turns of food

@@ -130,8 +130,10 @@ while (1) {
                 $result = ee('pm_info');
                 if($result <> 'NOT_AN_AI_COUNTRY')
                     $countries[] = $cnum;
-                else
-                    $non_ai_countries[$cnum] = 1;     
+                else {
+                    out("Removing non-AI country with cnum #$cnum from the list of countries to play");
+                    $non_ai_countries[$cnum] = 1;
+                }
             }
             $checked_for_non_ai = true;
         }
@@ -803,8 +805,8 @@ function update_c(&$c, $result)
     $netmoney = $netfood = 0;
     foreach ($result->turns as $num => $turn) {
         //update stuff based on what happened this turn
-        $netfood  += $c->foodnet  = floor($turn->foodproduced ?? 0) - ($turn->foodconsumed ?? 0);
-        $netmoney += $c->income = floor($turn->taxrevenue ?? 0) - ($turn->expenses ?? 0);
+        $netfood  += floor($turn->foodproduced ?? 0) - ($turn->foodconsumed ?? 0);
+        $netmoney += floor($turn->taxrevenue ?? 0) - ($turn->expenses ?? 0);
 
         //the turn doesn't *always* return these things, so have to check if they exist, and add 0 if they don't
         $c->pop   += floor($turn->popgrowth ?? 0);

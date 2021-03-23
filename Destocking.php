@@ -268,7 +268,7 @@ function dump_tech($c, $strategy, $market_autobuy_tech_price, $server_max_possib
 		$total_tech_to_sell = array_sum($tech_quantities);
 
 		$money_from_tech_sale = (2 - $c->tax()) * $market_autobuy_tech_price * $total_tech_to_sell;
-		if($money_from_tech_sale > $c->income) {
+		if($total_tech_to_sell > 0 and $money_from_tech_sale + $c->income > 0) {
 			// create matching array of prices
 			$prices = array_combine(array_keys($tech_quantities), array_fill(0, count($tech_quantities), $market_autobuy_tech_price));
 			$result = PublicMarket::sell($c, $tech_quantities, $prices);
@@ -438,7 +438,7 @@ function temporary_cash_or_tech_at_end_of_set (&$c, $strategy, $turns_to_keep, $
 
 	$should_play_turns = temporary_check_if_cash_or_tech_is_profitable($strategy, $c->income, $c->cashing, $c->tpt, $c->foodnet);
 	if(!$should_play_turns) {
-		log_country_message($c->cnum, "Not cashing or teching turns because runing turns it not expected to be profitable");
+		log_country_message($c->cnum, "Not cashing or teching turns because playing turns is not expected to be profitable");
 		return;
 	}
 
