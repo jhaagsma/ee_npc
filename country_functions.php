@@ -362,7 +362,7 @@ function sell_max_military(&$c, $server_max_possible_market_sell)
     }
 
     $rmax    = 1.30; //percent
-    $rmin    = 0.75; //percent
+    $rmin    = 0.70; //percent
     $rstep   = 0.01;
     $rstddev = 0.10;
     $price   = [];
@@ -370,11 +370,11 @@ function sell_max_military(&$c, $server_max_possible_market_sell)
         if ($q == 0) {
             $price[$key] = 0;
         } elseif (PublicMarket::price($key) == null || PublicMarket::price($key) == 0) {
-            $price[$key] = floor($pm_info->buy_price->$key * Math::purebell(0.5, 1.0, 0.3, 0.01));
+            $price[$key] = floor($pm_info->buy_price->$key * Math::purebell(0.7, 0.93, 0.3, 0.01)); // don't price worse than private market
         } else {
             $max         = $c->goodsStuck($key) ? 0.99 : $rmax; //undercut if we have goods stuck
             $price[$key] = min(
-                $pm_info->buy_price->$key,
+                floor(0.93 * $pm_info->buy_price->$key),
                 floor(PublicMarket::price($key) * Math::purebell($rmin, $max, $rstddev, $rstep))
             );
         }
