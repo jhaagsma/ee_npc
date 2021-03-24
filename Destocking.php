@@ -106,10 +106,10 @@ function execute_destocking_actions($cnum, $strategy, $server, $rules, &$next_pl
 		}
 
 		// estimate future private market unit generation	
-		$future_pm_capacity_for_unit =	estimate_future_private_market_capacity_for_military_unit($pm_info->buy_price->$military_unit, $c->land, $replenishment_rate, $reset_seconds_remaining, $server_seconds_per_turn);
+		// if this is the final attempt then there's no reason to save money for future PM generation
+		$future_pm_capacity_for_unit = ($is_final_destocking_attempt ? 0: estimate_future_private_market_capacity_for_military_unit($pm_info->buy_price->$military_unit, $c->land, $replenishment_rate, $reset_seconds_remaining, $server_seconds_per_turn));
 		log_country_message($cnum, "Adjusting budget down by $future_pm_capacity_for_unit which is future PM capacity for $military_unit");
-		if(!$is_final_destocking_attempt) // if this is the final attempt then there's no reason to save money for future PM generation
-			$total_cost_to_buyout_future_private_market += $future_pm_capacity_for_unit;
+		$total_cost_to_buyout_future_private_market += $future_pm_capacity_for_unit;
 		$max_spend = max($c->money - $total_cost_to_buyout_future_private_market - $money_to_reserve, 0);
 	}
 
