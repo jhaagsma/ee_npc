@@ -148,6 +148,11 @@ while (1) {
         $countries = $server->cnum_list->alive;
     }
 
+    // TODO: add loop to assign and save country strats here
+    // don't run every time
+    // account for dead countries
+    // account for some countries with strats, others without
+
     if ($played) {
         Bots::server_start_end_notification($server);
         Bots::playstats($countries);
@@ -399,7 +404,7 @@ while (1) {
 done(); //done() is defined below
 
 
-function calculate_next_play_in_seconds($cnum, $nexttime, $strat, $is_clan_server, $max_time_to_market, $max_possible_market_sell, $country_play_rand_factor, $server_reset_start, $server_reset_end, $server_turn_rate, $country_max_turns, $server_max_turns, $country_stored_turns, $server_stored_turns) {
+function calculate_next_play_in_seconds($cnum, $nexttime, $strat, $is_clan_server, $max_time_to_market, $max_possible_market_sell, $country_play_rand_factor, $server_reset_start, $server_reset_end, $server_turn_rate, $country_turns_left, $server_max_turns, $country_stored_turns, $server_stored_turns) {
     if($nexttime <> null) {
         log_country_message($cnum, "Next play seconds was passed in as $nexttime");
         return $nexttime; // always return $nexttime if it's passed on
@@ -458,7 +463,7 @@ function calculate_next_play_in_seconds($cnum, $nexttime, $strat, $is_clan_serve
             $play_seconds_maximum = round(0.6 * $server_turn_rate * $server_max_turns);
     }
 
-    log_country_message($cnum, "For strategy $strat, min play seconds is $play_seconds_minimum and max play seconds is $play_seconds_maximum");
+    log_country_message($cnum, "For strategy ".txtStrat($cnum).", min play seconds is $play_seconds_minimum and max play seconds is $play_seconds_maximum");
 
     // shrink the window up to 25% based on the country's preference for play
     // $country_play_rand_factor is random number in range (1, 2)
@@ -471,15 +476,16 @@ function calculate_next_play_in_seconds($cnum, $nexttime, $strat, $is_clan_serve
     log_country_message($cnum, "Bell random play seconds calculated as $bell_random_seconds");
 
     // if the next play time would mean that additional turns start going into storage, adjust it forward
-    $free_turns = $server_max_turns - $country_max_turns;
+    $free_turns = $server_max_turns - $country_turns_left;
     $depleted_stored_turns = round(min(0.5 * $free_turns, $country_stored_turns));
     $approx_seconds_until_new_turns_go_to_stored = $server_turn_rate * ($free_turns - $depleted_stored_turns);
-    log_country_message($cnum, "Free turns is $free_turns, depleted stored turns is $depleted_stored_turns");
+    log_country_message($cnum, "Server max onhand turns is $server_max_turns, country turns left is $country_turns_left, country stored turns is $country_stored_turns");
+    log_country_message($cnum, "It will take approximately $seconds_until_next_play seconds until new turns go into storage");   
  
     $seconds_until_next_play = $bell_random_seconds;
     if ($approx_seconds_until_new_turns_go_to_stored < $bell_random_seconds) {
         $seconds_until_next_play = $approx_seconds_until_new_turns_go_to_stored;
-        log_country_message($cnum, "Bell random seconds would result in additional stored turns, so changing play time to $seconds_until_next_play");
+        log_country_message($cnum, "Bell random seconds value would result in additional stored turns, so changing play time to $seconds_until_next_play");
     }
 
     // don't allow bots to login more frequently than 4 * turn rate under normal conditions
