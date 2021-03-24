@@ -35,10 +35,15 @@ function execute_destocking_actions($cnum, $strategy, $server, $rules, &$next_pl
 	// change indy production to 100% jets
 	$c->setIndy('pro_j');
 
-	// keep 8 turns for possible recall tech, recall goods, double sale of goods, double sale of tech
-	// this is likely too conservative but it doesn't matter if bots lose a few turns of income at the end
-	$turns_to_keep = 8;
-	$money_to_reserve = max(-11 * $c->income, 55000000); // mil expenses can rise rapidly during destocking, so use 10 M per turn as a guess
+	$debug_force_final_attempt = false; // DEBUG change to true to force final attempt
+	$calc_final_attempt = is_final_destock_attempt($reset_seconds_remaining, $server_seconds_per_turn);
+	$is_final_destocking_attempt = ($debug_force_final_attempt or $calc_final_attempt ? true : false);
+
+	// FUTURE: keep 8 turns for possible recall tech, recall goods, double sale of goods, double sale of tech
+	// however, we don't recall yet so set this to 2 turns
+	// want to be careful with the money to reserve unless we make ... if we have 200 bots all spending $50 million at the end then that's 10 B dollars on public
+	$turns_to_keep = 2;
+	$money_to_reserve = max(-2 * $c->income, 20000000); // mil expenses can rise rapidly during destocking, so use 10 M per turn as a guess
 	log_country_message($cnum, "Money is $c->money and calculated money to reserve is $money_to_reserve");
 	log_country_message($c->cnum, "Turns left: $c->turns");
 	log_country_message($cnum, "Starting cashing or teching...");
@@ -103,18 +108,17 @@ function execute_destocking_actions($cnum, $strategy, $server, $rules, &$next_pl
 		// estimate future private market unit generation	
 		$future_pm_capacity_for_unit =	estimate_future_private_market_capacity_for_military_unit($pm_info->buy_price->$military_unit, $c->land, $replenishment_rate, $reset_seconds_remaining, $server_seconds_per_turn);
 		log_country_message($cnum, "Adjusting budget down by $future_pm_capacity_for_unit which is future PM capacity for $military_unit");
-		$total_cost_to_buyout_future_private_market += $future_pm_capacity_for_unit;
+		if(!$is_final_destocking_attempt) // if this is the final attempt then there's no reason to save money for future PM generation
+			$total_cost_to_buyout_future_private_market += $future_pm_capacity_for_unit;
 		$max_spend = max($c->money - $total_cost_to_buyout_future_private_market - $money_to_reserve, 0);
 	}
 
 	log_country_message($cnum, "Completed all PM purchasing. Money is $c->money and budget is $max_spend");
 	log_country_message($cnum, "Estimated future PM gen capacity is $total_cost_to_buyout_future_private_market dollars");
 	
-	$debug_force_final_attempt = false; // change to true to force final attempt
-
 	$did_resell_military = false;
 	// check if this is our last shot at destocking
-	if($debug_force_final_attempt or is_final_destock_attempt($reset_seconds_remaining, $server_seconds_per_turn)) {
+	if($is_final_destocking_attempt) {
 
 		// FUTURE: recall stuck bushels if there are enough of them compared to expenses? no API
 		
@@ -161,7 +165,7 @@ function execute_destocking_actions($cnum, $strategy, $server, $rules, &$next_pl
 	}
 	
 	// calculate next play time
-	if($did_resell_military or $sold_bushels_on_public or $c->money < 10000000)
+	if($did_resell_military or $sold_bushels_on_public)
 		$next_play_time_in_seconds = $max_market_package_time_in_seconds;
 	else
 		$next_play_time_in_seconds = TURNS_TO_PASS_BEFORE_NEXT_DESTOCK_ATTEMPT * $server_seconds_per_turn;
@@ -453,7 +457,7 @@ function temporary_cash_or_tech_at_end_of_set (&$c, $strategy, $turns_to_keep, $
 		if($c->turns - $turns_to_keep < 10)
 			$turns_to_play_at_once = 1;
 
-		if(!food_and_money_for_turns($c, $turns_to_play_at_once + 1, $money_to_reserve, $is_cashing)){ // add 1 to reduce chance of running out
+		if(!food_and_money_for_turns($c, $turns_to_play_at_once, $money_to_reserve, $is_cashing)){ // add 1 to reduce chance of running out
 			if($turns_to_play_at_once == 10) {
 				$turns_to_play_at_once = 1;
 				continue;
