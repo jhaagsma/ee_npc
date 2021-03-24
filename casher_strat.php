@@ -48,16 +48,6 @@ function play_casher_strat($server, $cnum, $rules)
 
     while ($c->turns > 0) {
         //$result = PublicMarket::buy($c,array('m_bu'=>100),array('m_bu'=>400));
-  
-        $hold = money_management($c, $rules->max_possible_market_sell);
-        if ($hold) {
-            break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
-        }
-
-        $hold = food_management($c);
-        if ($hold) {
-            break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
-        }
 
         $result = play_casher_turn($c);
         if ($result === false) {  //UNEXPECTED RETURN VALUE
@@ -67,6 +57,17 @@ function play_casher_strat($server, $cnum, $rules)
         update_c($c, $result);
         if (!$c->turns % 5) {                   //Grab new copy every 5 turns
             $c->updateMain(); //we probably don't need to do this *EVERY* turn
+        }
+
+        
+        $hold = money_management($c, $rules->max_possible_market_sell);
+        if ($hold) {
+            break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
+        }
+
+        $hold = food_management($c);
+        if ($hold) {
+            break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
         }
         
         if (turns_of_food($c) > 40

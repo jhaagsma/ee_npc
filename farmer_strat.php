@@ -70,17 +70,7 @@ function play_farmer_strat($server, $cnum, $rules)
 
     while ($c->turns > 0) {
         //$result = PublicMarket::buy($c,array('m_bu'=>100),array('m_bu'=>400));
-        
-        $hold = money_management($c, $rules->max_possible_market_sell);
-        if ($hold) {
-            break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
-        }
 
-        $hold = food_management($c);
-        if ($hold) {
-            break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
-        }
-        
         $result = play_farmer_turn($c, $rules->base_pm_food_sell_price);
         if ($result === false) {  //UNEXPECTED RETURN VALUE
             $c = get_advisor();     //UPDATE EVERYTHING
@@ -90,6 +80,17 @@ function play_farmer_strat($server, $cnum, $rules)
         update_c($c, $result);
         if (!$c->turns % 5) {                   //Grab new copy every 5 turns
             $c->updateMain(); //we probably don't need to do this *EVERY* turn
+        }
+
+        // management is here to make sure that food is sold
+        $hold = money_management($c, $rules->max_possible_market_sell);
+        if ($hold) {
+            break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
+        }
+
+        $hold = food_management($c);
+        if ($hold) {
+            break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
         }
 
         // FUTURE: sell food when needed even if income is positive, such as not enough money to build
