@@ -463,7 +463,7 @@ function calculate_next_play_in_seconds($cnum, $nexttime, $strat, $is_clan_serve
             $play_seconds_maximum = round(0.6 * $server_turn_rate * $server_max_turns);
     }
 
-    log_country_message($cnum, "For strategy ".txtStrat($cnum).", min play seconds is $play_seconds_minimum and max play seconds is $play_seconds_maximum");
+    log_country_message($cnum, "For strategy ".Bots::txtStrat($cnum).", min play seconds is $play_seconds_minimum and max play seconds is $play_seconds_maximum");
 
     // shrink the window up to 25% based on the country's preference for play
     // $country_play_rand_factor is random number in range (1, 2)
@@ -480,7 +480,7 @@ function calculate_next_play_in_seconds($cnum, $nexttime, $strat, $is_clan_serve
     $depleted_stored_turns = round(min(0.5 * $free_turns, $country_stored_turns));
     $approx_seconds_until_new_turns_go_to_stored = $server_turn_rate * ($free_turns - $depleted_stored_turns);
     log_country_message($cnum, "Server max onhand turns is $server_max_turns, country turns left is $country_turns_left, country stored turns is $country_stored_turns");
-    log_country_message($cnum, "It will take approximately $seconds_until_next_play seconds until new turns go into storage");   
+    log_country_message($cnum, "It will take approximately $approx_seconds_until_new_turns_go_to_stored seconds until new turns go into storage");   
  
     $seconds_until_next_play = $bell_random_seconds;
     if ($approx_seconds_until_new_turns_go_to_stored < $bell_random_seconds) {

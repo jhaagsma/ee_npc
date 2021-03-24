@@ -40,7 +40,8 @@ function play_indy_strat($server, $cnum, $rules)
     //out_data($owned_on_market_info);  //output the Owned on Public Market info
 
     // indies buy tech instead of building when no limit on goals here- Slagpit 20210321
-    buy_indy_goals($c, $c->money - $c->fullBuildCost() - $c->runCash());
+    // the 80% is here because indies seemed to not be buying tech through 800 turns of play
+    buy_indy_goals($c, $c->money - floor(0.8 * $c->fullBuildCost()) - $c->runCash());
 
     while ($c->turns > 0) {
         //$result = PublicMarket::buy($c,array('m_bu'=>100),array('m_bu'=>400));
@@ -64,8 +65,7 @@ function play_indy_strat($server, $cnum, $rules)
             $c->updateMain(); //we probably don't need to do this *EVERY* turn
         }
 
-        // why 70 instead of something like 15 + turns???
-        if (turns_of_food($c) > 70 && turns_of_money($c) > 70 && $c->money > 3500 * 500 && ($c->built() > 80
+        if (turns_of_food($c) > (30 + $c->turns) && turns_of_money($c) > (30 + $c->turns) && $c->money > 3500 * 500 && ($c->built() > 80
            || $c->money > $c->fullBuildCost() - $c->runCash())
         ) {
             //keep enough money to build out everything
@@ -134,9 +134,10 @@ function play_indy_turn(&$c, $server_max_possible_market_sell)
                 min(5, max(1, $c->turns - 1), max(1, min(turns_of_money($c) / 1.15, turns_of_food($c)) - 3))
             );
         } else {
+            // don't let indies ME more than 100 turns at a time because they have money management problems
             return explore(
                 $c,
-                min(max(1, $c->turns - 1), max(1, min(turns_of_money($c) / 1.15, turns_of_food($c)) - 3))
+                min(100, max(1, $c->turns - 1), max(1, min(turns_of_money($c) / 1.15, turns_of_food($c)) - 3)) 
             );
         }
     } else { //otherwise...  cash
