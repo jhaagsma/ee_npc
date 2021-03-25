@@ -444,7 +444,7 @@ PARAMETERS:
 function temporary_cash_or_tech_at_end_of_set (&$c, $strategy, $turns_to_keep, $money_to_reserve) {
 	// FUTURE: this code is overly simple and shouldn't exist here - it should call standard code used for teching and cashing
 	$is_cashing = ($strategy == 'T' ? false : true);
-	$incoming_money_per_turn = ($is_cashing ? 1.0 : 1.2) * $c->taxes;
+	$incoming_money_per_turn = ($is_cashing ? 1.0 : 1.2) * $c->taxes - $c->expenses;
 
 	$should_play_turns = temporary_check_if_cash_or_tech_is_profitable($strategy, $incoming_money_per_turn, $c->tpt, $c->foodnet);
 	if(!$should_play_turns) {
