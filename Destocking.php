@@ -37,7 +37,7 @@ function execute_destocking_actions($cnum, $strategy, $server, $rules, &$next_pl
 
 	$debug_force_final_attempt = false; // DEBUG change to true to force final attempt
 	$calc_final_attempt = is_final_destock_attempt($reset_seconds_remaining, $server_seconds_per_turn);
-	$is_final_destocking_attempt = ($debug_force_final_attempt or $calc_final_attempt ? true : false);
+	$is_final_destocking_attempt = (($debug_force_final_attempt or $calc_final_attempt) ? true : false);
 
 	// FUTURE: keep 8 turns for possible recall tech, recall goods, double sale of goods, double sale of tech
 	// however, we don't recall yet so set this to 2 turns
@@ -45,7 +45,7 @@ function execute_destocking_actions($cnum, $strategy, $server, $rules, &$next_pl
 	$turns_to_keep = 2;
 	$money_to_reserve = max(-2 * $c->income, 20000000); // mil expenses can rise rapidly during destocking, so use 10 M per turn as a guess
 	log_country_message($cnum, "Money is $c->money and calculated money to reserve is $money_to_reserve");
-	log_country_message($c->cnum, "Turns left: $c->turns");
+	log_country_message($cnum, "Turns left: $c->turns");
 	log_country_message($cnum, "Starting cashing or teching...");
 	temporary_cash_or_tech_at_end_of_set ($c, $strategy, $turns_to_keep, $money_to_reserve);
 	log_country_message($cnum, "Finished cashing or teching");
