@@ -216,7 +216,7 @@ function get_earliest_possible_destocking_start_time_for_country($bot_secret_num
 			break;
 		default:
 			$window_start_time_factor = 0.90;
-			$window_end_time_factor = 0.95;
+			$window_end_time_factor = 0.975;
 	}
 
 	$number_of_seconds_in_set = $reset_end_time - $reset_start_time;
@@ -422,6 +422,7 @@ PARAMETERS:
 */
 function temporary_check_if_cash_or_tech_is_profitable ($strategy, $incoming_money_per_turn, $tpt, $foodnet) {
 	// very rough calculations - don't care if this is inaccurate
+	// future - account for tech allies?
 	if ($strategy == 'I')
 		return true; // future: calc indy production to check something
 	elseif ($strategy == 'T')
@@ -791,26 +792,24 @@ function dump_bushel_stock(&$c, $turns_to_keep, $reset_seconds_remaining, $serve
 	// FUTURE: recall bushels if profitable (API doesn't exist)
 
 	// decide if should sell on public or private
-	$sold_bushels_on_public = true;
+	$sold_bushels_on_public = false;
+	$sold_on_private_reason = null;
 
 	if(!is_there_time_to_sell_on_public($reset_seconds_remaining, $max_market_package_time_in_seconds, 1800)) {
-		$sold_bushels_on_public = false;
 		$sold_on_private_reason = 'not enough time';
 	}
 	
 	if($estimated_public_market_bushel_sell_price * (2 - $c->tax()) < 1.5 + $private_market_bushel_price) {
-		$sold_bushels_on_public = false;
 		$sold_on_private_reason = 'can get more money on private';
 	}
 
 	if($c->turns == 0) {
-		$sold_bushels_on_public = false;
 		$sold_on_private_reason = 'no turns';
 	}
 
 	// not factoring in expenses, but who cares?
 
-	if(!$sold_bushels_on_public) {
+	if($sold_on_private_reason) {
 		log_country_message($c->cnum, "Not selling bushels on public for reason: $sold_on_private_reason");
 		$bushels_to_sell = max(0, $c->food - get_food_needs_for_turns($turns_to_keep, $c->foodpro, $c->foodcon, true));
 		if ($bushels_to_sell > 0)
@@ -832,7 +831,8 @@ function dump_bushel_stock(&$c, $turns_to_keep, $reset_seconds_remaining, $serve
 		log_country_message($c->cnum, "Possible bushels to sell is $bushels_to_sell which is less than 5000 so don't bother selling");
 		return;
 	}
-	
+
+	$sold_bushels_on_public = true;	
 	$turn_result = PublicMarket::sell($c, ['m_bu' => $bushels_to_sell], ['m_bu' => $estimated_public_market_bushel_sell_price]); 
 	update_c($c, $turn_result);
 	return;
