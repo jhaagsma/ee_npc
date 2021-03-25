@@ -82,17 +82,6 @@ function play_farmer_strat($server, $cnum, $rules)
             $c->updateMain(); //we probably don't need to do this *EVERY* turn
         }
 
-        // management is here to make sure that food is sold
-        $hold = money_management($c, $rules->max_possible_market_sell);
-        if ($hold) {
-            break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
-        }
-
-        $hold = food_management($c);
-        if ($hold) {
-            break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
-        }
-
         // FUTURE: sell food when needed even if income is positive, such as not enough money to build
         if ($c->income < 0 && $c->money < -5 * $c->income) { //sell 1/4 of all military on PM
             out("Almost out of money! Sell 10 turns of income in food!");   //Text for screen
@@ -110,6 +99,17 @@ PHP Notice:  Trying to get property 'money' of non-object in /mnt/c/Users/joe/Do
 PHP Notice:  Trying to get property 'goods' of non-object in /mnt/c/Users/joe/Documents/GitHub/ee_npc/PrivateMarket.class.php on line 151
 PHP Warning:  Invalid argument supplied for foreach() in /mnt/c/Users/joe/Documents/GitHub/ee_npc/PrivateMarket.class.php on line 151
 */
+        }
+        
+        // management is here to make sure that food is sold
+        $hold = money_management($c, $rules->max_possible_market_sell);
+        if ($hold) {
+            break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
+        }
+
+        $hold = food_management($c);
+        if ($hold) {
+            break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
         }
 
         // 40 turns of food
