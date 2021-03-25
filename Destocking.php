@@ -55,10 +55,6 @@ function execute_destocking_actions($cnum, $strategy, $server, $rules, &$next_pl
 	// FUTURE: use 1 dollar less than max on clan servers?
 	$estimated_public_market_bushel_sell_price = round($base_pm_food_sell_price / 0.81667) - 2;
 	log_country_message($cnum, "Estimated public bushel sell price is $estimated_public_market_bushel_sell_price");
-	log_country_message($cnum, "1");
-	log_country_message($cnum, "2");
-	log_country_message($cnum, "3");
-	log_country_message($cnum, "4");
 
 	// FUTURE: buy mil tech - PM purchases, bushel reselling?, bushel selling - I expect this to be an annoying calculation
 	
@@ -67,12 +63,7 @@ function execute_destocking_actions($cnum, $strategy, $server, $rules, &$next_pl
 	// FUTURE: recall bushels if there are enough of them compared to expenses? no API
 
 	// make sure everything is correct because destocking is important
-	$c = get_advisor(); // why does this error out???
-	//$c->updateMain(); // why does this error out???
-	log_country_message($cnum, "updated main");
-	log_country_message($cnum, "2");
-	log_country_message($cnum, "3");
-	log_country_message($cnum, "4");
+	$c = get_advisor();
 
 	if($c->protection == 1) { // somehow we are in protection still
 		log_country_message($cnum, "DESTOCK ERROR: country still in protection"); // FUTURE: should be an error
@@ -632,7 +623,8 @@ function buyout_up_to_public_market_dpnw(&$c, $max_dpnw, $max_spend, $military_u
 			break;
 			
 		asort($candidate_dpnw_by_unit); // get next good to buy, undefined order in case of ties is fine
-		$best_unit = array_key_first($candidate_dpnw_by_unit);
+		reset($candidate_dpnw_by_unit);
+		$best_unit = key($candidate_dpnw_by_unit); // no array_key_first until PHP 7.3
 
 		if($candidate_dpnw_by_unit[$best_unit] > $max_dpnw)
 			break; // best unit is too expensive
