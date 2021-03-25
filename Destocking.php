@@ -49,10 +49,6 @@ function execute_destocking_actions($cnum, $strategy, $server, $rules, &$next_pl
 	log_country_message($cnum, "Starting cashing or teching...");	
 	temporary_cash_or_tech_at_end_of_set ($c, $strategy, $turns_to_keep, $money_to_reserve);
 	log_country_message($cnum, "Finished cashing or teching");
-	log_country_message($cnum, "");
-	log_country_message($cnum, "");
-	log_country_message($cnum, "");
-	log_country_message($cnum, "");
 
 	// FUTURE: replace 0.81667 (max demo mil tech) with game API call
 	// reasonable to assume that a greedy demo country will resell bushels for $2 less than max PM sell price on all servers
@@ -71,8 +67,9 @@ function execute_destocking_actions($cnum, $strategy, $server, $rules, &$next_pl
 	// FUTURE: recall bushels if there are enough of them compared to expenses? no API
 
 	// make sure everything is correct because destocking is important
-	$c = get_advisor();
-	log_country_message($cnum, "");
+	//$c = get_advisor();
+	$c->updateMain(); // ????
+	log_country_message($cnum, "updated main");
 	log_country_message($cnum, "");
 	log_country_message($cnum, "");
 	log_country_message($cnum, "");
