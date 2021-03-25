@@ -90,6 +90,24 @@ class Bots
     }//end server_start_end_notification()
 
 
+    public static function assign_strat_from_country_loop($country_position) {
+        // FUTURE: make it easy to assign whatever mix of strategies we want with different mixes by server
+        if ($country_position % 5 == 0) {
+            return 'F';
+        } elseif ($country_position % 5 == 1) {
+            return 'T';
+        } elseif ($country_position % 5 == 2) {
+            return 'C';
+        } elseif ($country_position % 5 == 3) { 
+            return 'I';
+        } else {
+            return 'R';
+        }
+    } //end assign_strat_from_country_loop()
+
+
+    /*
+    // retired in favor of assign_strat_from_country_loop()
     public static function pickStrat($cnum)
     {
         $rand = rand(0, 100);
@@ -105,7 +123,7 @@ class Bots
             return 'R';
         }
     }//end pickStrat()
-
+    */
 
     public static function playstats($countries)
     {

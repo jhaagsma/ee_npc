@@ -83,7 +83,8 @@ out('Entering Infinite Loop');
 
 $sleepcount = $loopcount = 0;
 $played     = true;
-$checked_for_non_ai = false;;
+$checked_for_non_ai = false;
+$set_strategies = true;
 
 $rules  = getRules();
 $server = getServer();
@@ -97,6 +98,7 @@ while (1) {
 
     while ($server->alive_count < $server->countries_allowed) {
         out("Less countries than allowed! (".$server->alive_count.'/'.$server->countries_allowed.')');
+        $set_strategies = true;
         $send_data = ['cname' => NameGenerator::rand_name()];
         out("Making new country named '".$send_data['cname']."'");
         $cnum = ee('create', $send_data);
@@ -125,6 +127,7 @@ while (1) {
     if($server->is_debug) { // remove non-AI countries from $countries - useful on debug servers with human countries 
         $countries = [];
         if (!$checked_for_non_ai) {
+            out("Checking for non-AI countries on debug server, this may take tens of seconds remotely...");
             foreach($server->cnum_list->alive as $cnum) {
                 // need a cheap call to auth - using pm_info for now
                 $result = ee('pm_info');
@@ -136,6 +139,7 @@ while (1) {
                 }
             }
             $checked_for_non_ai = true;
+            out("Finished checking for non-AI countries");
         }
         else { // $checked_for_non_ai is true
             foreach($server->cnum_list->alive as $cnum) {
@@ -148,10 +152,51 @@ while (1) {
         $countries = $server->cnum_list->alive;
     }
 
-    // TODO: add loop to assign and save country strats here
-    // don't run every time
-    // account for dead countries
-    // account for some countries with strats, others without
+    if($set_strategies){
+        out("Checking if country strategies need to be assigned...");
+        $dead_country_count = count($server->cnum_list->dead);
+        out("Dead country count is $dead_country_count");
+        $cnums_new = array_values($countries);
+        sort($cnums_new);
+        foreach($cnums_new as $key => $cnum) {
+            if (!isset($settings->$cnum)) {  
+                $strat = Bots::assign_strat_from_country_loop($dead_country_count + $key);    
+                out("Assigned strategy for #$cnum is: $strat");
+                $settings->$cnum = json_decode(
+                    json_encode(
+                        [
+                            'strat' => $strat,
+                            'bot_secret' => null,
+                            'playfreq' => null,
+                            'playrand' => null,
+                            'lastplay' => 0,
+                            'nextplay' => 0,
+                            'price_tolerance' => 1.0,
+                            'def' => 1.0,
+                            'off' => 1.0,
+                            'aggro' => 1.0,
+                            'allyup' => null,
+                            'gdi' => null,
+                            'retal' => [],
+                        ]
+                    )
+                );
+                out("Creating settings #$cnum", true, 'purple');
+                file_put_contents($config['save_settings_file'], json_encode($settings));
+            }
+            
+            if (!isset($settings->$cnum->strat) || $settings->$cnum->strat == null) {
+                $settings->$cnum->strat = Bots::assign_strat_from_country_loop($dead_country_count + $ix);
+                out("Assigned strategy for #$cnum is: $strat");
+                out(Colors::getColoredString("Saving country strategy", 'red'));
+                file_put_contents($config['save_settings_file'], json_encode($settings));
+                echo "\n\n";
+            }
+        }
+
+        out("Done assigning country strategies");
+        $set_strategies = false;
+    }
 
     if ($played) {
         Bots::server_start_end_notification($server);
@@ -164,29 +209,8 @@ while (1) {
     foreach ($countries as $cnum) {
         Debug::off(); //reset for new country
         $save = false;
-        if (!isset($settings->$cnum)) {            
-            $settings->$cnum = json_decode(
-                json_encode(
-                    [
-                        'strat' => null,
-                        'bot_secret' => null,
-                        'playfreq' => null,
-                        'playrand' => null,
-                        'lastplay' => 0,
-                        'nextplay' => 0,
-                        'price_tolerance' => 1.0,
-                        'def' => 1.0,
-                        'off' => 1.0,
-                        'aggro' => 1.0,
-                        'allyup' => null,
-                        'gdi' => null,
-                        'retal' => [],
-                    ]
-                )
-            );
-            out("Resetting Settings #$cnum", true, 'red');
-            file_put_contents($config['save_settings_file'], json_encode($settings));
-        }
+        // if (!isset($settings->$cnum)) {            
+        //     moved code above
 
         global $cpref;
         $cpref = $settings->$cnum;
@@ -199,11 +223,12 @@ while (1) {
 
         $mktinfo = null;
 
-        if (!isset($cpref->strat) || $cpref->strat == null) {
-            $cpref->strat = Bots::pickStrat($cnum);
-            out("Resetting Strat #$cnum", true, 'red');
-            $save = true;
-        }
+        //     moved code above
+        // if (!isset($cpref->strat) || $cpref->strat == null) {
+        //     $cpref->strat = Bots::pickStrat($cnum);
+        //     out("Resetting Strat #$cnum", true, 'red');
+        //     $save = true;
+        // }
 
         if (!isset($cpref->bot_secret) || $cpref->bot_secret == null) {
             $cpref->bot_secret = 1000000000 + mt_rand(0,999999999); // 9 digits ought to be enough for anybody
@@ -574,10 +599,10 @@ function govtStats($countries)
         }
 
 
-        if (!isset($settings->$cnum->strat)) {
-            out("Picking a new strat for #$cnum");
-            $settings->$cnum->strat = Bots::pickStrat($cnum);
-        }
+        // if (!isset($settings->$cnum->strat)) {
+        //     out("Picking a new strat for #$cnum");
+        //     $settings->$cnum->strat = Bots::pickStrat($cnum);
+        // }
 
         $s = $settings->$cnum->strat;
         if (!isset($govs[$s])) {
