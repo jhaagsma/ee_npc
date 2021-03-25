@@ -27,6 +27,7 @@ function execute_destocking_actions($cnum, $strategy, $server, $rules, &$next_pl
 	$base_pm_food_sell_price = $rules->base_pm_food_sell_price;
 	$reset_seconds_remaining = $reset_end_time - time();
 	$market_autobuy_tech_price = $rules->market_autobuy_tech_price;
+	$turns_left_in_set = floor($reset_seconds_remaining / $server_seconds_per_turn);
 
 	$c = get_advisor();	// create object
 
@@ -47,7 +48,7 @@ function execute_destocking_actions($cnum, $strategy, $server, $rules, &$next_pl
 	log_country_message($cnum, "Money is $c->money and calculated money to reserve is $money_to_reserve");
 	log_country_message($cnum, "Turns left: $c->turns");
 	log_country_message($cnum, "Starting cashing or teching...");	
-	temporary_cash_or_tech_at_end_of_set ($c, $strategy, $turns_to_keep, $money_to_reserve);
+	$was_playing_turns_profitable = temporary_cash_or_tech_at_end_of_set ($c, $strategy, $turns_to_keep, $money_to_reserve);
 	log_country_message($cnum, "Finished cashing or teching");
 
 	// FUTURE: replace 0.81667 (max demo mil tech) with game API call
@@ -85,7 +86,10 @@ function execute_destocking_actions($cnum, $strategy, $server, $rules, &$next_pl
 	}
 
 	log_country_message($cnum, "Attempting to dump bushel stock...");
-	dump_bushel_stock($c, $turns_to_keep, $reset_seconds_remaining, $server_seconds_per_turn, $max_market_package_time_in_seconds, $private_market_bushel_price, $estimated_public_market_bushel_sell_price, $sold_bushels_on_public);
+	// keep bushels to keep running future turns if it's profitable to do so
+	$turns_to_keep_for_bushel_calculation = ($was_playing_turns_profitable ? $turns_left_in_set + $c->turns : $turns_to_keep);
+	log_country_message($cnum, "Turns of bushels to keep is: $turns_to_keep_for_bushel_calculation");	
+	dump_bushel_stock($c, $turns_to_keep_for_bushel_calculation, $reset_seconds_remaining, $server_seconds_per_turn, $max_market_package_time_in_seconds, $private_market_bushel_price, $estimated_public_market_bushel_sell_price, $sold_bushels_on_public);
 	log_country_message($cnum, "Done dumping bushel stock");
 
 	// FUTURE: consider burning oil to generate private market units? maybe better to sell for humans
@@ -435,22 +439,24 @@ function temporary_check_if_cash_or_tech_is_profitable ($strategy, $incoming_mon
 /*
 NAME: temporary_cash_or_tech_at_end_of_set
 PURPOSE: cashes or techs turns for a destocking country - code should probably be moved out of here at some point
-RETURNS: nothing
+RETURNS: true if running turns was profitable, false otherwise
 PARAMETERS:
 	$c - the country object
 	$strategy - single letter strategy name abbreviation
 	$turns_to_keep - keep at least these many turns
 	$money_to_reserve - stop running turns if we think we'll end up with less money than this
+	$should_play_turns - output parameter set to true if playing turns are profitable
 */
 function temporary_cash_or_tech_at_end_of_set (&$c, $strategy, $turns_to_keep, $money_to_reserve) {
 	// FUTURE: this code is overly simple and shouldn't exist here - it should call standard code used for teching and cashing
+	// in this code rainbows cash because I expect rainbows to not be techers in the future - Slagpit 20210325
 	$is_cashing = ($strategy == 'T' ? false : true);
 	$incoming_money_per_turn = ($is_cashing ? 1.0 : 1.2) * $c->taxes - $c->expenses;
 
 	$should_play_turns = temporary_check_if_cash_or_tech_is_profitable($strategy, $incoming_money_per_turn, $c->tpt, $c->foodnet);
 	if(!$should_play_turns) {
 		log_country_message($c->cnum, "Not cashing or teching turns because playing turns is not expected to be profitable");
-		return;
+		return false;
 	}
 	
 	$turns_to_play_at_once = 10;
@@ -480,7 +486,7 @@ function temporary_cash_or_tech_at_end_of_set (&$c, $strategy, $turns_to_keep, $
 		update_c($c, $turn_result);
 	}
 
-	return;
+	return true;
 }
 
 
@@ -826,7 +832,7 @@ function dump_bushel_stock(&$c, $turns_to_keep, $reset_seconds_remaining, $serve
 		}
 	}
 
-	$bushels_to_sell = $c->food - get_food_needs_for_turns($turns_to_keep, $c->foodpro, $c->foodcon, true);
+	$bushels_to_sell = $c->food - get_food_needs_for_turns($turns_to_keep, $c->foodpro, $c->foodcon, false);
 	if ($bushels_to_sell < 5000) { // don't bother if below min quantity
 		log_country_message($c->cnum, "Possible bushels to sell is $bushels_to_sell which is less than 5000 so don't bother selling");
 		return;
