@@ -91,9 +91,7 @@ $server = getServer();
 //$market            = new PublicMarket();
 $server_avg_networth = $server_avg_land = 0;
 
-sleep(10);
-for($i=1;$i<200;$i++)
-    out(" ");
+sleep(10); // TODO: remove
 
 while (1) {
     if (!is_object($server)) {

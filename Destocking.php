@@ -446,7 +446,7 @@ function temporary_cash_or_tech_at_end_of_set (&$c, $strategy, $turns_to_keep, $
 		return;
 	}
 
-	$current_public_market_bushel_price = PublicMarket::price('m_bu');
+	//$current_public_market_bushel_price = PublicMarket::price('m_bu');
 	$is_cashing = ($strategy == 'T' ? false : true);
 	$turns_to_play_at_once = 10;
 
