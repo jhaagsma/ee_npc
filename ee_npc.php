@@ -433,6 +433,26 @@ while (1) {
 done(); //done() is defined below
 
 
+
+function log_country_message($cnum, $message) {
+    $message_to_log = "Country #$cnum: " . $message;
+    out($message_to_log);
+}
+
+function log_translate_forced_debug($boolean_value) {
+    return ($boolean_value ? ' forced by debug variable' : '');
+}
+
+function log_translate_boolean_to_YN($boolean_value) {
+    return ($boolean_value ? 'yes' : 'no');
+}
+
+function log_translate_instant_to_human_readable($instant) {
+    return date('m/d/Y H:i:s', $instant);
+}
+
+
+
 function calculate_next_play_in_seconds($cnum, $nexttime, $strat, $is_clan_server, $max_time_to_market, $max_possible_market_sell, $country_play_rand_factor, $server_reset_start, $server_reset_end, $server_turn_rate, $country_turns_left, $server_max_turns, $country_stored_turns, $server_stored_turns) {
     if($nexttime <> null) {
         log_country_message($cnum, "Next play seconds was passed in as $nexttime");
