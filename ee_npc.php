@@ -161,7 +161,7 @@ while (1) {
         foreach($cnums_new as $key => $cnum) {
             if (!isset($settings->$cnum)) {  
                 $strat = Bots::assign_strat_from_country_loop($dead_country_count + $key);    
-                out("Assigned strategy for #$cnum is: $strat");
+                out("No settings line for #$cnum found. Newly assigned strategy is: $strat");
                 $settings->$cnum = json_decode(
                     json_encode(
                         [
@@ -181,18 +181,16 @@ while (1) {
                         ]
                     )
                 );
-                out("Creating settings #$cnum", true, 'purple');
-                file_put_contents($config['save_settings_file'], json_encode($settings));
             }
             
             if (!isset($settings->$cnum->strat) || $settings->$cnum->strat == null) {
-                $settings->$cnum->strat = Bots::assign_strat_from_country_loop($dead_country_count + $ix);
-                out("Assigned strategy for #$cnum is: $strat");
-                out(Colors::getColoredString("Saving country strategy", 'red'));
-                file_put_contents($config['save_settings_file'], json_encode($settings));
-                echo "\n\n";
+                $strat = Bots::assign_strat_from_country_loop($dead_country_count + $key);
+                $settings->$cnum->strat = $strat;
+                out("No strategy found for #$cnum in settings line. Newly assigned strategy is: $strat");
             }
         }
+        out(Colors::getColoredString("Saving settings file", 'purple'));
+        file_put_contents($config['save_settings_file'], json_encode($settings));
 
         out("Done assigning country strategies");
         $set_strategies = false;
