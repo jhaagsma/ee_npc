@@ -333,6 +333,10 @@ while (1) {
             file_put_contents($config['save_settings_file'], json_encode($settings));
             echo "\n\n";
         }
+
+        // don't let bots play during the final minute to reduce server load and avoid market surprises for players
+        if (time() + 60 >= $server->reset_end)
+            break;
     }
 
     // don't let bots play during the final minute to reduce server load and avoid market surprises for players
