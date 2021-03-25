@@ -91,6 +91,8 @@ $server = getServer();
 //$market            = new PublicMarket();
 $server_avg_networth = $server_avg_land = 0;
 
+sleep(10);
+
 while (1) {
     if (!is_object($server)) {
         $server = getServer();
@@ -545,33 +547,6 @@ function calculate_next_play_in_seconds($cnum, $nexttime, $strat, $is_clan_serve
 
     return $seconds_until_next_play;
 }                
-
-
-
-// FUTURE: move all logging functions to separate file
-// function to country info for live or later review
-// for now we just write to a screen but in the future hopefully we will save stuff to log files
-// examples of things to log: what decisions were made (and why), how turns are spent
-function log_country_message($cnum, $message) {
-    $message_to_log = "Country #$cnum: " . $message;
-    out($message_to_log);
-}
-
-function log_translate_forced_debug($boolean_value) {
-    return ($boolean_value ? ' forced by debug variable' : '');
-}
-
-function log_translate_boolean_to_YN($boolean_value) {
-    return ($boolean_value ? 'yes' : 'no');
-}
-
-function log_translate_instant_to_human_readable($instant) {
-    return date('m/d/Y H:i:s', $instant);
-}
-
-
-
-
 
 
 // use to get a random number specific to each cnum that doesn't change during the reset
