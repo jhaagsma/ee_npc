@@ -411,19 +411,18 @@ PURPOSE: very rough calculation to determine if a destocking country should keep
 RETURNS: true if playing turns is profitable, false otherwise
 PARAMETERS:
 	$strategy - single letter strategy name abbreviation
-	$income - net income for country (non-cashing)
-	$cashing - cashing income for country
+	$incoming_money_per_turn - net income for country, already factors in cashing or not
 	$tpt - tech per turn for country
 	$foodnet - net food change per turn for country	
 */
-function temporary_check_if_cash_or_tech_is_profitable ($strategy, $income, $cashing, $tpt, $foodnet) {
+function temporary_check_if_cash_or_tech_is_profitable ($strategy, $incoming_money_per_turn, $tpt, $foodnet) {
 	// very rough calculations - don't care if this is inaccurate
 	if ($strategy == 'I')
 		return true; // future: calc indy production to check something
 	elseif ($strategy == 'T')
-		return ($income + 700 * $tpt + 34 * $foodnet > 0 ? true: false);
+		return ($incoming_money_per_turn + 700 * $tpt + 34 * $foodnet > 0 ? true: false);
 	else
-		return ($cashing + 34 * $foodnet > 0 ? true: false);
+		return ($incoming_money_per_turn + 34 * $foodnet > 0 ? true: false);
 }
 
 
@@ -439,17 +438,16 @@ PARAMETERS:
 */
 function temporary_cash_or_tech_at_end_of_set (&$c, $strategy, $turns_to_keep, $money_to_reserve) {
 	// FUTURE: this code is overly simple and shouldn't exist here - it should call standard code used for teching and cashing
+	$is_cashing = ($strategy == 'T' ? false : true);
+	$incoming_money_per_turn = ($is_cashing ? 1.0 : 1.2) * $c->taxes;
 
-	$should_play_turns = temporary_check_if_cash_or_tech_is_profitable($strategy, $c->income, $c->cashing, $c->tpt, $c->foodnet);
+	$should_play_turns = temporary_check_if_cash_or_tech_is_profitable($strategy, $incoming_money_per_turn, $c->tpt, $c->foodnet);
 	if(!$should_play_turns) {
 		log_country_message($c->cnum, "Not cashing or teching turns because playing turns is not expected to be profitable");
 		return;
 	}
-
-	//$current_public_market_bushel_price = PublicMarket::price('m_bu');
-	$is_cashing = ($strategy == 'T' ? false : true);
+	
 	$turns_to_play_at_once = 10;
-
 	while($c->turns > $turns_to_keep) {
 		// first try to play in blocks of 10 turns, if that fails then go to turn by turn
 		// FUTURE: a farmer can sell on private and should end up being able to cash 10X turn at a time
@@ -457,7 +455,7 @@ function temporary_cash_or_tech_at_end_of_set (&$c, $strategy, $turns_to_keep, $
 		if($c->turns - $turns_to_keep < 10)
 			$turns_to_play_at_once = 1;
 
-		if(!food_and_money_for_turns($c, $turns_to_play_at_once, $money_to_reserve, $is_cashing)){ // add 1 to reduce chance of running out
+		if(!food_and_money_for_turns($c, $turns_to_play_at_once, $money_to_reserve, $is_cashing)){
 			if($turns_to_play_at_once == 10) {
 				$turns_to_play_at_once = 1;
 				continue;

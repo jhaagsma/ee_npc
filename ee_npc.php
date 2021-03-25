@@ -901,7 +901,7 @@ function update_c(&$c, $result)
     $c->taxrevenue = $latest_taxrevenue;
     $c->expenses = $latest_expenses;
     $c->income = $latest_taxrevenue - $latest_expenses;
-    $c->cashing = floor(1.2 * $latest_taxrevenue - $latest_expenses); // should be fine is slightly wrong
+    //$c->cashing = floor(1.2 * $latest_taxrevenue - $latest_expenses);
     $c->foodproduced = $latest_foodproduced;
     $c->foodconsumed = $latest_foodconsumed;
     $c->foodnet = $latest_foodproduced - $latest_foodconsumed;
