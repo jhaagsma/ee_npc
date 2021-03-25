@@ -188,7 +188,7 @@ PARAMETERS:
 */
 function get_earliest_possible_destocking_start_time_for_country($bot_secret_number, $strategy, $reset_start_time, $reset_end_time) {
 	// I just made this up, can't say that the ranges are any good - Slagpit 20210316
-	// techer is last 75% to 90% of reset
+	// techer is last 80% to 92.5% of reset
 	// rainbow and indy are last 90% to 95% of reset
 	// farmer and casher are last 95% to 98.5% of reset	
 	// note: TURNS_TO_PASS_BEFORE_NEXT_DESTOCK_ATTEMPT value should allow for at least two executions for all strategies
@@ -202,8 +202,8 @@ function get_earliest_possible_destocking_start_time_for_country($bot_secret_num
 			$country_specific_interval_wait = 0; // farmer window is too short to use the random factor
 			break;
 		case 'T':
-			$window_start_time_factor = 0.75;
-			$window_end_time_factor = 0.9;			
+			$window_start_time_factor = 0.80;
+			$window_end_time_factor = 0.925;			
 			break;
 		case 'C':
 			$window_start_time_factor = 0.95;
@@ -242,6 +242,7 @@ PARAMETERS:
 function dump_tech($c, $strategy, $market_autobuy_tech_price, $server_max_possible_market_sell) {
 	$food_needed = max(0, get_food_needs_for_turns(1, $c->foodpro, $c->foodcon, true) - $c->food);
 
+	// future: don't dump tech until close to the end (calc number of sales needed) - requires recall tech though
 	$reason_for_not_selling_tech = null;
 	if ($strategy <> 'T')
 		$reason_for_not_selling_tech = "No support for non-techers at this time"; // FUTURE: add support
@@ -254,9 +255,13 @@ function dump_tech($c, $strategy, $market_autobuy_tech_price, $server_max_possib
 	elseif($c->turns == 0)
 		$reason_for_not_selling_tech = "No turns";	
 
+	// keep 50 mil tech per acre for bushel recyle reasons
+	$max_mil_tech_to_sell = max(0, $c->t_mil - 50 * $c->land);
+	log_country_message($c->cnum, "With $c->land acres and $c->t_mil mil tech points, max mil tech to sell is $max_mil_tech_to_sell");
+
 	if($reason_for_not_selling_tech == null) {
 		$tech_quantities = [
-			'mil' => 0,
+			'mil' => min($max_mil_tech_to_sell, can_sell_tech($c, 't_mil', $server_max_possible_market_sell)),
 			'med' => can_sell_tech($c, 't_med', $server_max_possible_market_sell),
 			'bus' => can_sell_tech($c, 't_bus', $server_max_possible_market_sell),
 			'res' => can_sell_tech($c, 't_res', $server_max_possible_market_sell),
