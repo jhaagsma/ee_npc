@@ -59,7 +59,12 @@ function execute_destocking_actions($cnum, $strategy, $server, $rules, &$next_pl
 	// FUTURE: use 1 dollar less than max on clan servers?
 	$estimated_public_market_bushel_sell_price = round($base_pm_food_sell_price / 0.81667) - 2;
 	log_country_message($cnum, "Estimated public bushel sell price is $estimated_public_market_bushel_sell_price");
-
+	log_country_message($cnum, "Finished cashing or teching");
+	log_country_message($cnum, "");
+	log_country_message($cnum, "");
+	log_country_message($cnum, "");
+	log_country_message($cnum, "");
+	
 	// FUTURE: buy mil tech - PM purchases, bushel reselling?, bushel selling - I expect this to be an annoying calculation
 	
 	// FUTURE: switch governments if that would help
