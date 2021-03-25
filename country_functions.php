@@ -253,21 +253,22 @@ function food_management(&$c)
 }//end food_management()
 
 
+// deliberately using wrong values for NW to encourage bots to buy jets/turrets off public - Slagpit 20210325
 function minDpnw(&$c, $onlyDef = false)
 {
     $pm_info = PrivateMarket::getRecent($c);   //get the PM info
 
     PublicMarket::update();
-    $pub_tr = PublicMarket::price('m_tr') * $c->tax() / 0.5;
+    $pub_tr = PublicMarket::price('m_tr') * $c->tax() / 0.45; // wrong on purpose
     $pub_j  = PublicMarket::price('m_j') * $c->tax() / 0.6;
     $pub_tu = PublicMarket::price('m_tu') * $c->tax() / 0.6;
-    $pub_ta = PublicMarket::price('m_ta') * $c->tax() / 2;
+    $pub_ta = PublicMarket::price('m_ta') * $c->tax() / 1.8;
 
     $dpnws = [
-        'pm_tr' => round($pm_info->buy_price->m_tr / 0.5),
+        'pm_tr' => round($pm_info->buy_price->m_tr / 0.45),// wrong on purpose
         'pm_j' => round($pm_info->buy_price->m_j / 0.6),
         'pm_tu' => round($pm_info->buy_price->m_tu / 0.6),
-        'pm_ta' => round($pm_info->buy_price->m_ta / 2),
+        'pm_ta' => round($pm_info->buy_price->m_ta / 1.8),
         'pub_tr' => $pub_tr == 0 ? 9000 : $pub_tr,
         'pub_j' => $pub_j == 0 ? 9000 : $pub_j,
         'pub_tu' => $pub_tu == 0 ? 9000 : $pub_tu,
@@ -442,7 +443,7 @@ function siteURL($cnum)
 
 
 
-
+/* // replaced by Destocking.php
 function destock($server, $cnum)
 {
     $c = get_advisor();     //c as in country! (get the advisor)
@@ -480,10 +481,10 @@ function destock($server, $cnum)
         out("Ran out of goods?");   //Text for screen
     }
 }//end destock()
+*/
 
 
-
-
+// deliberately using wrong values for NW to encourage bots to buy jets/turrets off public - Slagpit 20210325
 function buy_public_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false, $defOnly = false)
 {
     //out("Stage 1");
@@ -496,9 +497,9 @@ function buy_public_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false, $de
         $reserve = $c->money - $money;
     }
 
-    $tr_price = round($dpnw * 0.5 / $c->tax());  //THE PRICE TO BUY THEM AT
+    $tr_price = round($dpnw * 0.45 / $c->tax());  //THE PRICE TO BUY THEM AT // wrong on purpose
     $j_price  = $tu_price = round($dpnw * 0.6 / $c->tax());  //THE PRICE TO BUY THEM AT
-    $ta_price = round($dpnw * 2 / $c->tax());  //THE PRICE TO BUY THEM AT
+    $ta_price = round($dpnw * 1.8 / $c->tax());  //THE PRICE TO BUY THEM AT
 
     $tr_cost = ceil($tr_price * $c->tax());  //THE COST OF BUYING THEM
     $j_cost  = $tu_cost = ceil($tu_price * $c->tax());  //THE COST OF BUYING THEM
@@ -565,6 +566,7 @@ function buy_public_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false, $de
 }//end buy_public_below_dpnw()
 
 
+// deliberately using wrong values for NW to encourage bots to buy jets/turrets off public - Slagpit 20210325
 function buy_private_below_dpnw(&$c, $dpnw, $money = 0, $shuffle = false, $defOnly = false)
 {
     //out("Stage 2");
@@ -577,9 +579,9 @@ function buy_private_below_dpnw(&$c, $dpnw, $money = 0, $shuffle = false, $defOn
         $reserve = min($c->money, $c->money - $money);
     }
 
-    $tr_price = round($dpnw * 0.5);
+    $tr_price = round($dpnw * 0.45); // wrong on purpose
     $j_price  = $tu_price = round($dpnw * 0.6);
-    $ta_price = round($dpnw * 2);
+    $ta_price = round($dpnw * 1.8);
 
     $order = [1,2,3,4];
 
