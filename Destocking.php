@@ -259,11 +259,11 @@ function dump_tech($c, $strategy, $market_autobuy_tech_price, $server_max_possib
 	elseif($c->turns == 0)
 		$reason_for_not_selling_tech = "No turns";	
 
-	// keep 50 mil tech per acre for bushel recyle reasons
-	$max_mil_tech_to_sell = max(0, $c->t_mil - 50 * $c->land);
-	log_country_message($c->cnum, "With $c->land acres and $c->t_mil mil tech points, max mil tech to sell is $max_mil_tech_to_sell");
-
 	if($reason_for_not_selling_tech == null) {
+		// keep 50 mil tech per acre for bushel recyle reasons
+		$max_mil_tech_to_sell = max(0, $c->t_mil - 50 * $c->land);
+		log_country_message($c->cnum, "With $c->land acres and $c->t_mil mil tech points, max mil tech to sell is $max_mil_tech_to_sell");
+
 		$tech_quantities = [
 			'mil' => min($max_mil_tech_to_sell, can_sell_tech($c, 't_mil', $server_max_possible_market_sell)),
 			'med' => can_sell_tech($c, 't_med', $server_max_possible_market_sell),
