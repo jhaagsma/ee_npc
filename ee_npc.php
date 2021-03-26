@@ -206,6 +206,7 @@ while (1) {
                 out("No strategy found for #$cnum in settings line. Newly assigned strategy is: $strat");
             }
         }
+        // don't bother to check if save is truly needed because this code will likely only run once per loop (unless bot countries get killed)
         out(Colors::getColoredString("Saving settings file", 'purple'));
         file_put_contents($config['save_settings_file'], json_encode($settings));
 
