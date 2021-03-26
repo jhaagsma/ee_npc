@@ -96,7 +96,7 @@ while (1) {
         $server = getServer();
     }
 
-    $max_create_attempts = 2 * ($server->alive_count < $server->countries_allowed);
+    $max_create_attempts = 2 * ($server->countries_allowed - $server->alive_count);
     while ($server->alive_count < $server->countries_allowed and $max_create_attempts > 0) {
         out("Less countries than allowed! (".$server->alive_count.'/'.$server->countries_allowed.')');
         $set_strategies = true;
@@ -152,6 +152,12 @@ while (1) {
     }
     else { // not debug
         $countries = $server->cnum_list->alive;
+    }
+
+    if(count($countries) == 0) {
+        out("No AI countries exist yet, sleeping for 60 seconds and starting loop over");
+        sleep(60);
+        continue;
     }
 
     if($set_strategies){
