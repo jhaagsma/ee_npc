@@ -96,23 +96,32 @@ while (1) {
         $server = getServer();
     }
 
-    $max_create_attempts = 2 * ($server->countries_allowed - $server->alive_count);
-    while ($server->alive_count < $server->countries_allowed and $max_create_attempts > 0) {
-        out("Less countries than allowed! (".$server->alive_count.'/'.$server->countries_allowed.')');
-        $set_strategies = true;
-        $send_data = ['cname' => NameGenerator::rand_name()];
-        out("Making new country named '".$send_data['cname']."'");
-        $cnum = ee('create', $send_data);
-        out($send_data['cname'].' (#'.$cnum.') created!');
-        $server = getServer();
-        if ($server->reset_start > time()) {
-            $timeleft      = $server->reset_start - time();
-            $countriesleft = $server->countries_allowed - $server->alive_count;
-            $sleeptime     = $timeleft / $countriesleft;
-            out("Sleep for $sleeptime to spread countries out");
-            sleep($sleeptime);
+    if($server->alive_count < $server->countries_allowed) {
+        $max_create_attempts = 2 * ($server->countries_allowed - $server->alive_count);
+        while ($server->alive_count < $server->countries_allowed and $max_create_attempts > 0) {
+            out("Less countries than allowed! (".$server->alive_count.'/'.$server->countries_allowed.')');
+            $set_strategies = true;
+            $send_data = ['cname' => NameGenerator::rand_name()];
+            out("Making new country named '".$send_data['cname']."'");
+            $cnum = ee('create', $send_data);
+            $settings->$cnum = null; // clear strategy from previous rounds
+            out($send_data['cname'].' (#'.$cnum.') created!');
+            $server = getServer();
+            if ($server->reset_start > time()) {
+                $timeleft      = $server->reset_start - time();
+                $countriesleft = $server->countries_allowed - $server->alive_count;
+                $sleeptime     = $timeleft / $countriesleft;
+                out("Sleep for $sleeptime to spread countries out");
+                sleep($sleeptime);
+            }
+            $max_create_attempts--; // avoid infinite loop when something goes wrong
         }
-        $max_create_attempts--;
+        if($max_create_attempts == 0)
+            out(Colors::getColoredString("ERROR: hit max create attempts before creating all countries", 'red')); // TODO: error
+        // this is here so we can change bot strategy percentages from round to round
+        // without trying to figure out when is safe to delete the settings file
+        out(Colors::getColoredString("Clearing out settings from file for new cnums", 'purple'));
+        file_put_contents($config['save_settings_file'], json_encode($settings));
     }
 
     if ($server->reset_start > time()) {
