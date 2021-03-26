@@ -72,7 +72,7 @@ function play_farmer_strat($server)
 
     while ($c->turns > 0) {
         //$result = PublicMarket::buy($c,array('m_bu'=>100),array('m_bu'=>400));
-        $result = play_farmer_turn($c, $server);
+        $result = play_farmer_turn($c);
         if ($result === false) {  //UNEXPECTED RETURN VALUE
             $c = get_advisor();     //UPDATE EVERYTHING
             continue;
@@ -122,7 +122,7 @@ function play_farmer_strat($server)
     return $c;
 }//end play_farmer_strat()
 
-function play_farmer_turn(&$c, $server)
+function play_farmer_turn(&$c)
 {
  //c as in country!
     $target_bpt = 65;
@@ -139,7 +139,7 @@ function play_farmer_turn(&$c, $server)
             || $c->turns == 1
         )
     ) { //Don't sell less than 30 turns of food unless you're on your last turn (and desperate?)
-        return sellextrafood_farmer($c, $server);
+        return sellextrafood_farmer($c);
     } elseif ($c->shouldBuildSpyIndies()) {
         //build a full BPT of indies if we have less than that, and we're out of protection
         return Build::indy($c);
@@ -161,7 +161,7 @@ function play_farmer_turn(&$c, $server)
 }//end play_farmer_turn()
 
 
-function sellextrafood_farmer(&$c, $server)
+function sellextrafood_farmer(&$c)
 {
     //out("Lots of food, let's sell some!");
     //$pm_info = get_pm_info();
@@ -186,8 +186,8 @@ function sellextrafood_farmer(&$c, $server)
         )
     );
     $price   = ['m_bu' => $price];
-    
-    if ($price <= max($server->pm_food_sell_price, $pm_info->sell_price->m_bu / $c->tax())) {
+
+    if ($price <= max(29, $pm_info->sell_price->m_bu / $c->tax())) {
         return PrivateMarket::sell($c, ['m_bu' => $quantity]);
         ///      PrivateMarket::sell($c,array('m_bu' => $c->food));   //Sell 'em
     }
