@@ -199,6 +199,7 @@ function get_earliest_possible_destocking_start_time_for_country($bot_secret_num
 
 	$country_specific_interval_wait = 0.001 * decode_bot_secret($bot_secret_number, 3); // random number three digit number between 0.000 and 0.999 that's fixed for each country
 
+	// changes to here must be reflected also in calculate_next_play_in_seconds()
 	switch ($strategy) {
 		case 'F':
 			$window_start_time_factor = 0.95;

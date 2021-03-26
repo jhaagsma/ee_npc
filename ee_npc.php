@@ -96,7 +96,8 @@ while (1) {
         $server = getServer();
     }
 
-    while ($server->alive_count < $server->countries_allowed) {
+    $max_create_attempts = 2 * ($server->alive_count < $server->countries_allowed);
+    while ($server->alive_count < $server->countries_allowed and $max_create_attempts > 0) {
         out("Less countries than allowed! (".$server->alive_count.'/'.$server->countries_allowed.')');
         $set_strategies = true;
         $send_data = ['cname' => NameGenerator::rand_name()];
@@ -111,6 +112,7 @@ while (1) {
             out("Sleep for $sleeptime to spread countries out");
             sleep($sleeptime);
         }
+        $max_create_attempts--;
     }
 
     if ($server->reset_start > time()) {
