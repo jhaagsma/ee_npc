@@ -503,7 +503,7 @@ function calculate_next_play_in_seconds($cnum, $nexttime, $strat, $is_clan_serve
     */
     switch($strat) {
         case 'F':
-            $play_seconds_minimum = $max_time_to_market + 3 * 3600;
+            $play_seconds_minimum = $max_time_to_market + 3 * 3600; // FUTURE: this isn't a good value for servers with very fast turn rates
             $play_seconds_maximum = round(0.6 * $server_turn_rate * $server_max_turns);
 
             if ($play_seconds_minimum > $play_seconds_maximum) // won't happen with any current servers, but just in case

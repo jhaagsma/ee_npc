@@ -285,10 +285,10 @@ function rainbowGoals(&$c)
 {
     return [
         //what, goal, priority
-        ['t_agri',225,5],
-        ['t_indy',160,5],
-        ['t_bus',178,7],
-        ['t_res',178,7],
+        ['t_agri',160,5],
+        ['t_indy',130,5],
+        ['t_bus',150,7],
+        ['t_res',150,7],
         ['t_mil',94,5],
         ['nlg',$c->nlgTarget(),5],
         ['dpa',$c->defPerAcreTarget(),10],
