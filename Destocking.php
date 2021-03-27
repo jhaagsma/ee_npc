@@ -424,12 +424,17 @@ PARAMETERS:
 	$incoming_money_per_turn - net income for country, already factors in cashing or not
 	$tpt - tech per turn for country
 	$foodnet - net food change per turn for country	
+	$govt - the one letter government abbreviation
+	$land - acres for the country
+	$mil_tech - points of mil tech for the country
 */
-function temporary_check_if_cash_or_tech_is_profitable ($strategy, $incoming_money_per_turn, $tpt, $foodnet) {
+function temporary_check_if_cash_or_tech_is_profitable ($strategy, $incoming_money_per_turn, $tpt, $foodnet, $govt, $land, $mil_tech) {
 	// very rough calculations - don't care if this is inaccurate
 	// future - account for tech allies?
 	if ($strategy == 'I')
 		return true; // future: calc indy production to check something
+	elseif ($strategy == 'T' and $govt == 'D' and $mil_tech / $land < 50) // demo techers should get enough mil tech to clear bushels
+		return true;
 	elseif ($strategy == 'T')
 		return ($incoming_money_per_turn + 700 * $tpt + 34 * $foodnet > 0 ? true: false);
 	else
@@ -454,7 +459,7 @@ function temporary_cash_or_tech_at_end_of_set (&$c, $strategy, $turns_to_keep, $
 	$is_cashing = ($strategy == 'T' ? false : true);
 	$incoming_money_per_turn = ($is_cashing ? 1.0 : 1.2) * $c->taxes - $c->expenses;
 
-	$should_play_turns = temporary_check_if_cash_or_tech_is_profitable($strategy, $incoming_money_per_turn, $c->tpt, $c->foodnet);
+	$should_play_turns = temporary_check_if_cash_or_tech_is_profitable($strategy, $incoming_money_per_turn, $c->tpt, $c->foodnet, $c->govt, $c->land, $c->t_mil);
 	if(!$should_play_turns) {
 		log_country_message($c->cnum, "Not cashing or teching turns because playing turns is not expected to be profitable");
 		return false;
