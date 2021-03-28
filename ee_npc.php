@@ -104,7 +104,8 @@ while (1) {
             $send_data = ['cname' => NameGenerator::rand_name()];
             out("Making new country named '".$send_data['cname']."'");
             $cnum = ee('create', $send_data);
-            $settings->$cnum = null; // clear strategy from previous rounds
+            if(isset($settings->$cnum)) // clear strategy from previous rounds
+                $settings->$cnum = null;
             out($send_data['cname'].' (#'.$cnum.') created!');
             $server = getServer();
             if ($server->reset_start > time()) {
