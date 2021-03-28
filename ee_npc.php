@@ -96,21 +96,33 @@ while (1) {
         $server = getServer();
     }
 
-    while ($server->alive_count < $server->countries_allowed) {
-        out("Less countries than allowed! (".$server->alive_count.'/'.$server->countries_allowed.')');
-        $set_strategies = true;
-        $send_data = ['cname' => NameGenerator::rand_name()];
-        out("Making new country named '".$send_data['cname']."'");
-        $cnum = ee('create', $send_data);
-        out($send_data['cname'].' (#'.$cnum.') created!');
-        $server = getServer();
-        if ($server->reset_start > time()) {
-            $timeleft      = $server->reset_start - time();
-            $countriesleft = $server->countries_allowed - $server->alive_count;
-            $sleeptime     = $timeleft / $countriesleft;
-            out("Sleep for $sleeptime to spread countries out");
-            sleep($sleeptime);
+    if($server->alive_count < $server->countries_allowed) {
+        $max_create_attempts = 2 * ($server->countries_allowed - $server->alive_count);
+        while ($server->alive_count < $server->countries_allowed and $max_create_attempts > 0) {
+            out("Less countries than allowed! (".$server->alive_count.'/'.$server->countries_allowed.')');
+            $set_strategies = true;
+            $send_data = ['cname' => NameGenerator::rand_name()];
+            out("Making new country named '".$send_data['cname']."'");
+            $cnum = ee('create', $send_data);
+            if(isset($settings->$cnum)) // clear strategy from previous rounds
+                $settings->$cnum = null;
+            out($send_data['cname'].' (#'.$cnum.') created!');
+            $server = getServer();
+            if ($server->reset_start > time()) {
+                $timeleft      = $server->reset_start - time();
+                $countriesleft = $server->countries_allowed - $server->alive_count;
+                $sleeptime     = $timeleft / $countriesleft;
+                out("Sleep for $sleeptime to spread countries out");
+                sleep($sleeptime);
+            }
+            $max_create_attempts--; // avoid infinite loop when something goes wrong
         }
+        if($max_create_attempts == 0)
+            out(Colors::getColoredString("ERROR: hit max create attempts before creating all countries", 'red')); // TODO: error
+        // this is here so we can change bot strategy percentages from round to round
+        // without trying to figure out when is safe to delete the settings file
+        out(Colors::getColoredString("Clearing out settings from file for new cnums", 'purple'));
+        file_put_contents($config['save_settings_file'], json_encode($settings));
     }
 
     if ($server->reset_start > time()) {
@@ -152,6 +164,12 @@ while (1) {
         $countries = $server->cnum_list->alive;
     }
 
+    if(count($countries) == 0) {
+        out("No AI countries exist yet, sleeping for 60 seconds and starting loop over");
+        sleep(60);
+        continue;
+    }
+
     if($set_strategies){
         out("Checking if country strategies need to be assigned...");
         $dead_country_count = count($server->cnum_list->dead);
@@ -160,7 +178,7 @@ while (1) {
         sort($cnums_new);
         foreach($cnums_new as $key => $cnum) {
             if (!isset($settings->$cnum)) {  
-                $strat = Bots::assign_strat_from_country_loop($dead_country_count + $key);    
+                $strat = Bots::assign_strat_from_country_loop($dead_country_count + $key, $server->is_debug, $server->is_ai_server);    
                 out("No settings line for #$cnum found. Newly assigned strategy is: $strat");
                 $settings->$cnum = json_decode(
                     json_encode(
@@ -184,11 +202,12 @@ while (1) {
             }
             
             if (!isset($settings->$cnum->strat) || $settings->$cnum->strat == null) {
-                $strat = Bots::assign_strat_from_country_loop($dead_country_count + $key);
+                $strat = Bots::assign_strat_from_country_loop($dead_country_count + $key, $server->is_debug, $server->is_ai_server);
                 $settings->$cnum->strat = $strat;
                 out("No strategy found for #$cnum in settings line. Newly assigned strategy is: $strat");
             }
         }
+        // don't bother to check if save is truly needed because this code will likely only run once per loop (unless bot countries get killed)
         out(Colors::getColoredString("Saving settings file", 'purple'));
         file_put_contents($config['save_settings_file'], json_encode($settings));
 
@@ -431,6 +450,26 @@ while (1) {
 done(); //done() is defined below
 
 
+
+function log_country_message($cnum, $message) {
+    $message_to_log = "Country #$cnum: " . $message;
+    out($message_to_log);
+}
+
+function log_translate_forced_debug($boolean_value) {
+    return ($boolean_value ? ' forced by debug variable' : '');
+}
+
+function log_translate_boolean_to_YN($boolean_value) {
+    return ($boolean_value ? 'yes' : 'no');
+}
+
+function log_translate_instant_to_human_readable($instant) {
+    return date('m/d/Y H:i:s', $instant);
+}
+
+
+
 function calculate_next_play_in_seconds($cnum, $nexttime, $strat, $is_clan_server, $max_time_to_market, $max_possible_market_sell, $country_play_rand_factor, $server_reset_start, $server_reset_end, $server_turn_rate, $country_turns_left, $server_max_turns, $country_stored_turns, $server_stored_turns) {
     if($nexttime <> null) {
         log_country_message($cnum, "Next play seconds was passed in as $nexttime");
@@ -465,7 +504,7 @@ function calculate_next_play_in_seconds($cnum, $nexttime, $strat, $is_clan_serve
     */
     switch($strat) {
         case 'F':
-            $play_seconds_minimum = $max_time_to_market + 3 * 3600;
+            $play_seconds_minimum = $max_time_to_market + 3 * 3600; // FUTURE: this isn't a good value for servers with very fast turn rates
             $play_seconds_maximum = round(0.6 * $server_turn_rate * $server_max_turns);
 
             if ($play_seconds_minimum > $play_seconds_maximum) // won't happen with any current servers, but just in case
@@ -545,33 +584,6 @@ function calculate_next_play_in_seconds($cnum, $nexttime, $strat, $is_clan_serve
 
     return $seconds_until_next_play;
 }                
-
-
-
-// FUTURE: move all logging functions to separate file
-// function to country info for live or later review
-// for now we just write to a screen but in the future hopefully we will save stuff to log files
-// examples of things to log: what decisions were made (and why), how turns are spent
-function log_country_message($cnum, $message) {
-    $message_to_log = "Country #$cnum: " . $message;
-    out($message_to_log);
-}
-
-function log_translate_forced_debug($boolean_value) {
-    return ($boolean_value ? ' forced by debug variable' : '');
-}
-
-function log_translate_boolean_to_YN($boolean_value) {
-    return ($boolean_value ? 'yes' : 'no');
-}
-
-function log_translate_instant_to_human_readable($instant) {
-    return date('m/d/Y H:i:s', $instant);
-}
-
-
-
-
 
 
 // use to get a random number specific to each cnum that doesn't change during the reset
@@ -906,7 +918,7 @@ function update_c(&$c, $result)
     $c->taxrevenue = $latest_taxrevenue;
     $c->expenses = $latest_expenses;
     $c->income = $latest_taxrevenue - $latest_expenses;
-    $c->cashing = floor(1.2 * $latest_taxrevenue - $latest_expenses); // should be fine is slightly wrong
+    //$c->cashing = floor(1.2 * $latest_taxrevenue - $latest_expenses);
     $c->foodproduced = $latest_foodproduced;
     $c->foodconsumed = $latest_foodconsumed;
     $c->foodnet = $latest_foodproduced - $latest_foodconsumed;

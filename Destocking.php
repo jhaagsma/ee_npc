@@ -27,6 +27,7 @@ function execute_destocking_actions($cnum, $strategy, $server, $rules, &$next_pl
 	$base_pm_food_sell_price = $rules->base_pm_food_sell_price;
 	$reset_seconds_remaining = $reset_end_time - time();
 	$market_autobuy_tech_price = $rules->market_autobuy_tech_price;
+	$turns_left_in_set = floor($reset_seconds_remaining / $server_seconds_per_turn);
 
 	$c = get_advisor();	// create object
 
@@ -37,17 +38,17 @@ function execute_destocking_actions($cnum, $strategy, $server, $rules, &$next_pl
 
 	$debug_force_final_attempt = false; // DEBUG change to true to force final attempt
 	$calc_final_attempt = is_final_destock_attempt($reset_seconds_remaining, $server_seconds_per_turn);
-	$is_final_destocking_attempt = ($debug_force_final_attempt or $calc_final_attempt ? true : false);
+	$is_final_destocking_attempt = (($debug_force_final_attempt or $calc_final_attempt) ? true : false);
 
 	// FUTURE: keep 8 turns for possible recall tech, recall goods, double sale of goods, double sale of tech
 	// however, we don't recall yet so set this to 2 turns
 	// want to be careful with the money to reserve unless we make ... if we have 200 bots all spending $50 million at the end then that's 10 B dollars on public
-	$turns_to_keep = 2;
-	$money_to_reserve = max(-2 * $c->income, 20000000); // mil expenses can rise rapidly during destocking, so use 10 M per turn as a guess
+	$turns_to_keep = 2 + ($strategy == 'T' ? 1 : 0); // save another turn for techer to dump tech
+	$money_to_reserve = max(-1 * $turns_to_keep * $c->income, 10000000 * $turns_to_keep); // mil expenses can rise rapidly during destocking, so use 10 M per turn as a guess
 	log_country_message($cnum, "Money is $c->money and calculated money to reserve is $money_to_reserve");
-	log_country_message($c->cnum, "Turns left: $c->turns");
-	log_country_message($cnum, "Starting cashing or teching...");
-	temporary_cash_or_tech_at_end_of_set ($c, $strategy, $turns_to_keep, $money_to_reserve);
+	log_country_message($cnum, "Turns left: $c->turns");
+	log_country_message($cnum, "Starting cashing or teching...");	
+	$was_playing_turns_profitable = temporary_cash_or_tech_at_end_of_set ($c, $strategy, $turns_to_keep, $money_to_reserve);
 	log_country_message($cnum, "Finished cashing or teching");
 
 	// FUTURE: replace 0.81667 (max demo mil tech) with game API call
@@ -85,7 +86,10 @@ function execute_destocking_actions($cnum, $strategy, $server, $rules, &$next_pl
 	}
 
 	log_country_message($cnum, "Attempting to dump bushel stock...");
-	dump_bushel_stock($c, $turns_to_keep, $reset_seconds_remaining, $server_seconds_per_turn, $max_market_package_time_in_seconds, $private_market_bushel_price, $estimated_public_market_bushel_sell_price, $sold_bushels_on_public);
+	// keep bushels to keep running future turns if it's profitable to do so
+	$turns_to_keep_for_bushel_calculation = ($was_playing_turns_profitable ? $turns_left_in_set + $c->turns : $turns_to_keep);
+	log_country_message($cnum, "Turns of bushels to keep is: $turns_to_keep_for_bushel_calculation");	
+	dump_bushel_stock($c, $turns_to_keep_for_bushel_calculation, $reset_seconds_remaining, $server_seconds_per_turn, $max_market_package_time_in_seconds, $private_market_bushel_price, $estimated_public_market_bushel_sell_price, $sold_bushels_on_public);
 	log_country_message($cnum, "Done dumping bushel stock");
 
 	// FUTURE: consider burning oil to generate private market units? maybe better to sell for humans
@@ -188,13 +192,14 @@ PARAMETERS:
 */
 function get_earliest_possible_destocking_start_time_for_country($bot_secret_number, $strategy, $reset_start_time, $reset_end_time) {
 	// I just made this up, can't say that the ranges are any good - Slagpit 20210316
-	// techer is last 75% to 90% of reset
+	// techer is last 80% to 92.5% of reset
 	// rainbow and indy are last 90% to 95% of reset
 	// farmer and casher are last 95% to 98.5% of reset	
 	// note: TURNS_TO_PASS_BEFORE_NEXT_DESTOCK_ATTEMPT value should allow for at least two executions for all strategies
 
 	$country_specific_interval_wait = 0.001 * decode_bot_secret($bot_secret_number, 3); // random number three digit number between 0.000 and 0.999 that's fixed for each country
 
+	// changes to here must be reflected also in calculate_next_play_in_seconds()
 	switch ($strategy) {
 		case 'F':
 			$window_start_time_factor = 0.95;
@@ -202,8 +207,8 @@ function get_earliest_possible_destocking_start_time_for_country($bot_secret_num
 			$country_specific_interval_wait = 0; // farmer window is too short to use the random factor
 			break;
 		case 'T':
-			$window_start_time_factor = 0.75;
-			$window_end_time_factor = 0.9;			
+			$window_start_time_factor = 0.80;
+			$window_end_time_factor = 0.925;			
 			break;
 		case 'C':
 			$window_start_time_factor = 0.95;
@@ -216,7 +221,7 @@ function get_earliest_possible_destocking_start_time_for_country($bot_secret_num
 			break;
 		default:
 			$window_start_time_factor = 0.90;
-			$window_end_time_factor = 0.95;
+			$window_end_time_factor = 0.975;
 	}
 
 	$number_of_seconds_in_set = $reset_end_time - $reset_start_time;
@@ -242,6 +247,7 @@ PARAMETERS:
 function dump_tech($c, $strategy, $market_autobuy_tech_price, $server_max_possible_market_sell) {
 	$food_needed = max(0, get_food_needs_for_turns(1, $c->foodpro, $c->foodcon, true) - $c->food);
 
+	// future: don't dump tech until close to the end (calc number of sales needed) - requires recall tech though
 	$reason_for_not_selling_tech = null;
 	if ($strategy <> 'T')
 		$reason_for_not_selling_tech = "No support for non-techers at this time"; // FUTURE: add support
@@ -255,8 +261,12 @@ function dump_tech($c, $strategy, $market_autobuy_tech_price, $server_max_possib
 		$reason_for_not_selling_tech = "No turns";	
 
 	if($reason_for_not_selling_tech == null) {
+		// keep 50 mil tech per acre for bushel recyle reasons
+		$max_mil_tech_to_sell = max(0, $c->t_mil - 50 * $c->land);
+		log_country_message($c->cnum, "With $c->land acres and $c->t_mil mil tech points, max mil tech to sell is $max_mil_tech_to_sell");
+
 		$tech_quantities = [
-			'mil' => 0,
+			'mil' => min($max_mil_tech_to_sell, can_sell_tech($c, 't_mil', $server_max_possible_market_sell)),
 			'med' => can_sell_tech($c, 't_med', $server_max_possible_market_sell),
 			'bus' => can_sell_tech($c, 't_bus', $server_max_possible_market_sell),
 			'res' => can_sell_tech($c, 't_res', $server_max_possible_market_sell),
@@ -411,45 +421,51 @@ PURPOSE: very rough calculation to determine if a destocking country should keep
 RETURNS: true if playing turns is profitable, false otherwise
 PARAMETERS:
 	$strategy - single letter strategy name abbreviation
-	$income - net income for country (non-cashing)
-	$cashing - cashing income for country
+	$incoming_money_per_turn - net income for country, already factors in cashing or not
 	$tpt - tech per turn for country
 	$foodnet - net food change per turn for country	
+	$govt - the one letter government abbreviation
+	$land - acres for the country
+	$mil_tech - points of mil tech for the country
 */
-function temporary_check_if_cash_or_tech_is_profitable ($strategy, $income, $cashing, $tpt, $foodnet) {
+function temporary_check_if_cash_or_tech_is_profitable ($strategy, $incoming_money_per_turn, $tpt, $foodnet, $govt, $land, $mil_tech) {
 	// very rough calculations - don't care if this is inaccurate
+	// future - account for tech allies?
 	if ($strategy == 'I')
 		return true; // future: calc indy production to check something
+	elseif ($strategy == 'T' and $govt == 'D' and $mil_tech / $land < 50) // demo techers should get enough mil tech to clear bushels
+		return true;
 	elseif ($strategy == 'T')
-		return ($income + 700 * $tpt + 34 * $foodnet > 0 ? true: false);
+		return ($incoming_money_per_turn + 700 * $tpt + 34 * $foodnet > 0 ? true: false);
 	else
-		return ($cashing + 34 * $foodnet > 0 ? true: false);
+		return ($incoming_money_per_turn + 34 * $foodnet > 0 ? true: false);
 }
 
 
 /*
 NAME: temporary_cash_or_tech_at_end_of_set
 PURPOSE: cashes or techs turns for a destocking country - code should probably be moved out of here at some point
-RETURNS: nothing
+RETURNS: true if running turns was profitable, false otherwise
 PARAMETERS:
 	$c - the country object
 	$strategy - single letter strategy name abbreviation
 	$turns_to_keep - keep at least these many turns
 	$money_to_reserve - stop running turns if we think we'll end up with less money than this
+	$should_play_turns - output parameter set to true if playing turns are profitable
 */
 function temporary_cash_or_tech_at_end_of_set (&$c, $strategy, $turns_to_keep, $money_to_reserve) {
 	// FUTURE: this code is overly simple and shouldn't exist here - it should call standard code used for teching and cashing
+	// in this code rainbows cash because I expect rainbows to not be techers in the future - Slagpit 20210325
+	$is_cashing = ($strategy == 'T' ? false : true);
+	$incoming_money_per_turn = ($is_cashing ? 1.0 : 1.2) * $c->taxes - $c->expenses;
 
-	$should_play_turns = temporary_check_if_cash_or_tech_is_profitable($strategy, $c->income, $c->cashing, $c->tpt, $c->foodnet);
+	$should_play_turns = temporary_check_if_cash_or_tech_is_profitable($strategy, $incoming_money_per_turn, $c->tpt, $c->foodnet, $c->govt, $c->land, $c->t_mil);
 	if(!$should_play_turns) {
 		log_country_message($c->cnum, "Not cashing or teching turns because playing turns is not expected to be profitable");
-		return;
+		return false;
 	}
-
-	$current_public_market_bushel_price = PublicMarket::price('m_bu');
-	$is_cashing = ($strategy == 'T' ? false : true);
+	
 	$turns_to_play_at_once = 10;
-
 	while($c->turns > $turns_to_keep) {
 		// first try to play in blocks of 10 turns, if that fails then go to turn by turn
 		// FUTURE: a farmer can sell on private and should end up being able to cash 10X turn at a time
@@ -457,7 +473,7 @@ function temporary_cash_or_tech_at_end_of_set (&$c, $strategy, $turns_to_keep, $
 		if($c->turns - $turns_to_keep < 10)
 			$turns_to_play_at_once = 1;
 
-		if(!food_and_money_for_turns($c, $turns_to_play_at_once, $money_to_reserve, $is_cashing)){ // add 1 to reduce chance of running out
+		if(!food_and_money_for_turns($c, $turns_to_play_at_once, $money_to_reserve, $is_cashing)){
 			if($turns_to_play_at_once == 10) {
 				$turns_to_play_at_once = 1;
 				continue;
@@ -476,7 +492,7 @@ function temporary_cash_or_tech_at_end_of_set (&$c, $strategy, $turns_to_keep, $
 		update_c($c, $turn_result);
 	}
 
-	return;
+	return true;
 }
 
 
@@ -625,7 +641,8 @@ function buyout_up_to_public_market_dpnw(&$c, $max_dpnw, $max_spend, $military_u
 			break;
 			
 		asort($candidate_dpnw_by_unit); // get next good to buy, undefined order in case of ties is fine
-		$best_unit = array_key_first($candidate_dpnw_by_unit);
+		reset($candidate_dpnw_by_unit);
+		$best_unit = key($candidate_dpnw_by_unit); // no array_key_first until PHP 7.3
 
 		if($candidate_dpnw_by_unit[$best_unit] > $max_dpnw)
 			break; // best unit is too expensive
@@ -787,26 +804,24 @@ function dump_bushel_stock(&$c, $turns_to_keep, $reset_seconds_remaining, $serve
 	// FUTURE: recall bushels if profitable (API doesn't exist)
 
 	// decide if should sell on public or private
-	$sold_bushels_on_public = true;
+	$sold_bushels_on_public = false;
+	$sold_on_private_reason = null;
 
 	if(!is_there_time_to_sell_on_public($reset_seconds_remaining, $max_market_package_time_in_seconds, 1800)) {
-		$sold_bushels_on_public = false;
 		$sold_on_private_reason = 'not enough time';
 	}
 	
 	if($estimated_public_market_bushel_sell_price * (2 - $c->tax()) < 1.5 + $private_market_bushel_price) {
-		$sold_bushels_on_public = false;
 		$sold_on_private_reason = 'can get more money on private';
 	}
 
 	if($c->turns == 0) {
-		$sold_bushels_on_public = false;
 		$sold_on_private_reason = 'no turns';
 	}
 
 	// not factoring in expenses, but who cares?
 
-	if(!$sold_bushels_on_public) {
+	if($sold_on_private_reason) {
 		log_country_message($c->cnum, "Not selling bushels on public for reason: $sold_on_private_reason");
 		$bushels_to_sell = max(0, $c->food - get_food_needs_for_turns($turns_to_keep, $c->foodpro, $c->foodcon, true));
 		if ($bushels_to_sell > 0)
@@ -823,12 +838,13 @@ function dump_bushel_stock(&$c, $turns_to_keep, $reset_seconds_remaining, $serve
 		}
 	}
 
-	$bushels_to_sell = $c->food - get_food_needs_for_turns($turns_to_keep, $c->foodpro, $c->foodcon, true);
+	$bushels_to_sell = $c->food - get_food_needs_for_turns($turns_to_keep, $c->foodpro, $c->foodcon, false);
 	if ($bushels_to_sell < 5000) { // don't bother if below min quantity
 		log_country_message($c->cnum, "Possible bushels to sell is $bushels_to_sell which is less than 5000 so don't bother selling");
 		return;
 	}
-	
+
+	$sold_bushels_on_public = true;	
 	$turn_result = PublicMarket::sell($c, ['m_bu' => $bushels_to_sell], ['m_bu' => $estimated_public_market_bushel_sell_price]); 
 	update_c($c, $turn_result);
 	return;
