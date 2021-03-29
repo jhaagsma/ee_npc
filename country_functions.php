@@ -90,7 +90,7 @@ function sell_cheap_units(&$c, $unit = 'm_tr', $fraction = 1)
     $fraction   = max(0, min(1, $fraction));
     $sell_units = [$unit => floor($c->$unit * $fraction)];
     if (array_sum($sell_units) == 0) {
-        out("No Military!");
+        log_country_message($c->cnum, "No Military!");
         return;
     }
     return PrivateMarket::sell($c, $sell_units);  //Sell 'em
@@ -109,7 +109,7 @@ function sell_all_military(&$c, $fraction = 1)
         'm_ta'  => floor($c->m_ta * $fraction)       //$fraction of tanks
     ];
     if (array_sum($sell_units) == 0) {
-        out("No Military!");
+        log_country_message($c->cnum, "No Military!");
         return;
     }
     return PrivateMarket::sell($c, $sell_units);  //Sell 'em
@@ -142,14 +142,14 @@ function money_management(&$c, $server_max_possible_market_sell)
         //$foodloss = -1 * $c->foodnet;
 
         if ($c->turns_stored <= 30 && total_cansell_military($c, $server_max_possible_market_sell) > 7500) {
-            out("Selling max military, and holding turns.");
+            log_country_message($c->cnum, "Selling max military, and holding turns.");
             sell_max_military($c, $server_max_possible_market_sell);
             return true;
         } elseif ($c->turns_stored > 30 && total_military($c) > 1000) {
-            out("We have stored turns or can't sell on public; sell 1/10 of military.");   //Text for screen
+            log_country_message($c->cnum, "We have stored turns or can't sell on public; sell 1/10 of military.");   //Text for screen
             sell_all_military($c, 1 / 10);
         } else {
-            out("Low stored turns ({$c->turns_stored}); can't sell? (".total_cansell_military($c, $server_max_possible_market_sell).')');
+            log_country_message($c->cnum, "Low stored turns ({$c->turns_stored}); can't sell? (".total_cansell_military($c, $server_max_possible_market_sell).')');
             return true;
         }
     }
@@ -166,7 +166,7 @@ function food_management(&$c)
         return false;
     }
 
-    //out("food management");
+    //log_country_message($c->cnum, "food management");
     $foodloss  = -1 * $c->foodnet;
     $turns_buy = max($reserve - turns_of_food($c), 50);
 
@@ -179,10 +179,10 @@ function food_management(&$c)
     while ($turns_buy > 1 && $c->food <= $turns_buy * $foodloss && PublicMarket::price('m_bu') != null) {
         $turns_of_food = $foodloss * $turns_buy;
         $market_price  = PublicMarket::price('m_bu');
-        //out("Market Price: " . $market_price);
+        //log_country_message($c->cnum, "Market Price: " . $market_price);
         if ($c->food < $turns_of_food && $c->money > $turns_of_food * $market_price * $c->tax() && $c->money - $turns_of_food * $market_price * $c->tax() + $c->income * $turns_buy > 0) { //losing food, less than turns_buy turns left, AND have the money to buy it
             $quantity = min($foodloss * $turns_buy, PublicMarket::available('m_bu'));
-            // out(
+            // log_country_message($c->cnum, 
             //     "--- FOOD:  - Buy Public ".str_pad('('.$turns_buy, 17, ' ', STR_PAD_LEFT).
             //     " turns)".str_pad(" @ \$".$market_price, 18, ' ', STR_PAD_LEFT).
             //     str_pad($quantity. ' Bu', 28, ' ', STR_PAD_LEFT).
@@ -190,7 +190,7 @@ function food_management(&$c)
             //     true,
             //     'brown'
             // );     //Text for screen
-            out("--- LOW FOOD ---", true, 'brown'); //Text for screen
+            log_country_message($c->cnum, "--- LOW FOOD ---", true, 'brown'); //Text for screen
 
 
             //Buy 3 turns of food off the public at or below the PM price
@@ -203,7 +203,7 @@ function food_management(&$c)
             $c = get_advisor();     //UPDATE EVERYTHING
         }
         /*else
-            out("$turns_buy: " . $c->food . ' < ' . $turns_of_food . ';
+            log_country_message($c->cnum, "$turns_buy: " . $c->food . ' < ' . $turns_of_food . ';
                  $' . $c->money . ' > $' . $turns_of_food*$market_price);*/
 
         $turns_buy--;
@@ -218,13 +218,13 @@ function food_management(&$c)
     //WE HAVE MONEY, WAIT FOR FOOD ON MKT
     if ($c->protection == 0 && $c->turns_stored < 30 && $c->income > $pm_info->buy_price->m_bu * $foodloss) {
         //Text for screen
-        out("We make enough to buy food if we want to; hold turns for now, and wait for food on MKT.");
+        log_country_message($c->cnum, "We make enough to buy food if we want to; hold turns for now, and wait for food on MKT.");
         return true;
     }
 
     //WAIT FOR GOODS/TECH TO SELL
     if ($c->protection == 0 && $c->turns_stored < 30 && onmarket_value() > $pm_info->buy_price->m_bu * $foodloss) {
-        out("We have goods on market; hold turns for now.");    //Text for screen
+        log_country_message($c->cnum, "We have goods on market; hold turns for now.");    //Text for screen
         return true;
     }
 
@@ -235,20 +235,20 @@ function food_management(&$c)
         //losing food, less than turns_buy turns left, AND have the money to buy it
         //Text for screen
         // FUTURE: need to check quantity of food available on private market
-        out(
+        log_country_message($c->cnum, 
             "Less than $turns_buy turns worth of food! (".$c->foodnet."/turn) ".
             "We're rich, so buy food on PM (\${$pm_info->buy_price->m_bu})!~"
         );
         $result = PrivateMarket::buy($c, ['m_bu' => $turns_buy * $foodloss]);  //Buy 3 turns of food!
         return false;
     } elseif ($c->food < $turns_of_food && total_military($c) > 50) {
-        out("We're too poor to buy food! Sell 1/10 of our military");   //Text for screen
+        log_country_message($c->cnum, "We're too poor to buy food! Sell 1/10 of our military");   //Text for screen
         sell_all_military($c, 1 / 10);     //sell 1/4 of our military
         $c = get_advisor();     //UPDATE EVERYTHING
         return food_management($c); //RECURSION!
     }
 
-    out('We have exhausted all food options. Valar Morguhlis.');
+    log_country_message($c->cnum, 'We have exhausted all food options. Valar Morguhlis.');
     return false; // FUTURE: why isn't this true? better to save turns than to commit suicide by running turns with no food?
 }//end food_management()
 
@@ -301,33 +301,33 @@ function defend_self(&$c, $reserve_cash = 50000, $dpnwMax = 380)
     while (($nlg < $nlg_target || $dpa < $dpat) && $spend >= 100000 && $dpnw < $dpnwMax) {
         if (!$outonce) {
             if ($dpa < $dpat) {
-                out("--- DPA Target: $dpat (Current: $dpa)");  //Text for screen
+                log_country_message($c->cnum, "--- DPA Target: $dpat (Current: $dpa)");  //Text for screen
             } else {
-                out("--- NLG Target: $nlg_target (Current: $nlg)");  //Text for screen
+                log_country_message($c->cnum, "--- NLG Target: $nlg_target (Current: $nlg)");  //Text for screen
             }
 
             $outonce = true;
         }
 
-        // out("0.Hash: ".spl_object_hash($c));
+        // log_country_message($c->cnum, "0.Hash: ".spl_object_hash($c));
 
         $dpnwOld = $dpnw;
         $dpnw    = minDpnw($c, $dpa < $dpat); //ONLY DEF
-        //out("Old DPNW: ".round($dpnwOld, 1)."; New DPNW: ".round($dpnw, 1));
+        //log_country_message($c->cnum, "Old DPNW: ".round($dpnwOld, 1)."; New DPNW: ".round($dpnw, 1));
         if ($dpnw <= $dpnwOld) {
             $dpnw = $dpnwOld + 10; // fewer loops - hoping this helps with code running for ~60 s under empty market scenarios - Slagpit 20210321
         }
 
         buy_public_below_dpnw($c, $dpnw, $spend, true, true); //ONLY DEF
 
-        // out("7.Hash: ".spl_object_hash($c));
+        // log_country_message($c->cnum, "7.Hash: ".spl_object_hash($c));
 
         $spend = max(0, $c->money - $reserve_cash);
         $nlg   = $c->nlg();
         $dpa   = $c->defPerAcre();
         $c     = get_advisor();     //UPDATE EVERYTHING
 
-        // out("8.Hash: ".spl_object_hash($c));
+        // log_country_message($c->cnum, "8.Hash: ".spl_object_hash($c));
 
         if ($spend < 100000) {
             break;
@@ -381,7 +381,7 @@ function sell_max_military(&$c, $server_max_possible_market_sell)
         }
 
         if ($price[$key] > 0 && $price[$key] * $c->tax() <= $pm_info->sell_price->$key) {
-            //out("Public is too cheap for $key, sell on PM");
+            //log_country_message($c->cnum, "Public is too cheap for $key, sell on PM");
             sell_cheap_units($c, $key, 0.5);
             $price[$key]    = 0;
             $quantity[$key] = 0;
@@ -416,7 +416,7 @@ function sell_max_military(&$c, $server_max_possible_market_sell)
 
     $result = PublicMarket::sell($c, $quantity, $price);
     if ($result == 'QUANTITY_MORE_THAN_CAN_SELL') {
-        out("TRIED TO SELL MORE THAN WE CAN!?!");
+        log_country_message($c->cnum, "TRIED TO SELL MORE THAN WE CAN!?!");
         $c = get_advisor();     //UPDATE EVERYTHING
     }
     global $mktinfo;
@@ -438,56 +438,13 @@ function siteURL($cnum)
     $name  = $config['server'];
     $round = $server->round_num;
 
-    return "https://qz.earthempires.com/$name/$round/ranks/$cnum";
+    return "https://www.earthempires.com/$name/$round/ranks/$cnum"; // FUTURE: parse url and use qz./slagpit. if needed?
 }//end siteURL()
-
-
-
-/* // replaced by Destocking.php
-function destock($server, $cnum)
-{
-    $c = get_advisor();     //c as in country! (get the advisor)
-    out("Destocking #$cnum!");  //Text for screen
-
-    if ($c->food > 0) {
-        PrivateMarket::sell($c, ['m_bu' => $c->food]);   //Sell 'em
-    }
-
-    $dpnw  = 200;
-    $first = true;
-    $prev  = $c->money;
-
-    while ($c->money > 1000 && $dpnw < 2500) {
-        if ($c->money != $prev) {
-            $first = true;
-        }
-
-        $prev = $c->money;
-        out(
-            "Try to buy goods at $dpnw dpnw or below!".($first ? null : str_pad("\r", 65, ' ', STR_PAD_LEFT)),
-            $first
-        );    //Text for screen
-        buy_public_below_dpnw($c, $dpnw);
-        buy_private_below_dpnw($c, $dpnw);
-        $dpnw += 4;
-        if ($dpnw > 500) {
-            $dpnw += 50;
-        }
-        $first = false;
-    }
-    if ($c->money <= 1000) {
-        out("Done Destocking!");    //Text for screen
-    } else {
-        out("Ran out of goods?");   //Text for screen
-    }
-}//end destock()
-*/
 
 
 // deliberately using wrong values for NW to encourage bots to buy jets/turrets off public - Slagpit 20210325
 function buy_public_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false, $defOnly = false)
 {
-    //out("Stage 1");
     //$market_info = get_market_info();
     //out_data($market_info);
     if (!$money || $money < 0) {
@@ -529,16 +486,16 @@ function buy_public_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false, $de
         if (PublicMarket::price($unit) != null && PublicMarket::available($unit) > 0) {
             $price = $subunit.'_price';
             $cost  = $subunit.'_cost';
-            //out("Stage 1.4");
+
             while (PublicMarket::price($unit) <= $$price
                 && $money > $$cost
                 && PublicMarket::available($unit) > 0
                 && $money > 50000
             ) {
-                //out("Stage 1.4.x");
-                //out("Money: $money");
-                //out("$subunit Price: $price");
-                //out("Buy Price: {$market_info->buy_price->$unit}");
+  
+                //log_country_message($c->cnum, "Money: $money");
+                //log_country_message($c->cnum, "$subunit Price: $price");
+                //log_country_message($c->cnum, "Buy Price: {$market_info->buy_price->$unit}");
                 $quantity = min(
                     floor($money / ceil(PublicMarket::price($unit) * $c->tax())),
                     PublicMarket::available($unit)
@@ -547,8 +504,8 @@ function buy_public_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false, $de
                     $quantity = max(0, $quantity - 1);
                 }
                 $last = $quantity;
-                //out("Quantity: $quantity");
-                //out("Available: {$market_info->available->$unit}");
+                //log_country_message($c->cnum, "Quantity: $quantity");
+                //log_country_message($c->cnum, "Available: {$market_info->available->$unit}");
                 //Buy UNITS!
                 $result = PublicMarket::buy($c, [$unit => $quantity], [$unit => PublicMarket::price($unit)]);
                 PublicMarket::update();
@@ -557,7 +514,7 @@ function buy_public_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false, $de
                     || !isset($result->bought->$unit->quantity)
                     || $result->bought->$unit->quantity == 0
                 ) {
-                    out("Breaking@$unit");
+                    log_country_message($c->cnum, "Breaking@$unit");
                     break;
                 }
             }
@@ -569,7 +526,7 @@ function buy_public_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false, $de
 // deliberately using wrong values for NW to encourage bots to buy jets/turrets off public - Slagpit 20210325
 function buy_private_below_dpnw(&$c, $dpnw, $money = 0, $shuffle = false, $defOnly = false)
 {
-    //out("Stage 2");
+
     $pm_info = PrivateMarket::getRecent($c);   //get the PM info
 
     if (!$money || $money < 0) {
@@ -594,7 +551,7 @@ function buy_private_below_dpnw(&$c, $dpnw, $money = 0, $shuffle = false, $defOn
     }
 
 
-    // out("1.Hash: ".spl_object_hash($c));
+    // log_country_message($c->cnum, "1.Hash: ".spl_object_hash($c));
     foreach ($order as $o) {
         $money = max(0, $c->money - $reserve);
 
@@ -632,8 +589,8 @@ function buy_private_below_dpnw(&$c, $dpnw, $money = 0, $shuffle = false, $defOn
             PrivateMarket::buy($c, ['m_tu' => $q]);
         }
 
-        // out("Country has \${$c->money}");
-        // out("3.Hash: ".spl_object_hash($c));
+        // log_country_message($c->cnum, "Country has \${$c->money}");
+        // log_country_message($c->cnum, "3.Hash: ".spl_object_hash($c));
 
     }
 }//end buy_private_below_dpnw()

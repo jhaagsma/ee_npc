@@ -2,11 +2,8 @@
 
 namespace EENPC;
 
-// TODO: add communication functions
-// TODO: add ee_npc code to get and validate config parameters
-// TODO: does a multi line screen hide errors?
-
 function test(){
+    // TODO: remove this when done
 
     mkdir("./logging/alphaai/country", 0700, true);
     mkdir("./logging/alphaai/errors", 0700, true);
@@ -22,7 +19,7 @@ function test(){
 
 function log_snapshot_message($c, $snapshot_type, $strat, $number_of_errors, $is_destocking, &$output_c_values, $prev_c_values = []){
     global $log_country_to_screen, $log_to_local, $log_to_server, $local_file_path;
-    // TODO: implement
+
     if($snapshot_type <> 'BEGIN' and $snapshot_type <> 'DELTA' and $snapshot_type <> 'END')
         return; // TODO: throw error
 
@@ -39,49 +36,72 @@ function log_snapshot_message($c, $snapshot_type, $strat, $number_of_errors, $is
 
 
 // examples of things to log: what decisions were made (and why), how turns are spent
-function log_country_message($cnum, $message) {
+function log_country_message($cnum_input, $message) {
     global $log_country_to_screen, $log_to_local, $log_to_server, $local_file_path;
 
-    if(!$cnum) {
-        $message = "ERROR: must call log_country_message() with a valid cnum";
-        out($message);
-        log_error_message(2, $cnum, $message);
-        return;
+    if(!$cnum_input) {
+        global $cnum; // some calling functions don't have $cnum easily available
+        $cnum_input = $cnum;
+        if(!$cnum_input) {
+            $message = "ERROR: must call log_country_message() with a valid cnum";
+            out($message);
+            log_error_message(2, $cnum, $message);
+            return;
+        }
     }
 
-    $full_local_file_path_and_name = ($log_to_local ? get_full_country_file_path_and_name($local_file_path, $cnum, false) : null);
-    return log_to_targets($log_country_to_screen, $log_to_local, $log_to_server, $full_local_file_path_and_name, null, $message, $cnum, null);
+    $full_local_file_path_and_name = ($log_to_local ? get_full_country_file_path_and_name($local_file_path, $cnum_input, false) : null);
+    return log_to_targets($log_country_to_screen, $log_to_local, $log_to_server, $full_local_file_path_and_name, null, $message, $cnum_input, null);
 }
 
 
 
 function log_main_message($message, $color = null)  {
-    // TODO: support color for screen
     global $log_to_local, $log_to_server, $local_file_path;
     $full_local_file_path_and_name = ($log_to_local ? get_full_main_file_path_and_name($local_file_path) : null);
+    // always log messages to screen
     return log_to_targets(true, $log_to_local, $log_to_server, $full_local_file_path_and_name, null, $message, null, $color);
 }
 
 
 function log_error_message($error_type, $cnum, $message) {
-    global $log_country_to_screen, $log_to_local, $log_to_server, $local_file_path;
+    global $log_to_local, $log_to_server, $local_file_path;
 
-    if(!$cnum) {
+    if($error_type == null or $error_type < 0) {
+        $local_error_message = "ERROR: must call log_error_message() with a valid type (non-negative int)";
+        out($local_error_message);
+        log_error_message(0, $cnum, $local_error_message);
+        return;
+    }
+
+    
+
+    /* -- going to allow errors with no cnum for now
+    if($error_type <> 1 and !$cnum) {
         $message = "ERROR: must call log_error_message() with a valid cnum";
         out($message);
         log_error_message(1, $cnum, $message);
         return;
     }
+    */
 
-    if($error_type == null or $error_type < 0) {
-        $message = "ERROR: must call log_error_message() with a valid type (non-negative int)";
-        out($message);
-        log_error_message(0, $cnum, $message);
-        return;
+    // TODO: log different things on screen/country file/error file?
+    // TODO: what about multi-line error messages?
+    $error_type_name = log_get_name_of_error_type($error_type); // TODO: check that $error_type is mapped in function
+    $full_error_message = 'ERROR '.$error_type.' | '.$error_type_name.' | cnum #'.($cnum ?? 'N\A').' | '.$message;
+    $full_local_file_path_and_name = ($log_to_local ? get_full_error_file_path_and_name($local_file_path) : null);
+
+
+    // log to country file always, this is a bit hacky
+    if($cnum) {
+        $country_local_file_path_and_name = ($log_to_local ? get_full_country_file_path_and_name($local_file_path, $cnum, false) : null);
+        log_to_targets(false, $log_to_local, $log_to_server, $country_local_file_path_and_name, null, $full_error_message, $cnum, null);
+        // TODO: return value?
     }
 
-    $full_local_file_path_and_name = ($log_to_local ? get_full_error_file_path_and_name($local_file_path) : null);
-    return log_to_targets($log_country_to_screen, $log_to_local, $log_to_server, $full_local_file_path_and_name, $error_type, $message, $cnum, null);
+    // always log errors to screen
+    log_to_targets(true, $log_to_local, $log_to_server, $full_local_file_path_and_name, $error_type, $full_error_message, $cnum, null);
+    return; // TODO: return value?
 }
 
 
@@ -108,8 +128,9 @@ function log_to_targets($log_to_screen, $log_to_local, $log_to_server, $full_loc
         if($is_line_breaks_only)
             $file_message = $message;
         else {
-            $timestamp_for_file = '['.date('Y-m-d H:i:s').'] ';        
-            $file_message = $timestamp_for_file.($line_break_count > 0 ? "\n" : "").$message."\n";
+            $timestamp_for_file = '['.date('Y-m-d H:i:s').'] ';     
+            // the regex removes color coding   
+            $file_message = $timestamp_for_file.($line_break_count > 0 ? "\n" : "").preg_replace('/\e[[][A-Za-z0-9];?[0-9]*m?/', '', $message)."\n";
         }
         file_put_contents ($full_local_file_path_and_name, $file_message, FILE_APPEND);
     }
@@ -221,12 +242,46 @@ function purge_old_logging_files($server)  {
 
 
 function log_get_name_of_error_type($error_type) {
+    // 0 - 99 are logging errors
     if($error_type == 0)
         return 'Called log_error_message() with invalid $error_type';
     if($error_type == 1)
         return 'Called log_error_message() with invalid $cnum';
     if($error_type == 2)
         return 'Called log_country_message() with invalid $cnum';
+
+    // 100 - 999 are communication or PHP errors
+    if($error_type == 100)
+        return 'Not acceptable response';
+    if($error_type == 101)
+        return 'Country selling more than owned';
+    if($error_type == 102)
+        return 'Not enough money';
+    if($error_type == 103)
+        return 'Not enough turns';
+    if($error_type == 104)
+        return 'Allies not allowed';
+    if($error_type == 105)
+        return 'Unexpected message object result';
+    if($error_type == 106)
+        return 'Unexpected message non-object result';
+    if($error_type == 107)
+        return 'Unexpected function result';
+    if($error_type == 108)
+        return 'Possible server down';
+    if($error_type == 109)
+        return 'Rules did not load';
+
+    // 1000+ are playing errors 
+    if($error_type == 1000)
+        return 'Ran out of food';
+    if($error_type == 1001)
+        return 'Ran out of money';
+
+
+
+       
+
     else
         return 'ERROR: log_get_name_of_error_type() called with unmapped $error_type';
 }
@@ -272,17 +327,17 @@ function generate_compact_country_status($c, $snapshot_type, $strat, $number_of_
     $output_c_values['c_oil'] = $c->oil;   
 
     // tech percentages
-    $output_c_values['c_pmil'] = $c->pt_mil;
-    $output_c_values['c_pbus'] = $c->pt_bus;
-    $output_c_values['c_pres'] = $c->pt_res;
-    $output_c_values['c_pwep'] = $c->pt_weap;
+    $output_c_values['c_pmil'] = round($c->pt_mil,2); //-100.12% is 8 characters
+    $output_c_values['c_pbus'] = round($c->pt_bus,2);
+    $output_c_values['c_pres'] = round($c->pt_res,2);
+    $output_c_values['c_pwep'] = round($c->pt_weap,2);
     if($strat == 'I')
         $prod_tech = $c->pt_indy;
     elseif($strat == 'F')
         $prod_tech = $c->pt_agri;
     else
         $prod_tech = "N/A";
-    $output_c_values['c_ppro'] = $prod_tech;
+    $output_c_values['c_ppro'] = round($prod_tech,2);
 
     // production
     $output_c_values['c_dstk'] = $is_destocking;
@@ -312,7 +367,6 @@ function generate_compact_country_status($c, $snapshot_type, $strat, $number_of_
         $on_market_tech += $c->onMarket($tech_type);
     $output_c_values['c_om_t'] = $on_market_tech;
 
-    // TODO: add timestamp? will logging functions automatically do this?
     $header_base = "$snapshot_type for [".log_translate_simple_strat_name($strat)."] $c->cname (#$c->cnum) (".$c->govt.($c->gdi ? "G" : "").")";
     $header_padded = str_pad($header_base, 78, '-', STR_PAD_BOTH);
 

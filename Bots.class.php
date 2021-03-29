@@ -73,7 +73,7 @@ class Bots
         $held  = $cpref->lastTurns + $cpref->turnsStored;
         $diff  = $max - $held;
         $maxin = floor($diff * $server->turn_rate);
-        out('Country is holding '.$held.'. Turns will max in '.$maxin);
+        log_main_message('Country is holding '.$held.'. Turns will max in '.$maxin);
         return $maxin;
     }//end furthest_play()
 
@@ -86,7 +86,7 @@ class Bots
         $end    = round(($server->reset_end - time()) / 3600, 1).' hours';
         $x      = floor(($server->reset_end - time()) / $server->turn_rate);
         $end   .= " ($x turns)";
-        out("Server started ".$start.' and ends in '.$end);
+        log_main_message("Server started ".$start.' and ends in '.$end);
     }//end server_start_end_notification()
 
 
@@ -96,15 +96,15 @@ class Bots
         // a 20/20/20/20/20 split doesn't work well on the ai server
         // farmers end up not being able to sell food and troops can go to $40
         if($is_ai_server and !$is_debug_server) {
-            // per 25 countries: 3 farmer, 3 CI, 4 rainbow, 5 techer, 10 casher
+            // per 25 countries: 3 farmer, 3 CI, 3 rainbow, 7 techer, 9 casher
             // this doesn't handle a few country deletions well, but I don't think that it matters for ai
-            if (($country_position % 25) <= 9) {
+            if (($country_position % 25) <= 8) {
                 return 'C';
-            } elseif  (($country_position % 25) <= 14) {
+            } elseif  (($country_position % 25) <= 15) {
                 return 'T';
-            } elseif  (($country_position % 25) <= 17) {
+            } elseif  (($country_position % 25) <= 18) {
                 return 'I';
-            } elseif  (($country_position % 25) <= 20) {
+            } elseif  (($country_position % 25) <= 21) {
                 return 'F';
             } else {
                 return 'R';
@@ -152,20 +152,20 @@ class Bots
 
         global $server;
         $stddev = round(self::playtimes_stddev($countries));
-        out("Standard Deviation of play is: $stddev; (".round($stddev / $server->turn_rate).' turns)');
+        log_main_message("Standard Deviation of play is: $stddev; (".round($stddev / $server->turn_rate).' turns)');
         /* 
         // no longer resetting because we want to set nextplay based on country status now
         // for example, if a country stops playing turns because there's no food on the public market then we want it to login again
         // soon to try to buy food and play turns
         if ($stddev < $server->turn_rate * 72 / 4 || $stddev > $server->turn_rate * 72) {
-            out('Recalculating Nextplays');
+            log_main_message('Recalculating Nextplays');
             global $settings;
             foreach ($countries as $cnum) {
                 $settings->$cnum->nextplay = time() + rand(0, $server->turn_rate * 72);
             }
 
             $stddev = round(self::playtimes_stddev($countries));
-            out("Standard Deviation of play is: $stddev");
+            log_main_message("Standard Deviation of play is: $stddev");
         }
         */
 
@@ -182,9 +182,9 @@ class Bots
         $onum   = self::getLastPlayCNUM($countries, $old);
         $ostrat = self::txtStrat($onum);
         $old    = time() - $old;
-        out("Oldest Play: ".$old."s ago by #$onum $ostrat (".round($old / $server->turn_rate)." turns)");
+        log_main_message("Oldest Play: ".$old."s ago by #$onum $ostrat (".round($old / $server->turn_rate)." turns)");
         if ($old > 86400 * 2) {
-            out("OLD TOO FAR: RESET NEXTPLAY");
+            log_main_message("OLD TOO FAR: RESET NEXTPLAY");
             global $settings;
             $settings->$onum->nextplay = 0;
         }
@@ -198,7 +198,7 @@ class Bots
         $fnum     = self::getNextPlayCNUM($countries, $furthest);
         $fstrat   = self::txtStrat($fnum);
         $furthest = $furthest - time();
-        out("Furthest Play in ".$furthest."s for #$fnum $fstrat (".round($furthest / $server->turn_rate)." turns)");
+        log_main_message("Furthest Play in ".$furthest."s for #$fnum $fstrat (".round($furthest / $server->turn_rate)." turns)");
     }//end outFurthest()
 
 
@@ -208,7 +208,7 @@ class Bots
         $xnum   = self::getNextPlayCNUM($countries, min($next));
         $xstrat = self::txtStrat($xnum);
         $next   = max(0, min($next) - time());
-        out("Next Play in ".$next.'s: #'.$xnum." $xstrat    ".($rewrite ? "\r" : null), !$rewrite);
+        out("Next Play in ".$next.'s: #'.$xnum." $xstrat    ".($rewrite ? "\r" : null), !$rewrite); // TODO: how do I emulate this?
     }//end outNext()
 
 

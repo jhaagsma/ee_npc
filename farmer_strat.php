@@ -27,7 +27,6 @@ namespace EENPC;
 function play_farmer_strat($server, $cnum, $rules)
 {
     //global $cnum;
-    //out("Playing ".FARMER." turns for #$cnum ".siteURL($cnum));
     //$main = get_main();     //get the basic stats
     //out_data($main);          //output the main data
     $c = get_advisor();     //c as in country! (get the advisor)
@@ -37,7 +36,7 @@ function play_farmer_strat($server, $cnum, $rules)
         Allies::fill('spy');
     }
 
-    out("Agri: {$c->pt_agri}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%");
+    log_country_message($cnum, "Agri: {$c->pt_agri}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%");
     //out_data($c) && exit;             //ouput the advisor data
     if ($c->govt == 'M') {
         $rand = rand(0, 100);
@@ -58,8 +57,8 @@ function play_farmer_strat($server, $cnum, $rules)
     }
 
 
-    out($c->turns.' turns left');
-    out('Explore Rate: '.$c->explore_rate.'; Min Rate: '.$c->explore_min);
+    log_country_message($cnum, $c->turns.' turns left');
+    log_country_message($cnum, 'Explore Rate: '.$c->explore_rate.'; Min Rate: '.$c->explore_min);
     //$pm_info = get_pm_info();   //get the PM info
     //out_data($pm_info);       //output the PM info
     //$market_info = get_market_info();   //get the Public Market info
@@ -84,7 +83,7 @@ function play_farmer_strat($server, $cnum, $rules)
 
         // FUTURE: sell food when needed even if income is positive, such as not enough money to build
         if ($c->income < 0 && $c->money < -5 * $c->income) { //sell 1/4 of all military on PM
-            out("Almost out of money! Sell 10 turns of income in food!");   //Text for screen
+            log_country_message($cnum, "Almost out of money! Sell 10 turns of income in food!");
 
             //sell 1/4 of our military
             $pm_info = PrivateMarket::getRecent();
@@ -137,7 +136,7 @@ function play_farmer_turn(&$c, $server_base_pm_bushel_sell_price = 29)
     $target_bpt = 65;
     global $turnsleep;
     usleep($turnsleep);
-    //out($main->turns . ' turns left');
+    //log_country_message($c->cnum, $main->turns . ' turns left');
     if ($c->shouldBuildSingleCS($target_bpt)) {
         //LOW BPT & CAN AFFORD TO BUILD
         //build one CS if we can afford it and are below our target BPT
@@ -172,7 +171,7 @@ function play_farmer_turn(&$c, $server_base_pm_bushel_sell_price = 29)
 
 function sellextrafood_farmer(&$c, $server_base_pm_bushel_sell_price = 29)
 {
-    //out("Lots of food, let's sell some!");
+    //log_country_message($c->cnum, "Lots of food, let's sell some!");
     //$pm_info = get_pm_info();
     //$market_info = get_market_info(); //get the Public Market info
     //global $market;

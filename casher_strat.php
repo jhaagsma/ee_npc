@@ -5,8 +5,6 @@ namespace EENPC;
 function play_casher_strat($server, $cnum, $rules)
 {
     //global $cnum;
-    //log_main_message("Playing CASHER Turns for #$cnum ".siteURL($cnum));
-    //out("Playing ".CASHER." Turns for #$cnum ".siteURL($cnum));
     //$main = get_main();     //get the basic stats
     //out_data($main);          //output the main data
     $c = get_advisor();     //c as in country! (get the advisor)
@@ -18,7 +16,7 @@ function play_casher_strat($server, $cnum, $rules)
         Allies::fill('spy');
     }
 
-    out("Bus: {$c->pt_bus}%; Res: {$c->pt_res}%");
+    log_country_message($cnum, "Bus: {$c->pt_bus}%; Res: {$c->pt_res}%");
     if ($c->govt == 'M') {
         $rand = rand(0, 100);
         switch ($rand) {
@@ -37,8 +35,8 @@ function play_casher_strat($server, $cnum, $rules)
         }
     }
 
-    out($c->turns.' turns left');
-    out('Explore Rate: '.$c->explore_rate.'; Min Rate: '.$c->explore_min);
+    log_country_message($cnum, $c->turns.' turns left');
+    log_country_message($cnum, 'Explore Rate: '.$c->explore_rate.'; Min Rate: '.$c->explore_min);
     //$pm_info = get_pm_info(); //get the PM info
     //out_data($pm_info);       //output the PM info
     //$market_info = get_market_info(); //get the Public Market info
@@ -95,7 +93,7 @@ function play_casher_turn(&$c)
     $target_bpt = 65;
     global $turnsleep;
     usleep($turnsleep);
-    //out($main->turns . ' turns left');
+    //log_country_message($c->cnum, $main->turns . ' turns left');
     if ($c->shouldBuildSingleCS($target_bpt)) {
         //LOW BPT & CAN AFFORD TO BUILD
         //build one CS if we can afford it and are below our target BPT

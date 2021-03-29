@@ -39,17 +39,17 @@ class Events
         $copyarray = (array)$result->results;
 
         foreach ($copyarray as $mainkey => $subitems) {
-            $count_sub = count($subitems);
-            out("Events: $count_sub x $mainkey");
+            $count_sub = is_array($subitems) ? count($subitems) : 0;
+            log_country_message(null, "Events: $count_sub x $mainkey");
 
             $subitems = (array)$subitems;
 
             if (is_array($subitems)) {
                 $key = key($subitems);
-                out("Key ex: $key");
+                log_country_message(null, "Key ex: $key");
 
                 foreach (array_shift($subitems) as $subkey => $item) {
-                    out("Subkeys: $subkey; ex: $item");
+                    log_country_message(null, "Subkeys: $subkey; ex: $item");
                 }
             }
         }
@@ -68,7 +68,7 @@ class Events
             }
 
             foreach ($types as $type => $count) {
-                out("Events: $count x $type");
+                log_country_message(null, "Events: $count x $type");
             }
         }
 
@@ -90,7 +90,7 @@ class Events
             }
 
             foreach ($types as $type => $count) {
-                out("News: $count x $type");
+                log_country_message(null, "News: $count x $type");
             }
         }
 

@@ -108,6 +108,10 @@ while (1) {
         $server = getServer();
     }
 
+    // TODO: debug
+    //log_error_message(1000, null, 'no food');
+    //log_error_message(1001, 1, 'no money');
+
     if($server->alive_count < $server->countries_allowed) {
         $max_create_attempts = 2 * ($server->countries_allowed - $server->alive_count);
         while ($server->alive_count < $server->countries_allowed and $max_create_attempts > 0) {
@@ -228,20 +232,21 @@ while (1) {
     }
 
     if ($played) {
-        // TODO: needs to call standard logging here
         Bots::server_start_end_notification($server);
         Bots::playstats($countries);
         echo "\n";
     }
 
     $played = false;
-    //out("Country Count: ".count($countries));
+    //log_main_message("Country Count: ".count($countries));
     foreach ($countries as $cnum) {
         Debug::off(); //reset for new country
         $save = false;
 
         global $cpref;
         $cpref = $settings->$cnum;
+
+        // log_main_message("Evaluating settings for $cnum");
 
         if (!isset($cpref->retal)) {
             $cpref->retal = [];
@@ -253,16 +258,14 @@ while (1) {
 
         if (!isset($cpref->bot_secret) || $cpref->bot_secret == null) {
             $cpref->bot_secret = 1000000000 + mt_rand(0,999999999); // 9 digits ought to be enough for anybody
-            log_main_message("Resetting bot secret number #$cnum", 'red'); // TODO: do I need special new line handling?
-            //out("Resetting bot secret number #$cnum", true, 'red');
+            log_main_message("Resetting bot secret number #$cnum", 'red');
             $save = true;
         }
 
         if (!isset($cpref->playfreq) || $cpref->playfreq == null) {
             $cpref->playfreq = Math::purebell($server->turn_rate, $server->turn_rate * $rules->maxturns, $server->turn_rate * 20, $server->turn_rate);
             $cpref->playrand = mt_rand(10, 20) / 10.0; //between 1.0 and 2.0
-            log_main_message("Resetting Play #$cnum", 'red'); // TODO: do I need special new line handling?
-            //out("Resetting Play #$cnum", true, 'red');
+            log_main_message("Resetting Play #$cnum", 'red');
             $save = true;
         }
 
@@ -276,8 +279,7 @@ while (1) {
 
         if (!isset($cpref->nextplay) || !isset($cpref->lastplay) || $cpref->lastplay < time() - $server->turn_rate * $rules->maxturns) { //maxturns
             $cpref->nextplay = 0;
-            log_main_message("Resetting Next #$cnum", 'red'); // TODO: do I need special new line handling?
-            //out("Resetting Next #$cnum", true, 'red');
+            log_main_message("Resetting Next Play for #$cnum", 'red');
             $save = true;
         }
 
@@ -295,36 +297,32 @@ while (1) {
 
         if (!isset($cpref->gdi)) {
             $cpref->gdi = (bool)(rand(0, 2) == 2);
-            //out("Setting GDI to ".($cpref->gdi ? "true" : "false"), true, 'brown');
+            //log_main_message("Setting GDI to ".($cpref->gdi ? "true" : "false"), true, 'brown');
         }
 
         if ($cpref->nextplay < time()) {
 
             log_country_message($cnum, "\n\n");
             log_country_message($cnum, "Beginning country loop");
+            log_main_message("Attempting to play turns for #$cnum");
 
-            // TODO: test code
+            $earliest_destock_time = get_earliest_possible_destocking_start_time_for_country($cpref->bot_secret, $cpref->strat, $server->reset_start, $server->reset_end);
+            log_country_message($cnum, 'Earliest possible destock time is: ' . log_translate_instant_to_human_readable($earliest_destock_time));
             
+            $debug_force_destocking = false; // DEBUG: change to true to force destocking code to run
+            $is_destocking = ($debug_force_destocking or time() >= $earliest_destock_time? true : false);
+
             // log snapshot of country status
-            // TODO: set destocking correctly
             $prev_c_values = [];
             $init_c = get_advisor();
-            log_snapshot_message($init_c, "BEGIN", $cpref->strat, 0, false, $prev_c_values);
+            // TODO: separate parameter to log snapshot to screen?
+            log_snapshot_message($init_c, "BEGIN", $cpref->strat, 0, $is_destocking, $prev_c_values);
             unset($init_c);
-            //out(count($prev_c_values));
-            //out($compact);
-
             //continue;
 
             try {    
-                // check if the country should destock
-                
-                $earliest_destock_time = get_earliest_possible_destocking_start_time_for_country($cpref->bot_secret, $cpref->strat, $server->reset_start, $server->reset_end);
-                log_country_message($cnum, 'Earliest destock time is: ' . log_translate_instant_to_human_readable($earliest_destock_time));
-                
-                $debug_force_destocking = false; // DEBUG: change to true to force destocking code to run
-
-                if ($debug_force_destocking or time() >= $earliest_destock_time) { // call special destocking code that passes back the next play time in $nexttime
+                if ($is_destocking) { // call special destocking code that passes back the next play time in $nexttime
+                    log_main_message("Playing destocking ".Bots::txtStrat($cnum)." Turns for #$cnum ".siteURL($cnum));
                     log_country_message($cnum, 'Doing destocking actions' . log_translate_forced_debug($debug_force_destocking));
                     $c = execute_destocking_actions($cnum, $cpref->strat, $server, $rules, $nexttime);
                 }
@@ -342,8 +340,8 @@ while (1) {
                     //$playfactor = 1; // now handled in calculate_next_play_in_seconds
                     $nexttime = null;
 
-                    log_main_message("Playing Standard ".log_translate_simple_strat_name($cpref->strat)." Turns for #$cnum ".siteURL($cnum));
-                    log_country_message($cnum, "Begin playing standard ".log_translate_simple_strat_name($cpref->strat)." turns");
+                    log_main_message("Playing Standard ".Bots::txtStrat($cnum)." Turns for #$cnum ".siteURL($cnum));
+                    log_country_message($cnum, "Begin playing standard ".Bots::txtStrat($cnum)." turns");
 
                     // FUTURE: careful with the $cnum global removal, maybe this breaks things? seems fine so far - 20210323
                     switch ($cpref->strat) {
@@ -377,7 +375,7 @@ while (1) {
                     // $nexttime        = round(min($maxin, $nexttime));
                 }
 
-                log_country_message($cnum, "End playing standard ".log_translate_simple_strat_name($cpref->strat)." turns");
+                log_country_message($cnum, "End playing standard ".Bots::txtStrat($cnum)." turns");
 
                 $seconds_to_next_play = calculate_next_play_in_seconds($cnum, $nexttime, $cpref->strat, $rules->is_clan_server, $rules->max_time_to_market, $rules->max_possible_market_sell, $cpref->playrand, $server->reset_start, $server->reset_end, $server->turn_rate, $cpref->lastTurns, $rules->maxturns, $cpref->turnsStored, $rules->maxstore);
                 $cpref->lastplay = time();
@@ -387,23 +385,37 @@ while (1) {
                 $played = true;
                 $save   = true;
 
-                // log snapshots of country status
-                // TODO: set destocking and error parameters correctly
-                $c = get_advisor(); // want to remove this - but does it fix the turn issue?
-                // TODO: what is taking seven seconds here?
+                /*
+                // TODO: more delta checking, especially for destocking
+                $prev_c_values = [];
+                log_snapshot_message($c, "BEGIN", $cpref->strat, 0, false, $prev_c_values);
+ 
+                $c = get_advisor();
                 log_snapshot_message($c, "DELTA", $cpref->strat, 2, false, $dummy, $prev_c_values);
-                log_snapshot_message($c, "END", $cpref->strat, 2, true, $dummy);
+                */
+
+                // log snapshots of country status
+                // TODO: error count correctly
+                // TODO: skip snapshot parameter for speed on remote?
+                $c = get_advisor(); // this call probably can't be avoided - market info, events, and tax/expenses could be wrong without it
+                // TODO: what is taking seven seconds here?
+                log_snapshot_message($c, "DELTA", $cpref->strat, 0, $is_destocking, $dummy, $prev_c_values);
+                log_snapshot_message($c, "END", $cpref->strat, 0, $is_destocking, $dummy);
+                
 
             } catch (Exception $e) {
                 log_main_message("Caught Exception: ".$e);
             }
+
+            log_country_message($cnum, "Ending country loop");
+            log_main_message("Finished playing turns for #$cnum");
         }
 
         if ($save) {
             $settings->$cnum = $cpref;
             log_main_message("Saving Settings", 'purple');
             file_put_contents($config['save_settings_file'], json_encode($settings));
-            echo "\n\n";
+            log_main_message("\n");
         }
 
         // don't let bots play during the final minute to reduce server load and avoid market surprises for players
@@ -417,40 +429,14 @@ while (1) {
         log_main_message("\n");
         while($server->reset_end + 1 >= time()) {
             $end = $server->reset_end - time();
-            log_main_message("Sleep until end: ".$end."             \r", false); // TODO: why is this line break /r?
+            log_main_message("Sleep until end: ".$end); // TODO: supposed to be a countdown - use log()?
+            //log_main_message("\n");
             sleep(1);//don't let them fluff things up, sleep through end of reset
         }
-        log_main_message("Done Sleeping!\r");// TODO: why is this line break /r?
+        log_main_message("Done Sleeping!");
+        log_main_message("\n");
     }
     $server = ee('server');
-
-
-/*     $loop      = false;
-    $until_end = 50;
-    if ($server->reset_end - $server->turn_rate * $until_end - time() < 0) {
-        for ($i = 0; $i < 5; $i++) {
-            foreach ($countries as $cnum) {
-                if ($settings->$cnum->lastplay < time() - $server->turn_rate * 10) {
-                    $settings->$cnum->nextplay = 0;
-                    $loop                      = true;
-                    continue;
-                }
-                $mktinfo = null;
-                destock($server, $cnum);
-            }
-        }
-        if (!$loop) {
-            out("Sleeping!");
-            out("\n");
-            while($server->reset_end + 1 >= time()) {
-                $end = $server->reset_end - time();
-                out("Sleep until end: ".$end."             \r", false);
-                sleep(1);//don't let them fluff things up, sleep through end of reset
-            }
-            out("Done Sleeping!\r");
-        }
-        $server = ee('server');
-    } */
 
     $cnum = null;
     $loopcount++;
@@ -458,7 +444,7 @@ while (1) {
     $sleep      = 1;
     //sleep 10s //min($sleepturns*$server->turn_rate,max(0,$server->reset_end - 60 - time())); //sleep for $sleepturns turns
     //$sleepturns = ($sleep != $sleepturns*$server->turn_rate ? floor($sleep/$server->turn_rate) : $sleepturns);
-    //out("Played 'Day' $loopcount; Sleeping for " . $sleep . " seconds ($sleepturns Turns)");
+    //log_main_message("Played 'Day' $loopcount; Sleeping for " . $sleep . " seconds ($sleepturns Turns)");
     if ($played) {
         $sleepcount = 0;
     } else {
@@ -474,7 +460,7 @@ while (1) {
 
 
     sleep($sleep); //sleep for $sleep seconds
-    Bots::outNext($countries, true); // TODO: needs to call standard function
+    Bots::outNext($countries, true);
 }
 
 done(); //done() is defined below
@@ -539,7 +525,7 @@ function calculate_next_play_in_seconds($cnum, $nexttime, $strat, $is_clan_serve
             $play_seconds_maximum = round(0.6 * $server_turn_rate * $server_max_turns);
     }
 
-    log_country_message($cnum, "For strategy ".log_translate_simple_strat_name($strat).", min play seconds is $play_seconds_minimum and max play seconds is $play_seconds_maximum");
+    log_country_message($cnum, "For strategy ".Bots::txtStrat($cnum).", min play seconds is $play_seconds_minimum and max play seconds is $play_seconds_maximum");
 
     // shrink the window up to 25% based on the country's preference for play
     // $country_play_rand_factor is random number in range (1, 2)
@@ -618,12 +604,6 @@ function govtStats($countries)
             continue;
         }
 
-
-        // if (!isset($settings->$cnum->strat)) {
-        //     out("Picking a new strat for #$cnum");
-        //     $settings->$cnum->strat = Bots::pickStrat($cnum);
-        // }
-
         $s = $settings->$cnum->strat;
         if (!isset($govs[$s])) {
             $govs[$s] = [Bots::txtStrat($cnum), 0, 999999, 0, 0];
@@ -648,7 +628,7 @@ function govtStats($countries)
     }
 
     global $serv, $server_avg_land, $server_avg_networth;
-    //out("TNW:$tnw; TLD: $tld");
+    //log_main_message("TNW:$tnw; TLD: $tld");
     $server_avg_networth = $tnw / count($countries);
     $server_avg_land     = $tld / count($countries);
 
@@ -656,14 +636,14 @@ function govtStats($countries)
     $ald = ' [ALnd:'.str_pad(round($server_avg_land / 1000, 2), 6, ' ', STR_PAD_LEFT).'k]';
 
 
-    out("\033[1mServer:\033[0m ".$serv);
-    out("\033[1mTotal Countries:\033[0m ".str_pad(count($countries), 9, ' ', STR_PAD_LEFT).$anw.$ald);
+    log_main_message("\033[1mServer:\033[0m ".$serv);
+    log_main_message("\033[1mTotal Countries:\033[0m ".str_pad(count($countries), 9, ' ', STR_PAD_LEFT).$anw.$ald);
     foreach ($govs as $s => $gov) {
         if ($gov[1] > 0) {
             $next = ' [Next:'.str_pad($gov[2], 5, ' ', STR_PAD_LEFT).']';
             $anw  = ' [ANW:'.str_pad(round($gov[3] / $gov[1] / 1000000, 2), 6, ' ', STR_PAD_LEFT).'M]';
             $ald  = ' [ALnd:'.str_pad(round($gov[4] / $gov[1] / 1000, 2), 6, ' ', STR_PAD_LEFT).'k]';
-            out(str_pad($gov[0], 18).': '.str_pad($gov[1], 4, ' ', STR_PAD_LEFT).$next.$anw.$ald);
+            log_main_message(str_pad($gov[0], 18).': '.str_pad($gov[1], 4, ' ', STR_PAD_LEFT).$next.$anw.$ald);
         }
     }
 }//end govtStats()
@@ -750,7 +730,7 @@ function total_cansell_military($c, $server_max_possible_market_sell)
         $cansell += can_sell_mil($c, $mil, $server_max_possible_market_sell);
     }
 
-    //out("CANSELL TECH: $cansell");
+    //log_country_message($c->cnum, "CANSELL TECH: $cansell");
     return $cansell;
 }//end total_cansell_military()
 
@@ -871,6 +851,7 @@ function update_c(&$c, $result)
         $c->m_ta  += floor($turn->tanksproduced ?? 0);
         $c->m_spy += floor($turn->spiesproduced ?? 0);
         $c->turns--;
+        $c->turns_played++;
 
         //out_data($turn);
 
@@ -883,7 +864,7 @@ function update_c(&$c, $result)
         $advisor_update = false;
         if (isset($turn->event)) {
             if ($turn->event == 'earthquake') {   //if an earthquake happens...
-                out("Earthquake destroyed {$turn->earthquake} Buildings! Update Advisor"); //Text for screen
+                log_country_message($c->cnum, "Earthquake destroyed {$turn->earthquake} Buildings! Update Advisor"); //Text for screen
 
                 //update the advisor, because we no longer know what information is valid
                 $advisor_update = true;
@@ -929,8 +910,8 @@ function update_c(&$c, $result)
     $c->expenses = $latest_expenses;
     $c->income = $latest_taxrevenue - $latest_expenses;
     //$c->cashing = floor(1.2 * $latest_taxrevenue - $latest_expenses);
-    $c->foodproduced = $latest_foodproduced;
-    $c->foodconsumed = $latest_foodconsumed;
+    $c->foodpro = $latest_foodproduced;
+    $c->foodcon = $latest_foodconsumed;
     $c->foodnet = $latest_foodproduced - $latest_foodconsumed;
 
     $c->money += $netmoney;
@@ -953,7 +934,17 @@ function update_c(&$c, $result)
         $str = Colors::getColoredString($str, "red");
     }
 
-    out($str);
+    log_country_message($c->cnum, $str);
+
+    if($c->food < 0) {
+        log_error_message(1000, $c->cnum, "Ran out of food playing turns");
+        $c->food = 0; // don't leave food as a negative number because this can mess up other calculations using it
+    }
+    if($c->money < 0) {
+        log_error_message(1001, $c->cnum, "Ran out of money playing turns");
+        $c->money = 0; // don't leave money as a negative number because this can mess up other calculations using it
+    }
+
     $APICalls = 0;
 }//end update_c()
 
@@ -1020,14 +1011,14 @@ function explore(&$c, $turns = 1)
 {
     if ($c->empty > $c->land / 2) {
         $b = $c->built();
-        out("We can't explore (Built: {$b}%), what are we doing?");
+        log_country_message($c->cnum, "We can't explore (Built: {$b}%), what are we doing?");
         return;
     }
 
     //this means 1 is the default number of turns if not provided
     $result = ee('explore', ['turns' => $turns]);      //cash a certain number of turns
     if ($result === null) {
-        out('Explore Fail? Update Advisor');
+        log_country_message($c->cnum, 'Explore Fail? Update Advisor');
         $c = get_advisor();
     }
 
@@ -1123,9 +1114,9 @@ function get_owned_on_market_info()
 function done($str = null)
 {
     if ($str) {
-        out($str);
+        log_main_message($str);
     }
 
-    out("Exiting\n\n");
+    log_main_message("Exiting\n\n");
     exit;
 }//end done()

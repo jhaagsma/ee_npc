@@ -24,8 +24,7 @@ class GDI
     public static function join()
     {
         $result = ee('gdi/join');
-        out("Join GDI");
-        //out($result);
+        log_country_message(null, "Join GDI");
         return $result;
     }//end join()
 
@@ -37,8 +36,7 @@ class GDI
     public static function leave()
     {
         $result = ee('gdi/leave');
-        out("Leave GDI");
-        //out($result);
+        log_country_message(null, "Leave GDI");
         return $result;
     }//end leave()
 }//end class

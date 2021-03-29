@@ -7,12 +7,11 @@ $military_list = ['m_tr','m_j','m_tu','m_ta'];
 function play_indy_strat($server, $cnum, $rules)
 {
     //global $cnum;
-    //out("Playing ".INDY." Turns for #$cnum ".siteURL($cnum));
     //$main = get_main();     //get the basic stats
     //out_data($main);          //output the main data
     $c = get_advisor();     //c as in country! (get the advisor)
     $c->setIndyFromMarket(false); // changing to not check DPA - Slagpit 20210321
-    out("Indy: {$c->pt_indy}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%");
+    log_country_message($cnum, "Indy: {$c->pt_indy}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%");
     //out_data($c) && exit;             //ouput the advisor data
     if ($c->govt == 'M') {
         $rand = rand(0, 100);
@@ -25,8 +24,8 @@ function play_indy_strat($server, $cnum, $rules)
                 break;
         }
     }
-    out($c->turns.' turns left');
-    out('Explore Rate: '.$c->explore_rate.'; Min Rate: '.$c->explore_min);
+    log_country_message($cnum, $c->turns.' turns left');
+    log_country_message($cnum, 'Explore Rate: '.$c->explore_rate.'; Min Rate: '.$c->explore_min);
     //$pm_info = get_pm_info();   //get the PM info
     //out_data($pm_info);       //output the PM info
     //$market_info = get_market_info();   //get the Public Market info
@@ -80,7 +79,7 @@ function play_indy_strat($server, $cnum, $rules)
         $tol = $cpref->price_tolerance; //should be between 0.5 and 1.5
         if (turns_of_food($c) > 50 && turns_of_money($c) > 50 && $c->money > 3500 * 500) {
         // 40 turns of food, and more than 2x nw in cash on hand
-            //out("Try to buy tech?");
+            //log_country_message($cnum, "Try to buy tech?");
             //min what we'll use in max(20,turns-left) turns basically
             $spend = min($c->money, $c->money + max(20, $c->turns) * $c->income) * 0.4;
 
@@ -113,7 +112,7 @@ function play_indy_turn(&$c, $server_max_possible_market_sell)
     $target_bpt = 65;
     global $turnsleep;
     usleep($turnsleep);
-    //out($main->turns . ' turns left');
+    //log_country_message($c->cnum, $main->turns . ' turns left');
     if ($c->shouldBuildSingleCS($target_bpt)) {
         //LOW BPT & CAN AFFORD TO BUILD
         //build one CS if we can afford it and are below our target BPT

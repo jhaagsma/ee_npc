@@ -33,9 +33,7 @@ class Math
         $gaussian_number = sqrt(-2 * log($rand1)) * cos(2 * pi() * $rand2);
         $mean            = ($max + $min) / 2;
         $random_number   = ($gaussian_number * $std_deviation) + $mean;
-        //out($random_number);
         $random_number = round($random_number / $step) * $step;
-        //out($random_number);
         if ($random_number < $min || $random_number > $max) {
             $random_number = self::purebell($min, $max, $std_deviation, $step);
         }

@@ -508,7 +508,7 @@ PARAMETERS:
 */
 function food_and_money_for_turns(&$c, $turns_to_play, $money_to_reserve, $is_cashing) {
 	$incoming_money_per_turn = ($is_cashing ? 1.0 : 1.2) * $c->taxes;
-	$additional_turns_for_expenses_growth = floor($turns_to_play / 7); // FUTURE: this is a wild guess
+	$additional_turns_for_expenses_growth = floor($turns_to_play / 5); // TODO: this is still wrong?
 	// check money
 	if(!has_money_for_turns($turns_to_play + $additional_turns_for_expenses_growth, $c->money, $incoming_money_per_turn, $c->expenses, $money_to_reserve)) {
 		// not enough money to play a turn - can we make up the difference by selling a turn's worth of food production?
@@ -528,7 +528,7 @@ function food_and_money_for_turns(&$c, $turns_to_play, $money_to_reserve, $is_ca
 	// FUTURE - be smarter about picking $60
 
 	$food_needed = max(0, get_food_needs_for_turns($turns_to_play + $additional_turns_for_expenses_growth, $c->foodpro, $c->foodcon) - $c->food);
-	//log_country_message($c->cnum, "Food is $c->food and calculated food needs are $food_needed");	
+	//log_country_message($c->cnum, "Food is $c->food, food consumption is $c->foodcon, and calculated food needs are $food_needed");	
 			
 	if(!buy_full_food_quantity_if_possible($c, $food_needed, 60, $money_to_reserve)) {
 		log_country_message($c->cnum, "Not enough food to play $turns_to_play turns. Food is $c->food, money is $c->money, and money to reserve is $money_to_reserve");				

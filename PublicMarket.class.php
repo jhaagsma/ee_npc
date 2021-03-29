@@ -80,7 +80,7 @@ class PublicMarket
     public static function buy(&$c, $quantity = [], $price = [])
     {
         if (array_sum($quantity) == 0) {
-            out("Trying to buy nothing?");
+            log_country_message($c->cnum, "Trying to buy nothing?");
             $c->updateMain();
             return;
         }
@@ -144,14 +144,14 @@ class PublicMarket
                 $cost += round($q * $price[$key] * $c->tax());
             }
 
-            out("Tried: ".$what."; Money: ".$c->money." Cost: ".$cost);
+            log_country_message($c->cnum, "Tried: ".$what."; Money: ".$c->money." Cost: ".$cost);
 
             $thought_money = $c->money;
 
             $c->updateMain();
 
             if ($c->money != $thought_money) {
-                out("We thought we had \$$thought_money, but actually have \${$c->money}");
+                log_country_message($c->cnum, "We thought we had \$$thought_money, but actually have \${$c->money}");
             }
 
 
@@ -165,7 +165,7 @@ class PublicMarket
 
         $str .= str_pad('$'.engnot($c->money), 8, ' ', STR_PAD_LEFT);
         $str .= str_pad('($-'.engnot($tcost).')', 14, ' ', STR_PAD_LEFT);
-        out($str);
+        log_country_message($c->cnum, $str);
         return $result;
     }//end buy()
 
@@ -189,9 +189,9 @@ class PublicMarket
             $str .= $q . ' ' . $t2 . '@' . $price[$type] . ', ';
         }
         $str .= 'on market.';
-        out($str);*/
+        log_country_message($c->cnum, $str);*/
         if (array_sum($quantity) == 0) {
-            out("Trying to sell nothing?");
+            log_country_message($c->cnum, "Trying to sell nothing?");
             $c->updateMain();
             $c->updateOnMarket();
             Debug::on();
@@ -201,7 +201,7 @@ class PublicMarket
         $result = ee('sell', ['quantity' => $quantity, 'price' => $price]); //ignore tonm for now, it's optional
         $c->updateOnMarket();
         if (isset($result->error) && $result->error) {
-            out('ERROR: '.$result->error);
+            log_country_message($c->cnum, 'ERROR: '.$result->error);
             sleep(1);
             return;
         }
@@ -241,7 +241,7 @@ class PublicMarket
             $str .= 'Nothing.';
         }
 
-        out($str);
+        log_country_message($c->cnum, $str);
         //sleep(1);
         return $result;
     }//end sell()
@@ -254,7 +254,7 @@ class PublicMarket
         //$market_info = get_market_info();   //get the Public Market info
         $tech = substr($tech, 2);
         $diff = $c->money - $spend;
-        //out('Here;P:'.PublicMarket::price($tech).';Q:'.PublicMarket::available($tech).';S:'.$spend.';M:'.$maxprice.';');
+        //log_country_message($c->cnum, 'Here;P:'.PublicMarket::price($tech).';Q:'.PublicMarket::available($tech).';S:'.$spend.';M:'.$maxprice.';');
         if (self::price($tech) != null && self::available($tech) > 0) {
             while (self::price($tech) != null
                 && self::available($tech) > 0
@@ -267,7 +267,7 @@ class PublicMarket
                     return;
                 }
 
-                //out($tech . $tobuy . "@$" . $price);
+                //log_country_message($c->cnum, $tech . $tobuy . "@$" . $price);
                 $result = PublicMarket::buy($c, [$tech => $tobuy], [$tech => $price]);     //Buy troops!
                 if ($result === false) {
                     if ($update == false) {

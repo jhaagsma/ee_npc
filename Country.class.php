@@ -31,7 +31,6 @@ class Country
         $this->market_fetched = null;
 
         foreach ($advisor as $k => $var) {
-            //out("K:$k V:$var");
             $this->$k = $var;
         }
 
@@ -120,7 +119,7 @@ class Country
         $omgood = 'om_'.$good;
         $om     = $this->$omgood ?? 0;
         if (isset($this->$atm) && $this->$atm) {
-            out("Goods Stuck: $good: $om");
+            log_country_message($this->cnum, "Goods Stuck: $good: $om");
             return true;
         }
 
@@ -169,7 +168,7 @@ class Country
                 $protext .= '100% '.substr($what, 4);
             }
 
-            out("--- Set indy production: ".$protext);
+            log_country_message($this->cnum, "--- Set indy production: ".$protext);
             set_indy($this);
         } else {
             $protext = null;
@@ -181,7 +180,7 @@ class Country
                 $protext .= '100% '.substr($what, 4);
             }
 
-            out("--- Indy production: ".$protext);
+            log_country_message($this->cnum, "--- Indy production: ".$protext);
         }
     }//end setIndy()
 
@@ -234,7 +233,7 @@ class Country
             foreach ($score as $k => $s) {
                 $protext .= $s.' '.$k.' ';
             }
-            out("--- Indy Scoring: ".$protext);
+            log_country_message($this->cnum, "--- Indy Scoring: ".$protext);
 
             if ($checkDPA) {
                 $target = $this->dpat ?? $this->defPerAcreTarget();
@@ -294,7 +293,7 @@ class Country
     {
         //out("Turns Played: {$this->turns_played}");
         $dpat = floor(75 + pow($this->turns_played, $powfactor) / 10) * $mult;
-        out("DPAT: $dpat");
+        log_country_message($this->cnum, "DPAT: $dpat");
         return $dpat;
     }//end defPerAcreTarget()
 
@@ -558,7 +557,7 @@ class Country
         $str .= $s.'Cash:         '.$cash.'         BPT:        '.$bpt .'         TPT: '.$tpt .$e;
         $str .= "\n|".str_pad(' '.$url.' ', 77, '-', STR_PAD_BOTH).'|';
 
-        out($str);
+        log_country_message($this->cnum, $str);
     }//end countryStats()
 
 
@@ -748,14 +747,14 @@ class Country
 
     public static function listRetalsDue()
     {
-        global $cpref;
+        global $cpref, $cnum;
 
         if (!$cpref->retal) {
-            out("Retals Due: None!");
+            log_country_message($cnum, "Retals Due: None!");
             return;
         }
 
-        out("Retals Due:");
+        log_country_message($cnum, "Retals Due:");
 
         $retals = (array)$cpref->retal;
 
@@ -772,7 +771,7 @@ class Country
                 continue;
             }
 
-            out(
+            log_country_message($cnum, 
                 "Country: ".str_pad($country->cname, 32).str_pad(" (#".$list['cnum'].')', 9, ' ', STR_PAD_LEFT).
                 ' x '.str_pad($list['num'], 4, ' ', STR_PAD_LEFT).
                 ' or '.str_pad($list['land'], 6, ' ', STR_PAD_LEFT).' Acres'
