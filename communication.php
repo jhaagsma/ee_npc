@@ -132,8 +132,6 @@ function handle_output($serverOutput, $function, $cnum) // $cnum may not be set
         return false;
     }
 
-    // TODO: pretty much all of these should be errors
-
     // if ($function == 'buy') {
     //     out("DEBUGGING BUY");
     //     out_data($response);

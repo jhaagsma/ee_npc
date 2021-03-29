@@ -88,7 +88,9 @@ function play_farmer_strat($server, $cnum, $rules)
             //sell 1/4 of our military
             $pm_info = PrivateMarket::getRecent();
             PrivateMarket::sell($c, ['m_bu' => min($c->food, floor(-10 * $c->income / $pm_info->sell_price->m_bu))]);
-            /* TODO: $c->food gets out of sync?
+            /* FUTURE: $c->food gets out of sync?
+            -- could be fixed as of 20210329 - Slagpit
+
 [21:54:35] Almost out of money! Sell 10 turns of income in food!
 [21:54:36]
 

@@ -470,6 +470,7 @@ function temporary_cash_or_tech_at_end_of_set (&$c, $strategy, $turns_to_keep, $
 		// first try to play in blocks of 10 turns, if that fails then go to turn by turn
 		// FUTURE: a farmer can sell on private and should end up being able to cash 10X turn at a time
 		// FUTURE: shouldn't farmers avoid decay?
+		// FUTURE: a casher can get stopped from playing turns if it doesn't have enough food for a turn and has less money than the reserve figure
 		if($c->turns - $turns_to_keep < 10)
 			$turns_to_play_at_once = 1;
 
@@ -508,12 +509,12 @@ PARAMETERS:
 */
 function food_and_money_for_turns(&$c, $turns_to_play, $money_to_reserve, $is_cashing) {
 	$incoming_money_per_turn = ($is_cashing ? 1.0 : 1.2) * $c->taxes;
-	$additional_turns_for_expenses_growth = floor($turns_to_play / 5); // TODO: this is still wrong?
+	$additional_turns_for_expenses_growth = floor($turns_to_play / 5);
 	// check money
 	if(!has_money_for_turns($turns_to_play + $additional_turns_for_expenses_growth, $c->money, $incoming_money_per_turn, $c->expenses, $money_to_reserve)) {
 		// not enough money to play a turn - can we make up the difference by selling a turn's worth of food production?
 		if($c->food > 0 and $c->foodnet > 0) {
-			// log_country_message($c->cnum, "TEMP DEBUG: Food is ".$c->food); // TODO: figure out why this errors sometimes?
+			// log_country_message($c->cnum, "TEMP DEBUG: Food is ".$c->food); // FUTURE: figure out why this errors sometimes? could be fixed now - Slagpit 20210329
 			PrivateMarket::sell_single_good($c, 'm_bu', min($c->food, ($turns_to_play + $additional_turns_for_expenses_growth) * $c->foodnet));
 		}
 		
