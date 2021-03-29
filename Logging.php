@@ -33,10 +33,7 @@ function log_snapshot_message($c, $snapshot_type, $strat, $number_of_errors, $is
     if($log_country_to_screen or $log_to_local or $log_to_server)
         $message = generate_compact_country_status($c, $snapshot_type, $strat, $number_of_errors, $is_destocking, $output_c_values, $prev_c_values);
 
-    return log_to_targets($log_country_to_screen, $log_to_local, $log_to_server, $full_local_file_path_and_name, null, $message, $c->cnum);
-
-    //TODO: test log_to_targets with line breaks
-    return false;
+    return log_to_targets($log_country_to_screen, $log_to_local, $log_to_server, $full_local_file_path_and_name, null, $message, $c->cnum, null);
 };
 
 
@@ -53,17 +50,18 @@ function log_country_message($cnum, $message) {
     }
 
     $full_local_file_path_and_name = ($log_to_local ? get_full_country_file_path_and_name($local_file_path, $cnum, false) : null);
-    return log_to_targets($log_country_to_screen, $log_to_local, $log_to_server, $full_local_file_path_and_name, null, $message, $cnum);
+    return log_to_targets($log_country_to_screen, $log_to_local, $log_to_server, $full_local_file_path_and_name, null, $message, $cnum, null);
 }
 
 
 
-function log_main_message($message)  {
-    // TODO: support color for screen?
-    global $log_country_to_screen, $log_to_local, $log_to_server, $local_file_path;
+function log_main_message($message, $color = null)  {
+    // TODO: support color for screen
+    global $log_to_local, $log_to_server, $local_file_path;
     $full_local_file_path_and_name = ($log_to_local ? get_full_main_file_path_and_name($local_file_path) : null);
-    return log_to_targets($log_country_to_screen, $log_to_local, $log_to_server, $full_local_file_path_and_name, null, $message, null);
+    return log_to_targets(true, $log_to_local, $log_to_server, $full_local_file_path_and_name, null, $message, null, $color);
 }
+
 
 function log_error_message($error_type, $cnum, $message) {
     global $log_country_to_screen, $log_to_local, $log_to_server, $local_file_path;
@@ -83,15 +81,66 @@ function log_error_message($error_type, $cnum, $message) {
     }
 
     $full_local_file_path_and_name = ($log_to_local ? get_full_error_file_path_and_name($local_file_path) : null);
-    return log_to_targets($log_country_to_screen, $log_to_local, $log_to_server, $full_local_file_path_and_name, $error_type, $message, $cnum);
+    return log_to_targets($log_country_to_screen, $log_to_local, $log_to_server, $full_local_file_path_and_name, $error_type, $message, $cnum, null);
 }
 
 
+function log_to_targets($log_to_screen, $log_to_local, $log_to_server, $full_local_file_path_and_name, $error_type, $message, $cnum, $color = null) {
+    // TODO: error type
+    $is_line_breaks_only = str_replace(array("\r", "\n"), '', $message) == "" ? true : false;
+    $line_break_count = substr_count($message,"\n" );
+    if($log_to_screen) {
+        if($is_line_breaks_only)
+            echo $message;
+        else {
+            $screen_message = ($line_break_count > 0 ? "\n" : "").$message;
+            if($color)
+                out(Colors::getColoredString($screen_message, $color));
+            else
+                out($screen_message); // timestamp is free
+        }
+        //out("Country #$cnum: $message");
+    }
+
+    if($log_to_local) {
+        // write to $full_local_file_path_and_name, catch and print any errors
+        //out($full_local_file_path_and_name);
+        if($is_line_breaks_only)
+            $file_message = $message;
+        else {
+            $timestamp_for_file = '['.date('Y-m-d H:i:s').'] ';        
+            $file_message = $timestamp_for_file.($line_break_count > 0 ? "\n" : "").$message."\n";
+        }
+        file_put_contents ($full_local_file_path_and_name, $file_message, FILE_APPEND);
+    }
+
+    if($log_to_server) {
+        // TODO: call function in communication, catch and print any errors
+    }
+
+    return;
+}
 
 
+function get_full_country_file_path_and_name($local_file_path, $cnum, $is_snapshot) {
+    // TODO: windows?
+    // TODO: should these three functions call another function?
+    // TODO: use servername, round
+    $file_name = ($is_snapshot ? 'SNAPSHOT_' : 'COUNTRY_') . $cnum . '.txt';
+    return "$local_file_path/logging/alphaai/country/$file_name";
+}
 
+function get_full_error_file_path_and_name($local_file_path) {
+    // TODO: windows?
+    $iso_date = date('Ymd');
+    return "$local_file_path/logging/alphaai/errors/ERRORS_$iso_date.txt";
+}
 
-
+function get_full_main_file_path_and_name($local_file_path) {
+    // TODO: windows?
+    $iso_date = date('Ymd');
+    return "$local_file_path/logging/alphaai/main/LOOP_$iso_date.txt";
+}
 
 
 
@@ -105,7 +154,6 @@ function format_local_file_path($local_file_path) {
     // make work on windows and linux ideally?
     return $local_file_path;
 }
-
 
 
 function initialize_country_logging_file($server, $cnum) {
@@ -156,51 +204,8 @@ function initialize_for_targets($log_to_local, $log_to_server, $full_local_file_
 }
 
 
-function get_full_country_file_path_and_name($local_file_path, $cnum, $is_snapshot) {
-    // TODO: windows?
-    // TODO: should these three functions call another function?
-    // TODO: use servername, round
-    $file_name = ($is_snapshot ? 'SNAPSHOT_' : 'COUNTRY_') . $cnum . '.txt';
-    return "$local_file_path/logging/alphaai/country/$file_name";
-}
-
-function get_full_error_file_path_and_name($local_file_path) {
-    // TODO: windows?
-    $iso_date = date('Ymd');
-    return "$local_file_path/logging/alphaai/errors/ERRORS_$iso_date.txt";
-}
-
-function get_full_main_file_path_and_name($local_file_path) {
-    // TODO: windows?
-    $iso_date = date('Ymd');
-    return "$local_file_path/logging/alphaai/main/LOOP_$iso_date.txt";
-}
 
 
-function log_to_targets($log_country_to_screen, $log_to_local, $log_to_server, $full_local_file_path_and_name, $error_type, $message, $cnum) {
-    // TODO: error type
-
-    $line_break_count = substr_count($message,"\n" );
-    if($log_country_to_screen) {
-        $screen_message = ($line_break_count > 0 ? "\n" : "").$message;
-        out($screen_message); // timestamp is free
-        //out("Country #$cnum: $message");
-    }
-
-    if($log_to_local) {
-        // write to $full_local_file_path_and_name, catch and print any errors
-        //out($full_local_file_path_and_name);
-        $timestamp_for_file = '['.date('Y-m-d H:i:s').'] ';        
-        $file_message = $timestamp_for_file.($line_break_count > 0 ? "\n" : "").$message."\n";
-        file_put_contents ($full_local_file_path_and_name, $file_message, FILE_APPEND);
-    }
-
-    if($log_to_server) {
-        // TODO: call function in communication, catch and print any errors
-    }
-
-    return;
-}
 
 
 function purge_old_logging_files($server)  {
@@ -373,7 +378,7 @@ function generate_compact_country_status_string($header, $snapshot_type, $curren
     $ppro = str_pad(($c_ppro <> -1 ? $c_ppro.'%' : 'N/A'), 8, ' ', STR_PAD_LEFT);
     
     // production
-    $dstk = str_pad(($c_dstk == "N/A" ? $c_dstk : log_translate_boolean_to_YN($c_dstk)), 8, ' ', STR_PAD_LEFT);
+    $dstk = str_pad(($c_dstk === "N/A" ? $c_dstk : log_translate_boolean_to_YN($c_dstk)), 8, ' ', STR_PAD_LEFT);
     $tax = str_pad($c_tax, 8, ' ', STR_PAD_LEFT);
     $exp = str_pad($c_exp, 8, ' ', STR_PAD_LEFT);
     $netf = str_pad($c_netf, 8, ' ', STR_PAD_LEFT);
@@ -416,9 +421,6 @@ function generate_compact_country_status_string($header, $snapshot_type, $curren
 }
 
 
-
-
-
 function log_translate_simple_strat_name($strat) {
     switch ($strat) {
         case 'C':
@@ -452,4 +454,3 @@ function log_translate_boolean_to_YN($boolean_value) {
 function log_translate_instant_to_human_readable($instant) {
     return date('m/d/Y H:i:s', $instant);
 }
-
