@@ -2,9 +2,9 @@
 
 namespace EENPC;
 
-function play_casher_strat($server)
+function play_casher_strat($server, $cnum, $rules)
 {
-    global $cnum;
+    //global $cnum;
     out("Playing ".CASHER." Turns for #$cnum ".siteURL($cnum));
     //$main = get_main();     //get the basic stats
     //out_data($main);          //output the main data
@@ -21,11 +21,14 @@ function play_casher_strat($server)
     if ($c->govt == 'M') {
         $rand = rand(0, 100);
         switch ($rand) {
-            case $rand < 12:
+            case $rand < 10:
                 Government::change($c, 'I');
                 break;
-            case $rand < 12:
+            case $rand < 25:
                 Government::change($c, 'D');
+                break;
+            case $rand < 40:
+                Government::change($c, 'H');
                 break;
             default:
                 Government::change($c, 'R');
@@ -45,6 +48,7 @@ function play_casher_strat($server)
 
     while ($c->turns > 0) {
         //$result = PublicMarket::buy($c,array('m_bu'=>100),array('m_bu'=>400));
+
         $result = play_casher_turn($c);
         if ($result === false) {  //UNEXPECTED RETURN VALUE
             $c = get_advisor();     //UPDATE EVERYTHING
@@ -55,8 +59,8 @@ function play_casher_strat($server)
             $c->updateMain(); //we probably don't need to do this *EVERY* turn
         }
 
-
-        $hold = money_management($c);
+        
+        $hold = money_management($c, $rules->max_possible_market_sell);
         if ($hold) {
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
         }
@@ -65,7 +69,7 @@ function play_casher_strat($server)
         if ($hold) {
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
         }
-
+        
         if (turns_of_food($c) > 40
             && $c->money > 3500 * 500
             && ($c->built() > 80 || $c->money > $c->fullBuildCost())

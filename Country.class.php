@@ -188,55 +188,66 @@ class Country
 
     public function setIndyFromMarket($checkDPA = false)
     {
-
-        if ($this->m_spy < 10000) {
-            $spy = 10;
-        } elseif ($this->m_spy / $this->land < 25) {
-            $spy = 5;
-        } elseif ($this->m_spy / $this->land < 30) {
-            $spy = 4;
-        } elseif ($this->m_spy / $this->land < 35) {
-            $spy = 3;
-        } elseif ($this->m_spy / $this->land < 40) {
-            $spy = 2;
-        } else {
-            $spy = 1;
+        // produce 100% turrets if checked in the first 150 turns because there's very little demand for anything else
+        // FUTURE: 150 is a made up number that could be changed to something better
+        if ($this->turns_played < 150) { 
+            $new['pro_tu'] = 100;
         }
+        else { // not the first 150 turns
+            // for now, 200 indy's worth of production with 1% min and 5% max
+            $spy = max(1, min(5, round(200 / ($this->b_indy + 1))));
 
-        $therest = 100 - $spy;
-
-        $new = ['pro_spy' => $spy]; //just set spies to 5% for now
-        global $market;
-
-        $p_tr = PublicMarket::price('m_tr');
-        $p_j  = PublicMarket::price('m_j');
-        $p_tu = PublicMarket::price('m_tu');
-        $p_ta = PublicMarket::price('m_ta');
-
-        $score = [
-            'pro_tr'  => 1.86 * ($p_tr == 0 ? 999 : $p_tr),
-            'pro_j'   => 1.86 * ($p_j == 0 ? 999 : $p_j),
-            'pro_tu'  => 1.86 * ($p_tu == 0 ? 999 : $p_tu),
-            'pro_ta'  => 0.4 * ($p_ta == 0 ? 999 : $p_ta),
-        ];
-
-        $protext = null;
-        foreach ($score as $k => $s) {
-            $protext .= $s.' '.$k.' ';
-        }
-        out("--- Indy Scoring: ".$protext);
-
-        if ($checkDPA) {
-            $target = $this->dpat ?? $this->defPerAcreTarget();
-            if ($this->defPerAcre() < $target) {
-                //below def target, don't make jets
-                unset($score['pro_j']);
+            // commented out by Slagpit 20210323 - not clear why indies want so many spies
+            /*
+            if ($this->m_spy < 10000) {
+                $spy = 10;
+            } elseif ($this->m_spy / $this->land < 25) {
+                $spy = 5;
+            } elseif ($this->m_spy / $this->land < 30) {
+                $spy = 4;
+            } elseif ($this->m_spy / $this->land < 35) {
+                $spy = 3;
+            } elseif ($this->m_spy / $this->land < 40) {
+                $spy = 2;
+            } else {
+                $spy = 1;
             }
-        }
+            */
+            $therest = 100 - $spy;
 
-        arsort($score);
-        $which       = key($score);
-        $new[$which] = $therest; //set to do the most expensive of whatever other good
+            $new = ['pro_spy' => $spy];
+            global $market;
+
+            $p_tr = PublicMarket::price('m_tr');
+            $p_j  = PublicMarket::price('m_j');
+            $p_tu = PublicMarket::price('m_tu');
+            $p_ta = PublicMarket::price('m_ta');
+
+            $score = [
+                'pro_tr'  => 1.86 * ($p_tr == 0 ? 144 : $p_tr),
+                'pro_j'   => 1.86 * ($p_j == 0 ? 192 : $p_j),
+                'pro_tu'  => 1.86 * ($p_tu == 0 ? 210 : $p_tu),
+                'pro_ta'  => 0.4 * ($p_ta == 0 ? 588 : $p_ta),
+            ];
+
+            $protext = null;
+            foreach ($score as $k => $s) {
+                $protext .= $s.' '.$k.' ';
+            }
+            out("--- Indy Scoring: ".$protext);
+
+            if ($checkDPA) {
+                $target = $this->dpat ?? $this->defPerAcreTarget();
+                if ($this->defPerAcre() < $target) {
+                    //below def target, don't make jets
+                    unset($score['pro_j']);
+                }
+            }
+
+            arsort($score);
+            $which       = key($score);
+            $new[$which] = $therest; //set to do the most expensive of whatever other good
+        }
 
         $this->setIndy($new);
     }//end setIndyFromMarket()

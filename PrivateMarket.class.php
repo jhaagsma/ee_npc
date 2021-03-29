@@ -91,9 +91,11 @@ class PrivateMarket
         $first     = true;
         foreach ($result->goods as $type => $amount) {
             if ($type == 'm_bu') {
-                $type = 'food';
+                $c_type = 'food';
             } elseif ($type == 'm_oil') {
-                $type = 'oil';
+                $c_type = 'oil';
+            } else {
+                $c_type = $type;
             }
 
             if ($amount > 0) {
@@ -102,10 +104,10 @@ class PrivateMarket
                 }
 
                 self::$info->available->$type -= $amount;
-                $c->$type                     += $amount;
+                $c->$c_type                   += $amount;
 
                 $str .= str_pad(engnot($amount), 8, ' ', STR_PAD_LEFT)
-                        .str_pad($type, 5, ' ', STR_PAD_LEFT);
+                        .str_pad($c_type, 5, ' ', STR_PAD_LEFT);
 
                 if ($first) {
                     $str .= str_pad('$'.engnot($c->money), 28, ' ', STR_PAD_LEFT)
@@ -121,6 +123,14 @@ class PrivateMarket
         return $result;
     }//end buy()
 
+    /*
+    Simple wrapper function for sell when you just want to sell one type of unit (like food)
+    */
+    public static function sell_single_good(&$c, $type, $amount)
+    {
+        $units = [$type => $amount];
+        return self::sell($c, $units);
+    } // end sell_single_good()
 
     /**
      * Sell on the Private Market

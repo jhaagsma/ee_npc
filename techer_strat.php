@@ -4,9 +4,9 @@ namespace EENPC;
 
 $techlist = ['t_mil','t_med','t_bus','t_res','t_agri','t_war','t_ms','t_weap','t_indy','t_spy','t_sdi'];
 
-function play_techer_strat($server)
+function play_techer_strat($server, $cnum, $rules)
 {
-    global $cnum;
+    //global $cnum;
     out("Playing ".TECHER." Turns for #$cnum ".siteURL($cnum));
     //$main = get_main();     //get the basic stats
     //out_data($main);          //output the main data
@@ -52,7 +52,8 @@ function play_techer_strat($server)
 
     while ($c->turns > 0) {
         //$result = PublicMarket::buy($c,array('m_bu'=>100),array('m_bu'=>400));
-        $result = play_techer_turn($c);
+                
+        $result = play_techer_turn($c, $rules->market_autobuy_tech_price, $rules->max_possible_market_sell);
         if ($result === false) {  //UNEXPECTED RETURN VALUE
             $c = get_advisor();     //UPDATE EVERYTHING
             continue;
@@ -62,9 +63,8 @@ function play_techer_strat($server)
             $c->updateMain(); //we probably don't need to do this *EVERY* turn
         }
 
-
-
-        $hold = money_management($c);
+        // management is here to make sure that tech is sold
+        $hold = money_management($c, $rules->max_possible_market_sell);
         if ($hold) {
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
         }
@@ -84,7 +84,7 @@ function play_techer_strat($server)
 }//end play_techer_strat()
 
 
-function play_techer_turn(&$c)
+function play_techer_turn(&$c, $market_autobuy_tech_price, $server_max_possible_market_sell)
 {
  //c as in country!
     $target_bpt = 65;
@@ -98,12 +98,12 @@ function play_techer_turn(&$c)
         //LOW BPT & CAN AFFORD TO BUILD
         //build one CS if we can afford it and are below our target BPT
         return Build::cs(); //build 1 CS
-    } elseif ($c->protection == 0 && total_cansell_tech($c) > 20 * $c->tpt && selltechtime($c)
-        || $c->turns == 1 && total_cansell_tech($c) > 20
+    } elseif ($c->protection == 0 && total_cansell_tech($c, $server_max_possible_market_sell) > 20 * $c->tpt && selltechtime($c)
+        || $c->turns == 1 && total_cansell_tech($c, $server_max_possible_market_sell) > 20
     ) {
         //never sell less than 20 turns worth of tech
         //always sell if we can????
-        return sell_max_tech($c);
+        return sell_max_tech($c, $market_autobuy_tech_price, $server_max_possible_market_sell);
     } elseif ($c->shouldBuildSpyIndies()) {
         //build a full BPT of indies if we have less than that, and we're out of protection
         return Build::indy($c);
@@ -150,7 +150,7 @@ function selltechtime(&$c)
 }//end selltechtime()
 
 
-function sell_max_tech(&$c)
+function sell_max_tech(&$c, $market_autobuy_tech_price, $server_max_possible_market_sell)
 {
     $c = get_advisor();     //UPDATE EVERYTHING
     $c->updateOnMarket();
@@ -159,17 +159,17 @@ function sell_max_tech(&$c)
     //global $market;
 
     $quantity = [
-        'mil' => can_sell_tech($c, 't_mil'),
-        'med' => can_sell_tech($c, 't_med'),
-        'bus' => can_sell_tech($c, 't_bus'),
-        'res' => can_sell_tech($c, 't_res'),
-        'agri' => can_sell_tech($c, 't_agri'),
-        'war' => can_sell_tech($c, 't_war'),
-        'ms' => can_sell_tech($c, 't_ms'),
-        'weap' => can_sell_tech($c, 't_weap'),
-        'indy' => can_sell_tech($c, 't_indy'),
-        'spy' => can_sell_tech($c, 't_spy'),
-        'sdi' => can_sell_tech($c, 't_sdi')
+        'mil' => can_sell_tech($c, 't_mil', $server_max_possible_market_sell),
+        'med' => can_sell_tech($c, 't_med', $server_max_possible_market_sell),
+        'bus' => can_sell_tech($c, 't_bus', $server_max_possible_market_sell),
+        'res' => can_sell_tech($c, 't_res', $server_max_possible_market_sell),
+        'agri' => can_sell_tech($c, 't_agri', $server_max_possible_market_sell),
+        'war' => can_sell_tech($c, 't_war', $server_max_possible_market_sell),
+        'ms' => can_sell_tech($c, 't_ms', $server_max_possible_market_sell),
+        'weap' => can_sell_tech($c, 't_weap', $server_max_possible_market_sell),
+        'indy' => can_sell_tech($c, 't_indy', $server_max_possible_market_sell),
+        'spy' => can_sell_tech($c, 't_spy', $server_max_possible_market_sell),
+        'sdi' => can_sell_tech($c, 't_sdi', $server_max_possible_market_sell)
     ];
 
     if (array_sum($quantity) == 0) {
@@ -178,7 +178,7 @@ function sell_max_tech(&$c)
         $c->updateOnMarket();
 
         Debug::on();
-        Debug::msg('This Quantity: '.array_sum($quantity).' TotalCanSellTech: '.total_cansell_tech($c));
+        Debug::msg('This Quantity: '.array_sum($quantity).' TotalCanSellTech: '.total_cansell_tech($c, $server_max_possible_market_sell));
         return;
     }
 
@@ -204,9 +204,10 @@ function sell_max_tech(&$c)
                 $max = $c->goodsStuck($key) ? 0.98 : $rmax; //undercut if we have goods stuck
                 Debug::msg("sell_max_tech:B:$key");
 
-                $price[$key] = min(
-                    9999,
-                    floor(PublicMarket::price($key) * Math::purebell($rmin, $max, $rstddev, $rstep))
+                $price[$key] = max($market_autobuy_tech_price, 
+                    min(9999,
+                        floor(PublicMarket::price($key) * Math::purebell($rmin, $max, $rstddev, $rstep))
+                    )
                 );
 
                 Debug::msg("sell_max_tech:C:$key");

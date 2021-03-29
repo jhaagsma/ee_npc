@@ -90,22 +90,61 @@ class Bots
     }//end server_start_end_notification()
 
 
+    public static function assign_strat_from_country_loop($country_position, $is_debug_server, $is_ai_server) {
+        // FUTURE: make it easy to assign whatever mix of strategies we want with different mixes by server
+
+        // a 20/20/20/20/20 split doesn't work well on the ai server
+        // farmers end up not being able to sell food and troops can go to $40
+        if($is_ai_server and !$is_debug_server) {
+            // per 25 countries: 3 farmer, 3 CI, 4 rainbow, 5 techer, 10 casher
+            // this doesn't handle a few country deletions well, but I don't think that it matters for ai
+            if (($country_position % 25) <= 9) {
+                return 'C';
+            } elseif  (($country_position % 25) <= 14) {
+                return 'T';
+            } elseif  (($country_position % 25) <= 17) {
+                return 'I';
+            } elseif  (($country_position % 25) <= 20) {
+                return 'F';
+            } else {
+                return 'R';
+            }
+        }
+
+        // other servers use this logic of 20/20/20/20/20
+        // debug servers are included here so we can test this code before it goes live
+        if ($country_position % 5 == 0) {
+            return 'F';
+        } elseif ($country_position % 5 == 1) {
+            return 'T';
+        } elseif ($country_position % 5 == 2) {
+            return 'C';
+        } elseif ($country_position % 5 == 3) { 
+            return 'I';
+        } else {
+            return 'R';
+        }
+    } //end assign_strat_from_country_loop()
+
+
+    /*
+    // retired in favor of assign_strat_from_country_loop()
     public static function pickStrat($cnum)
     {
         $rand = rand(0, 100);
-        if ($rand < 25) {
+        if ($rand < 20) { // used to be 25
             return 'F';
-        } elseif ($rand < 55) {
+        } elseif ($rand < 40) { // used to be 55
             return 'T';
-        } elseif ($rand < 80) {
+        } elseif ($rand < 60) { // used to be 80
             return 'C';
-        } elseif ($rand < 95) {
+        } elseif ($rand < 80) { // used to be 95
             return 'I';
         } else {
             return 'R';
         }
     }//end pickStrat()
-
+    */
 
     public static function playstats($countries)
     {
@@ -114,6 +153,10 @@ class Bots
         global $server;
         $stddev = round(self::playtimes_stddev($countries));
         out("Standard Deviation of play is: $stddev; (".round($stddev / $server->turn_rate).' turns)');
+        /* 
+        // no longer resetting because we want to set nextplay based on country status now
+        // for example, if a country stops playing turns because there's no food on the public market then we want it to login again
+        // soon to try to buy food and play turns
         if ($stddev < $server->turn_rate * 72 / 4 || $stddev > $server->turn_rate * 72) {
             out('Recalculating Nextplays');
             global $settings;
@@ -124,6 +167,7 @@ class Bots
             $stddev = round(self::playtimes_stddev($countries));
             out("Standard Deviation of play is: $stddev");
         }
+        */
 
         self::outOldest($countries);
         self::outFurthest($countries);
