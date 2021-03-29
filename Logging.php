@@ -4,21 +4,29 @@ namespace EENPC;
 
 // TODO: add communication functions
 // TODO: add ee_npc code to get and validate config parameters
+// TODO: does a multi line screen hide errors?
 
 
-function generate_compact_country_status($c, $strat, $number_of_errors, $is_destocking = false, $begin) {
+function generate_compact_country_status($c, $snapshot_type, $strat, $number_of_errors, $is_destocking, &$output_c_values, $prev_c_values = []) {
     // TODO: have delta functionality: start, deltas, end
+    if($snapshot_type <> 'BEGIN' and $snapshot_type <> 'DELTA' and $snapshot_type <> 'END')
+        return; // TODO: throw error
 
+    if($snapshot_type == 'DELTA' and empty($prev_c_values)) 
+        return; // TODO: throw error     
+
+    // this code is a complete mess because I changed its purpose half way through and tried fixing with copy and replace
+    $output_c_values = [];
     // turns and resources
-    $errs = str_pad(($number_of_errors ?? 'N/A'), 8, ' ', STR_PAD_LEFT);
-    $t_st = str_pad("$c->turns($c->turns_stored)", 8, ' ', STR_PAD_LEFT);
-    $t_pl = str_pad($c->turns_played, 8, ' ', STR_PAD_LEFT);
-    $netw = str_pad(engnot($c->networth), 8, ' ', STR_PAD_LEFT);
-    $land = str_pad(engnot($c->land), 8, ' ', STR_PAD_LEFT);
-    $cash = str_pad(engnot($c->money), 8, ' ', STR_PAD_LEFT);
-    $food = str_pad(engnot($c->food), 8, ' ', STR_PAD_LEFT);
-    $tech = str_pad(engnot(totaltech($c)), 8, ' ', STR_PAD_LEFT);
-    
+    $output_c_values['c_errs'] = $number_of_errors;
+    $output_c_values['c_t_st'] = "$c->turns($c->turns_stored)";
+    $output_c_values['c_t_pl'] = $c->turns_played;
+    $output_c_values['c_netw'] = $c->networth;
+    $output_c_values['c_land'] = $c->land;
+    $output_c_values['c_cash'] = $c->money;
+    $output_c_values['c_food'] = $c->food;
+    $output_c_values['c_tech'] = totaltech($c);
+
     // buildings
     if($strat == 'F')
         $prod_buildings = $c->b_farm;
@@ -29,71 +37,147 @@ function generate_compact_country_status($c, $strat, $number_of_errors, $is_dest
     else // include indy and rainbow for now
         $prod_buildings = 0;
     $non_prod_buildings = $c->land - $c->empty - $c->b_cs - $c->b_indy - $prod_buildings;
-    $pbds = str_pad($prod_buildings, 8, ' ', STR_PAD_LEFT);   
-    $ibds = str_pad($c->b_indy, 8, ' ', STR_PAD_LEFT);   
-    $nbds = str_pad($non_prod_buildings, 8, ' ', STR_PAD_LEFT);   
-    $cs = str_pad($c->b_cs, 8, ' ', STR_PAD_LEFT);   
-    $emty = str_pad($c->empty, 8, ' ', STR_PAD_LEFT);   
+    $output_c_values['c_pbds'] = $prod_buildings;
+    $output_c_values['c_ibds'] = $c->b_indy;
+    $output_c_values['c_nbds'] = $non_prod_buildings;
+    $output_c_values['c_cs'] = $c->b_cs;
+    $output_c_values['c_emty'] = $c->empty;
 
     // military
-    $spy  = str_pad(engnot($c->m_spy), 8, ' ', STR_PAD_LEFT);
-    $tr  = str_pad(engnot($c->m_tr), 8, ' ', STR_PAD_LEFT);
-    $jets  = str_pad(engnot($c->m_j), 8, ' ', STR_PAD_LEFT);
-    $tu  = str_pad(engnot($c->m_tu), 8, ' ', STR_PAD_LEFT);
-    $ta  = str_pad(engnot($c->m_ta), 8, ' ', STR_PAD_LEFT);
-    $read  = str_pad($c->readiness, 8, ' ', STR_PAD_LEFT);
-    $ps = str_pad('5 (5)', 8, ' ', STR_PAD_LEFT); // FUTURE: when attacking is available
-    $oil = str_pad(engnot($c->oil), 8, ' ', STR_PAD_LEFT);   
-    
+    $output_c_values['c_spy'] = $c->m_spy;
+    $output_c_values['c_tr'] = $c->m_tr;
+    $output_c_values['c_jets'] = $c->m_j;
+    $output_c_values['c_tu'] = $c->m_tu;
+    $output_c_values['c_ta'] = $c->m_ta;
+    $output_c_values['c_read'] = $c->readiness;
+    $output_c_values['c_ps'] = '5 (5)'; // FUTURE: when attacking is available
+    $output_c_values['c_oil'] = $c->oil;   
+
     // tech percentages
-    $pmil = str_pad($c->pt_mil.'%', 8, ' ', STR_PAD_LEFT);
-    $pbus = str_pad($c->pt_bus.'%', 8, ' ', STR_PAD_LEFT);
-    $pres = str_pad($c->pt_res.'%', 8, ' ', STR_PAD_LEFT);
-    $pwep = str_pad($c->pt_weap.'%', 8, ' ', STR_PAD_LEFT);
+    $output_c_values['c_pmil'] = $c->pt_mil;
+    $output_c_values['c_pbus'] = $c->pt_bus;
+    $output_c_values['c_pres'] = $c->pt_res;
+    $output_c_values['c_pwep'] = $c->pt_weap;
     if($strat == 'I')
         $prod_tech = $c->pt_indy;
     elseif($strat == 'F')
         $prod_tech = $c->pt_agri;
     else
-        $prod_tech = 'N/A';
-    $ppro = str_pad($prod_tech.'%', 8, ' ', STR_PAD_LEFT);
+        $prod_tech = -1; // hack to avoid numeric error
+    $output_c_values['c_ppro'] = $prod_tech;
 
     // production
-    $dstk = str_pad(log_translate_boolean_to_YN($is_destocking), 8, ' ', STR_PAD_LEFT);
-    $tax = str_pad($c->taxes, 8, ' ', STR_PAD_LEFT);
-    $exp = str_pad($c->expenses, 8, ' ', STR_PAD_LEFT);
-    $netf = str_pad($c->foodnet, 8, ' ', STR_PAD_LEFT);
-    $neto = str_pad($c->oilpro, 8, ' ', STR_PAD_LEFT);
-    $tpt  = str_pad($c->tpt, 8, ' ', STR_PAD_LEFT);
-    $neti = str_pad(round($c->b_indy * 1.86 * 0.01 * $c->pt_indy * ($c->govt == 'C' ? 1.35 : 1.0)), 8, ' ', STR_PAD_LEFT); // FUTURE: from game code
-    $bpt  = str_pad($c->bpt, 8, ' ', STR_PAD_LEFT);
+    $output_c_values['c_dstk'] = $is_destocking;
+    $output_c_values['c_tax']  = $c->taxes;
+    $output_c_values['c_exp']  = $c->expenses;
+    $output_c_values['c_netf'] = $c->foodnet;
+    $output_c_values['c_neto'] = $c->oilpro;
+    $output_c_values['c_tpt']  = $c->tpt;
+    $output_c_values['c_neti'] = round($c->b_indy * 1.86 * 0.01 * $c->pt_indy * ($c->govt == 'C' ? 1.35 : 1.0)); // FUTURE: from game code
+    $output_c_values['c_bpt']  = $c->bpt;
 
     // value of goods on market
-    $om_v = str_pad(engnot(get_total_value_of_on_market_goods($c)), 8, ' ', STR_PAD_LEFT); // FUTURE: won't work with stocking
-    
+    $output_c_values['c_om_v'] = get_total_value_of_on_market_goods($c); // FUTURE: won't work with stocking
+
     $on_market_military = 0;
     $military_list = ['m_tr','m_j','m_tu','m_ta'];
     foreach($military_list as $m_unit)
         $on_market_military += $c->onMarket($m_unit);
-    $om_u = str_pad(engnot($on_market_military), 8, ' ', STR_PAD_LEFT);
+    $output_c_values['c_om_u'] = $on_market_military;
 
     $on_market_bushels = $c->onMarket('food');
-    $om_b = str_pad(engnot($on_market_bushels), 8, ' ', STR_PAD_LEFT);   
+    $output_c_values['c_om_b'] = $on_market_bushels;   
 
     $on_market_tech = 0;
     $tech_list = ['t_mil','t_med','t_bus','t_res','t_agri','t_war','t_ms','t_weap','t_indy','t_spy','t_sdi'];
     foreach($tech_list as $tech_type)
         $on_market_tech += $c->onMarket($tech_type);
-    $om_t = str_pad(engnot($on_market_tech), 8, ' ', STR_PAD_LEFT);
-
-    // formatting stuff
-    $spcs = str_repeat(' ', 8);
-    $s = "\n|  ";
-    $e = "  |";
+    $output_c_values['c_om_t'] = $on_market_tech;
 
     // TODO: add timestamp? will logging functions automatically do this?
-    $header = ($begin ? 'Start' : 'End').' for ['.log_translate_simple_strat_name($strat)."] $c->cname (#$c->cnum) (".$c->govt.($c->gdi ? "G" : "").")";
-    $str = "\n".str_pad($header, 78, '-', STR_PAD_BOTH);
+    $header_base = "$snapshot_type for [".log_translate_simple_strat_name($strat)."] $c->cname (#$c->cnum) (".$c->govt.($c->gdi ? "G" : "").")";
+    $header_padded = "\n".str_pad($header_base, 78, '-', STR_PAD_BOTH);
+
+    return generate_compact_country_status_string($header_padded, $snapshot_type, $output_c_values, $prev_c_values);
+}
+
+
+
+function generate_compact_country_status_string($header, $snapshot_type, $current_c_values, $prev_c_values) {
+    if($snapshot_type == 'DELTA') {
+        foreach($current_c_values as $k=>$v) {
+            if($k == 'c_errs' OR $k == 'c_t_st' OR $k == 'c_ps' OR $k == 'c_dstk')
+                continue;            
+            if(isset($prev_c_values[$k])) {
+                //out("doing calc for $k: $prev_c_values[$k]     $current_c_values[$k]");
+                $current_c_values[$k] = $v - $prev_c_values[$k]; 
+            }
+        }
+    }
+
+    extract($current_c_values);
+
+    if($snapshot_type == 'DELTA') {
+        // no support for these in delta view
+        $c_t_st = 'N/A';
+        $c_ps = 'N/A';
+        $c_dstk = 'N/A';    
+    }
+
+    $errs = str_pad(($c_errs ?? 'N/A'), 8, ' ', STR_PAD_LEFT);
+    $t_st = str_pad($c_t_st, 8, ' ', STR_PAD_LEFT);
+    $t_pl = str_pad($c_t_pl, 8, ' ', STR_PAD_LEFT);
+    $netw = str_pad(engnot($c_netw), 8, ' ', STR_PAD_LEFT);
+    $land = str_pad(engnot($c_land), 8, ' ', STR_PAD_LEFT);
+    $cash = str_pad(engnot($c_cash), 8, ' ', STR_PAD_LEFT);
+    $food = str_pad(engnot($c_food), 8, ' ', STR_PAD_LEFT);
+    $tech = str_pad(engnot($c_tech), 8, ' ', STR_PAD_LEFT);
+    
+    // buildings
+    $pbds = str_pad($c_pbds, 8, ' ', STR_PAD_LEFT);
+    $ibds = str_pad($c_ibds, 8, ' ', STR_PAD_LEFT);   
+    $nbds = str_pad($c_nbds, 8, ' ', STR_PAD_LEFT);
+    $cs = str_pad($c_cs, 8, ' ', STR_PAD_LEFT);   
+    $emty = str_pad($c_emty, 8, ' ', STR_PAD_LEFT);   
+ 
+    // military
+    $spy = str_pad(engnot($c_spy), 8, ' ', STR_PAD_LEFT);
+    $tr = str_pad(engnot($c_tr), 8, ' ', STR_PAD_LEFT);
+    $jets = str_pad(engnot($c_jets), 8, ' ', STR_PAD_LEFT);
+    $tu = str_pad(engnot($c_tu), 8, ' ', STR_PAD_LEFT);
+    $ta = str_pad(engnot($c_ta), 8, ' ', STR_PAD_LEFT);
+    $read = str_pad($c_read, 8, ' ', STR_PAD_LEFT);
+    $ps = str_pad($c_ps, 8, ' ', STR_PAD_LEFT); // FUTURE: when attacking is available
+    $oil = str_pad(engnot($c_oil), 8, ' ', STR_PAD_LEFT);   
+    
+    // tech percentages
+    $pmil = str_pad($c_pmil.'%', 8, ' ', STR_PAD_LEFT);
+    $pbus = str_pad($c_pbus.'%', 8, ' ', STR_PAD_LEFT);
+    $pres = str_pad($c_pres.'%', 8, ' ', STR_PAD_LEFT);
+    $pwep = str_pad($c_pwep.'%', 8, ' ', STR_PAD_LEFT);
+    $ppro = str_pad(($c_ppro <> -1 ? $c_ppro.'%' : 'N/A'), 8, ' ', STR_PAD_LEFT);
+    
+    // production
+    $dstk = str_pad(log_translate_boolean_to_YN($c_dstk), 8, ' ', STR_PAD_LEFT);
+    $tax = str_pad($c_tax, 8, ' ', STR_PAD_LEFT);
+    $exp = str_pad($c_exp, 8, ' ', STR_PAD_LEFT);
+    $netf = str_pad($c_netf, 8, ' ', STR_PAD_LEFT);
+    $neto = str_pad($c_neto, 8, ' ', STR_PAD_LEFT);
+    $tpt = str_pad($c_tpt, 8, ' ', STR_PAD_LEFT);
+    $neti = str_pad($c_neti, 8, ' ', STR_PAD_LEFT);
+    $bpt = str_pad($c_bpt, 8, ' ', STR_PAD_LEFT);
+    
+    // value of goods on market
+    $om_v = str_pad(engnot($c_om_v), 8, ' ', STR_PAD_LEFT);   
+    $om_u = str_pad(engnot($c_om_u), 8, ' ', STR_PAD_LEFT);   
+    $om_b = str_pad(engnot($c_om_b), 8, ' ', STR_PAD_LEFT);   
+    $om_t = str_pad(engnot($c_om_t), 8, ' ', STR_PAD_LEFT);   
+
+    $spcs = str_repeat(' ', 8);
+    $s = "\n|  ";
+    $e = "  |";   
+
+    $str = $header;
     $str .= $s.'New errors:    '.$errs.'   Spies:       '.$spy .'   Destocking:   '.$dstk.$e;
     $str .= $s.'Turns:         '.$t_st.'   Troops:      '.$tr  .'   Tax Revenues: '.$tax .$e;
     $str .= $s.'Turns Played:  '.$t_pl.'   Jets:        '.$jets.'   Expenses:     '.$exp .$e;
@@ -112,10 +196,9 @@ function generate_compact_country_status($c, $strat, $number_of_errors, $is_dest
 
     // TODO: add built percentage? $c->built()
 
+    // TODO: error if null string?
     return $str;
 }
-
-
 
 
 function log_compact_country_status(){
@@ -202,7 +285,7 @@ function get_full_main_file_path_and_name($local_file_path) {
 function log_to_targets($log_to_screen, $log_to_local, $log_to_server, $full_local_file_path_and_name, $error_type, $message, $cnum) {
     // TODO: implement
 
-    if($log_to_screen)
+    if($log_to_screen or true)// TODO: temp debug
         out("Country #$cnum: $message");
 
     if($log_to_local) {

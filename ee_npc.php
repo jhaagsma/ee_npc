@@ -295,12 +295,15 @@ while (1) {
         if ($cpref->nextplay < time()) {
 
             // TODO: test code
-            /*
-            $c = get_advisor();
-            $compact = generate_compact_country_status($c, $cpref->strat, 0, false, true);
-            out($compact);
-            continue;
-            */
+            
+            $prev_c_values = [];
+            $init_c = get_advisor();
+            $compact = generate_compact_country_status($init_c, "BEGIN", $cpref->strat, 0, false, $prev_c_values);
+            unset($init_c);
+            //out(count($prev_c_values));
+            //out($compact);
+
+            // continue;
 
             try {    
                 // check if the country should destock
@@ -373,6 +376,15 @@ while (1) {
                 out("This country next plays in: $seconds_to_next_play ($nextturns Turns)    ");
                 $played = true;
                 $save   = true;
+
+                //$c = get_advisor();
+                $compact = generate_compact_country_status($c, "DELTA", $cpref->strat, 2, false, $dummy, $prev_c_values);
+
+                out($compact);
+            
+                $compact = generate_compact_country_status($c, "END", $cpref->strat, 2, true, $dummy);
+                //out($compact);
+
             } catch (Exception $e) {
                 out("Caught Exception: ".$e);
             }
