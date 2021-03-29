@@ -79,8 +79,22 @@ $turnsleep    = isset($config['turnsleep']) ? $config['turnsleep'] : 500000;
 $mktinfo      = null; //so we don't have to get it mkt data over and over again
 $APICalls     = 0;
 
-out('Current Unix Time: '.time());
-out('Entering Infinite Loop');
+global $log_country_to_screen, $log_to_local, $log_to_server, $local_file_path;
+$log_country_to_screen = isset($config['log_country_info_to_screen']) ? $config['log_country_info_to_screen'] : true;
+$log_to_local = isset($config['log_to_local_files']) ? $config['log_to_local_files'] : false;
+$local_file_path = isset($config['local_path_for_log_files']) ? $config['local_path_for_log_files'] : null;
+$log_to_server = isset($config['log_to_server_files']) ? $config['log_to_server_files'] : false;
+
+// TODO: if $log_to_server = true, error check for permission
+
+// TODO: if $log_to_local = true, error $local_file_path exists and is writeable
+if($log_to_local)
+    out("logging to local");
+
+
+
+log_main_message('Current Unix Time: '.time());
+log_main_message('Entering Infinite Loop');
 
 $sleepcount = $loopcount = 0;
 $played     = true;
@@ -100,29 +114,30 @@ while (1) {
     if($server->alive_count < $server->countries_allowed) {
         $max_create_attempts = 2 * ($server->countries_allowed - $server->alive_count);
         while ($server->alive_count < $server->countries_allowed and $max_create_attempts > 0) {
-            out("Less countries than allowed! (".$server->alive_count.'/'.$server->countries_allowed.')');
+            log_main_message("Less countries than allowed! (".$server->alive_count.'/'.$server->countries_allowed.')');
             $set_strategies = true;
             $send_data = ['cname' => NameGenerator::rand_name()];
-            out("Making new country named '".$send_data['cname']."'");
+            log_main_message("Making new country named '".$send_data['cname']."'");
             $cnum = ee('create', $send_data);
             if(isset($settings->$cnum)) // clear strategy from previous rounds
                 $settings->$cnum = null;
-            out($send_data['cname'].' (#'.$cnum.') created!');
+            log_main_message($send_data['cname'].' (#'.$cnum.') created!');
             $server = getServer();
             if ($server->reset_start > time()) {
                 $timeleft      = $server->reset_start - time();
                 $countriesleft = $server->countries_allowed - $server->alive_count;
                 $sleeptime     = $timeleft / $countriesleft;
-                out("Sleep for $sleeptime to spread countries out");
+                log_main_message("Sleep for $sleeptime to spread countries out");
                 sleep($sleeptime);
             }
             $max_create_attempts--; // avoid infinite loop when something goes wrong
         }
         if($max_create_attempts == 0)
-            out(Colors::getColoredString("ERROR: hit max create attempts before creating all countries", 'red')); // TODO: error
+            log_main_message("ERROR: hit max create attempts before creating all countries"); // TODO: error
         // this is here so we can change bot strategy percentages from round to round
         // without trying to figure out when is safe to delete the settings file
-        out(Colors::getColoredString("Clearing out settings from file for new cnums", 'purple'));
+        log_main_message("Clearing out settings from file for new cnums");
+        //out(Colors::getColoredString("Clearing out settings from file for new cnums", 'purple'));
         file_put_contents($config['save_settings_file'], json_encode($settings));
     }
 
@@ -296,14 +311,16 @@ while (1) {
 
             // TODO: test code
             
+            // log snapshot of country status
+            // TODO: set destocking correctly
             $prev_c_values = [];
             $init_c = get_advisor();
-            $compact = generate_compact_country_status($init_c, "BEGIN", $cpref->strat, 0, false, $prev_c_values);
+            log_snapshot_message($init_c, "BEGIN", $cpref->strat, 0, false, $prev_c_values);
             unset($init_c);
             //out(count($prev_c_values));
             //out($compact);
 
-            // continue;
+            //continue;
 
             try {    
                 // check if the country should destock
@@ -331,25 +348,21 @@ while (1) {
                     //$playfactor = 1; // now handled in calculate_next_play_in_seconds
                     $nexttime = null;
 
+                    log_main_message("Playing ".log_translate_simple_strat_name($cpref->strat)." Turns for #$cnum ".siteURL($cnum));
+
                     // FUTURE: careful with the $cnum global removal, maybe this breaks things? seems fine so far - 20210323
                     switch ($cpref->strat) {
                         case 'F':
                             $c = play_farmer_strat($server, $cnum, $rules);
-
-                            //$playfactor = 0.8;
                             break;
                         case 'T':
                             $c = play_techer_strat($server, $cnum, $rules);
-
-                            //$playfactor = 0.5;
                             break;
                         case 'C':
                             $c = play_casher_strat($server, $cnum, $rules);
                             break;
                         case 'I':
                             $c = play_indy_strat($server, $cnum, $rules);
-
-                            //$playfactor = 0.33;
                             break;
                         default:
                             $c = play_rainbow_strat($server, $cnum, $rules);
@@ -373,17 +386,16 @@ while (1) {
                 $cpref->lastplay = time();
                 $cpref->nextplay = $cpref->lastplay + $seconds_to_next_play;
                 $nextturns       = floor($seconds_to_next_play / $server->turn_rate);
-                out("This country next plays in: $seconds_to_next_play ($nextturns Turns)    ");
+                log_country_message($cnum, "This country next plays in: $seconds_to_next_play ($nextturns Turns)    ");
                 $played = true;
                 $save   = true;
 
-                //$c = get_advisor();
-                $compact = generate_compact_country_status($c, "DELTA", $cpref->strat, 2, false, $dummy, $prev_c_values);
-
-                out($compact);
-            
-                $compact = generate_compact_country_status($c, "END", $cpref->strat, 2, true, $dummy);
-                //out($compact);
+                // log snapshots of country status
+                // TODO: set destocking and error parameters correctly
+                $c = get_advisor(); // want to remove this - does it fix the turn issue?
+                // TODO: what is taking seven seconds here?
+                log_snapshot_message($c, "DELTA", $cpref->strat, 2, false, $dummy, $prev_c_values);
+                log_snapshot_message($c, "END", $cpref->strat, 2, true, $dummy);
 
             } catch (Exception $e) {
                 out("Caught Exception: ".$e);

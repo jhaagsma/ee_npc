@@ -6,15 +6,228 @@ namespace EENPC;
 // TODO: add ee_npc code to get and validate config parameters
 // TODO: does a multi line screen hide errors?
 
+function test(){
 
-function generate_compact_country_status($c, $snapshot_type, $strat, $number_of_errors, $is_destocking, &$output_c_values, $prev_c_values = []) {
-    // TODO: have delta functionality: start, deltas, end
+    mkdir("./logging/alphaai/country", 0700, true);
+    mkdir("./logging/alphaai/errors", 0700, true);
+    mkdir("./logging/alphaai/main", 0700, true);
+
+    file_put_contents ( "./logging/alphaai/country/cnum1.txt" , "test\ntest\n" , FILE_APPEND);
+    file_put_contents ( "./logging/alphaai/country/cnum1.txt" , "test2\ntest2\n" , FILE_APPEND);
+
+    out("hi");
+    return;
+}
+
+
+function log_snapshot_message($c, $snapshot_type, $strat, $number_of_errors, $is_destocking, &$output_c_values, $prev_c_values = []){
+    global $log_country_to_screen, $log_to_local, $log_to_server, $local_file_path;
+    // TODO: implement
     if($snapshot_type <> 'BEGIN' and $snapshot_type <> 'DELTA' and $snapshot_type <> 'END')
         return; // TODO: throw error
 
     if($snapshot_type == 'DELTA' and empty($prev_c_values)) 
         return; // TODO: throw error     
 
+    $full_local_file_path_and_name = ($log_to_local ? get_full_country_file_path_and_name($local_file_path, $c->cnum, true) : null);
+    if($log_country_to_screen or $log_to_local or $log_to_server)
+        $message = generate_compact_country_status($c, $snapshot_type, $strat, $number_of_errors, $is_destocking, $output_c_values, $prev_c_values);
+
+    return log_to_targets($log_country_to_screen, $log_to_local, $log_to_server, $full_local_file_path_and_name, null, $message, $c->cnum);
+
+    //TODO: test log_to_targets with line breaks
+    return false;
+};
+
+
+
+// examples of things to log: what decisions were made (and why), how turns are spent
+function log_country_message($cnum, $message) {
+    global $log_country_to_screen, $log_to_local, $log_to_server, $local_file_path;
+
+    if(!$cnum) {
+        $message = "ERROR: must call log_country_message() with a valid cnum";
+        out($message);
+        log_error_message(2, $cnum, $message);
+        return;
+    }
+
+    $full_local_file_path_and_name = ($log_to_local ? get_full_country_file_path_and_name($local_file_path, $cnum, false) : null);
+    return log_to_targets($log_country_to_screen, $log_to_local, $log_to_server, $full_local_file_path_and_name, null, $message, $cnum);
+}
+
+
+
+function log_main_message($message)  {
+    // TODO: support color for screen?
+    global $log_country_to_screen, $log_to_local, $log_to_server, $local_file_path;
+    $full_local_file_path_and_name = ($log_to_local ? get_full_main_file_path_and_name($local_file_path) : null);
+    return log_to_targets($log_country_to_screen, $log_to_local, $log_to_server, $full_local_file_path_and_name, null, $message, null);
+}
+
+function log_error_message($error_type, $cnum, $message) {
+    global $log_country_to_screen, $log_to_local, $log_to_server, $local_file_path;
+
+    if(!$cnum) {
+        $message = "ERROR: must call log_error_message() with a valid cnum";
+        out($message);
+        log_error_message(1, $cnum, $message);
+        return;
+    }
+
+    if($error_type == null or $error_type < 0) {
+        $message = "ERROR: must call log_error_message() with a valid type (non-negative int)";
+        out($message);
+        log_error_message(0, $cnum, $message);
+        return;
+    }
+
+    $full_local_file_path_and_name = ($log_to_local ? get_full_error_file_path_and_name($local_file_path) : null);
+    return log_to_targets($log_country_to_screen, $log_to_local, $log_to_server, $full_local_file_path_and_name, $error_type, $message, $cnum);
+}
+
+
+
+
+
+
+
+
+
+
+function local_directory_exists($local_file_path) {
+    // TODO: implement
+    return false;
+}
+
+function format_local_file_path($local_file_path) {
+    // TODO: implement
+    // make work on windows and linux ideally?
+    return $local_file_path;
+}
+
+
+
+function initialize_country_logging_file($server, $cnum) {
+    global $log_to_local, $log_to_server, $local_file_path;
+    $full_local_file_path_and_name = ($log_to_local ? get_full_country_file_path_and_name($local_file_path, $cnum, false) : null);
+    return initialize_for_targets($log_to_local, $log_to_server, $full_local_file_path_and_name);
+}
+
+function initialize_country_snapshot_logging_file($server, $cnum) {
+    global $log_to_local, $log_to_server, $local_file_path;
+    $full_local_file_path_and_name = ($log_to_local ? get_full_country_file_path_and_name($local_file_path, $cnum, true) : null);
+    return initialize_for_targets($log_to_local, $log_to_server, $full_local_file_path_and_name);
+}
+
+
+
+function initialize_error_logging_file($server) {
+    global $log_to_local, $log_to_server, $local_file_path;
+    $full_local_file_path_and_name = ($log_to_local ? get_full_error_file_path_and_name($local_file_path) : null);
+    return initialize_for_targets($log_to_local, $log_to_server, $full_local_file_path_and_name);
+}
+
+function initialize_main_logging_file($server) {
+    global $log_to_local, $log_to_server, $local_file_path;
+    $full_local_file_path_and_name = ($log_to_local ? get_full_main_file_path_and_name($local_file_path) : null);
+    return initialize_for_targets($log_to_local, $log_to_server, $full_local_file_path_and_name);
+}
+
+
+function initialize_for_targets($log_to_local, $log_to_server, $full_local_file_path_and_name) {
+    // TODO: implement
+
+    if($log_to_local) {
+        // check if dir exists, create if not
+        // catch and print any errors
+        // "testdir\\subdir\\test" ???
+
+        // https://www.php.net/manual/en/function.is-dir.php
+        // https://www.php.net/manual/en/function.mkdir.php
+
+    }
+
+    if($log_to_server) {
+        // call functions in communication, catch and print any errors
+    }  
+
+    return;
+}
+
+
+function get_full_country_file_path_and_name($local_file_path, $cnum, $is_snapshot) {
+    // TODO: windows?
+    // TODO: should these three functions call another function?
+    // TODO: use servername, round
+    $file_name = ($is_snapshot ? 'SNAPSHOT_' : 'COUNTRY_') . $cnum . '.txt';
+    return "$local_file_path/logging/alphaai/country/$file_name";
+}
+
+function get_full_error_file_path_and_name($local_file_path) {
+    // TODO: windows?
+    $iso_date = date('Ymd');
+    return "$local_file_path/logging/alphaai/errors/ERRORS_$iso_date.txt";
+}
+
+function get_full_main_file_path_and_name($local_file_path) {
+    // TODO: windows?
+    $iso_date = date('Ymd');
+    return "$local_file_path/logging/alphaai/main/LOOP_$iso_date.txt";
+}
+
+
+function log_to_targets($log_country_to_screen, $log_to_local, $log_to_server, $full_local_file_path_and_name, $error_type, $message, $cnum) {
+    // TODO: error type
+
+    $line_break_count = substr_count($message,"\n" );
+    if($log_country_to_screen) {
+        $screen_message = ($line_break_count > 0 ? "\n" : "").$message;
+        out($screen_message); // timestamp is free
+        //out("Country #$cnum: $message");
+    }
+
+    if($log_to_local) {
+        // write to $full_local_file_path_and_name, catch and print any errors
+        //out($full_local_file_path_and_name);
+        $timestamp_for_file = '['.date('Y-m-d H:i:s').'] ';        
+        $file_message = $timestamp_for_file.($line_break_count > 0 ? "\n" : "").$message."\n";
+        file_put_contents ($full_local_file_path_and_name, $file_message, FILE_APPEND);
+    }
+
+    if($log_to_server) {
+        // TODO: call function in communication, catch and print any errors
+    }
+
+    return;
+}
+
+
+function purge_old_logging_files($server)  {
+    global $log_to_local, $log_to_server, $local_file_path;
+
+    // TODO: implement
+
+    // https://www.php.net/manual/en/function.unlink.php
+    // https://www.php.net/manual/en/function.rmdir.php
+    return;
+}
+
+
+
+function log_get_name_of_error_type($error_type) {
+    if($error_type == 0)
+        return 'Called log_error_message() with invalid $error_type';
+    if($error_type == 1)
+        return 'Called log_error_message() with invalid $cnum';
+    if($error_type == 2)
+        return 'Called log_country_message() with invalid $cnum';
+    else
+        return 'ERROR: log_get_name_of_error_type() called with unmapped $error_type';
+}
+
+
+function generate_compact_country_status($c, $snapshot_type, $strat, $number_of_errors, $is_destocking, &$output_c_values, $prev_c_values) {
     // this code is a complete mess because I changed its purpose half way through and tried fixing with copy and replace
     $output_c_values = [];
     // turns and resources
@@ -63,7 +276,7 @@ function generate_compact_country_status($c, $snapshot_type, $strat, $number_of_
     elseif($strat == 'F')
         $prod_tech = $c->pt_agri;
     else
-        $prod_tech = -1; // hack to avoid numeric error
+        $prod_tech = "N/A";
     $output_c_values['c_ppro'] = $prod_tech;
 
     // production
@@ -96,7 +309,7 @@ function generate_compact_country_status($c, $snapshot_type, $strat, $number_of_
 
     // TODO: add timestamp? will logging functions automatically do this?
     $header_base = "$snapshot_type for [".log_translate_simple_strat_name($strat)."] $c->cname (#$c->cnum) (".$c->govt.($c->gdi ? "G" : "").")";
-    $header_padded = "\n".str_pad($header_base, 78, '-', STR_PAD_BOTH);
+    $header_padded = str_pad($header_base, 78, '-', STR_PAD_BOTH);
 
     return generate_compact_country_status_string($header_padded, $snapshot_type, $output_c_values, $prev_c_values);
 }
@@ -109,8 +322,10 @@ function generate_compact_country_status_string($header, $snapshot_type, $curren
             if($k == 'c_errs' OR $k == 'c_t_st' OR $k == 'c_ps' OR $k == 'c_dstk')
                 continue;            
             if(isset($prev_c_values[$k])) {
-                //out("doing calc for $k: $prev_c_values[$k]     $current_c_values[$k]");
-                $current_c_values[$k] = $v - $prev_c_values[$k]; 
+                if($prev_c_values[$k] <> "N/A" and $current_c_values[$k] <> "N/A") {
+                    //out("doing calc for $k: $prev_c_values[$k]     $current_c_values[$k]");
+                    $current_c_values[$k] = $v - $prev_c_values[$k]; 
+                }
             }
         }
     }
@@ -158,7 +373,7 @@ function generate_compact_country_status_string($header, $snapshot_type, $curren
     $ppro = str_pad(($c_ppro <> -1 ? $c_ppro.'%' : 'N/A'), 8, ' ', STR_PAD_LEFT);
     
     // production
-    $dstk = str_pad(log_translate_boolean_to_YN($c_dstk), 8, ' ', STR_PAD_LEFT);
+    $dstk = str_pad(($c_dstk == "N/A" ? $c_dstk : log_translate_boolean_to_YN($c_dstk)), 8, ' ', STR_PAD_LEFT);
     $tax = str_pad($c_tax, 8, ' ', STR_PAD_LEFT);
     $exp = str_pad($c_exp, 8, ' ', STR_PAD_LEFT);
     $netf = str_pad($c_netf, 8, ' ', STR_PAD_LEFT);
@@ -201,173 +416,7 @@ function generate_compact_country_status_string($header, $snapshot_type, $curren
 }
 
 
-function log_compact_country_status(){
-    global $log_to_screen, $log_to_local, $log_to_server, $local_file_path;
-    // TODO: implement
 
-        //test log_to_targets with line breaks
-    return false;
-};
-
-
-
-function local_directory_exists($local_file_path) {
-    // TODO: implement
-    return false;
-}
-
-function format_local_file_path($local_file_path) {
-    // TODO: implement
-    // make work on windows and linux ideally?
-    return $local_file_path;
-}
-
-
-
-function initialize_country_logging_file($server, $cnum) {
-    global $log_to_local, $log_to_server, $local_file_path;
-    $full_local_file_path_and_name = ($log_to_local ? get_full_country_file_path_and_name($local_file_path, $cnum) : null);
-    return initialize_for_targets($log_to_local, $log_to_server, $full_local_file_path_and_name);
-}
-
-
-function initialize_error_logging_file($server) {
-    global $log_to_local, $log_to_server, $local_file_path;
-    $full_local_file_path_and_name = ($log_to_local ? get_full_error_file_path_and_name($local_file_path) : null);
-    return initialize_for_targets($log_to_local, $log_to_server, $full_local_file_path_and_name);
-}
-
-function initialize_main_logging_file($server) {
-    global $log_to_local, $log_to_server, $local_file_path;
-    $full_local_file_path_and_name = ($log_to_local ? get_full_main_file_path_and_name($local_file_path, $cnum) : null);
-    return initialize_for_targets($log_to_local, $log_to_server, $full_local_file_path_and_name);
-}
-
-
-function initialize_for_targets($log_to_local, $log_to_server, $full_local_file_path_and_name) {
-    // TODO: implement
-
-    if($log_to_local) {
-        // check if dir exists, create if not, check if file exists, create if not
-        // catch and print any errors
-        // "testdir\\subdir\\test"
-
-        // https://www.php.net/manual/en/function.is-dir.php
-        // https://www.php.net/manual/en/function.mkdir.php
-
-    }
-
-    if($log_to_server) {
-        // call functions in communication, catch and print any errors
-    }  
-
-    return;
-}
-
-
-function get_full_country_file_path_and_name($local_file_path, $cnum) {
-    // TODO: implement
-    // should these three functions call another function?
-    return;
-}
-
-function get_full_error_file_path_and_name($local_file_path) {
-    // TODO: implement
-    return;
-}
-
-function get_full_main_file_path_and_name($local_file_path) {
-    // TODO: implement
-    return;
-}
-
-
-function log_to_targets($log_to_screen, $log_to_local, $log_to_server, $full_local_file_path_and_name, $error_type, $message, $cnum) {
-    // TODO: implement
-
-    if($log_to_screen or true)// TODO: temp debug
-        out("Country #$cnum: $message");
-
-    if($log_to_local) {
-        // write to $local_file_path, catch and print any errors
-
-    }
-
-    if($log_to_server) {
-        // call function in communication, catch and print any errors
-    }
-
-    return;
-}
-
-
-
-// examples of things to log: what decisions were made (and why), how turns are spent
-function log_country_message($cnum, $message) {
-    global $log_to_screen, $log_to_local, $log_to_server, $local_file_path;
-
-    if(!$cnum) {
-        $message = "ERROR: must call log_country_message() with a valid cnum";
-        out($message);
-        log_error_message(2, $cnum, $message);
-        return;
-    }
-
-    $full_local_file_path_and_name = ($log_to_local ? get_full_country_file_path_and_name($local_file_path, $cnum) : null);
-    return log_to_targets($log_to_screen, $log_to_local, $log_to_server, $full_local_file_path_and_name, null, $message, $cnum);
-}
-
-
-
-function log_main_message($message)  {
-    global $log_to_screen, $log_to_local, $log_to_server, $local_file_path;
-    $full_local_file_path_and_name = ($log_to_local ? get_full_main_file_path_and_name($local_file_path, $cnum) : null);
-    return log_to_targets($log_to_screen, $log_to_local, $log_to_server, $full_local_file_path_and_name, $error_type, $message, $cnum);
-}
-
-function log_error_message($error_type, $cnum, $message) {
-    global $log_to_screen, $log_to_local, $log_to_server, $local_file_path;
-
-    if(!$cnum) {
-        $message = "ERROR: must call log_error_message() with a valid cnum";
-        out($message);
-        log_error_message(1, $cnum, $message);
-        return;
-    }
-
-    if($error_type == null or $error_type < 0) {
-        $message = "ERROR: must call log_error_message() with a valid type (non-negative int)";
-        out($message);
-        log_error_message(0, $cnum, $message);
-        return;
-    }
-
-    $full_local_file_path_and_name = ($log_to_local ? get_full_error_file_path_and_name($local_file_path) : null);
-    return log_to_targets($log_to_screen, $log_to_local, $log_to_server, $full_local_file_path_and_name, $error_type, $message, $cnum);
-}
-
-function log_get_name_of_error_type($error_type) {
-    if($error_type == 0)
-        return 'Called log_error_message() with invalid $error_type';
-    if($error_type == 1)
-        return 'Called log_error_message() with invalid $cnum';
-    if($error_type == 2)
-        return 'Called log_country_message() with invalid $cnum';
-    else
-        return 'ERROR: log_get_name_of_error_type() called with unmapped $error_type';
-}
-
-
-
-function purge_old_logging_files($server)  {
-    global $log_to_local, $log_to_server, $local_file_path;
-
-    // TODO: implement
-
-    // https://www.php.net/manual/en/function.unlink.php
-    // https://www.php.net/manual/en/function.rmdir.php
-    return;
-}
 
 
 function log_translate_simple_strat_name($strat) {
@@ -389,13 +438,16 @@ function log_translate_simple_strat_name($strat) {
     }   
 }
 
+
 function log_translate_forced_debug($boolean_value) {
     return ($boolean_value ? ' forced by debug variable' : '');
 }
 
+
 function log_translate_boolean_to_YN($boolean_value) {
     return ($boolean_value ? 'yes' : 'no');
 }
+
 
 function log_translate_instant_to_human_readable($instant) {
     return date('m/d/Y H:i:s', $instant);

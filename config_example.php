@@ -12,5 +12,9 @@ $config = array(
     'base_url' => 'https://www.earthempires.com/api',    //Don't change this unless qz tells you to =D it needs to end in /api either way
     'server' => 'ai',       //don't change this
     'turnsleep' => 500000,    //don't get too ridiculously fast; 500000 is half a second
-    'save_settings_file' => 'settings.json'
+    'save_settings_file' => 'settings.json',
+	'log_country_info_to_screen' => true,
+	'log_to_local_files' => false,
+	'local_path_for_log_files' => null,
+	'log_to_server_files' => false //don't change this
 );

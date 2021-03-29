@@ -27,7 +27,7 @@ namespace EENPC;
 function play_farmer_strat($server, $cnum, $rules)
 {
     //global $cnum;
-    out("Playing ".FARMER." turns for #$cnum ".siteURL($cnum));
+    //out("Playing ".FARMER." turns for #$cnum ".siteURL($cnum));
     //$main = get_main();     //get the basic stats
     //out_data($main);          //output the main data
     $c = get_advisor();     //c as in country! (get the advisor)
