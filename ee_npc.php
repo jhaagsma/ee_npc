@@ -87,13 +87,15 @@ $log_country_to_screen = isset($config['log_country_info_to_screen']) ? $config[
 $log_to_local = isset($config['log_to_local_files']) ? $config['log_to_local_files'] : false;
 $log_to_server = isset($config['log_to_server_files']) ? $config['log_to_server_files'] : false;
 $local_file_path = null;
-if (isset($config['local_path_for_log_files']))
-    $local_file_path = $config['local_path_for_log_files']."/"."logging/".$config['server']."/$server->round_num";
+if (isset($config['local_path_for_log_files'])) {
+    $config_local_file_path_root = $config['local_path_for_log_files'];
+    $local_file_path = $config_local_file_path_root."/"."logging/".$config['server']."/$server->round_num";
+}
 
 // TODO: if $log_to_server = true, error check for permission and die() if don't have it
 
 
-create_logging_directories(0); // don't purge old files here because we want startup to be as fast as possible
+create_logging_directories($config_local_file_path_root, $server, 0); // don't purge old files here because we want startup to be as fast as possible
 
 log_main_message("BOT IS STARTING AND HAS CLEARED INITIAL CHECKS", 'purple');
 log_main_message('Current Unix Time: '.time());
@@ -116,7 +118,7 @@ while (1) {
     //log_error_message(7, null, "test"); // TODO: DEBUG
 
     if($server->alive_count < $server->countries_allowed) {
-        create_logging_directories(30);
+        create_logging_directories($config_local_file_path_root, $server, 30);
 
         $max_create_attempts = $create_attempts_remaining = 2 * ($server->countries_allowed - $server->alive_count);
         while ($server->alive_count < $server->countries_allowed and $create_attempts_remaining > 0) {
@@ -149,12 +151,12 @@ while (1) {
 
     if ($server->reset_start > time()) {
         log_main_message("Reset has not started!");          //done() is defined below
-        create_logging_directories(30);
+        create_logging_directories($config_local_file_path_root, $server, 30);
         sleep(max(300, time() - $server->reset_start));        //sleep until the reset starts
         continue;                               //return to the beginning of the loop
     } elseif ($server->reset_end < time()) {
         log_main_message("Reset is over!");
-        create_logging_directories(30);
+        create_logging_directories($config_local_file_path_root, $server, 30);
         sleep(300);                             //wait 5 mins, see if new one is created
         $server = ee('server');
         continue;                               //restart the loop
