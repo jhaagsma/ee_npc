@@ -177,7 +177,7 @@ function handle_output($serverOutput, $function, $cnum) // $cnum may not be set
 
         return $response;
     } elseif (!expected_result($function)) {
-        $error_message = "Function: $function\nMessage: $message\nServer Output: \n$serverOutput"; // TODO: handle nulls?
+        $error_message = "Function: ".($function ?? "")."\nMessage: ".($message ?? "")."\nServer Output: \n".($serverOutput ?? "");
         log_error_message(107, $cnum, $error_message);
         out_data($response);
         //log_country_or_main_message($cnum, $function);

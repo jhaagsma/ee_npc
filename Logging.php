@@ -2,25 +2,159 @@
 
 namespace EENPC;
 
-function test(){
-    // TODO: remove this when done
+// FUTURE: windows support for local logging?
 
-    mkdir("./logging/alphaai/11/country", 0700, true);
-    mkdir("./logging/alphaai/11/errors", 0700, true);
-    mkdir("./logging/alphaai/11/main", 0700, true);
 
-    return;
+
+// new error types must be added to this function
+function log_get_name_of_error_type($error_type) {
+    // 40 character limit on name
+    // 0 - 99 are logging errors
+    if($error_type == 0)
+        return 'INVALID $error_type LOGGING CALL';
+    if($error_type == 1)
+        return 'INVALID $cnum LOGGING CALL'; // for log_country_message()
+
+    // 100 - 999 are communication or PHP errors
+    if($error_type == 100)
+        return 'COMM NOT ACCEPTABLE RESPONSE';
+    if($error_type == 101)
+        return 'COMM SELLING MORE THAN OWNED';
+    if($error_type == 102)
+        return 'COMM NOT ENOUGH MONEY';
+    if($error_type == 103)
+        return 'COMM NOT ENOUGH TURNS';
+    if($error_type == 104)
+        return 'COMM ALLIES NOT ALLOWED';
+    if($error_type == 105)
+        return 'COMM UNEXPECTED MSG OBJ RESULT';
+    if($error_type == 106)
+        return 'COMM UNEXPECTED MSG NON-OBJ RESULT';
+    if($error_type == 107)
+        return 'COMM UNEXPECTED FUNCTION RESULT';
+    if($error_type == 108)
+        return 'COMM POSSIBLE SERVER DOWN';
+    if($error_type == 109)
+        return 'COMM RULES DID NOT LOAD';
+    if($error_type == 110)
+        return 'RAN OUT OF COUNTRY CREATE ATTEMPTS';
+    if($error_type == 111)
+        return 'COUNTRY SNAPSHOT FINAL RESULT WAS NULL';       
+    if($error_type == 112)
+        return 'UNEXPECTED DIRECTORY FOUND WHILE PURGING';    
+    if($error_type == 113)
+        return 'UNEXPECTED FILE FOUND WHILE PURGING';           
+
+
+    // 1000+ are country playing mistakes 
+    if($error_type == 1000)
+        return 'COUNTRY PLAYED TURN WITHOUT FOOD';
+    if($error_type == 1001)
+        return 'COUNTRY PLAYED TURN WITHOUT MONEY';
+
+       
+    // ERROR: log_get_name_of_error_type() called with unmapped $error_type
+    return null;
+}
+
+
+
+
+
+// TODO: API call should return server name
+function get_current_local_file_path($config_local_file_path_root, $server) {
+    return $config_local_file_path_root."/"."logging/$server->name/$server->round_num";
+}
+
+
+
+function create_logging_directories ($config_local_file_path_root, $server, $timeout_for_purging = 0) {
+    global $log_to_local, $log_to_server, $local_file_path;
+
+    // reset $local_file_path if needed
+    $local_file_path = get_current_local_file_path($config_local_file_path_root, $server);
+
+    if($log_to_local) {
+        create_local_directory_if_needed("$local_file_path/country");
+        create_local_directory_if_needed("$local_file_path/errors");
+        create_local_directory_if_needed("$local_file_path/main");
+    }
+
+    if($log_to_server){
+
+        // TODO: call appropriate function
+    }
+
+    if($timeout_for_purging <> 0) { // do purging if there's time
+        $start_purging_time = time();
+
+        if($log_to_local) {
+            $dirs = scandir($config_local_file_path_root."/"."logging/$server->name");
+
+            foreach($dirs as $dir_name) {
+                if(time() - $start_purging_time > $timeout_for_purging)
+                    break; // break if we're out of time
+
+                $new_directory_path = $config_local_file_path_root."/"."logging/$server->name/$dir_name";
+
+                if(!dir($new_directory_path)) { // shouldn't be any files here, so delete them
+                    log_error_message(113, null, $new_directory_path);
+                    log_main_message("Deleting file at $new_directory_path");
+                    unlink($new_directory_path);
+                }
+                else { // is a directory, should be a round number
+                    if(!is_numeric($dir_name))
+                        log_error_message(112, null, $new_directory_path);
+                    else { // unexpected format, clear out files from it
+                        $files = scandir($new_directory_path);
+                        foreach($files as $file) {                            
+                            if(time() - $start_purging_time > $timeout_for_purging)
+                                break; // break if we're out of time
+
+                            $file_name_with_path = $new_directory_path.'/'.$file;
+                            log_main_message("Deleting file at $file_name_with_path");    
+                            unlink($file_name_with_path);    
+                        }
+                        rmdir($new_directory_path); // can only remove if all files are gone
+                    }  
+                }
+            }   
+        }
+           
+        $timeout_for_server_purging = $timeout_for_purging - (time() - $start_purging_time);
+        if($log_to_server and $timeout_for_server_purging > 0) {
+            // TODO: call comm function with $timeout_for_server_purging
+        }
+    } // done purging
+
+    return true;
+}
+
+function create_local_directory_if_needed($path_name) {
+    $success = true;
+    if(!is_dir($path_name)) {
+        out("Creating local directory $path_name"); // have to use out() here because folders don't exist yet
+        $success = mkdir("$path_name", 0700, true);
+    }
+    if(!$success)
+        die("Failed to create local directory $path_name");
+
+    return $success; // mkdir() returns true on success
 }
 
 
 function log_snapshot_message($c, $snapshot_type, $strat, $is_destocking, &$output_c_values, $prev_c_values = []){
     global $log_country_to_screen, $log_to_local, $log_to_server, $local_file_path;
 
-    if($snapshot_type <> 'BEGIN' and $snapshot_type <> 'DELTA' and $snapshot_type <> 'END')
-        return; // TODO: throw error
+    if($snapshot_type <> 'BEGIN' and $snapshot_type <> 'DELTA' and $snapshot_type <> 'END') {
+        die('Called log_snapshot_message() with invalid parameter value '.$snapshot_type.' for $snapshot_type');
+        return false;
+    }
 
-    if($snapshot_type == 'DELTA' and empty($prev_c_values)) 
-        return; // TODO: throw error     
+    if($snapshot_type == 'DELTA' and empty($prev_c_values)) {
+        die('Called log_snapshot_message() in DELTA mode with empty previous country values array');
+        return false;
+    }   
 
     $full_local_file_path_and_name = ($log_to_local ? get_full_country_file_path_and_name($local_file_path, $c->cnum, true) : null);
     if($log_country_to_screen or $log_to_local or $log_to_server)
@@ -28,7 +162,6 @@ function log_snapshot_message($c, $snapshot_type, $strat, $is_destocking, &$outp
 
     return log_to_targets($log_country_to_screen, $log_to_local, $log_to_server, $full_local_file_path_and_name, null, $message, $c->cnum, null);
 };
-
 
 
 // examples of things to log: what decisions were made (and why), how turns are spent
@@ -63,50 +196,36 @@ function log_main_message($message, $color = null)  {
 function log_error_message($error_type, $cnum, $message) {
     global $log_to_local, $log_to_server, $local_file_path;
 
-    if($error_type == null or $error_type < 0) {
-        $local_error_message = "ERROR: must call log_error_message() with a valid type (non-negative int)";
-        out($local_error_message);
-        log_error_message(0, $cnum, $local_error_message);
-        return;
-    }
-   
-
-    /* -- going to allow errors with no cnum for now
-    if($error_type <> 1 and !$cnum) {
-        $message = "ERROR: must call log_error_message() with a valid cnum";
-        out($message);
-        log_error_message(1, $cnum, $message);
-        return;
-    }
-    */
-
-    // TODO: log different things on screen/country file/error file?
-    // TODO: what about multi-line error messages?
     $error_type_name = log_get_name_of_error_type($error_type);
     if($error_type_name === null) {
-        //throw new Exception("Error type $error_type is not mapped"); // TODO: make this work
-        return;
-    }
-
-    $full_error_message = 'ERROR '.$error_type.' | '.$error_type_name.' | cnum #'.($cnum ?? 'N\A').' | '.$message;
-    $full_local_file_path_and_name = ($log_to_local ? get_full_error_file_path_and_name($local_file_path) : null);
-
-
-    // log to country file always, this is a bit hacky
-    if($cnum) {
-        $country_local_file_path_and_name = ($log_to_local ? get_full_country_file_path_and_name($local_file_path, $cnum, false) : null);
-        log_to_targets(false, $log_to_local, $log_to_server, $country_local_file_path_and_name, null, $full_error_message, $cnum, null);
-        // future: return the value of this somehow? or make this less hacky
+        $local_error_message = "must call log_error_message() with a valid type (non-negative int)";
+        out($local_error_message);
+        log_error_message(0, $cnum, $local_error_message);
+        return false;
     }
 
     // always log errors to screen
-    log_to_targets(true, $log_to_local, $log_to_server, $full_local_file_path_and_name, $error_type, $full_error_message, $cnum, null);
-    return;
+    $screen_message = "ERROR: $error_type-$error_type_name; CNUM: #".($cnum ?? 'N/A')."; DETAILS: $message";
+    log_to_targets(true, false, false, null, null, $screen_message, $cnum, 'red'); // FUTURE - return this value somehow??
+
+    // use unprintable characters to separate fields and line breaks to pack everything on a single line
+    // the error reader on the server will split out things appropriately
+    $error_message_for_file = $error_type.chr(9).$error_type_name.chr(9).$cnum.chr(9).str_replace(array("\r", "\n"), chr(17), $message);
+
+    // always log to the error file
+    $error_local_file_path_and_name = ($log_to_local ? get_full_error_file_path_and_name($local_file_path) : null);
+
+    $country_local_file_path_and_name = null; // if a $cnum is available, log to the country file too
+    if($cnum) {
+        $country_local_file_path_and_name = ($log_to_local ? get_full_country_file_path_and_name($local_file_path, $cnum, false) : null);
+    }
+
+    log_to_targets(false, $log_to_local, $log_to_server, $error_local_file_path_and_name, $country_local_file_path_and_name, $error_message_for_file, $cnum, null);  
+    return true; 
 }
 
 
-function log_to_targets($log_to_screen, $log_to_local, $log_to_server, $full_local_file_path_and_name, $error_type, $message, $cnum, $color = null) {
-    // TODO: error type
+function log_to_targets($log_to_screen, $log_to_local, $log_to_server, $local_file_path_and_name_1, $local_file_path_and_name_2, $message, $cnum, $color = null) {
     $is_line_breaks_only = str_replace(array("\r", "\n"), '', $message) == "" ? true : false;
     $line_break_count = substr_count($message,"\n" );
     if($log_to_screen) {
@@ -114,10 +233,7 @@ function log_to_targets($log_to_screen, $log_to_local, $log_to_server, $full_loc
             echo $message;
         else {
             $screen_message = ($line_break_count > 0 ? "\n" : "").$message;
-            if($color)
-                out(Colors::getColoredString($screen_message, $color));
-            else
-                out($screen_message); // timestamp is free
+            out($screen_message, true, $color); //timestamp is free with out()
         }
         //out("Country #$cnum: $message");
     }
@@ -132,7 +248,10 @@ function log_to_targets($log_to_screen, $log_to_local, $log_to_server, $full_loc
             // the regex removes color coding   
             $file_message = $timestamp_for_file.($line_break_count > 0 ? "\n" : "").preg_replace('/\e[[][A-Za-z0-9];?[0-9]*m?/', '', $message)."\n";
         }
-        file_put_contents ($full_local_file_path_and_name, $file_message, FILE_APPEND);
+        if($local_file_path_and_name_1)
+            file_put_contents ($local_file_path_and_name_1, $file_message, FILE_APPEND);
+        if($local_file_path_and_name_2)
+            file_put_contents ($local_file_path_and_name_2, $file_message, FILE_APPEND);        
     }
 
     if($log_to_server) {
@@ -143,7 +262,7 @@ function log_to_targets($log_to_screen, $log_to_local, $log_to_server, $full_loc
 }
 
 
-// TODO: windows support?
+
 function get_full_country_file_path_and_name($local_file_path, $cnum, $is_snapshot) {
     $file_name = ($is_snapshot ? 'SNAPSHOT_' : 'COUNTRY_') . $cnum . '.txt';
     return "$local_file_path/country/$file_name";
@@ -161,129 +280,6 @@ function get_full_main_file_path_and_name($local_file_path) {
 
 
 
-function local_directory_exists($local_file_path) {
-    // TODO: implement
-    return false;
-}
-
-function format_local_file_path($local_file_path) {
-    // TODO: implement
-    // make work on windows and linux ideally?
-    return $local_file_path;
-}
-
-
-function initialize_country_logging_file($server, $cnum) {
-    global $log_to_local, $log_to_server, $local_file_path;
-    $full_local_file_path_and_name = ($log_to_local ? get_full_country_file_path_and_name($local_file_path, $cnum, false) : null);
-    return initialize_for_targets($log_to_local, $log_to_server, $full_local_file_path_and_name);
-}
-
-function initialize_country_snapshot_logging_file($server, $cnum) {
-    global $log_to_local, $log_to_server, $local_file_path;
-    $full_local_file_path_and_name = ($log_to_local ? get_full_country_file_path_and_name($local_file_path, $cnum, true) : null);
-    return initialize_for_targets($log_to_local, $log_to_server, $full_local_file_path_and_name);
-}
-
-
-
-function initialize_error_logging_file($server) {
-    global $log_to_local, $log_to_server, $local_file_path;
-    $full_local_file_path_and_name = ($log_to_local ? get_full_error_file_path_and_name($local_file_path) : null);
-    return initialize_for_targets($log_to_local, $log_to_server, $full_local_file_path_and_name);
-}
-
-function initialize_main_logging_file($server) {
-    global $log_to_local, $log_to_server, $local_file_path;
-    $full_local_file_path_and_name = ($log_to_local ? get_full_main_file_path_and_name($local_file_path) : null);
-    return initialize_for_targets($log_to_local, $log_to_server, $full_local_file_path_and_name);
-}
-
-
-function initialize_for_targets($log_to_local, $log_to_server, $full_local_file_path_and_name) {
-    // TODO: implement
-
-    if($log_to_local) {
-        // check if dir exists, create if not
-        // catch and print any errors
-        // "testdir\\subdir\\test" ???
-
-        // https://www.php.net/manual/en/function.is-dir.php
-        // https://www.php.net/manual/en/function.mkdir.php
-
-    }
-
-    if($log_to_server) {
-        // call functions in communication, catch and print any errors
-    }  
-
-    return;
-}
-
-
-
-
-
-
-function purge_old_logging_files($server)  {
-    global $log_to_local, $log_to_server, $local_file_path;
-
-    // TODO: implement
-
-    // https://www.php.net/manual/en/function.unlink.php
-    // https://www.php.net/manual/en/function.rmdir.php
-    return;
-}
-
-
-
-function log_get_name_of_error_type($error_type) {
-    // 0 - 99 are logging errors
-    if($error_type == 0)
-        return 'Called log_error_message() with invalid $error_type';
-    if($error_type == 1)
-        return 'Called log_error_message() with invalid $cnum';
-    if($error_type == 2)
-        return 'Called log_country_message() with invalid $cnum';
-
-    // 100 - 999 are communication or PHP errors
-    if($error_type == 100)
-        return 'Not acceptable response';
-    if($error_type == 101)
-        return 'Country selling more than owned';
-    if($error_type == 102)
-        return 'Not enough money';
-    if($error_type == 103)
-        return 'Not enough turns';
-    if($error_type == 104)
-        return 'Allies not allowed';
-    if($error_type == 105)
-        return 'Unexpected message object result';
-    if($error_type == 106)
-        return 'Unexpected message non-object result';
-    if($error_type == 107)
-        return 'Unexpected function result';
-    if($error_type == 108)
-        return 'Possible server down';
-    if($error_type == 109)
-        return 'Rules did not load';
-    if($error_type == 110)
-        return 'Ran out of create country attempts';
-
-
-
-    // 1000+ are playing errors 
-    if($error_type == 1000)
-        return 'Ran out of food';
-    if($error_type == 1001)
-        return 'Ran out of money';
-
-
-
-       
-    // ERROR: log_get_name_of_error_type() called with unmapped $error_type
-    return null;
-}
 
 
 function generate_compact_country_status($c, $snapshot_type, $strat, $is_destocking, &$output_c_values, $prev_c_values) {
@@ -368,12 +364,12 @@ function generate_compact_country_status($c, $snapshot_type, $strat, $is_destock
     $header_base = "$snapshot_type for [".log_translate_simple_strat_name($strat)."] $c->cname (#$c->cnum) (".$c->govt.($c->gdi ? "G" : "").")";
     $header_padded = str_pad($header_base, 78, '-', STR_PAD_BOTH);
 
-    return generate_compact_country_status_string($header_padded, $snapshot_type, $output_c_values, $prev_c_values);
+    return generate_compact_country_status_string($c->cnum, $header_padded, $snapshot_type, $output_c_values, $prev_c_values);
 }
 
 
 
-function generate_compact_country_status_string($header, $snapshot_type, $current_c_values, $prev_c_values) {
+function generate_compact_country_status_string($cnum, $header, $snapshot_type, $current_c_values, $prev_c_values) {
     if($snapshot_type == 'DELTA') {
         foreach($current_c_values as $k=>$v) {
             if($k == 'c_t_st' OR $k == 'c_ps' OR $k == 'c_dstk')
@@ -464,8 +460,10 @@ function generate_compact_country_status_string($header, $snapshot_type, $curren
     $str .= $s.'CS:            '.$cs  .'   Wep tech:    '.$pwep.'   OM Tech:      '.$om_t.$e;
     $str .= $s.'Unused:        '.$emty.'   Prd tech:    '.$ppro.'                 '.$spcs.$e;
     $str .= "\n".str_repeat('-', 78);
+    //$str = ""; // for testing error message
 
-    // TODO: throw exception if null string (make sure this doesn't crash the script)
+    if(!$str)
+        log_error_message(111, $cnum, ""); // FUTURE: add troubleshooting info to error message
     return $str;
 }
 

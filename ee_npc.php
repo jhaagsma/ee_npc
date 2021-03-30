@@ -90,10 +90,10 @@ $local_file_path = null;
 if (isset($config['local_path_for_log_files']))
     $local_file_path = $config['local_path_for_log_files']."/"."logging/".$config['server']."/$server->round_num";
 
+// TODO: if $log_to_server = true, error check for permission and die() if don't have it
 
-// TODO: if $log_to_server = true, error check for permission
 
-// TODO: if $log_to_local = true, error $local_file_path exists and is writeable, create and purge folders
+create_logging_directories(0); // don't purge old files here because we want startup to be as fast as possible
 
 log_main_message("BOT IS STARTING AND HAS CLEARED INITIAL CHECKS", 'purple');
 log_main_message('Current Unix Time: '.time());
@@ -112,11 +112,12 @@ while (1) {
     if (!is_object($server)) {
         $server = getServer();
     }
-
-    // TODO: DEBUG
-    log_error_message(6, null, "test");
+    // note: don't call logging functions until create_logging_directories has been called - folders might not exist for the new reset
+    //log_error_message(7, null, "test"); // TODO: DEBUG
 
     if($server->alive_count < $server->countries_allowed) {
+        create_logging_directories(30);
+
         $max_create_attempts = $create_attempts_remaining = 2 * ($server->countries_allowed - $server->alive_count);
         while ($server->alive_count < $server->countries_allowed and $create_attempts_remaining > 0) {
             log_main_message("Less countries than allowed! (".$server->alive_count.'/'.$server->countries_allowed.')');
@@ -148,10 +149,12 @@ while (1) {
 
     if ($server->reset_start > time()) {
         log_main_message("Reset has not started!");          //done() is defined below
+        create_logging_directories(30);
         sleep(max(300, time() - $server->reset_start));        //sleep until the reset starts
         continue;                               //return to the beginning of the loop
     } elseif ($server->reset_end < time()) {
         log_main_message("Reset is over!");
+        create_logging_directories(30);
         sleep(300);                             //wait 5 mins, see if new one is created
         $server = ee('server');
         continue;                               //restart the loop
