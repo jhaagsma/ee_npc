@@ -61,31 +61,39 @@ function get_current_local_file_path($config_local_file_path_root, $server) {
 }
 
 
-function create_logging_directories ($config_local_file_path_root, $server, $timeout_for_purging = 0) {
-    global $log_to_local, $local_file_path;
+function create_logging_directories ($server, $timeout_for_purging = 0) {
+    global $log_to_local, $local_file_path, $config_local_file_path_root;
+
+    if(!$config_local_file_path_root) // in case this isn't set somehow
+        return false;
 
     // reset $local_file_path if needed
     $local_file_path = get_current_local_file_path($config_local_file_path_root, $server);
-
+    
     if($log_to_local) {
         create_local_directory_if_needed("$local_file_path/country");
         create_local_directory_if_needed("$local_file_path/errors");
         create_local_directory_if_needed("$local_file_path/main");
     }
 
-    // TODO: test purging and timeout
     if($log_to_local and ($timeout_for_purging <> 0)) { // do purging if there's time
-        $start_purging_time = time();
+        log_main_message("Looking for old logging data to purge with timeout $timeout_for_purging seconds...");
+        $stop_purging_time = time() + $timeout_for_purging;
     
         $dirs = scandir($config_local_file_path_root."/"."logging/$server->name");
     
         foreach($dirs as $dir_name) {
-            if(time() - $start_purging_time > $timeout_for_purging)
-                break; // break if we're out of time
-    
+            if(time() >= $stop_purging_time) {
+                log_main_message("Purging code hit time limit", "red");
+                return false;
+            }
+
+            if($dir_name == '.' or $dir_name == '..')
+                continue;
+   
             $new_directory_path = $config_local_file_path_root."/"."logging/$server->name/$dir_name";
-    
-            if(!dir($new_directory_path)) { // shouldn't be any files here, so delete them
+
+            if(!is_dir($new_directory_path)) { // shouldn't be any files here, so delete them
                 log_error_message(113, null, $new_directory_path);
                 log_main_message("Deleting file at $new_directory_path");
                 unlink($new_directory_path);
@@ -94,15 +102,32 @@ function create_logging_directories ($config_local_file_path_root, $server, $tim
                 if(!is_numeric($dir_name))
                     log_error_message(112, null, $new_directory_path);
                 elseif((int)$dir_name < $server->round_num - 2) { // keep files for previous two resets
+                    delete_folder_containing_files($new_directory_path.'/country', $stop_purging_time);
+                    delete_folder_containing_files($new_directory_path.'/errors', $stop_purging_time);
+                    delete_folder_containing_files($new_directory_path.'/main', $stop_purging_time);
+
+                    // need to delete any other files in here, but there shouldn't be any
                     $files = scandir($new_directory_path);
                     foreach($files as $file) {                            
-                        if(time() - $start_purging_time > $timeout_for_purging)
-                            break; // break if we're out of time
-    
-                        $file_name_with_path = $new_directory_path.'/'.$file;
-                        log_main_message("Deleting file at $file_name_with_path");    
-                        unlink($file_name_with_path);    
+                        if(time() >= $stop_purging_time) {
+                            log_main_message("Purging code hit time limit", "red");
+                            return false;
+                        }
+                            
+                        if($file == '.' or $file == '..')
+                            continue;
+
+                        $file_name_with_path = $new_directory_path.'/'.$file;   
+                        if(!is_dir($file_name_with_path)) { // shouldn't be any files here, so delete them
+                            log_error_message(113, null, $file_name_with_path);
+                            log_main_message("Deleting file at $file_name_with_path");
+                            unlink($file_name_with_path);
+                        }
+                        else { // error on directory being here
+                            log_error_message(112, null, $file_name_with_path);                            
+                        }  
                     }
+                    log_main_message("Removing directory at $new_directory_path");
                     rmdir($new_directory_path); // can only remove if all files are gone
                 }  
             }
@@ -110,6 +135,38 @@ function create_logging_directories ($config_local_file_path_root, $server, $tim
     } // done purging
 
     return true;
+}
+
+// delete a folder that only contains files (no other folders)
+function delete_folder_containing_files($path_name, $stop_purging_time) {
+    if(!file_exists($path_name)) // nothing to delete
+        return true;
+
+    $deleted_file_count = 0;
+
+    $files = scandir($path_name);
+    foreach($files as $file) {
+        if(time() >= $stop_purging_time) {
+            log_main_message("Purging code hit time limit", "red");
+            return false;
+        }
+
+        if($file == '.' or $file == '..')
+            continue;
+
+        $file_name_with_path = $path_name.'/'.$file;
+        if(is_dir($file_name_with_path)) { // shouldn't be any directories here
+            log_error_message(112, null, $file_name_with_path);
+            return false;         
+        }
+        //log_main_message("Deleting file at $file_name_with_path"); 
+        unlink($file_name_with_path);
+        $deleted_file_count++;
+        if($deleted_file_count % 50 == 0)
+            log_main_message("Deleted 50 files from $path_name");
+    }
+
+    return rmdir($path_name);
 }
 
 function create_local_directory_if_needed($path_name) {
@@ -142,7 +199,7 @@ function log_snapshot_message($c, $snapshot_type, $strat, $is_destocking, &$outp
     if($log_country_to_screen or $log_to_local)
         $message = generate_compact_country_status($c, $snapshot_type, $strat, $is_destocking, $output_c_values, $prev_c_values);
 
-    return log_to_targets($log_country_to_screen, $log_to_local, $full_local_file_path_and_name, null, $message, $c->cnum, null);
+    return log_to_targets($log_country_to_screen, $log_to_local, $full_local_file_path_and_name, $message, $c->cnum, null);
 };
 
 
@@ -162,7 +219,7 @@ function log_country_message($cnum_input, $message) {
     }
 
     $full_local_file_path_and_name = ($log_to_local ? get_full_country_file_path_and_name($local_file_path, $cnum_input, false) : null);
-    return log_to_targets($log_country_to_screen, $log_to_local, $full_local_file_path_and_name, null, $message, $cnum_input, null);
+    return log_to_targets($log_country_to_screen, $log_to_local, $full_local_file_path_and_name, $message, $cnum_input, null);
 }
 
 
@@ -171,7 +228,7 @@ function log_main_message($message, $color = null)  {
     global $log_to_local, $local_file_path;
     $full_local_file_path_and_name = ($log_to_local ? get_full_main_file_path_and_name($local_file_path) : null);
     // always log messages to screen
-    return log_to_targets(true, $log_to_local, $full_local_file_path_and_name, null, $message, null, $color);
+    return log_to_targets(true, $log_to_local, $full_local_file_path_and_name, $message, null, $color);
 }
 
 
@@ -202,7 +259,7 @@ function log_error_message($error_type, $cnum, $message) {
 }
 
 
-function log_to_targets($message_type, $log_to_screen, $log_to_local, $local_file_path_and_name, $message, $cnum, $color = null) {
+function log_to_targets($log_to_screen, $log_to_local, $local_file_path_and_name, $message, $cnum, $color = null) {
     $is_line_breaks_only = str_replace(array("\r", "\n"), '', $message) == "" ? true : false;
     $line_break_count = substr_count($message,"\n" );
     if($log_to_screen) {
@@ -225,8 +282,9 @@ function log_to_targets($message_type, $log_to_screen, $log_to_local, $local_fil
             // the regex removes color coding   
             $file_message = $timestamp_for_file.($line_break_count > 0 ? "\n" : "").preg_replace('/\e[[][A-Za-z0-9];?[0-9]*m?/', '', $message)."\n";
         }
-        if($local_file_path_and_name)
-            file_put_contents ($local_file_path_and_name, $file_message, FILE_APPEND);      
+        if($local_file_path_and_name) {
+            file_put_contents ($local_file_path_and_name, $file_message, FILE_APPEND);    
+        }  
     }
 
     return;

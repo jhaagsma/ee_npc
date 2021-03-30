@@ -80,18 +80,17 @@ $mktinfo      = null; //so we don't have to get it mkt data over and over again
 $APICalls     = 0;
 
 $rules  = getRules();
-$server = getServer();
+$server = getServer(false); // must be called with false here because directory path depends on initial server object
 
-global $log_country_to_screen, $log_to_local, $local_file_path;
+global $log_country_to_screen, $log_to_local, $local_file_path, $config_local_file_path_root;
 $log_country_to_screen = isset($config['log_country_info_to_screen']) ? $config['log_country_info_to_screen'] : true;
 $log_to_local = isset($config['log_to_local_files']) ? $config['log_to_local_files'] : false;
-$local_file_path = null;
 if (isset($config['local_path_for_log_files'])) {
     $config_local_file_path_root = $config['local_path_for_log_files'];
 }
 
 // function below sets $local_file_path
-create_logging_directories($config_local_file_path_root, $server, 0); // don't purge old files here because we want startup to be as fast as possible
+create_logging_directories($server, 0); // don't purge old files here because we want startup to be as fast as possible
 
 log_main_message("BOT IS STARTING AND HAS CLEARED INITIAL CHECKS", 'purple');
 log_main_message('Current Unix Time: '.time());
@@ -110,11 +109,9 @@ while (1) {
     if (!is_object($server)) {
         $server = getServer();
     }
-    // note: don't call logging functions until create_logging_directories has been called - folders might not exist for the new reset
 
     if($server->alive_count < $server->countries_allowed) {
-        create_logging_directories($config_local_file_path_root, $server, 30);
-
+        create_logging_directories($server, 30);
         $max_create_attempts = $create_attempts_remaining = 2 * ($server->countries_allowed - $server->alive_count);
         while ($server->alive_count < $server->countries_allowed and $create_attempts_remaining > 0) {
             log_main_message("Less countries than allowed! (".$server->alive_count.'/'.$server->countries_allowed.')');
@@ -146,14 +143,12 @@ while (1) {
 
     if ($server->reset_start > time()) {
         log_main_message("Reset has not started!");          //done() is defined below
-        create_logging_directories($config_local_file_path_root, $server, 30);
         sleep(max(300, time() - $server->reset_start));        //sleep until the reset starts
         continue;                               //return to the beginning of the loop
     } elseif ($server->reset_end < time()) {
-        log_main_message("Reset is over!");
-        create_logging_directories($config_local_file_path_root, $server, 30);
+        log_main_message("Reset is over!");        
         sleep(300);                             //wait 5 mins, see if new one is created
-        $server = ee('server');
+        $server = getServer(true);
         continue;                               //restart the loop
     }
 
@@ -438,7 +433,7 @@ while (1) {
         }
         log_main_message("Done Sleeping!");
         log_main_message("\n");
-        $server = ee('server');
+        $server = getServer(true);
     }    
 
     $cnum = null;
@@ -454,9 +449,8 @@ while (1) {
         $sleepcount++;
     }
 
-
     if ($sleepcount % 300 == 0) {
-        $server = ee('server');
+        $server = getServer(true);
         //Bots::playstats($countries);
         //echo "\n";
     }
@@ -942,11 +936,11 @@ function update_c(&$c, $result)
 
     if($c->food < 0) {
         log_error_message(1000, $c->cnum, "Ran out of food playing turns");
-        $advisor_update = true;
+        $advisor_update = true; // military left, so update advisor
     }
     if($c->money < 0) {
         log_error_message(1001, $c->cnum, "Ran out of money playing turns");
-        $advisor_update = true;
+        $advisor_update = true; // military left, so update advisor
     }
 
     if ($advisor_update == true) {

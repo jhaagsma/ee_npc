@@ -69,7 +69,7 @@ function ee($function, $parameterArray = [])
  *
  * @return object The server info
  */
-function getServer()
+function getServer($refresh_logging_directory = false)
 {
     $server_loaded = false;
     $server        = null;
@@ -86,6 +86,9 @@ function getServer()
             sleep(2); //try again in 2 seconds.
         }
     }
+
+    if($refresh_logging_directory) // create new folders for a new round if needed
+        create_logging_directories($server, 0);
 
     return $server;
 }//end getServer()
@@ -150,7 +153,7 @@ function handle_output($serverOutput, $function, $cnum) // $cnum may not be set
     } elseif ($message == "ERROR" && $response == "MAXIMUM_COUNTRIES_REACHED") {
         log_main_message("Already have total allowed countries so refreshing server...");
         global $server; //do all this with a class sometime soon
-        $server = ee('server');
+        $server = ee('server'); // I think it's fine for this to not refresh the logging directories
         return null;
     } elseif ($message == "ERROR" && $response == "MONEY") {
         log_error_message(102, $cnum, "Not enough Money!"); // FUTURE: message should have something helpful for debugging
