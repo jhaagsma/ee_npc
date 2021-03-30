@@ -67,6 +67,11 @@ function create_logging_directories ($server, $timeout_for_purging = 0) {
     if(!$config_local_file_path_root) // in case this isn't set somehow
         return false;
 
+    if(!is_dir($config_local_file_path_root)) {
+        die("Logging root directory $config_local_file_path_root does not exist!");
+        return false;
+    }
+
     // reset $local_file_path if needed
     $local_file_path = get_current_local_file_path($config_local_file_path_root, $server);
     
