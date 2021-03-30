@@ -202,13 +202,15 @@ class Bots
     }//end outFurthest()
 
 
-    public static function outNext($countries, $rewrite = false)
+    public static function outNext($countries, $rewrite = false, $log_to_file = false)
     {
         $next   = self::getNextPlays($countries);
         $xnum   = self::getNextPlayCNUM($countries, min($next));
         $xstrat = self::txtStrat($xnum);
         $next   = max(0, min($next) - time());
-        out("Next Play in ".$next.'s: #'.$xnum." $xstrat    ".($rewrite ? "\r" : null), !$rewrite); // TODO: how do I emulate this?
+        if($log_to_file)
+            log_main_message("The next country to play is #$xnum in $next seconds...");
+        out("Next Play in ".$next.'s: #'.$xnum." $xstrat    ".($rewrite ? "\r" : null), !$rewrite); // leave as out()
     }//end outNext()
 
 

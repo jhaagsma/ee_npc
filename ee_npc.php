@@ -79,15 +79,21 @@ $turnsleep    = isset($config['turnsleep']) ? $config['turnsleep'] : 500000;
 $mktinfo      = null; //so we don't have to get it mkt data over and over again
 $APICalls     = 0;
 
+$rules  = getRules();
+$server = getServer();
+
 global $log_country_to_screen, $log_to_local, $log_to_server, $local_file_path;
 $log_country_to_screen = isset($config['log_country_info_to_screen']) ? $config['log_country_info_to_screen'] : true;
 $log_to_local = isset($config['log_to_local_files']) ? $config['log_to_local_files'] : false;
-$local_file_path = isset($config['local_path_for_log_files']) ? $config['local_path_for_log_files'] : null;
 $log_to_server = isset($config['log_to_server_files']) ? $config['log_to_server_files'] : false;
+$local_file_path = null;
+if (isset($config['local_path_for_log_files']))
+    $local_file_path = $config['local_path_for_log_files']."/"."logging/".$config['server']."/$server->round_num";
+
 
 // TODO: if $log_to_server = true, error check for permission
 
-// TODO: if $log_to_local = true, error $local_file_path exists and is writeable
+// TODO: if $log_to_local = true, error $local_file_path exists and is writeable, create and purge folders
 
 log_main_message("BOT IS STARTING AND HAS CLEARED INITIAL CHECKS", 'purple');
 log_main_message('Current Unix Time: '.time());
@@ -98,8 +104,7 @@ $played     = true;
 $checked_for_non_ai = false;
 $set_strategies = true;
 
-$rules  = getRules();
-$server = getServer();
+
 //$market            = new PublicMarket();
 $server_avg_networth = $server_avg_land = 0;
 
@@ -108,13 +113,12 @@ while (1) {
         $server = getServer();
     }
 
-    // TODO: debug
-    //log_error_message(1000, null, 'no food');
-    //log_error_message(1001, 1, 'no money');
+    // TODO: DEBUG
+    log_error_message(6, null, "test");
 
     if($server->alive_count < $server->countries_allowed) {
-        $max_create_attempts = 2 * ($server->countries_allowed - $server->alive_count);
-        while ($server->alive_count < $server->countries_allowed and $max_create_attempts > 0) {
+        $max_create_attempts = $create_attempts_remaining = 2 * ($server->countries_allowed - $server->alive_count);
+        while ($server->alive_count < $server->countries_allowed and $create_attempts_remaining > 0) {
             log_main_message("Less countries than allowed! (".$server->alive_count.'/'.$server->countries_allowed.')');
             $set_strategies = true;
             $send_data = ['cname' => NameGenerator::rand_name()];
@@ -131,10 +135,11 @@ while (1) {
                 log_main_message("Sleep for $sleeptime to spread countries out");
                 sleep($sleeptime);
             }
-            $max_create_attempts--; // avoid infinite loop when something goes wrong
+            $create_attempts_remaining--; // avoid infinite loop when something goes wrong
         }
-        if($max_create_attempts == 0)
-            log_main_message("ERROR: hit max create attempts before creating all countries"); // TODO: error
+        if($create_attempts_remaining == 0)
+            log_error_message(110, null, "Exhausted $max_create_attempts create attempts but did not create all countries");
+            
         // this is here so we can change bot strategy percentages from round to round
         // without trying to figure out when is safe to delete the settings file
         log_main_message("Clearing out settings from file for new cnums", 'purple');
@@ -315,8 +320,8 @@ while (1) {
             // log snapshot of country status
             $prev_c_values = [];
             $init_c = get_advisor();
-            // TODO: separate parameter to log snapshot to screen?
-            log_snapshot_message($init_c, "BEGIN", $cpref->strat, 0, $is_destocking, $prev_c_values);
+
+            log_snapshot_message($init_c, "BEGIN", $cpref->strat, $is_destocking, $prev_c_values);
             unset($init_c);
             //continue;
 
@@ -395,12 +400,10 @@ while (1) {
                 */
 
                 // log snapshots of country status
-                // TODO: error count correctly
-                // TODO: skip snapshot parameter for speed on remote?
+                // FUTURE: skip snapshot parameter for speed for remote play?
                 $c = get_advisor(); // this call probably can't be avoided - market info, events, and tax/expenses could be wrong without it
-                // TODO: what is taking seven seconds here?
-                log_snapshot_message($c, "DELTA", $cpref->strat, 0, $is_destocking, $dummy, $prev_c_values);
-                log_snapshot_message($c, "END", $cpref->strat, 0, $is_destocking, $dummy);
+                log_snapshot_message($c, "DELTA", $cpref->strat, $is_destocking, $dummy, $prev_c_values);
+                log_snapshot_message($c, "END", $cpref->strat, $is_destocking, $dummy);
                 
 
             } catch (Exception $e) {
@@ -429,14 +432,14 @@ while (1) {
         log_main_message("\n");
         while($server->reset_end + 1 >= time()) {
             $end = $server->reset_end - time();
-            log_main_message("Sleep until end: ".$end); // TODO: supposed to be a countdown - use log()?
+            out("Sleep until end: ".$end, false); // keep as out() - the single line updates
             //log_main_message("\n");
             sleep(1);//don't let them fluff things up, sleep through end of reset
         }
         log_main_message("Done Sleeping!");
         log_main_message("\n");
-    }
-    $server = ee('server');
+        $server = ee('server');
+    }    
 
     $cnum = null;
     $loopcount++;
@@ -458,9 +461,8 @@ while (1) {
         //echo "\n";
     }
 
-
     sleep($sleep); //sleep for $sleep seconds
-    Bots::outNext($countries, true);
+    Bots::outNext($countries, true, $played);
 }
 
 done(); //done() is defined below

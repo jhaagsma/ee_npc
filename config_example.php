@@ -14,7 +14,7 @@ $config = array(
     'turnsleep' => 500000,    //don't get too ridiculously fast; 500000 is half a second
     'save_settings_file' => 'settings.json',
 	'log_country_info_to_screen' => true,
-	'log_to_local_files' => false,
-	'local_path_for_log_files' => null,
+	'log_to_local_files' => false, // probably only works on linux or WSL
+	'local_path_for_log_files' => '.',
 	'log_to_server_files' => false //don't change this
 );

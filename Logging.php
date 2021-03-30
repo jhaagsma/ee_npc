@@ -5,19 +5,15 @@ namespace EENPC;
 function test(){
     // TODO: remove this when done
 
-    mkdir("./logging/alphaai/country", 0700, true);
-    mkdir("./logging/alphaai/errors", 0700, true);
-    mkdir("./logging/alphaai/main", 0700, true);
+    mkdir("./logging/alphaai/11/country", 0700, true);
+    mkdir("./logging/alphaai/11/errors", 0700, true);
+    mkdir("./logging/alphaai/11/main", 0700, true);
 
-    file_put_contents ( "./logging/alphaai/country/cnum1.txt" , "test\ntest\n" , FILE_APPEND);
-    file_put_contents ( "./logging/alphaai/country/cnum1.txt" , "test2\ntest2\n" , FILE_APPEND);
-
-    out("hi");
     return;
 }
 
 
-function log_snapshot_message($c, $snapshot_type, $strat, $number_of_errors, $is_destocking, &$output_c_values, $prev_c_values = []){
+function log_snapshot_message($c, $snapshot_type, $strat, $is_destocking, &$output_c_values, $prev_c_values = []){
     global $log_country_to_screen, $log_to_local, $log_to_server, $local_file_path;
 
     if($snapshot_type <> 'BEGIN' and $snapshot_type <> 'DELTA' and $snapshot_type <> 'END')
@@ -28,7 +24,7 @@ function log_snapshot_message($c, $snapshot_type, $strat, $number_of_errors, $is
 
     $full_local_file_path_and_name = ($log_to_local ? get_full_country_file_path_and_name($local_file_path, $c->cnum, true) : null);
     if($log_country_to_screen or $log_to_local or $log_to_server)
-        $message = generate_compact_country_status($c, $snapshot_type, $strat, $number_of_errors, $is_destocking, $output_c_values, $prev_c_values);
+        $message = generate_compact_country_status($c, $snapshot_type, $strat, $is_destocking, $output_c_values, $prev_c_values);
 
     return log_to_targets($log_country_to_screen, $log_to_local, $log_to_server, $full_local_file_path_and_name, null, $message, $c->cnum, null);
 };
@@ -73,8 +69,7 @@ function log_error_message($error_type, $cnum, $message) {
         log_error_message(0, $cnum, $local_error_message);
         return;
     }
-
-    
+   
 
     /* -- going to allow errors with no cnum for now
     if($error_type <> 1 and !$cnum) {
@@ -87,7 +82,12 @@ function log_error_message($error_type, $cnum, $message) {
 
     // TODO: log different things on screen/country file/error file?
     // TODO: what about multi-line error messages?
-    $error_type_name = log_get_name_of_error_type($error_type); // TODO: check that $error_type is mapped in function
+    $error_type_name = log_get_name_of_error_type($error_type);
+    if($error_type_name === null) {
+        //throw new Exception("Error type $error_type is not mapped"); // TODO: make this work
+        return;
+    }
+
     $full_error_message = 'ERROR '.$error_type.' | '.$error_type_name.' | cnum #'.($cnum ?? 'N\A').' | '.$message;
     $full_local_file_path_and_name = ($log_to_local ? get_full_error_file_path_and_name($local_file_path) : null);
 
@@ -96,12 +96,12 @@ function log_error_message($error_type, $cnum, $message) {
     if($cnum) {
         $country_local_file_path_and_name = ($log_to_local ? get_full_country_file_path_and_name($local_file_path, $cnum, false) : null);
         log_to_targets(false, $log_to_local, $log_to_server, $country_local_file_path_and_name, null, $full_error_message, $cnum, null);
-        // TODO: return value?
+        // future: return the value of this somehow? or make this less hacky
     }
 
     // always log errors to screen
     log_to_targets(true, $log_to_local, $log_to_server, $full_local_file_path_and_name, $error_type, $full_error_message, $cnum, null);
-    return; // TODO: return value?
+    return;
 }
 
 
@@ -143,24 +143,20 @@ function log_to_targets($log_to_screen, $log_to_local, $log_to_server, $full_loc
 }
 
 
+// TODO: windows support?
 function get_full_country_file_path_and_name($local_file_path, $cnum, $is_snapshot) {
-    // TODO: windows?
-    // TODO: should these three functions call another function?
-    // TODO: use servername, round
     $file_name = ($is_snapshot ? 'SNAPSHOT_' : 'COUNTRY_') . $cnum . '.txt';
-    return "$local_file_path/logging/alphaai/country/$file_name";
+    return "$local_file_path/country/$file_name";
 }
 
 function get_full_error_file_path_and_name($local_file_path) {
-    // TODO: windows?
     $iso_date = date('Ymd');
-    return "$local_file_path/logging/alphaai/errors/ERRORS_$iso_date.txt";
+    return "$local_file_path/errors/ERRORS_$iso_date.txt";
 }
 
 function get_full_main_file_path_and_name($local_file_path) {
-    // TODO: windows?
     $iso_date = date('Ymd');
-    return "$local_file_path/logging/alphaai/main/LOOP_$iso_date.txt";
+    return "$local_file_path/main/LOOP_$iso_date.txt";
 }
 
 
@@ -271,6 +267,10 @@ function log_get_name_of_error_type($error_type) {
         return 'Possible server down';
     if($error_type == 109)
         return 'Rules did not load';
+    if($error_type == 110)
+        return 'Ran out of create country attempts';
+
+
 
     // 1000+ are playing errors 
     if($error_type == 1000)
@@ -281,17 +281,15 @@ function log_get_name_of_error_type($error_type) {
 
 
        
-
-    else
-        return 'ERROR: log_get_name_of_error_type() called with unmapped $error_type';
+    // ERROR: log_get_name_of_error_type() called with unmapped $error_type
+    return null;
 }
 
 
-function generate_compact_country_status($c, $snapshot_type, $strat, $number_of_errors, $is_destocking, &$output_c_values, $prev_c_values) {
+function generate_compact_country_status($c, $snapshot_type, $strat, $is_destocking, &$output_c_values, $prev_c_values) {
     // this code is a complete mess because I changed its purpose half way through and tried fixing with copy and replace
     $output_c_values = [];
     // turns and resources
-    $output_c_values['c_errs'] = $number_of_errors;
     $output_c_values['c_t_st'] = "$c->turns($c->turns_stored)";
     $output_c_values['c_t_pl'] = $c->turns_played;
     $output_c_values['c_netw'] = $c->networth;
@@ -327,17 +325,17 @@ function generate_compact_country_status($c, $snapshot_type, $strat, $number_of_
     $output_c_values['c_oil'] = $c->oil;   
 
     // tech percentages
-    $output_c_values['c_pmil'] = round($c->pt_mil,2); //-100.12% is 8 characters
-    $output_c_values['c_pbus'] = round($c->pt_bus,2);
-    $output_c_values['c_pres'] = round($c->pt_res,2);
-    $output_c_values['c_pwep'] = round($c->pt_weap,2);
+    $output_c_values['c_pmil'] = $c->pt_mil; 
+    $output_c_values['c_pbus'] = $c->pt_bus;
+    $output_c_values['c_pres'] = $c->pt_res;
+    $output_c_values['c_pwep'] = $c->pt_weap;
     if($strat == 'I')
         $prod_tech = $c->pt_indy;
     elseif($strat == 'F')
         $prod_tech = $c->pt_agri;
     else
         $prod_tech = "N/A";
-    $output_c_values['c_ppro'] = round($prod_tech,2);
+    $output_c_values['c_ppro'] = $prod_tech;
 
     // production
     $output_c_values['c_dstk'] = $is_destocking;
@@ -378,7 +376,7 @@ function generate_compact_country_status($c, $snapshot_type, $strat, $number_of_
 function generate_compact_country_status_string($header, $snapshot_type, $current_c_values, $prev_c_values) {
     if($snapshot_type == 'DELTA') {
         foreach($current_c_values as $k=>$v) {
-            if($k == 'c_errs' OR $k == 'c_t_st' OR $k == 'c_ps' OR $k == 'c_dstk')
+            if($k == 'c_t_st' OR $k == 'c_ps' OR $k == 'c_dstk')
                 continue;            
             if(isset($prev_c_values[$k])) {
                 if($prev_c_values[$k] <> "N/A" and $current_c_values[$k] <> "N/A") {
@@ -398,7 +396,6 @@ function generate_compact_country_status_string($header, $snapshot_type, $curren
         $c_dstk = 'N/A';    
     }
 
-    $errs = str_pad(($c_errs ?? 'N/A'), 8, ' ', STR_PAD_LEFT);
     $t_st = str_pad($c_t_st, 8, ' ', STR_PAD_LEFT);
     $t_pl = str_pad($c_t_pl, 8, ' ', STR_PAD_LEFT);
     $netw = str_pad(engnot($c_netw), 8, ' ', STR_PAD_LEFT);
@@ -425,11 +422,11 @@ function generate_compact_country_status_string($header, $snapshot_type, $curren
     $oil = str_pad(engnot($c_oil), 8, ' ', STR_PAD_LEFT);   
     
     // tech percentages
-    $pmil = str_pad($c_pmil.'%', 8, ' ', STR_PAD_LEFT);
-    $pbus = str_pad($c_pbus.'%', 8, ' ', STR_PAD_LEFT);
-    $pres = str_pad($c_pres.'%', 8, ' ', STR_PAD_LEFT);
-    $pwep = str_pad($c_pwep.'%', 8, ' ', STR_PAD_LEFT);
-    $ppro = str_pad(($c_ppro <> -1 ? $c_ppro.'%' : 'N/A'), 8, ' ', STR_PAD_LEFT);
+    $pmil = str_pad(round($c_pmil, 2).'%', 8, ' ', STR_PAD_LEFT); //-100.12% is 8 characters
+    $pbus = str_pad(round($c_pbus, 2).'%', 8, ' ', STR_PAD_LEFT);
+    $pres = str_pad(round($c_pres, 2).'%', 8, ' ', STR_PAD_LEFT);
+    $pwep = str_pad(round($c_pwep, 2).'%', 8, ' ', STR_PAD_LEFT);
+    $ppro = str_pad(($c_ppro <> -1 ? round($c_ppro, 2).'%' : 'N/A'), 8, ' ', STR_PAD_LEFT);
     
     // production
     $dstk = str_pad(($c_dstk === "N/A" ? $c_dstk : log_translate_boolean_to_YN($c_dstk)), 8, ' ', STR_PAD_LEFT);
@@ -452,25 +449,23 @@ function generate_compact_country_status_string($header, $snapshot_type, $curren
     $e = "  |";   
 
     $str = $header;
-    $str .= $s.'New errors:    '.$errs.'   Spies:       '.$spy .'   Destocking:   '.$dstk.$e;
-    $str .= $s.'Turns:         '.$t_st.'   Troops:      '.$tr  .'   Tax Revenues: '.$tax .$e;
-    $str .= $s.'Turns Played:  '.$t_pl.'   Jets:        '.$jets.'   Expenses:     '.$exp .$e;
-    $str .= $s.'Networth:      '.$netw.'   Turrets:     '.$tu  .'   Net Food:     '.$netf.$e;
-    $str .= $s.'Land:          '.$land.'   Tanks:       '.$ta  .'   Net Oil:      '.$neto.$e;
-    $str .= $s.'Money:         '.$cash.'   Readiness:   '.$read.'   TPT:          '.$tpt .$e;
-    $str .= $s.'Food:          '.$food.'   PS Brigades: '.$ps  .'   Indy prod:    '.$neti.$e;
-    $str .= $s.'Tech Points:   '.$tech.'   Oil:         '.$oil .'   BPT:          '.$bpt .$e;
+    $str .= $s.'Turns:         '.$t_st.'   Spies:       '.$spy .'   Destocking:   '.$dstk.$e;
+    $str .= $s.'Turns Played:  '.$t_pl.'   Troops:      '.$tr  .'   Tax Revenues: '.$tax .$e;
+    $str .= $s.'Networth:      '.$netw.'   Jets:        '.$jets.'   Expenses:     '.$exp .$e;
+    $str .= $s.'Land:          '.$land.'   Turrets:     '.$tu  .'   Net Food:     '.$netf.$e;
+    $str .= $s.'Money:         '.$cash.'   Tanks:       '.$ta  .'   Net Oil:      '.$neto.$e;
+    $str .= $s.'Food:          '.$food.'   Readiness:   '.$read.'   TPT:          '.$tpt .$e;
+    $str .= $s.'Oil:           '.$oil .'   PS Brigades: '.$ps  .'   Indy prod:    '.$neti.$e;
+    $str .= $s.'Tech Points:   '.$tech.'                '.$spcs.'   BPT:          '.$bpt .$e;
 	$str .= $s.'               '.$spcs.'                '.$spcs.'                 '.$spcs.$e;
-    $str .= $s.'Prod Blds:     '.$pbds.'   Mil tech:    '.$pmil.'   OM Value:     '.$om_v.$e; 
+    $str .= $s.'Prod Blds:     '.$pbds.'   Mil tech:    '.$pmil.'   OM Value:     '.$om_v.$e;
     $str .= $s.'Indy Blds:     '.$ibds.'   Bus tech:    '.$pbus.'   OM Units:     '.$om_u.$e;
     $str .= $s.'Non-prod Blds: '.$nbds.'   Res tech:    '.$pres.'   OM Bushels:   '.$om_b.$e;
-    $str .= $s.'CS:            '.$cs  .'   Wep tech:    '.$pwep.'   OM Tech:      '.$om_t.$e;       
+    $str .= $s.'CS:            '.$cs  .'   Wep tech:    '.$pwep.'   OM Tech:      '.$om_t.$e;
     $str .= $s.'Unused:        '.$emty.'   Prd tech:    '.$ppro.'                 '.$spcs.$e;
     $str .= "\n".str_repeat('-', 78);
 
-    // TODO: add built percentage? $c->built()
-
-    // TODO: error if null string?
+    // TODO: throw exception if null string (make sure this doesn't crash the script)
     return $str;
 }
 
