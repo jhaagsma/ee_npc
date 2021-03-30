@@ -4,17 +4,6 @@ namespace EENPC;
 
 // FUTURE: windows support for local logging?
 
-
-/*
-TODO: REMOVE THIS COMMENT BLOCK
-ee('purge_logging_files', ['timeout' => 0]);
-ee('create_logging_directories'); // die if we don't have permission
-ee('log_message_to_files', ['type' => 'ERROR', 'message' => $file_message]
-/*
-$type (MAIN OR SNAPSHOT OR COUNTRY OR ERROR)
-$cnum is globalled?
-*/
-
 // new error types must be added to this function
 function log_get_name_of_error_type($error_type) {
     // 40 character limit on name
@@ -73,7 +62,7 @@ function get_current_local_file_path($config_local_file_path_root, $server) {
 
 
 function create_logging_directories ($config_local_file_path_root, $server, $timeout_for_purging = 0) {
-    global $log_to_local, $log_to_server, $local_file_path;
+    global $log_to_local, $local_file_path;
 
     // reset $local_file_path if needed
     $local_file_path = get_current_local_file_path($config_local_file_path_root, $server);
@@ -84,52 +73,40 @@ function create_logging_directories ($config_local_file_path_root, $server, $tim
         create_local_directory_if_needed("$local_file_path/main");
     }
 
-    if($log_to_server){
-        // $result = ee('create_logging_directories');
-        // TODO: do something with bad result values
-    }
-
-    if($timeout_for_purging <> 0) { // do purging if there's time
+    // TODO: test purging and timeout
+    if($log_to_local and ($timeout_for_purging <> 0)) { // do purging if there's time
         $start_purging_time = time();
-
-        if($log_to_local) {
-            $dirs = scandir($config_local_file_path_root."/"."logging/$server->name");
-
-            foreach($dirs as $dir_name) {
-                if(time() - $start_purging_time > $timeout_for_purging)
-                    break; // break if we're out of time
-
-                $new_directory_path = $config_local_file_path_root."/"."logging/$server->name/$dir_name";
-
-                if(!dir($new_directory_path)) { // shouldn't be any files here, so delete them
-                    log_error_message(113, null, $new_directory_path);
-                    log_main_message("Deleting file at $new_directory_path");
-                    unlink($new_directory_path);
-                }
-                else { // is a directory, should be a round number
-                    if(!is_numeric($dir_name))
-                        log_error_message(112, null, $new_directory_path);
-                    else { // unexpected format, clear out files from it
-                        $files = scandir($new_directory_path);
-                        foreach($files as $file) {                            
-                            if(time() - $start_purging_time > $timeout_for_purging)
-                                break; // break if we're out of time
-
-                            $file_name_with_path = $new_directory_path.'/'.$file;
-                            log_main_message("Deleting file at $file_name_with_path");    
-                            unlink($file_name_with_path);    
-                        }
-                        rmdir($new_directory_path); // can only remove if all files are gone
-                    }  
-                }
-            }   
-        }
-           
-        $timeout_for_server_purging = $timeout_for_purging - (time() - $start_purging_time);
-        if($log_to_server and $timeout_for_server_purging > 0) {
-            // $result = ee('purge_logging_files', [$timeout_for_server_purging => 0]);
-            // TODO: do something with $result
-        }
+    
+        $dirs = scandir($config_local_file_path_root."/"."logging/$server->name");
+    
+        foreach($dirs as $dir_name) {
+            if(time() - $start_purging_time > $timeout_for_purging)
+                break; // break if we're out of time
+    
+            $new_directory_path = $config_local_file_path_root."/"."logging/$server->name/$dir_name";
+    
+            if(!dir($new_directory_path)) { // shouldn't be any files here, so delete them
+                log_error_message(113, null, $new_directory_path);
+                log_main_message("Deleting file at $new_directory_path");
+                unlink($new_directory_path);
+            }
+            else { // is a directory, should be a round number
+                if(!is_numeric($dir_name))
+                    log_error_message(112, null, $new_directory_path);
+                elseif((int)$dir_name < $server->round_num - 2) { // keep files for previous two resets
+                    $files = scandir($new_directory_path);
+                    foreach($files as $file) {                            
+                        if(time() - $start_purging_time > $timeout_for_purging)
+                            break; // break if we're out of time
+    
+                        $file_name_with_path = $new_directory_path.'/'.$file;
+                        log_main_message("Deleting file at $file_name_with_path");    
+                        unlink($file_name_with_path);    
+                    }
+                    rmdir($new_directory_path); // can only remove if all files are gone
+                }  
+            }
+        }   
     } // done purging
 
     return true;
@@ -149,7 +126,7 @@ function create_local_directory_if_needed($path_name) {
 
 
 function log_snapshot_message($c, $snapshot_type, $strat, $is_destocking, &$output_c_values, $prev_c_values = []){
-    global $log_country_to_screen, $log_to_local, $log_to_server, $local_file_path;
+    global $log_country_to_screen, $log_to_local, $local_file_path;
 
     if($snapshot_type <> 'BEGIN' and $snapshot_type <> 'DELTA' and $snapshot_type <> 'END') {
         die('Called log_snapshot_message() with invalid parameter value '.$snapshot_type.' for $snapshot_type');
@@ -162,16 +139,16 @@ function log_snapshot_message($c, $snapshot_type, $strat, $is_destocking, &$outp
     }   
 
     $full_local_file_path_and_name = ($log_to_local ? get_full_country_file_path_and_name($local_file_path, $c->cnum, true) : null);
-    if($log_country_to_screen or $log_to_local or $log_to_server)
+    if($log_country_to_screen or $log_to_local)
         $message = generate_compact_country_status($c, $snapshot_type, $strat, $is_destocking, $output_c_values, $prev_c_values);
 
-    return log_to_targets("SNAPSHOT", $log_country_to_screen, $log_to_local, $log_to_server, $full_local_file_path_and_name, null, $message, $c->cnum, null);
+    return log_to_targets($log_country_to_screen, $log_to_local, $full_local_file_path_and_name, null, $message, $c->cnum, null);
 };
 
 
 // examples of things to log: what decisions were made (and why), how turns are spent
 function log_country_message($cnum_input, $message) {
-    global $log_country_to_screen, $log_to_local, $log_to_server, $local_file_path;
+    global $log_country_to_screen, $log_to_local, $local_file_path;
 
     if(!$cnum_input) {
         global $cnum; // some calling functions don't have $cnum easily available
@@ -185,21 +162,21 @@ function log_country_message($cnum_input, $message) {
     }
 
     $full_local_file_path_and_name = ($log_to_local ? get_full_country_file_path_and_name($local_file_path, $cnum_input, false) : null);
-    return log_to_targets("COUNTRY", $log_country_to_screen, $log_to_local, $log_to_server, $full_local_file_path_and_name, null, $message, $cnum_input, null);
+    return log_to_targets($log_country_to_screen, $log_to_local, $full_local_file_path_and_name, null, $message, $cnum_input, null);
 }
 
 
 
 function log_main_message($message, $color = null)  {
-    global $log_to_local, $log_to_server, $local_file_path;
+    global $log_to_local, $local_file_path;
     $full_local_file_path_and_name = ($log_to_local ? get_full_main_file_path_and_name($local_file_path) : null);
     // always log messages to screen
-    return log_to_targets("MAIN", true, $log_to_local, $log_to_server, $full_local_file_path_and_name, null, $message, null, $color);
+    return log_to_targets(true, $log_to_local, $full_local_file_path_and_name, null, $message, null, $color);
 }
 
 
 function log_error_message($error_type, $cnum, $message) {
-    global $log_to_local, $log_to_server, $local_file_path;
+    global $log_to_local, $local_file_path;
 
     $error_type_name = log_get_name_of_error_type($error_type);
     if($error_type_name === null) {
@@ -213,19 +190,19 @@ function log_error_message($error_type, $cnum, $message) {
     $country_local_file_path_and_name = (($cnum and $log_to_local) ? get_full_country_file_path_and_name($local_file_path, $cnum, false) : null);
     $screen_and_country_message = "ERROR: $error_type-$error_type_name; CNUM: #".($cnum ?? 'N/A')."; DETAILS: $message";
     // always log errors to screen
-    log_to_targets("ERROR", true, $log_to_local, $log_to_server, $country_local_file_path_and_name, $screen_and_country_message, $cnum, 'red'); // FUTURE - return this value somehow??
+    log_to_targets(true, $log_to_local, $country_local_file_path_and_name, $screen_and_country_message, $cnum, 'red'); // FUTURE - return this value somehow??
 
     // always log to the error file
     // for the error file, use unprintable characters to separate fields and line breaks to pack everything on a single line
     // the error reader on the server will split out things appropriately
     $error_message_for_error_file = $error_type.chr(9).$error_type_name.chr(9).$cnum.chr(9).str_replace(array("\r", "\n"), chr(17), $message);
     $error_local_file_path_and_name = ($log_to_local ? get_full_error_file_path_and_name($local_file_path) : null);
-    log_to_targets("ERROR", false, $log_to_local, $log_to_server, $error_local_file_path_and_name, $error_message_for_error_file, $cnum, null);  
+    log_to_targets(false, $log_to_local, $error_local_file_path_and_name, $error_message_for_error_file, $cnum, null);  
     return true; 
 }
 
 
-function log_to_targets($message_type, $log_to_screen, $log_to_local, $log_to_server, $local_file_path_and_name, $message, $cnum, $color = null) {
+function log_to_targets($message_type, $log_to_screen, $log_to_local, $local_file_path_and_name, $message, $cnum, $color = null) {
     $is_line_breaks_only = str_replace(array("\r", "\n"), '', $message) == "" ? true : false;
     $line_break_count = substr_count($message,"\n" );
     if($log_to_screen) {
@@ -250,15 +227,6 @@ function log_to_targets($message_type, $log_to_screen, $log_to_local, $log_to_se
         }
         if($local_file_path_and_name)
             file_put_contents ($local_file_path_and_name, $file_message, FILE_APPEND);      
-    }
-
-    if($log_to_server) {
-        if($message_type <> 'MAIN' and $message_type <> 'SNAPSHOT' and $message_type <> 'COUNTRY' and $message_type <> 'ERROR') {
-            die("Tried to log to server file with invalid message type value of $message_type");
-            return false;
-        }
-        // $result = ee('log_message_to_files', ['type' => $message_type, 'message' => $file_message]);
-        // TODO: do something with bad result values
     }
 
     return;

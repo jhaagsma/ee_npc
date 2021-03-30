@@ -82,10 +82,9 @@ $APICalls     = 0;
 $rules  = getRules();
 $server = getServer();
 
-global $log_country_to_screen, $log_to_local, $log_to_server, $local_file_path;
+global $log_country_to_screen, $log_to_local, $local_file_path;
 $log_country_to_screen = isset($config['log_country_info_to_screen']) ? $config['log_country_info_to_screen'] : true;
 $log_to_local = isset($config['log_to_local_files']) ? $config['log_to_local_files'] : false;
-$log_to_server = isset($config['log_to_server_files']) ? $config['log_to_server_files'] : false;
 $local_file_path = null;
 if (isset($config['local_path_for_log_files'])) {
     $config_local_file_path_root = $config['local_path_for_log_files'];
@@ -112,7 +111,6 @@ while (1) {
         $server = getServer();
     }
     // note: don't call logging functions until create_logging_directories has been called - folders might not exist for the new reset
-    //log_error_message(1000, 5, "test"); // TODO: DEBUG
 
     if($server->alive_count < $server->countries_allowed) {
         create_logging_directories($config_local_file_path_root, $server, 30);
@@ -921,9 +919,11 @@ function update_c(&$c, $result)
     $c->money += $netmoney;
     $c->food  += $netfood;
 
+    /* -- I think it's fine to move this lower - Slagpit 20210330
     if ($advisor_update == true) {
         $c = get_advisor();
     }
+    */
 
     //Text formatting (adding a + if it is positive; - will be there if it's negative already)
     $netfood  = str_pad('('.($netfood > 0 ? '+' : null).engnot($netfood).')', 11, ' ', STR_PAD_LEFT);
@@ -942,11 +942,15 @@ function update_c(&$c, $result)
 
     if($c->food < 0) {
         log_error_message(1000, $c->cnum, "Ran out of food playing turns");
-        $c->food = 0; // don't leave food as a negative number because this can mess up other calculations using it
+        $advisor_update = true;
     }
     if($c->money < 0) {
         log_error_message(1001, $c->cnum, "Ran out of money playing turns");
-        $c->money = 0; // don't leave money as a negative number because this can mess up other calculations using it
+        $advisor_update = true;
+    }
+
+    if ($advisor_update == true) {
+        $c = get_advisor();
     }
 
     $APICalls = 0;

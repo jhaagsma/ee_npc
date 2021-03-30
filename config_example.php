@@ -15,6 +15,5 @@ $config = array(
     'save_settings_file' => 'settings.json',
 	'log_country_info_to_screen' => true,
 	'log_to_local_files' => false, // probably only works on linux or WSL
-	'local_path_for_log_files' => '.',
-	'log_to_server_files' => false //don't change this
+	'local_path_for_log_files' => '.'
 );
