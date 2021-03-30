@@ -89,12 +89,9 @@ $log_to_server = isset($config['log_to_server_files']) ? $config['log_to_server_
 $local_file_path = null;
 if (isset($config['local_path_for_log_files'])) {
     $config_local_file_path_root = $config['local_path_for_log_files'];
-    $local_file_path = $config_local_file_path_root."/"."logging/".$config['server']."/$server->round_num";
 }
 
-// TODO: if $log_to_server = true, error check for permission and die() if don't have it
-
-
+// function below sets $local_file_path
 create_logging_directories($config_local_file_path_root, $server, 0); // don't purge old files here because we want startup to be as fast as possible
 
 log_main_message("BOT IS STARTING AND HAS CLEARED INITIAL CHECKS", 'purple');
@@ -115,7 +112,7 @@ while (1) {
         $server = getServer();
     }
     // note: don't call logging functions until create_logging_directories has been called - folders might not exist for the new reset
-    //log_error_message(7, null, "test"); // TODO: DEBUG
+    //log_error_message(1000, 5, "test"); // TODO: DEBUG
 
     if($server->alive_count < $server->countries_allowed) {
         create_logging_directories($config_local_file_path_root, $server, 30);

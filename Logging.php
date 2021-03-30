@@ -5,6 +5,15 @@ namespace EENPC;
 // FUTURE: windows support for local logging?
 
 
+/*
+TODO: REMOVE THIS COMMENT BLOCK
+ee('purge_logging_files', ['timeout' => 0]);
+ee('create_logging_directories'); // die if we don't have permission
+ee('log_message_to_files', ['type' => 'ERROR', 'message' => $file_message]
+/*
+$type (MAIN OR SNAPSHOT OR COUNTRY OR ERROR)
+$cnum is globalled?
+*/
 
 // new error types must be added to this function
 function log_get_name_of_error_type($error_type) {
@@ -58,14 +67,9 @@ function log_get_name_of_error_type($error_type) {
 }
 
 
-
-
-
-// TODO: API call should return server name
 function get_current_local_file_path($config_local_file_path_root, $server) {
     return $config_local_file_path_root."/"."logging/$server->name/$server->round_num";
 }
-
 
 
 function create_logging_directories ($config_local_file_path_root, $server, $timeout_for_purging = 0) {
@@ -81,8 +85,8 @@ function create_logging_directories ($config_local_file_path_root, $server, $tim
     }
 
     if($log_to_server){
-
-        // TODO: call appropriate function
+        // $result = ee('create_logging_directories');
+        // TODO: do something with bad result values
     }
 
     if($timeout_for_purging <> 0) { // do purging if there's time
@@ -123,7 +127,8 @@ function create_logging_directories ($config_local_file_path_root, $server, $tim
            
         $timeout_for_server_purging = $timeout_for_purging - (time() - $start_purging_time);
         if($log_to_server and $timeout_for_server_purging > 0) {
-            // TODO: call comm function with $timeout_for_server_purging
+            // $result = ee('purge_logging_files', [$timeout_for_server_purging => 0]);
+            // TODO: do something with $result
         }
     } // done purging
 
@@ -160,7 +165,7 @@ function log_snapshot_message($c, $snapshot_type, $strat, $is_destocking, &$outp
     if($log_country_to_screen or $log_to_local or $log_to_server)
         $message = generate_compact_country_status($c, $snapshot_type, $strat, $is_destocking, $output_c_values, $prev_c_values);
 
-    return log_to_targets($log_country_to_screen, $log_to_local, $log_to_server, $full_local_file_path_and_name, null, $message, $c->cnum, null);
+    return log_to_targets("SNAPSHOT", $log_country_to_screen, $log_to_local, $log_to_server, $full_local_file_path_and_name, null, $message, $c->cnum, null);
 };
 
 
@@ -180,7 +185,7 @@ function log_country_message($cnum_input, $message) {
     }
 
     $full_local_file_path_and_name = ($log_to_local ? get_full_country_file_path_and_name($local_file_path, $cnum_input, false) : null);
-    return log_to_targets($log_country_to_screen, $log_to_local, $log_to_server, $full_local_file_path_and_name, null, $message, $cnum_input, null);
+    return log_to_targets("COUNTRY", $log_country_to_screen, $log_to_local, $log_to_server, $full_local_file_path_and_name, null, $message, $cnum_input, null);
 }
 
 
@@ -189,7 +194,7 @@ function log_main_message($message, $color = null)  {
     global $log_to_local, $log_to_server, $local_file_path;
     $full_local_file_path_and_name = ($log_to_local ? get_full_main_file_path_and_name($local_file_path) : null);
     // always log messages to screen
-    return log_to_targets(true, $log_to_local, $log_to_server, $full_local_file_path_and_name, null, $message, null, $color);
+    return log_to_targets("MAIN", true, $log_to_local, $log_to_server, $full_local_file_path_and_name, null, $message, null, $color);
 }
 
 
@@ -203,29 +208,24 @@ function log_error_message($error_type, $cnum, $message) {
         log_error_message(0, $cnum, $local_error_message);
         return false;
     }
-
+    
+    // if a $cnum is available, log to the country file
+    $country_local_file_path_and_name = (($cnum and $log_to_local) ? get_full_country_file_path_and_name($local_file_path, $cnum, false) : null);
+    $screen_and_country_message = "ERROR: $error_type-$error_type_name; CNUM: #".($cnum ?? 'N/A')."; DETAILS: $message";
     // always log errors to screen
-    $screen_message = "ERROR: $error_type-$error_type_name; CNUM: #".($cnum ?? 'N/A')."; DETAILS: $message";
-    log_to_targets(true, false, false, null, null, $screen_message, $cnum, 'red'); // FUTURE - return this value somehow??
-
-    // use unprintable characters to separate fields and line breaks to pack everything on a single line
-    // the error reader on the server will split out things appropriately
-    $error_message_for_file = $error_type.chr(9).$error_type_name.chr(9).$cnum.chr(9).str_replace(array("\r", "\n"), chr(17), $message);
+    log_to_targets("ERROR", true, $log_to_local, $log_to_server, $country_local_file_path_and_name, $screen_and_country_message, $cnum, 'red'); // FUTURE - return this value somehow??
 
     // always log to the error file
+    // for the error file, use unprintable characters to separate fields and line breaks to pack everything on a single line
+    // the error reader on the server will split out things appropriately
+    $error_message_for_error_file = $error_type.chr(9).$error_type_name.chr(9).$cnum.chr(9).str_replace(array("\r", "\n"), chr(17), $message);
     $error_local_file_path_and_name = ($log_to_local ? get_full_error_file_path_and_name($local_file_path) : null);
-
-    $country_local_file_path_and_name = null; // if a $cnum is available, log to the country file too
-    if($cnum) {
-        $country_local_file_path_and_name = ($log_to_local ? get_full_country_file_path_and_name($local_file_path, $cnum, false) : null);
-    }
-
-    log_to_targets(false, $log_to_local, $log_to_server, $error_local_file_path_and_name, $country_local_file_path_and_name, $error_message_for_file, $cnum, null);  
+    log_to_targets("ERROR", false, $log_to_local, $log_to_server, $error_local_file_path_and_name, $error_message_for_error_file, $cnum, null);  
     return true; 
 }
 
 
-function log_to_targets($log_to_screen, $log_to_local, $log_to_server, $local_file_path_and_name_1, $local_file_path_and_name_2, $message, $cnum, $color = null) {
+function log_to_targets($message_type, $log_to_screen, $log_to_local, $log_to_server, $local_file_path_and_name, $message, $cnum, $color = null) {
     $is_line_breaks_only = str_replace(array("\r", "\n"), '', $message) == "" ? true : false;
     $line_break_count = substr_count($message,"\n" );
     if($log_to_screen) {
@@ -248,14 +248,17 @@ function log_to_targets($log_to_screen, $log_to_local, $log_to_server, $local_fi
             // the regex removes color coding   
             $file_message = $timestamp_for_file.($line_break_count > 0 ? "\n" : "").preg_replace('/\e[[][A-Za-z0-9];?[0-9]*m?/', '', $message)."\n";
         }
-        if($local_file_path_and_name_1)
-            file_put_contents ($local_file_path_and_name_1, $file_message, FILE_APPEND);
-        if($local_file_path_and_name_2)
-            file_put_contents ($local_file_path_and_name_2, $file_message, FILE_APPEND);        
+        if($local_file_path_and_name)
+            file_put_contents ($local_file_path_and_name, $file_message, FILE_APPEND);      
     }
 
     if($log_to_server) {
-        // TODO: call function in communication, catch and print any errors
+        if($message_type <> 'MAIN' and $message_type <> 'SNAPSHOT' and $message_type <> 'COUNTRY' and $message_type <> 'ERROR') {
+            die("Tried to log to server file with invalid message type value of $message_type");
+            return false;
+        }
+        // $result = ee('log_message_to_files', ['type' => $message_type, 'message' => $file_message]);
+        // TODO: do something with bad result values
     }
 
     return;

@@ -126,9 +126,21 @@ function getRules()
 function handle_output($serverOutput, $function, $cnum) // $cnum may not be set
 {
     $response = json_decode($serverOutput);
+
+    // special error handling for log_message_to_files to avoid infinite loops if there's a problem
+    if($function == 'log_message_to_files') {
+        if (!$response) {
+            out('Not acceptable response: '. $function .' - '. $serverOutput);   
+            return false;    
+        }
+        // TODO: what else to check?
+
+
+        return $response;
+    }
+
     if (!$response) {
-        $error_message = 'Not acceptable response: '. $function .' - '. $serverOutput;
-        log_error_message(100, $cnum, $error_message);
+        log_error_message(100, $cnum, 'Not acceptable response: '. $function .' - '. $serverOutput);
         return false;
     }
 
@@ -136,6 +148,8 @@ function handle_output($serverOutput, $function, $cnum) // $cnum may not be set
     //     out("DEBUGGING BUY");
     //     out_data($response);
     // }
+
+    // TODO: add handling for purge_logging_files and create_logging_directories ? there's no real output, just permissions errors?
 
     $message  = key($response);
     $response = $response->$message ?? null;
