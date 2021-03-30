@@ -107,7 +107,7 @@ $server_avg_networth = $server_avg_land = 0;
 
 while (1) {
     if (!is_object($server)) {
-        $server = getServer();
+        $server = getServer(true);
     }
 
     if($server->alive_count < $server->countries_allowed) {
@@ -122,7 +122,7 @@ while (1) {
             if(isset($settings->$cnum)) // clear strategy from previous rounds
                 $settings->$cnum = null;
             log_main_message($send_data['cname'].' (#'.$cnum.') created!');
-            $server = getServer();
+            $server = getServer(true);
             if ($server->reset_start > time()) {
                 $timeleft      = $server->reset_start - time();
                 $countriesleft = $server->countries_allowed - $server->alive_count;
@@ -449,7 +449,7 @@ while (1) {
         $sleepcount++;
     }
 
-    if ($sleepcount % 300 == 0) {
+    if ($sleepcount % 300 == 0) { // this code intentionally includes $sleepcount = 0, $sleepcount = 300, etc
         $server = getServer(true);
         //Bots::playstats($countries);
         //echo "\n";
