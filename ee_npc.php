@@ -313,6 +313,8 @@ while (1) {
             $debug_force_destocking = false; // DEBUG: change to true to force destocking code to run
             $is_destocking = ($debug_force_destocking or time() >= $earliest_destock_time? true : false);
 
+            //$is_destocking = false; // TODO DEBUG
+
             // log snapshot of country status
             $prev_c_values = [];
             $init_c = get_advisor();
@@ -916,7 +918,7 @@ function update_c(&$c, $result)
 
     // always update these to make country management simpler
     // for example, expenses rise every turn for an indy so it's good to have the latest info
-    $c->taxrevenue = $latest_taxrevenue;
+    $c->taxes = $latest_taxrevenue;
     $c->expenses = $latest_expenses;
     $c->income = $latest_taxrevenue - $latest_expenses;
     //$c->cashing = floor(1.2 * $latest_taxrevenue - $latest_expenses);
@@ -953,7 +955,7 @@ function update_c(&$c, $result)
     if($OOM or $OOF) {
         $did_c_object_think_money_was_non_negative_before_update = $c->money >= 0 ? true: false;
         $did_c_object_think_food_was_non_negative_before_update = $c->food >= 0 ? true: false;
-        $OOM_error_message = "Before playing $numT turns, money was $money_before_turns. Before advisor update, money was $c->money, taxes were $c->taxrevenue, and exp were $c->expenses. ";
+        $OOM_error_message = "Before playing $numT turns, money was $money_before_turns. Before advisor update, money was $c->money, taxes were $c->taxes, and exp were $c->expenses. ";
         $OOF_error_message = "Before playing $numT turns, food was $food_before_turns. Before advisor update, food was $c->food, pro was $c->foodpro, and con was $c->foodnet. ";
     }
        
@@ -963,7 +965,7 @@ function update_c(&$c, $result)
     }
 
     if($OOM) {
-        $OOM_error_message .= "After advisor update, money was $c->money, taxes were $c->taxrevenue, and exp were $c->expenses";
+        $OOM_error_message .= "After advisor update, money was $c->money, taxes were $c->taxes, and exp were $c->expenses";
         $error_code = $did_c_object_think_money_was_non_negative_before_update ? 115 : 1001;
         log_error_message($error_code, $c->cnum, $OOM_error_message);
     }
