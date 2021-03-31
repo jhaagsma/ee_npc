@@ -146,7 +146,7 @@ function money_management(&$c, $server_max_possible_market_sell)
             sell_max_military($c, $server_max_possible_market_sell);
             return true;
         } elseif ($c->turns_stored > 30 && total_military($c) > 1000) {
-            log_country_message($c->cnum, "We have stored turns or can't sell on public; sell 1/10 of military.");   //Text for screen
+            log_error_message(1002, $c->cnum, "We have stored turns or can't sell on public; sell 1/10 of military");
             sell_all_military($c, 1 / 10);
         } else {
             log_country_message($c->cnum, "Low stored turns ({$c->turns_stored}); can't sell? (".total_cansell_military($c, $server_max_possible_market_sell).')');
@@ -242,7 +242,7 @@ function food_management(&$c)
         $result = PrivateMarket::buy($c, ['m_bu' => $turns_buy * $foodloss]);  //Buy 3 turns of food!
         return false;
     } elseif ($c->food < $turns_of_food && total_military($c) > 50) {
-        log_country_message($c->cnum, "We're too poor to buy food! Sell 1/10 of our military");   //Text for screen
+        log_error_message(1002, $c->cnum, "We're too poor to buy food! Sell 1/10 of our military");
         sell_all_military($c, 1 / 10);     //sell 1/4 of our military
         $c = get_advisor();     //UPDATE EVERYTHING
         return food_management($c); //RECURSION!

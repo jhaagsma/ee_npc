@@ -49,6 +49,8 @@ function log_get_name_of_error_type($error_type) {
         return 'COUNTRY PLAYED TURN WITHOUT FOOD';
     if($error_type == 1001)
         return 'COUNTRY PLAYED TURN WITHOUT MONEY';
+    if($error_type == 1002)
+        return 'COUNTRY BAD SELL OF MILITARY ON PM';       
 
        
     // ERROR: log_get_name_of_error_type() called with unmapped $error_type

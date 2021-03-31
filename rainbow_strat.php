@@ -109,7 +109,7 @@ function play_rainbow_strat($server, $cnum, $rules)
         }
 
         if ($c->income < 0 && total_military($c) > 30) { //sell 1/4 of all military on PM
-            log_country_message($cnum, "Losing money! Sell 1/4 of our military!");     //Text for screen
+            log_error_message(1002, $cnum, "Losing money! Sell 1/4 of our military!");
             sell_all_military($c, 1 / 4);  //sell 1/4 of our military
         }
 
