@@ -45,6 +45,7 @@ function execute_destocking_actions($cnum, $strategy, $server, $rules, &$next_pl
 	// want to be careful with the money to reserve unless we make ... if we have 200 bots all spending $50 million at the end then that's 10 B dollars on public
 	$turns_to_keep = 2 + ($strategy == 'T' ? 1 : 0); // save another turn for techer to dump tech
 	$money_to_reserve = max(-1 * $turns_to_keep * $c->income, 10000000 * $turns_to_keep); // mil expenses can rise rapidly during destocking, so use 10 M per turn as a guess
+	// FUTURE: indies (and maybe other strats) should reserve money to play the rest of the turns they'll get in the set. see $turns_to_keep_for_bushel_calculation
 	log_country_message($cnum, "Money is $c->money and calculated money to reserve is $money_to_reserve");
 	log_country_message($cnum, "Turns left: $c->turns");
 	log_country_message($cnum, "Starting cashing or teching...");	
@@ -247,7 +248,7 @@ PARAMETERS:
 function dump_tech($c, $strategy, $market_autobuy_tech_price, $server_max_possible_market_sell) {
 	$food_needed = max(0, get_food_needs_for_turns(1, $c->foodpro, $c->foodcon, true) - $c->food);
 
-	// future: don't dump tech until close to the end (calc number of sales needed) - requires recall tech though
+	// FUTURE: don't dump tech until close to the end (calc number of sales needed) - requires recall tech though
 	$reason_for_not_selling_tech = null;
 	if ($strategy <> 'T')
 		$reason_for_not_selling_tech = "No support for non-techers at this time"; // FUTURE: add support
@@ -262,7 +263,7 @@ function dump_tech($c, $strategy, $market_autobuy_tech_price, $server_max_possib
 
 	if($reason_for_not_selling_tech == null) {
 		// keep 50 mil tech per acre for bushel recyle reasons
-		$max_mil_tech_to_sell = max(0, $c->t_mil - 50 * $c->land);
+		$max_mil_tech_to_sell = max(0, $c->t_mil - 42 * $c->land);
 		log_country_message($c->cnum, "With $c->land acres and $c->t_mil mil tech points, max mil tech to sell is $max_mil_tech_to_sell");
 
 		$tech_quantities = [
@@ -428,15 +429,21 @@ PARAMETERS:
 	$land - acres for the country
 	$mil_tech - points of mil tech for the country
 */
-function temporary_check_if_cash_or_tech_is_profitable ($strategy, $incoming_money_per_turn, $tpt, $foodnet, $govt, $land, $mil_tech) {
+function temporary_check_if_cash_or_tech_is_profitable ($cnum, $strategy, $incoming_money_per_turn, $tpt, $foodnet, $govt, $land, $mil_tech) {
 	// very rough calculations - don't care if this is inaccurate
 	// future - account for tech allies?
-	if ($strategy == 'I')
+	if ($strategy == 'I') {
+		log_country_message($cnum, "Cashing turns because indies always play turns (this is a limitation)");
 		return true; // future: calc indy production to check something
-	elseif ($strategy == 'T' and $govt == 'D' and $mil_tech / $land < 50) // demo techers should get enough mil tech to clear bushels
+	}
+	elseif ($strategy == 'T' and $govt == 'D' and $mil_tech / $land < 42) {// demo techers should get enough mil tech to clear bushels
+		log_country_message($cnum, "Teching turns because country is a demo does not have 42 mil tech per acre");
 		return true;
-	elseif ($strategy == 'T')
+	}
+	elseif ($strategy == 'T') {
+		log_country_message($cnum, "Teching turns because income is positive with implied tech value of $700 per point");
 		return ($incoming_money_per_turn + 700 * $tpt + 34 * $foodnet > 0 ? true: false);
+	}
 	else
 		return ($incoming_money_per_turn + 34 * $foodnet > 0 ? true: false);
 }
@@ -459,7 +466,7 @@ function temporary_cash_or_tech_at_end_of_set (&$c, $strategy, $turns_to_keep, $
 	$is_cashing = ($strategy == 'T' ? false : true);
 	$incoming_money_per_turn = ($is_cashing ? 1.0 : 1.2) * $c->taxes - $c->expenses;
 
-	$should_play_turns = temporary_check_if_cash_or_tech_is_profitable($strategy, $incoming_money_per_turn, $c->tpt, $c->foodnet, $c->govt, $c->land, $c->t_mil);
+	$should_play_turns = temporary_check_if_cash_or_tech_is_profitable($c->cnum, $strategy, $incoming_money_per_turn, $c->tpt, $c->foodnet, $c->govt, $c->land, $c->t_mil);
 	if(!$should_play_turns) {
 		log_country_message($c->cnum, "Not cashing or teching turns because playing turns is not expected to be profitable");
 		return false;
@@ -470,6 +477,7 @@ function temporary_cash_or_tech_at_end_of_set (&$c, $strategy, $turns_to_keep, $
 		// first try to play in blocks of 10 turns, if that fails then go to turn by turn
 		// FUTURE: a farmer can sell on private and should end up being able to cash 10X turn at a time
 		// FUTURE: shouldn't farmers avoid decay?
+		// FUTURE: a casher can get stopped from playing turns if it doesn't have enough food for a turn and has less money than the reserve figure
 		if($c->turns - $turns_to_keep < 10)
 			$turns_to_play_at_once = 1;
 
@@ -508,12 +516,12 @@ PARAMETERS:
 */
 function food_and_money_for_turns(&$c, $turns_to_play, $money_to_reserve, $is_cashing) {
 	$incoming_money_per_turn = ($is_cashing ? 1.0 : 1.2) * $c->taxes;
-	$additional_turns_for_expenses_growth = floor($turns_to_play / 7); // FUTURE: this is a wild guess
+	$additional_turns_for_expenses_growth = floor($turns_to_play / 5);
 	// check money
 	if(!has_money_for_turns($turns_to_play + $additional_turns_for_expenses_growth, $c->money, $incoming_money_per_turn, $c->expenses, $money_to_reserve)) {
 		// not enough money to play a turn - can we make up the difference by selling a turn's worth of food production?
 		if($c->food > 0 and $c->foodnet > 0) {
-			// log_country_message($c->cnum, "TEMP DEBUG: Food is ".$c->food); // TODO: figure out why this errors sometimes?
+			// log_country_message($c->cnum, "TEMP DEBUG: Food is ".$c->food); // FUTURE: figure out why this errors sometimes? could be fixed now - Slagpit 20210329
 			PrivateMarket::sell_single_good($c, 'm_bu', min($c->food, ($turns_to_play + $additional_turns_for_expenses_growth) * $c->foodnet));
 		}
 		
@@ -528,7 +536,7 @@ function food_and_money_for_turns(&$c, $turns_to_play, $money_to_reserve, $is_ca
 	// FUTURE - be smarter about picking $60
 
 	$food_needed = max(0, get_food_needs_for_turns($turns_to_play + $additional_turns_for_expenses_growth, $c->foodpro, $c->foodcon) - $c->food);
-	//log_country_message($c->cnum, "Food is $c->food and calculated food needs are $food_needed");	
+	//log_country_message($c->cnum, "Food is $c->food, food consumption is $c->foodcon, and calculated food needs are $food_needed");	
 			
 	if(!buy_full_food_quantity_if_possible($c, $food_needed, 60, $money_to_reserve)) {
 		log_country_message($c->cnum, "Not enough food to play $turns_to_play turns. Food is $c->food, money is $c->money, and money to reserve is $money_to_reserve");				
@@ -558,7 +566,7 @@ function buyout_up_to_private_market_unit_dpnw(&$c, $pm_buy_price, $unit_type, $
 	
 	$unit_to_nw_map = array("m_tr" => 0.5, "m_j" => 0.6, "m_tu" => 0.6, "m_ta" => 2.0); // FUTURE: this is stupid
 	$pm_unit_nw = $unit_to_nw_map[$unit_type];
-	$max_dpnw = floor($pm_buy_price / $pm_unit_nw);
+	$max_dpnw = floor(($pm_buy_price / $pm_unit_nw) / $c->tax());
 
 	$c = get_advisor();	// money must be correct because we get an error if we try to buy too much
 
@@ -737,7 +745,7 @@ function do_public_market_bushel_resell_loop (&$c, $max_public_market_bushel_pur
 
 		$previous_food = $c->food;
 		$result = PublicMarket::buy($c, ['m_bu' => $max_quantity_to_buy_at_once], ['m_bu' => $current_public_market_bushel_price]);
-		// TODO: sometimes see an error here with an unexpected price (1 below last) - expected? taxes?
+		// FUTURE: sometimes see an error here with an unexpected price (1 below last) - expected? taxes?
 		$bushels_purchased_quantity = $c->food - $previous_food;
 		if ($bushels_purchased_quantity == 0) {
 			 // most likely explanation is price changed, so update it
@@ -765,9 +773,11 @@ PARAMETERS:
 	$public_market_tax_rate - public market tax rate as a decimal: 6% would be 1.06 for example
 */
 function calculate_maximum_dpnw_for_public_market_purchase ($reset_seconds_remaining, $server_seconds_per_turn, $private_market_turret_price, $public_market_tax_rate) {
-	$min_dpnw = ($private_market_turret_price / 0.6) / $public_market_tax_rate; // always buy better than private turret price	
+	$min_dpnw = floor(($private_market_turret_price / 0.6) / $public_market_tax_rate); // always buy better than private turret price	
 	$max_dpnw = max($min_dpnw + 10, 500 - 2 * floor($reset_seconds_remaining / $server_seconds_per_turn)); // FUTURE: this is stupid and players who read code can take advantage of it
 	$std_dev = ($max_dpnw - $min_dpnw) / 2;
+
+	// FUTURE: half the time we won't buy anything because the dpnw will equal pm turrets - is that ok?
 
 	return floor(Math::half_bell_truncate_left_side($min_dpnw, $max_dpnw, $std_dev));
 }

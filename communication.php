@@ -42,7 +42,7 @@ function ee($function, $parameterArray = [])
     curl_setopt($ch, CURLOPT_URL, $baseURL);
     curl_setopt($ch, CURLOPT_POST, 1);
     $send = "api_function=".$function."&api_payload=".json_encode($parameterArray);
-    //out($send);
+    //log_main_message($send);
     curl_setopt($ch, CURLOPT_POSTFIELDS, $send);
     curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
 
@@ -55,12 +55,12 @@ function ee($function, $parameterArray = [])
 
     $APICalls++;
 
-    $return = handle_output($serverOutput, $function);
+    $return = handle_output($serverOutput, $function, $cnum);
     if ($return === false) {
         out_data($init);
     }
 
-    //out($function);
+    //log_main_message($function);
     return $return;
 }//end ee()
 
@@ -69,7 +69,7 @@ function ee($function, $parameterArray = [])
  *
  * @return object The server info
  */
-function getServer()
+function getServer($refresh_logging_directory = false)
 {
     $server_loaded = false;
     $server        = null;
@@ -82,10 +82,13 @@ function getServer()
         }
 
         if (!$server_loaded) {
-            out("Server didn't load, try again in 2...");
+            log_error_message(108, null, "Server didn't load, try again in 2...");
             sleep(2); //try again in 2 seconds.
         }
     }
+
+    if($refresh_logging_directory) // create new folders for a new round if needed
+        create_logging_directories($server, 0);
 
     return $server;
 }//end getServer()
@@ -108,7 +111,7 @@ function getRules()
         }
 
         if (!$rules_loaded) {
-            out("Rules didn't load, try again in 2...");
+            log_error_message(109, null, "Rules didn't load, try again in 2...");
             sleep(2); //try again in 2 seconds.
         }
     }
@@ -123,11 +126,11 @@ function getRules()
  * @param  string $function     function to call
  * @return object               json object -> class
  */
-function handle_output($serverOutput, $function)
+function handle_output($serverOutput, $function, $cnum) // $cnum may not be set
 {
     $response = json_decode($serverOutput);
     if (!$response) {
-        out('Not acceptable response: '. $function .' - '. $serverOutput);
+        log_error_message(100, $cnum, 'Not acceptable response: '. $function .' - '. $serverOutput);
         return false;
     }
 
@@ -142,45 +145,47 @@ function handle_output($serverOutput, $function)
     //This will simply kill the script if EE returns with an error
     //This is to avoid foulups, and to simplify the code checking above
     if ($message == 'COUNTRY_IS_DEAD') {
-        out("Country is Dead!");
-
+        log_country_message($cnum, "Country is Dead!");
         return null;
     } elseif ($message == 'OWNED') {
-        out("Trying to sell more than owned!");
-
+        log_error_message(101, $cnum, "Trying to sell more than owned!"); // FUTURE: message should have something helpful for debugging
         return null;
     } elseif ($message == "ERROR" && $response == "MAXIMUM_COUNTRIES_REACHED") {
-        out("Already have total allowed countries!");
-        out("Refresh Server");
+        log_main_message("Already have total allowed countries so refreshing server...");
         global $server; //do all this with a class sometime soon
-        $server = ee('server');
+        $server = ee('server'); // I think it's fine for this to not refresh the logging directories
         return null;
     } elseif ($message == "ERROR" && $response == "MONEY") {
-        out("Not enough Money!");
+        log_error_message(102, $cnum, "Not enough Money!"); // FUTURE: message should have something helpful for debugging
         return null;
     } elseif ($message == "ERROR" && $response == "NOT_ENOUGH_TURNS") {
-        out("Not enough Turns!");
+        log_error_message(103, $cnum, "Not enough Turns!"); // FUTURE: message should have something helpful for debugging
         return null;
     } elseif ($function == 'ally/offer' && $message == "ERROR" && $response == "disallowed_by_server") {
-        out("Allies are not allowed!");
+        log_error_message(104, $cnum, "Allies are not allowed!");
         Allies::$allowed = false;
         return null;
     } elseif (expected_result($function) && $message != expected_result($function)) {
         if (is_object($message) || is_object($response)) {
             out_data($message);
             out_data($response);
-            out("Server Output: \n".$serverOutput);
+            log_main_message("Server Output: \n".$serverOutput);
+            log_error_message(105, $cnum, "Server Output: \n".$serverOutput);
+
             return $response;
         }
 
-        out("\n\nUnexpected Result for '$function': ".$message.':'.$response."\n\n");
+        log_error_message(106, $cnum, "\n\nUnexpected Result for '$function': ".$message.':'.$response."\n\n");
 
         return $response;
     } elseif (!expected_result($function)) {
-        out($function);
-        out($message);
+        $error_message = "Function: ".($function ?? "")."\nMessage: ".($message ?? "")."\nServer Output: \n".($serverOutput ?? "");
+        log_error_message(107, $cnum, $error_message);
         out_data($response);
-        out("Server Output: \n".$serverOutput);
+        //log_country_or_main_message($cnum, $function);
+        //log_country_or_main_message($cnum, $message);
+        //out_data($response);
+        //log_country_or_main_message($cnum, "Server Output: \n".$serverOutput);
         return false;
     }
 
@@ -231,7 +236,7 @@ function expected_result($input)
         'gdi/join' => 'GDIJOIN',
         'gdi/leave' => 'GDILEAVE',
         'events' => 'NEW_EVENTS',
-        'events' => 'EVENTSNEW',
+        //'events' => 'EVENTSNEW', // this is a mistake? - Slagpit 20210329
         'ranks/{cnum}' => 'SEARCH',
     ];
 

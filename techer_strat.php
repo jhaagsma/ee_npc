@@ -7,7 +7,6 @@ $techlist = ['t_mil','t_med','t_bus','t_res','t_agri','t_war','t_ms','t_weap','t
 function play_techer_strat($server, $cnum, $rules)
 {
     //global $cnum;
-    out("Playing ".TECHER." Turns for #$cnum ".siteURL($cnum));
     //$main = get_main();     //get the basic stats
     //out_data($main);          //output the main data
     $c = get_advisor();     //c as in country! (get the advisor)
@@ -22,8 +21,8 @@ function play_techer_strat($server, $cnum, $rules)
         Allies::fill('res');
     }
 
-    out($c->turns.' turns left');
-    out('Explore Rate: '.$c->explore_rate.'; Min Rate: '.$c->explore_min);
+    log_country_message($cnum, $c->turns.' turns left');
+    log_country_message($cnum, 'Explore Rate: '.$c->explore_rate.'; Min Rate: '.$c->explore_min);
 
     if ($c->govt == 'M') {
         $rand = rand(0, 100);
@@ -91,7 +90,7 @@ function play_techer_turn(&$c, $market_autobuy_tech_price, $server_max_possible_
     global $turnsleep, $mktinfo, $server_avg_land;
     $mktinfo = null;
     usleep($turnsleep);
-    //out($main->turns . ' turns left');
+    //log_country_message($cnum, $main->turns . ' turns left');
 
 
     if ($c->shouldBuildSingleCS($target_bpt)) {
@@ -173,7 +172,7 @@ function sell_max_tech(&$c, $market_autobuy_tech_price, $server_max_possible_mar
     ];
 
     if (array_sum($quantity) == 0) {
-        out('Techer computing Zero Sell!');
+        log_country_message($c->cnum, 'Techer computing Zero Sell!');
         $c = get_advisor();
         $c->updateOnMarket();
 
@@ -219,7 +218,7 @@ function sell_max_tech(&$c, $market_autobuy_tech_price, $server_max_possible_mar
 
     $result = PublicMarket::sell($c, $quantity, $price);
     if ($result == 'QUANTITY_MORE_THAN_CAN_SELL') {
-        out("TRIED TO SELL MORE THAN WE CAN!?!");
+        log_country_message($c->cnum, "TRIED TO SELL MORE THAN WE CAN!?!");
         $c = get_advisor();     //UPDATE EVERYTHING
     }
 

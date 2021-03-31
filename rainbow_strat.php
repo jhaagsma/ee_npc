@@ -5,14 +5,13 @@ namespace EENPC;
 function play_rainbow_strat($server, $cnum, $rules)
 {
     //global $cnum;
-    out("Playing ".RAINBOW." turns for #$cnum ".siteURL($cnum));
     //$main = get_main();     //get the basic stats
     //out_data($main);          //output the main data
     $c = get_advisor();     //c as in country! (get the advisor)
-    out($c->turns.' turns left');
-    out('Explore Rate: '.$c->explore_rate.'; Min Rate: '.$c->explore_min);
+    log_country_message($cnum, $c->turns.' turns left');
+    log_country_message($cnum, 'Explore Rate: '.$c->explore_rate.'; Min Rate: '.$c->explore_min);
     //out_data($c) && exit;             //ouput the advisor data
-    out("Agri: {$c->pt_agri}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%");
+    log_country_message($cnum, "Agri: {$c->pt_agri}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%");
     if ($c->govt == 'M' && $c->turns_played < 100) {
         $rand = rand(0, 100);
         switch ($rand) {
@@ -110,7 +109,7 @@ function play_rainbow_strat($server, $cnum, $rules)
         }
 
         if ($c->income < 0 && total_military($c) > 30) { //sell 1/4 of all military on PM
-            out("Losing money! Sell 1/4 of our military!");     //Text for screen
+            log_error_message(1002, $cnum, "Losing money! Sell 1/4 of our military!");
             sell_all_military($c, 1 / 4);  //sell 1/4 of our military
         }
 
@@ -130,7 +129,7 @@ function play_rainbow_turn(&$c, $market_autobuy_tech_price, $server_max_possible
     $target_bpt = 65;
     global $turnsleep;
     usleep($turnsleep);
-    //out($main->turns . ' turns left');
+    //log_country_message($c->cnum, $main->turns . ' turns left');
     if ($c->shouldBuildSingleCS($target_bpt)) {
         //LOW BPT & CAN AFFORD TO BUILD
         //build one CS if we can afford it and are below our target BPT
@@ -168,19 +167,19 @@ function sellextrafood_rainbow(&$c)
 {
     global $market_info;
 
-    //out("Lots of food, let's sell some!");
+    //log_country_message($c->cnum, "Lots of food, let's sell some!");
     $pm_info = PrivateMarket::getRecent();
 
     $c = get_advisor();     //UPDATE EVERYTHING
     if (!is_object($pm_info) || !is_object($pm_info->sell_price)) {
-        out("Update PM");
+        log_country_message($c->cnum, "Update PM");
         $pm_info = PrivateMarket::getInfo();
         //out_data($pm_info);       //output the PM info
-        //out('here?');
+        //log_country_message($c->cnum, 'here?');
     }
 
     if (!is_object($market_info) || !is_object($market_info->buy_price)) {
-        out("Update market");
+        log_country_message($c->cnum, "Update market");
         $market_info = get_market_info();   //get the Public Market info
     }
 
@@ -189,10 +188,10 @@ function sellextrafood_rainbow(&$c)
     $price    = ['m_bu' => $price];
 
     if ($quantity > 5000 || !is_object($c)) {
-        out("Sell Public ".$quantity->m_bu);
+        log_country_message($c->cnum, "Sell Public ".$quantity->m_bu);
         return PublicMarket::sell($c, $quantity, $price);    //Sell food!
     } else {
-        out("Can't Sell!");
+        log_country_message($c->cnum, "Can't Sell!");
     }
 }//end sellextrafood_rainbow()
 
@@ -251,7 +250,7 @@ function tech_rainbow(&$c, $turns=1)
     $left -= $spy  = min($left, floor($c->tpt * ($spy / $tot)));
     $left -= $sdi = max($left, min($left, floor($c->tpt * ($spy / $tot))));
     if ($left != 0) {
-        out("What the hell?");
+        log_country_message($c->cnum, "What the hell?");
         return;
     }
 
@@ -287,8 +286,8 @@ function rainbowGoals(&$c)
         //what, goal, priority
         ['t_agri',160,5],
         ['t_indy',130,5],
-        ['t_bus',150,7],
-        ['t_res',150,7],
+        ['t_bus',145,7],
+        ['t_res',145,7],
         ['t_mil',94,5],
         ['nlg',$c->nlgTarget(),5],
         ['dpa',$c->defPerAcreTarget(),10],

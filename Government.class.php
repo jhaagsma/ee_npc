@@ -28,7 +28,7 @@ class Government
     {
         $result = ee('govt', ['govt' => $govt]);
         if (isset($result->govt)) {
-            out("Govt switched to {$result->govt}!");
+            log_country_message($c->cnum, "Govt switched to {$result->govt}!");
             $c = get_advisor(); //UPDATE EVERYTHING
         }
 

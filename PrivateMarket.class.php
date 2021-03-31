@@ -71,11 +71,11 @@ class PrivateMarket
      */
     public static function buy(&$c, $units = [])
     {
-        // out("2.Hash: ".spl_object_hash($c));
+        // log_country_message($c->cnum, "2.Hash: ".spl_object_hash($c));
 
         $result = ee('pm', ['buy' => $units]);
         if (!isset($result->cost)) {
-            out("--- Failed to BUY Private Market; money={$c->money}");
+            log_country_message($c->cnum, "--- Failed to BUY Private Market; money={$c->money}");
 
             self::getInfo(); //update the PM, because weird
 
@@ -119,7 +119,7 @@ class PrivateMarket
         }
 
         //$str .= 'for $'.$result->cost.' on PM';
-        out($str);
+        log_country_message($c->cnum, $str);
         return $result;
     }//end buy()
 
@@ -172,7 +172,7 @@ class PrivateMarket
             }
         }
 
-        out($str);
+        log_country_message($c->cnum, $str);
         return $result;
     }//end sell()
 }//end class

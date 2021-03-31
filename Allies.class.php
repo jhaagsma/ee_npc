@@ -26,8 +26,6 @@ class Allies
     public static function getList()
     {
         $result = ee('ally/list');
-        // out("Ally List");
-        //out($result);
         return $result;
     }//end getList()
 
@@ -40,9 +38,8 @@ class Allies
      */
     public static function getCandidates($type = 'def')
     {
-        out("Request Ally Candidates: $type", true, 'cyan');
+        log_country_message(null, "Request Ally Candidates: $type", true, 'cyan');
         $result = ee('ally/candidates', ['type' => $type]);
-        //out($result);
         return $result;
     }//end getCandidates()
 
@@ -56,15 +53,14 @@ class Allies
      */
     public static function offer($target, $type = 'def')
     {
-        out("Ally Offer of $type to $target", true, 'cyan');
+        log_country_message(null, "Ally Offer of $type to $target", true, 'cyan');
         $result = ee('ally/offer', ['target' => $target, 'type' => $type]);
         if ($result == "disallowed_by_server") {
-            out("ALLIES ARE NOT ALLOWED ON THIS SERVER!");
+            log_country_message(null, "ALLIES ARE NOT ALLOWED ON THIS SERVER!");
             self::$allowed = false;
             return;
         }
 
-        //out($result);
         return $result;
     }//end offer()
 
@@ -78,9 +74,8 @@ class Allies
      */
     public static function accept($target, $type = 'def')
     {
-        out("Ally Accept $type from $target", true, 'green');
+        log_country_message(null, "Ally Accept $type from $target", true, 'green');
         $result = ee('ally/accept', ['target' => $target, 'type' => $type]);
-        //out($result);
         return $result;
     }//end accept()
 
@@ -94,9 +89,8 @@ class Allies
      */
     public static function cancel($target, $type = 'def')
     {
-        out("CANCEL ALLIANCE $type from $target", true, 'yellow');
+        log_country_message(null, "CANCEL ALLIANCE $type from $target", true, 'yellow');
         $result = ee('ally/cancel', ['target' => $target, 'type' => $type]);
-        //out($result);
         return $result;
     }//end cancel()
 
@@ -126,13 +120,13 @@ class Allies
                 self::accept($list->$name->cnum, $type);
             } elseif ($list->$name->detail == 'cancel' && rand(0, 5) == 0) {
                 //put this in in case we send to a human by accident who doesn't accept
-                out("Withdraw offer randomly!", true, 'dark_gray');
+                log_country_message(null, "Withdraw offer randomly!", true, 'dark_gray');
                 self::cancel($list->$name->cnum, $type);
             }
         }
 
         if ($require == 0) {
-            out("Allies for $type full!", true, 'dark_gray');
+            log_country_message(null, "Allies for $type full!", true, 'dark_gray');
             return;
         }
 
@@ -142,7 +136,7 @@ class Allies
 
         for ($i = 0; $i < $require; $i++) {
             if (empty($candidates)) {
-                out("No ally candiates!", true, 'yellow');
+                log_country_message(null, "No ally candiates!", true, 'yellow');
                 return;
             }
             $candidate = array_shift($candidates);
