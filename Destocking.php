@@ -45,6 +45,7 @@ function execute_destocking_actions($cnum, $strategy, $server, $rules, &$next_pl
 	// want to be careful with the money to reserve unless we make ... if we have 200 bots all spending $50 million at the end then that's 10 B dollars on public
 	$turns_to_keep = 2 + ($strategy == 'T' ? 1 : 0); // save another turn for techer to dump tech
 	$money_to_reserve = max(-1 * $turns_to_keep * $c->income, 10000000 * $turns_to_keep); // mil expenses can rise rapidly during destocking, so use 10 M per turn as a guess
+	// FUTURE: indies (and maybe other strats) should reserve money to play the rest of the turns they'll get in the set. see $turns_to_keep_for_bushel_calculation
 	log_country_message($cnum, "Money is $c->money and calculated money to reserve is $money_to_reserve");
 	log_country_message($cnum, "Turns left: $c->turns");
 	log_country_message($cnum, "Starting cashing or teching...");	

@@ -313,7 +313,7 @@ while (1) {
             $debug_force_destocking = false; // DEBUG: change to true to force destocking code to run
             $is_destocking = ($debug_force_destocking or time() >= $earliest_destock_time? true : false);
 
-            //$is_destocking = false; // TODO DEBUG
+            //$is_destocking = false; // DEBUG
 
             // log snapshot of country status
             $prev_c_values = [];
