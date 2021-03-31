@@ -119,8 +119,14 @@ while (1) {
             $send_data = ['cname' => NameGenerator::rand_name()];
             log_main_message("Making new country named '".$send_data['cname']."'");
             $cnum = ee('create', $send_data);
-            if(isset($settings->$cnum)) // clear strategy from previous rounds
+            if(isset($settings->$cnum)) { // clear strategy from previous rounds
+                // this is here so we can change bot strategy percentages from round to round
+                // without trying to figure out when is safe to delete the settings file
+                // can't be at end of loop because the eebot script can get killed before all countries are created
                 $settings->$cnum = null;
+                log_main_message("Clearing out settings from file for new country #$cnum", 'purple');
+                file_put_contents($config['save_settings_file'], json_encode($settings));
+            }
             log_main_message($send_data['cname'].' (#'.$cnum.') created!');
             $server = getServer(true);
             if ($server->reset_start > time()) {
@@ -134,11 +140,6 @@ while (1) {
         }
         if($create_attempts_remaining == 0)
             log_error_message(110, null, "Exhausted $max_create_attempts create attempts but did not create all countries");
-            
-        // this is here so we can change bot strategy percentages from round to round
-        // without trying to figure out when is safe to delete the settings file
-        log_main_message("Clearing out settings from file for new cnums", 'purple');
-        file_put_contents($config['save_settings_file'], json_encode($settings));
     }
 
     if ($server->reset_start > time()) {
@@ -896,6 +897,12 @@ function update_c(&$c, $result)
         if (isset($turn->emproduced)) {//an EM was produced
             $event .= 'EM '; //Text for screen
         }
+
+        // TOOD: should be able to check $turn->outoffood and $turn->outofmoney
+        // $this->country['money'] = $this->capval($this->country['money'], $retVar['taxrevenue'] = $this->pcievent($retVar['event']) * $this->get_taxrevenue($cashing));     //create money
+        // $this->country['food']  = $this->capval($this->country['food'], $retVar['foodproduced'] = $this->food_pro() * $this->foodevent($retVar['event']));  //create food
+
+
 
 
     }
