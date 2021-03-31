@@ -210,7 +210,7 @@ class Bots
         $next   = max(0, min($next) - time());
         if($log_to_file) {
             log_main_message("The next country to play is #$xnum in $next seconds...");
-            echo '\n'; // need a line break for the countdown below
+            echo "\n"; // need a line break for the countdown below
         }
         out("Next Play in ".$next.'s: #'.$xnum." $xstrat    ".($rewrite ? "\r" : null), !$rewrite); // leave as out()
     }//end outNext()
