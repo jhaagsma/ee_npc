@@ -247,7 +247,7 @@ PARAMETERS:
 function dump_tech($c, $strategy, $market_autobuy_tech_price, $server_max_possible_market_sell) {
 	$food_needed = max(0, get_food_needs_for_turns(1, $c->foodpro, $c->foodcon, true) - $c->food);
 
-	// future: don't dump tech until close to the end (calc number of sales needed) - requires recall tech though
+	// FUTURE: don't dump tech until close to the end (calc number of sales needed) - requires recall tech though
 	$reason_for_not_selling_tech = null;
 	if ($strategy <> 'T')
 		$reason_for_not_selling_tech = "No support for non-techers at this time"; // FUTURE: add support
@@ -772,9 +772,11 @@ PARAMETERS:
 	$public_market_tax_rate - public market tax rate as a decimal: 6% would be 1.06 for example
 */
 function calculate_maximum_dpnw_for_public_market_purchase ($reset_seconds_remaining, $server_seconds_per_turn, $private_market_turret_price, $public_market_tax_rate) {
-	$min_dpnw = ($private_market_turret_price / 0.6) / $public_market_tax_rate; // always buy better than private turret price	
+	$min_dpnw = floor(($private_market_turret_price / 0.6) / $public_market_tax_rate); // always buy better than private turret price	
 	$max_dpnw = max($min_dpnw + 10, 500 - 2 * floor($reset_seconds_remaining / $server_seconds_per_turn)); // FUTURE: this is stupid and players who read code can take advantage of it
 	$std_dev = ($max_dpnw - $min_dpnw) / 2;
+
+	// FUTURE: half the time we won't buy anything because the dpnw will equal pm turrets - is that ok?
 
 	return floor(Math::half_bell_truncate_left_side($min_dpnw, $max_dpnw, $std_dev));
 }
