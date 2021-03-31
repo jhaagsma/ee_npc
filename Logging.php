@@ -136,9 +136,10 @@ function create_logging_directories ($server, $timeout_for_purging = 0) {
                     rmdir($new_directory_path); // can only remove if all files are gone
                 }  
             }
-        }   
+        }
+    log_main_message("Completed purging of old log files");     
     } // done purging
-
+    
     return true;
 }
 
@@ -216,7 +217,7 @@ function log_country_message($cnum_input, $message) {
         global $cnum; // some calling functions don't have $cnum easily available
         $cnum_input = $cnum;
         if(!$cnum_input) {
-            $message = "ERROR: must call log_country_message() with a valid cnum";
+            $message = "must call log_country_message() with a valid cnum";
             out($message);
             log_error_message(2, $cnum, $message);
             return;
@@ -250,7 +251,7 @@ function log_error_message($error_type, $cnum, $message) {
     
     // if a $cnum is available, log to the country file
     $country_local_file_path_and_name = (($cnum and $log_to_local) ? get_full_country_file_path_and_name($local_file_path, $cnum, false) : null);
-    $screen_and_country_message = "ERROR: $error_type-$error_type_name; CNUM: #".($cnum ?? 'N/A')."; DETAILS: $message";
+    $screen_and_country_message = "ERROR $error_type-$error_type_name; CNUM: #".($cnum ?? 'N/A')."; DETAILS: $message";
     // always log errors to screen
     log_to_targets(true, $log_to_local, $country_local_file_path_and_name, $screen_and_country_message, $cnum, 'red'); // FUTURE - return this value somehow??
 

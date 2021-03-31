@@ -209,7 +209,7 @@ class Bots
         $xstrat = self::txtStrat($xnum);
         $next   = max(0, min($next) - time());
         if($log_to_file)
-            log_main_message("The next country to play is #$xnum in $next seconds...");
+            log_main_message("The next country to play is #$xnum in $next seconds...\n");
         out("Next Play in ".$next.'s: #'.$xnum." $xstrat    ".($rewrite ? "\r" : null), !$rewrite); // leave as out()
     }//end outNext()
 
