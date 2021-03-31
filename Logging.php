@@ -42,6 +42,11 @@ function log_get_name_of_error_type($error_type) {
         return 'UNEXPECTED DIRECTORY FOUND WHILE PURGING';    
     if($error_type == 113)
         return 'UNEXPECTED FILE FOUND WHILE PURGING';           
+    if($error_type == 114)
+        return 'UNDETECTED COUNTRY OUT OF FOOD';     
+    if($error_type == 115)
+        return 'UNDETECTED COUNTRY OUT OF MONEY';     
+
 
 
     // 1000+ are country playing mistakes 
@@ -50,7 +55,10 @@ function log_get_name_of_error_type($error_type) {
     if($error_type == 1001)
         return 'COUNTRY PLAYED TURN WITHOUT MONEY';
     if($error_type == 1002)
-        return 'COUNTRY BAD SELL OF MILITARY ON PM';       
+        return 'COUNTRY BAD SELL OF MILITARY ON PM';     
+        
+        
+
 
        
     // ERROR: log_get_name_of_error_type() called with unmapped $error_type

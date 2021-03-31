@@ -835,7 +835,10 @@ function update_c(&$c, $result)
 
     $event    = null; //Text for screen
     $netmoney = $netfood = 0;
-    $advisor_update = false;
+    $advisor_update = $OOF = $OOM = false;
+    $money_before_turns = $c->money; // for debugging
+    $food_before_turns = $c->food; // for debugging
+
     foreach ($result->turns as $num => $turn) {
         //update stuff based on what happened this turn
         $netfood  += floor($turn->foodproduced ?? 0) - ($turn->foodconsumed ?? 0);
@@ -898,13 +901,17 @@ function update_c(&$c, $result)
             $event .= 'EM '; //Text for screen
         }
 
-        // TOOD: should be able to check $turn->outoffood and $turn->outofmoney
-        // $this->country['money'] = $this->capval($this->country['money'], $retVar['taxrevenue'] = $this->pcievent($retVar['event']) * $this->get_taxrevenue($cashing));     //create money
-        // $this->country['food']  = $this->capval($this->country['food'], $retVar['foodproduced'] = $this->food_pro() * $this->foodevent($retVar['event']));  //create food
-        // throw another error if we get the event but we think that we haven't run out food/money
+        if (isset($turn->outoffood)) {
+            $OOF = true;
+            $event .= 'OOF '; 
+            $advisor_update = true;
+        }
 
-
-
+        if (isset($turn->outofmoney)) {
+            $OOM = true;
+            $event .= 'OOM ';
+            $advisor_update = true;
+        }
     }
 
     // always update these to make country management simpler
@@ -935,7 +942,7 @@ function update_c(&$c, $result)
 
     global $APICalls;
     $str = str_pad($c->turns, 3).' Turns - '.$str.' '.str_pad($event, 8).' API: '.$APICalls;
-    if ($c->money < 0 || $c->food < 0) {
+    if ($c->money < 0 || $c->food < 0 || $OOF || $OOM) {
         $str = Colors::getColoredString($str, "red");
     }
 
@@ -945,13 +952,33 @@ function update_c(&$c, $result)
         log_error_message(1000, $c->cnum, "Ran out of food playing turns");
         $advisor_update = true; // military left, so update advisor
     }
+
     if($c->money < 0) {
         log_error_message(1001, $c->cnum, "Ran out of money playing turns");
         $advisor_update = true; // military left, so update advisor
     }
 
+    $OOF_error_message = null;
+    if($OOF and $c->food > 0) // game reported that we ran out of food, but we think that we didn't run out of food
+        $OOF_error_message = "Before turns, food was $food_before_turns. Before advisor update, food was $c->food, pro was $c->foodpro, and con was $c->foodnet. ";
+
+    $OOM_error_message = null;
+    if($OOM and $c->money > 0) // game reported that we ran out of money, but we think that we didn't run out of money
+        $OOM_error_message = "Before turns, money was $money_before_turns. Before advisor update, money was $c->money, taxes were $c->taxrevenue, and exp were $c->expenses. ";
+
+    // update advisor if we got an earthquake, ran out of food, or ran out of money
     if ($advisor_update == true) {
         $c = get_advisor();
+    }
+
+    if($OOF_error_message) {
+        $OOF_error_message .= "After advisor update, food is $c->food, pro is $c->foodpro, and con is $c->foodnet";
+        log_error_message(114, $c->cnum, $OOF_error_message);
+    }
+
+    if($OOM_error_message) {
+        $OOM_error_message .= "After advisor update, money was $c->money, taxes were $c->taxrevenue, and exp were $c->expenses";
+        log_error_message(115, $c->cnum, $OOM_error_message);
     }
 
     $APICalls = 0;
