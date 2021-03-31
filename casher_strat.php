@@ -129,10 +129,11 @@ function buy_casher_goals(&$c, $spend = null)
 
 function casherGoals(&$c)
 {
+    $bus_res_goal = ($c->govt == "H" ? 148 : 178);
     return [
         //what, goal, priority
-        ['t_bus',178,800],
-        ['t_res',178,800],
+        ['t_bus',$bus_res_goal,800],
+        ['t_res',$bus_res_goal,800],
         ['t_mil',94,100],
         ['nlg',$c->nlgTarget(),200],
         ['dpa',$c->defPerAcreTarget(1.0),400],
