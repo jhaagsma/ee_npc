@@ -901,7 +901,7 @@ function update_c(&$c, $result)
         // TOOD: should be able to check $turn->outoffood and $turn->outofmoney
         // $this->country['money'] = $this->capval($this->country['money'], $retVar['taxrevenue'] = $this->pcievent($retVar['event']) * $this->get_taxrevenue($cashing));     //create money
         // $this->country['food']  = $this->capval($this->country['food'], $retVar['foodproduced'] = $this->food_pro() * $this->foodevent($retVar['event']));  //create food
-
+        // throw another error if we get the event but we think that we haven't run out food/money
 
 
 
