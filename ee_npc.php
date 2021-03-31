@@ -942,43 +942,36 @@ function update_c(&$c, $result)
 
     global $APICalls;
     $str = str_pad($c->turns, 3).' Turns - '.$str.' '.str_pad($event, 8).' API: '.$APICalls;
-    if ($c->money < 0 || $c->food < 0 || $OOF || $OOM) {
+    if ($OOF || $OOM) {
         $str = Colors::getColoredString($str, "red");
     }
 
     log_country_message($c->cnum, $str);
 
-    if($c->food < 0) {
-        log_error_message(1000, $c->cnum, "Ran out of food playing turns");
-        $advisor_update = true; // military left, so update advisor
+    // need to track this to log the right error message if we ran out of food or money
+    // it's worse to run out food or money when the object thinks that we didn't
+    if($OOM or $OOF) {
+        $did_c_object_think_money_was_non_negative_before_update = $c->money >= 0 ? true: false;
+        $did_c_object_think_food_was_non_negative_before_update = $c->food >= 0 ? true: false;
+        $OOM_error_message = "Before playing $numT turns, money was $money_before_turns. Before advisor update, money was $c->money, taxes were $c->taxrevenue, and exp were $c->expenses. ";
+        $OOF_error_message = "Before playing $numT turns, food was $food_before_turns. Before advisor update, food was $c->food, pro was $c->foodpro, and con was $c->foodnet. ";
     }
-
-    if($c->money < 0) {
-        log_error_message(1001, $c->cnum, "Ran out of money playing turns");
-        $advisor_update = true; // military left, so update advisor
-    }
-
-    $OOF_error_message = null;
-    if($OOF and $c->food > 0) // game reported that we ran out of food, but we think that we didn't run out of food
-        $OOF_error_message = "Before turns, food was $food_before_turns. Before advisor update, food was $c->food, pro was $c->foodpro, and con was $c->foodnet. ";
-
-    $OOM_error_message = null;
-    if($OOM and $c->money > 0) // game reported that we ran out of money, but we think that we didn't run out of money
-        $OOM_error_message = "Before turns, money was $money_before_turns. Before advisor update, money was $c->money, taxes were $c->taxrevenue, and exp were $c->expenses. ";
-
+       
     // update advisor if we got an earthquake, ran out of food, or ran out of money
     if ($advisor_update == true) {
         $c = get_advisor();
     }
 
-    if($OOF_error_message) {
-        $OOF_error_message .= "After advisor update, food is $c->food, pro is $c->foodpro, and con is $c->foodnet";
-        log_error_message(114, $c->cnum, $OOF_error_message);
+    if($OOM) {
+        $OOM_error_message .= "After advisor update, money was $c->money, taxes were $c->taxrevenue, and exp were $c->expenses";
+        $error_code = $did_c_object_think_money_was_non_negative_before_update ? 115 : 1001;
+        log_error_message($error_code, $c->cnum, $OOM_error_message);
     }
 
-    if($OOM_error_message) {
-        $OOM_error_message .= "After advisor update, money was $c->money, taxes were $c->taxrevenue, and exp were $c->expenses";
-        log_error_message(115, $c->cnum, $OOM_error_message);
+    if($OOF) {
+        $OOF_error_message .= "After advisor update, food is $c->food, pro is $c->foodpro, and con is $c->foodnet";
+        $error_code = $did_c_object_think_food_was_non_negative_before_update ? 114 : 1000;
+        log_error_message($error_code, $c->cnum, $OOF_error_message);
     }
 
     $APICalls = 0;
