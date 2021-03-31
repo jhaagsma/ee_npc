@@ -299,18 +299,18 @@ function log_to_targets($log_to_screen, $log_to_local, $local_file_path_and_name
 
 
 function get_full_country_file_path_and_name($local_file_path, $cnum, $is_snapshot) {
-    $file_name = ($is_snapshot ? 'SNAPSHOT_' : 'COUNTRY_') . $cnum . '.log';
+    $file_name = ($is_snapshot ? 'SNAPSHOT_' : 'COUNTRY_') . $cnum . '.txt';
     return "$local_file_path/country/$file_name";
 }
 
 function get_full_error_file_path_and_name($local_file_path) {
     $iso_date = date('Ymd');
-    return "$local_file_path/errors/ERRORS_$iso_date.log";
+    return "$local_file_path/errors/ERRORS_$iso_date.txt";
 }
 
 function get_full_main_file_path_and_name($local_file_path) {
     $iso_date = date('Ymd');
-    return "$local_file_path/main/LOOP_$iso_date.log";
+    return "$local_file_path/main/LOOP_$iso_date.txt";
 }
 
 
