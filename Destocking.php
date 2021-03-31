@@ -565,7 +565,7 @@ function buyout_up_to_private_market_unit_dpnw(&$c, $pm_buy_price, $unit_type, $
 	
 	$unit_to_nw_map = array("m_tr" => 0.5, "m_j" => 0.6, "m_tu" => 0.6, "m_ta" => 2.0); // FUTURE: this is stupid
 	$pm_unit_nw = $unit_to_nw_map[$unit_type];
-	$max_dpnw = floor($pm_buy_price / $pm_unit_nw);
+	$max_dpnw = floor(($pm_buy_price / $pm_unit_nw) / $c->tax());
 
 	$c = get_advisor();	// money must be correct because we get an error if we try to buy too much
 
