@@ -834,6 +834,7 @@ function update_c(&$c, $result)
 
     $event    = null; //Text for screen
     $netmoney = $netfood = 0;
+    $advisor_update = false;
     foreach ($result->turns as $num => $turn) {
         //update stuff based on what happened this turn
         $netfood  += floor($turn->foodproduced ?? 0) - ($turn->foodconsumed ?? 0);
@@ -856,8 +857,7 @@ function update_c(&$c, $result)
         $latest_expenses = $turn->expenses;
         $latest_foodproduced = $turn->foodproduced;
         $latest_foodconsumed = $turn->foodconsumed;
-
-        $advisor_update = false;
+        
         if (isset($turn->event)) {
             if ($turn->event == 'earthquake') {   //if an earthquake happens...
                 log_country_message($c->cnum, "Earthquake destroyed {$turn->earthquake} Buildings! Update Advisor"); //Text for screen

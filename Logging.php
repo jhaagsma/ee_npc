@@ -56,6 +56,132 @@ function log_get_name_of_error_type($error_type) {
 }
 
 
+function log_snapshot_message($c, $snapshot_type, $strat, $is_destocking, &$output_c_values, $prev_c_values = []){
+    global $log_country_to_screen, $log_to_local, $local_file_path;
+
+    if($snapshot_type <> 'BEGIN' and $snapshot_type <> 'DELTA' and $snapshot_type <> 'END') {
+        die('Called log_snapshot_message() with invalid parameter value '.$snapshot_type.' for $snapshot_type');
+        return false;
+    }
+
+    if($snapshot_type == 'DELTA' and empty($prev_c_values)) {
+        die('Called log_snapshot_message() in DELTA mode with empty previous country values array');
+        return false;
+    }   
+
+    $full_local_file_path_and_name = ($log_to_local ? get_full_country_file_path_and_name($local_file_path, $c->cnum, true) : null);
+    if($log_country_to_screen or $log_to_local)
+        $message = generate_compact_country_status($c, $snapshot_type, $strat, $is_destocking, $output_c_values, $prev_c_values);
+
+    return log_to_targets($log_country_to_screen, $log_to_local, $full_local_file_path_and_name, $message, $c->cnum, null);
+};
+
+
+// examples of things to log: what decisions were made (and why), how turns are spent
+function log_country_message($cnum_input, $message) {
+    global $log_country_to_screen, $log_to_local, $local_file_path;
+
+    if(!$cnum_input) {
+        global $cnum; // some calling functions don't have $cnum easily available
+        $cnum_input = $cnum;
+        if(!$cnum_input) {
+            $message = "must call log_country_message() with a valid cnum";
+            out($message);
+            log_error_message(2, $cnum, $message);
+            return;
+        }
+    }
+
+    $full_local_file_path_and_name = ($log_to_local ? get_full_country_file_path_and_name($local_file_path, $cnum_input, false) : null);
+    return log_to_targets($log_country_to_screen, $log_to_local, $full_local_file_path_and_name, $message, $cnum_input, null);
+}
+
+
+function log_main_message($message, $color = null)  {
+    global $log_to_local, $local_file_path;
+    $full_local_file_path_and_name = ($log_to_local ? get_full_main_file_path_and_name($local_file_path) : null);
+    // always log messages to screen
+    return log_to_targets(true, $log_to_local, $full_local_file_path_and_name, $message, null, $color);
+}
+
+
+function log_error_message($error_type, $cnum, $message) {
+    global $log_to_local, $local_file_path;
+
+    $error_type_name = log_get_name_of_error_type($error_type);
+    if($error_type_name === null) {
+        $local_error_message = "must call log_error_message() with a valid type (non-negative int)";
+        out($local_error_message);
+        log_error_message(0, $cnum, $local_error_message);
+        return false;
+    }
+    
+    // if a $cnum is available, log to the country file
+    $country_local_file_path_and_name = (($cnum and $log_to_local) ? get_full_country_file_path_and_name($local_file_path, $cnum, false) : null);
+    $screen_and_country_message = "ERROR $error_type-$error_type_name; CNUM: #".($cnum ?? 'N/A')."; DETAILS: $message";
+    // always log errors to screen
+    log_to_targets(true, $log_to_local, $country_local_file_path_and_name, $screen_and_country_message, $cnum, 'red'); // FUTURE - return this value somehow??
+
+    // always log to the error file
+    // for the error file, use unprintable characters to separate fields and line breaks to pack everything on a single line
+    // the error reader on the server will split out things appropriately
+    $error_message_for_error_file = $error_type.chr(9).$error_type_name.chr(9).$cnum.chr(9).str_replace(array("\r", "\n"), chr(17), $message);
+    $error_local_file_path_and_name = ($log_to_local ? get_full_error_file_path_and_name($local_file_path) : null);
+    log_to_targets(false, $log_to_local, $error_local_file_path_and_name, $error_message_for_error_file, $cnum, null);  
+    return true; 
+}
+
+
+function log_to_targets($log_to_screen, $log_to_local, $local_file_path_and_name, $message, $cnum, $color = null) {
+    $is_line_breaks_only = str_replace(array("\r", "\n"), '', $message) == "" ? true : false;
+    $line_break_count = substr_count($message,"\n" );
+    if($log_to_screen) {
+        if($is_line_breaks_only)
+            echo $message;
+        else {
+            $screen_message = ($line_break_count > 0 ? "\n" : "").$message;
+            out($screen_message, true, $color); //timestamp is free with out()
+        }
+        //out("Country #$cnum: $message");
+    }
+
+    if($log_to_local) {
+        // write to $full_local_file_path_and_name, catch and print any errors
+        //out($full_local_file_path_and_name);
+        if($is_line_breaks_only)
+            $file_message = $message;
+        else {
+            $timestamp_for_file = '['.date('Y-m-d H:i:s').'] ';     
+            // the regex removes color coding   
+            $file_message = $timestamp_for_file.($line_break_count > 0 ? "\n" : "").preg_replace('/\e[[][A-Za-z0-9];?[0-9]*m?/', '', $message)."\n";
+        }
+        if($local_file_path_and_name) {
+            file_put_contents ($local_file_path_and_name, $file_message, FILE_APPEND);    
+        }  
+    }
+
+    return;
+}
+
+
+
+function get_full_country_file_path_and_name($local_file_path, $cnum, $is_snapshot) {
+    $file_name = ($is_snapshot ? 'SNAPSHOT_' : 'COUNTRY_') . $cnum . '.txt';
+    return "$local_file_path/country/$file_name";
+}
+
+function get_full_error_file_path_and_name($local_file_path) {
+    $iso_date = date('Ymd');
+    return "$local_file_path/errors/ERRORS_$iso_date.txt";
+}
+
+function get_full_main_file_path_and_name($local_file_path) {
+    $iso_date = date('Ymd');
+    return "$local_file_path/main/LOOP_$iso_date.txt";
+}
+
+
+
 function get_current_local_file_path($config_local_file_path_root, $server) {
     return $config_local_file_path_root."/"."logging/$server->name/$server->round_num";
 }
@@ -186,135 +312,6 @@ function create_local_directory_if_needed($path_name) {
 
     return $success; // mkdir() returns true on success
 }
-
-
-function log_snapshot_message($c, $snapshot_type, $strat, $is_destocking, &$output_c_values, $prev_c_values = []){
-    global $log_country_to_screen, $log_to_local, $local_file_path;
-
-    if($snapshot_type <> 'BEGIN' and $snapshot_type <> 'DELTA' and $snapshot_type <> 'END') {
-        die('Called log_snapshot_message() with invalid parameter value '.$snapshot_type.' for $snapshot_type');
-        return false;
-    }
-
-    if($snapshot_type == 'DELTA' and empty($prev_c_values)) {
-        die('Called log_snapshot_message() in DELTA mode with empty previous country values array');
-        return false;
-    }   
-
-    $full_local_file_path_and_name = ($log_to_local ? get_full_country_file_path_and_name($local_file_path, $c->cnum, true) : null);
-    if($log_country_to_screen or $log_to_local)
-        $message = generate_compact_country_status($c, $snapshot_type, $strat, $is_destocking, $output_c_values, $prev_c_values);
-
-    return log_to_targets($log_country_to_screen, $log_to_local, $full_local_file_path_and_name, $message, $c->cnum, null);
-};
-
-
-// examples of things to log: what decisions were made (and why), how turns are spent
-function log_country_message($cnum_input, $message) {
-    global $log_country_to_screen, $log_to_local, $local_file_path;
-
-    if(!$cnum_input) {
-        global $cnum; // some calling functions don't have $cnum easily available
-        $cnum_input = $cnum;
-        if(!$cnum_input) {
-            $message = "must call log_country_message() with a valid cnum";
-            out($message);
-            log_error_message(2, $cnum, $message);
-            return;
-        }
-    }
-
-    $full_local_file_path_and_name = ($log_to_local ? get_full_country_file_path_and_name($local_file_path, $cnum_input, false) : null);
-    return log_to_targets($log_country_to_screen, $log_to_local, $full_local_file_path_and_name, $message, $cnum_input, null);
-}
-
-
-
-function log_main_message($message, $color = null)  {
-    global $log_to_local, $local_file_path;
-    $full_local_file_path_and_name = ($log_to_local ? get_full_main_file_path_and_name($local_file_path) : null);
-    // always log messages to screen
-    return log_to_targets(true, $log_to_local, $full_local_file_path_and_name, $message, null, $color);
-}
-
-
-function log_error_message($error_type, $cnum, $message) {
-    global $log_to_local, $local_file_path;
-
-    $error_type_name = log_get_name_of_error_type($error_type);
-    if($error_type_name === null) {
-        $local_error_message = "must call log_error_message() with a valid type (non-negative int)";
-        out($local_error_message);
-        log_error_message(0, $cnum, $local_error_message);
-        return false;
-    }
-    
-    // if a $cnum is available, log to the country file
-    $country_local_file_path_and_name = (($cnum and $log_to_local) ? get_full_country_file_path_and_name($local_file_path, $cnum, false) : null);
-    $screen_and_country_message = "ERROR $error_type-$error_type_name; CNUM: #".($cnum ?? 'N/A')."; DETAILS: $message";
-    // always log errors to screen
-    log_to_targets(true, $log_to_local, $country_local_file_path_and_name, $screen_and_country_message, $cnum, 'red'); // FUTURE - return this value somehow??
-
-    // always log to the error file
-    // for the error file, use unprintable characters to separate fields and line breaks to pack everything on a single line
-    // the error reader on the server will split out things appropriately
-    $error_message_for_error_file = $error_type.chr(9).$error_type_name.chr(9).$cnum.chr(9).str_replace(array("\r", "\n"), chr(17), $message);
-    $error_local_file_path_and_name = ($log_to_local ? get_full_error_file_path_and_name($local_file_path) : null);
-    log_to_targets(false, $log_to_local, $error_local_file_path_and_name, $error_message_for_error_file, $cnum, null);  
-    return true; 
-}
-
-
-function log_to_targets($log_to_screen, $log_to_local, $local_file_path_and_name, $message, $cnum, $color = null) {
-    $is_line_breaks_only = str_replace(array("\r", "\n"), '', $message) == "" ? true : false;
-    $line_break_count = substr_count($message,"\n" );
-    if($log_to_screen) {
-        if($is_line_breaks_only)
-            echo $message;
-        else {
-            $screen_message = ($line_break_count > 0 ? "\n" : "").$message;
-            out($screen_message, true, $color); //timestamp is free with out()
-        }
-        //out("Country #$cnum: $message");
-    }
-
-    if($log_to_local) {
-        // write to $full_local_file_path_and_name, catch and print any errors
-        //out($full_local_file_path_and_name);
-        if($is_line_breaks_only)
-            $file_message = $message;
-        else {
-            $timestamp_for_file = '['.date('Y-m-d H:i:s').'] ';     
-            // the regex removes color coding   
-            $file_message = $timestamp_for_file.($line_break_count > 0 ? "\n" : "").preg_replace('/\e[[][A-Za-z0-9];?[0-9]*m?/', '', $message)."\n";
-        }
-        if($local_file_path_and_name) {
-            file_put_contents ($local_file_path_and_name, $file_message, FILE_APPEND);    
-        }  
-    }
-
-    return;
-}
-
-
-
-function get_full_country_file_path_and_name($local_file_path, $cnum, $is_snapshot) {
-    $file_name = ($is_snapshot ? 'SNAPSHOT_' : 'COUNTRY_') . $cnum . '.txt';
-    return "$local_file_path/country/$file_name";
-}
-
-function get_full_error_file_path_and_name($local_file_path) {
-    $iso_date = date('Ymd');
-    return "$local_file_path/errors/ERRORS_$iso_date.txt";
-}
-
-function get_full_main_file_path_and_name($local_file_path) {
-    $iso_date = date('Ymd');
-    return "$local_file_path/main/LOOP_$iso_date.txt";
-}
-
-
-
 
 
 function generate_compact_country_status($c, $snapshot_type, $strat, $is_destocking, &$output_c_values, $prev_c_values) {
