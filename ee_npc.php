@@ -165,6 +165,11 @@ while (1) {
                 else {
                     log_main_message("Removing non-AI country with cnum #$cnum from the list of countries to play", 'red');
                     $non_ai_countries[$cnum] = 1;
+                    if(isset($settings->$cnum)) {
+                        $settings->$cnum = null;
+                        log_main_message("Clearing out strategy from file for country #$cnum", 'purple');
+                        file_put_contents($config['save_settings_file'], json_encode($settings));
+                    }
                 }
             }
             $checked_for_non_ai = true;
