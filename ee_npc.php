@@ -445,9 +445,10 @@ while (1) {
         log_main_message("\n");
         while($server->reset_end + 1 >= time()) {
             $end = $server->reset_end - time();
+            // FUTURE: this doesn't print correctly like outNext() - why not?
             out("Sleep until end: ".$end, false); // keep as out() - the single line updates
             //log_main_message("\n");
-            sleep(1);//don't let them fluff things up, sleep through end of reset
+            sleep(1);
         }
         log_main_message("Done Sleeping!");
         log_main_message("\n");
