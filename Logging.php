@@ -48,7 +48,8 @@ function log_get_name_of_error_type($error_type) {
         return 'UNDETECTED COUNTRY OUT OF MONEY';
     if($error_type == 116)
         return 'MISSING OR INVALID STRATEGY';        
-
+    if($error_type == 117)
+        return 'UNSUPPORTED TECH TYPE FOR OPT TECH FN'; // get_optimal_tech_buying_array() 
 
 
     // 1000+ are country playing mistakes 

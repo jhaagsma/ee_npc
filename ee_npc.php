@@ -61,6 +61,7 @@ require_once 'indy_strat.php';
 require_once 'oiler_strat.php';
 require_once 'Destocking.php';
 require_once 'Logging.php';
+require_once 'Purchasing.php';
 
 define("RAINBOW", Colors::getColoredString("Rainbow", "purple"));
 define("FARMER", Colors::getColoredString("Farmer", "cyan"));
@@ -348,6 +349,13 @@ while (1) {
                 else { // not destocking
                     log_country_message($cnum, 'Not doing destocking actions');    
 
+
+                    // TODO: DEBUG
+                    //$tech_type_to_ipa = ['t_bus' => 40, 't_res' => 40, 't_agri' => 170];
+                    //$a = get_optimal_tech_buying_array($cnum, $tech_type_to_ipa, 15000, 9999, 100000000, 700);
+                    //out_data($a);
+                    //continue;
+
                     if ($cpref->allyup) {
                         Allies::fill('def');
                     }
@@ -405,7 +413,7 @@ while (1) {
                 $save   = true;
 
                 /*
-                // TODO: more delta checking, especially for destocking
+                // FUTURE: more delta checking, especially for destocking
                 $prev_c_values = [];
                 log_snapshot_message($c, "BEGIN", $cpref->strat, 0, false, $prev_c_values);
  

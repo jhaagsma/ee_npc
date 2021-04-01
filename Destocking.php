@@ -742,6 +742,8 @@ function do_public_market_bushel_resell_loop (&$c, $max_public_market_bushel_pur
 			break;
 		
 		$max_quantity_to_buy_at_once = floor($c->money / ($current_public_market_bushel_price * $c->tax()));
+		if($max_quantity_to_buy_at_once == 0)
+			break;
 
 		$previous_food = $c->food;
 		$result = PublicMarket::buy($c, ['m_bu' => $max_quantity_to_buy_at_once], ['m_bu' => $current_public_market_bushel_price]);
