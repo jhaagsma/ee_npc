@@ -183,13 +183,15 @@ function get_full_country_file_path_and_name($local_file_path, $cnum, $is_snapsh
 }
 
 function get_full_error_file_path_and_name($local_file_path) {
+    global $username;
     $iso_date = date('Ymd');
-    return "$local_file_path/errors/ERRORS_$iso_date.txt";
+    return "$local_file_path/errors/ERRORS_$username"."_$iso_date.txt";
 }
 
 function get_full_main_file_path_and_name($local_file_path) {
+    global $username;
     $iso_date = date('Ymd');
-    return "$local_file_path/main/LOOP_$iso_date.txt";
+    return "$local_file_path/main/LOOP_$username"."_$iso_date.txt";
 }
 
 

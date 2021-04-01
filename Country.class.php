@@ -277,7 +277,7 @@ class Country
     public function nlgTarget($powfactor = 1.00)
     {
         //lets lower it from 80+turns_playwed/7, to compete
-        return floor(80 + pow($this->turns_played, $powfactor) / 15);
+        return floor(80 + pow($this->turns_played, $powfactor) / 15); // TODO: turns_played + turns + stored?
     }//end nlgTarget()
 
 
@@ -292,7 +292,7 @@ class Country
     public function defPerAcreTarget($mult = 1.5, $powfactor = 1.0)
     {
         //out("Turns Played: {$this->turns_played}");
-        $dpat = floor(75 + pow($this->turns_played, $powfactor) / 10) * $mult;
+        $dpat = floor(75 + pow($this->turns_played, $powfactor) / 10) * $mult;// TODO: turns_played + turns + stored?
         log_country_message($this->cnum, "DPAT: $dpat");
         return $dpat;
     }//end defPerAcreTarget()
@@ -413,7 +413,6 @@ class Country
 
         return key($score);
     }//end highestGoal()
-
 
     /**
      * Convoluted ladder logic to buy whichever goal is least fulfilled

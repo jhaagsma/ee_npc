@@ -69,6 +69,7 @@ define("CASHER", Colors::getColoredString("Casher", "green"));
 define("INDY", Colors::getColoredString("Indy", "yellow"));
 define("OILER", Colors::getColoredString("Oiler", "red"));
 
+global $username; // need this for logging
 $username     = $config['username'];    //<======== PUT IN YOUR USERNAME IN config.php
 $aiKey        = $config['ai_key'];      //<======== PUT IN YOUR AI API KEY IN config.php
 $baseURL      = $config['base_url'];    //<======== PUT IN THE BASE URL IN config.php
