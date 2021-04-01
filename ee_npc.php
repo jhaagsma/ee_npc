@@ -252,7 +252,17 @@ while (1) {
         global $cpref;
         $cpref = $settings->$cnum;
 
-        // log_main_message("Evaluating settings for $cnum");
+        // check for missing strategy just in case
+        if (!isset($cpref->strat)) {
+            log_error_message(116, $cnum, "Strategy is not set in settings.json file");
+            continue;
+        }
+
+        // check for invalid strategy just in case
+        if (log_translate_simple_strat_name($cpref->strat) == "UNKNOWN") {
+            log_error_message(116, $cnum, "Invalid strategy is set in settings.json file");
+            continue;
+        }
 
         if (!isset($cpref->retal)) {
             $cpref->retal = [];

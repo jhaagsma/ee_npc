@@ -45,7 +45,9 @@ function log_get_name_of_error_type($error_type) {
     if($error_type == 114)
         return 'UNDETECTED COUNTRY OUT OF FOOD';     
     if($error_type == 115)
-        return 'UNDETECTED COUNTRY OUT OF MONEY';     
+        return 'UNDETECTED COUNTRY OUT OF MONEY';
+    if($error_type == 116)
+        return 'MISSING OR INVALID STRATEGY';        
 
 
 
@@ -522,8 +524,8 @@ function log_translate_simple_strat_name($strat) {
             return "TECHER";
         case 'R':
             return "RAINBOW";
-        case 'O':
-            return "OILER";
+        //case 'O':
+        //    return "OILER";
         default:
             return "UNKNOWN";  
     }   
