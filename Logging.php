@@ -51,7 +51,9 @@ function log_get_name_of_error_type($error_type) {
     if($error_type == 117)
         return 'UNSUPPORTED TECH TYPE FOR OPT TECH FN'; // for get_optimal_tech_buying_array() 
     if($error_type == 118)
-        return 'COUNTRY ATTEMPTED DESTOCK IN PROTECTION';       
+        return 'COUNTRY ATTEMPTED DESTOCK IN PROTECTION'; 
+    if($error_type == 119)
+        return 'INVALID PRIORITY TYPE'; // for spend_extra_money
 
 
     // 1000+ are country playing mistakes 

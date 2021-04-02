@@ -8,29 +8,76 @@ namespace EENPC;
 // buy military or tech (future should include stocking bushels?)
 function spend_extra_money (&$c, $priority_list, $strat, $cpref, $money_to_reserve, $delay_military_purchases, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array = []) {
 
-// get $goal_nwpa, $goal_dpa from functions
 
-/*
-// example structure of $priority_list:
-$priority_list = [
-    ['DPA',10],
-    ['INCOME_TECHS',20],
-    ['DPA',40],
-    ['INCOME_TECHS',40],
-    ['DPA',70],
-    ['INCOME_TECHS',60],
-    ['DPA',100],
-    ['INCOME_TECHS',80],
-    ['NWPA',100],
-    ['INCOME_TECHS',100]
-];
-*/
+    $target_dpa = $c->defPerAcreTarget();
+    $target_dpnw = 0; // TODO
+    // get $goal_nwpa, $goal_dpa from functions
 
-// for each item in $priority_list, call buy_tech OR buy_defense_from_markets() OR buy_military_networth_from_markets()
-// buy_tech(&$c, $tech = 't_bus', $max_spend = null, $maxprice = 9999, $tech_limit = 999999999)
-// stop when budget is up
+    // TODO: in AI testing, set different schedules based on magic number to compete
+    /*
+    // example structure of $priority_list:
+    $priority_list = [
+        ['DPA',10],
+        ['INCOME_TECHS',20],
+        ['DPA',40],
+        ['INCOME_TECHS',40],
+        ['DPA',70],
+        ['INCOME_TECHS',60],
+        ['DPA',100],
+        ['INCOME_TECHS',80],
+        ['NWPA',100],
+        ['INCOME_TECHS',100]
+    ];
+    */
 
+    // for each item in $priority_list, call buy_tech OR buy_defense_from_markets() OR buy_military_networth_from_markets()
+    // buy_tech(&$c, $tech = 't_bus', $max_spend = null, $maxprice = 9999, $tech_limit = 999999999)
+    // stop when budget is up
 
+    log_country_message($c->cnum, "Attempting to spend money with $c->money money, $money_to_reserve money to reserve, and schedule 0");
+
+    $delayed_money = 0;
+    $total_spent = 0;
+    $max_spend = $c->money - $money_to_reserve;
+    foreach($priority_list as $priority_item) {
+        if($c->money - $delayed_money <= 10000 + $money_to_reserve) {
+            log_country_message($c->cnum, "Ran out of money to spend with $c->money money, $money_to_reserve money to reserve, and $delayed_money in delay cost");
+            break;
+        }
+
+        $priority_type = $priority_item['type'];
+        $priority_goal = $priority_item['goal'];
+        $total_spent_by_step = 0;
+        $step_purchase_was_delayed = false;
+
+        log_country_message($c->cnum, "Next priority is $priority_type with goal $priority_goal");
+
+        if($priority_type == 'DPA') {
+            $step_purchase_was_delayed = $delay_military_purchases;
+            $total_defense_points_goal = $target_dpa * $priority_goal * $c->land;
+            $current_defense_points = $c->defPerAcre() * $c->land;
+            $defense_unit_points_needed = max(0, $total_defense_points_goal - $current_defense_points);
+            log_country_message($c->cnum, "Def points needed is $defense_unit_points_needed with goal of $total_defense_points_goal and current value of $current_defense_points");
+            if($defense_unit_points_needed > 0) {
+                $total_spent_by_step = buy_defense_from_markets($c, $cpref, $defense_unit_points_needed, $max_spend, $delay_military_purchases, $cost_for_military_point_guess);
+            }
+        }
+        elseif($priority_type == 'INCOME_TECHS')
+            continue; // FUTURE
+        elseif($priority_type == 'NWPA')
+            continue; // FUTURE
+        else
+            log_error_message(119, $c->cnum, "Invalid priority type: $priority_type. Allowed values are 'DPA', 'INCOME_TECHS', and 'NWPA'");  
+            
+        $max_spend -= $total_spent_by_step;
+        if($step_purchase_was_delayed)
+            $delayed_money += $total_spent_by_step;
+        else
+            $total_spent += $total_spent_by_step;
+    }
+
+    log_country_message($c->cnum, "Completed spending money with $total_spent in total purchases, with $c->money money remaining, $money_to_reserve money to reserve, $delayed_money in delay cost, and schedule 0");
+    return true;
 }
 
 
@@ -44,7 +91,7 @@ function buy_defense_from_markets(&$c, $cpref, $defense_unit_points_needed, $max
     if($delay_military_purchases) {
         if($cost_for_military_point_guess == null)
             $cost_for_military_point_guess = 80; // TODO: call get_cost_per_military_points_for_caching
-        return $cost_for_military_point_guess * $military_points_needed;
+        return $cost_for_military_point_guess * $defense_unit_points_needed;
     }
 
     // FUTURE: use country preferences
@@ -65,6 +112,8 @@ function buy_military_points_from_markets(&$c, $cpref, $military_unit_points_nee
 */
 
 function buy_military_networth_from_markets(&$c, $cpref, $nw_needed, $max_spend) {
+    // TODO: add delay
+
     $unit_weights = ['m_tr'=>0.5, 'm_j' => 0.6, 'm_tu' => 0.6, 'm_ta' => 2.0];
     $unit_points = ['m_tr'=>0.5, 'm_tu' => 0.6, 'm_ta' => 0.6, 'm_ta' => 2.0];
     return spend_money_on_markets($c, $cpref, $nw_needed, $max_spend, $unit_weights, $unit_points, "dpnw");    
@@ -107,7 +156,7 @@ function buyout_up_to_public_market_dpnw_2(&$c, $cpref, $max_dpnw, $max_spend, $
 function spend_money_on_markets(&$c, $cpref, $points_needed, $max_spend, $unit_weights, $unit_points, $point_name, $max_dollars_per_point = 100000, $public_only = false, $total_spent = 0, $total_points_gained = 0, $recursion_level = 1) {
     // TODO: TEST THIS!!!!!!!!!
     log_country_message($c->cnum, "Iteration $recursion_level for public".($public_only ? "" : " and private")." market purchasing based on $point_name");
-    log_country_message($c->cnum, "Budget is ".($max_spend - $total_spent).", purchase limit is ."($points_needed - $total_points_gained)." points, and price limit is $max_dollars_per_point $point_name");
+    log_country_message($c->cnum, "Budget is ".($max_spend - $total_spent).", purchase limit is ".($points_needed - $total_points_gained)." points, and price limit is $max_dollars_per_point $point_name");
 
     $pm_purchase_prices_by_unit = [];
     $pm_score_by_unit = [];
@@ -120,7 +169,7 @@ function spend_money_on_markets(&$c, $cpref, $points_needed, $max_spend, $unit_w
             if ($pm_quantity > 0) {
                 $pm_purchase_prices_by_unit[$unit_name] = $pm_price;
                 // log_country_message($c->cnum, "unit:$unit_name, price:$pm_price");
-                $unit_score = floor($public_market_price / $unit_weights[$unit_name]); // slightly favor over public that uses round()
+                $unit_score = floor($pm_price / $unit_weights[$unit_name]); // slightly favor over public that uses round()
                 $pm_score_by_unit[$unit_name] = $unit_score;
                 log_country_message($c->cnum, "Iteration $recursion_level initial private market conditions for $unit_name are price $pm_price and weight $unit_score ($point_name)");
             }
@@ -177,9 +226,11 @@ function spend_money_on_markets(&$c, $cpref, $points_needed, $max_spend, $unit_w
             $best_pm_score = $pm_score_by_unit[$best_pm_unit]; 
         }
 
+        // log_country_message($c->cnum, "pm score: $best_pm_score; public score: $best_public_score; max: $max_dollars_per_point");
+
         // lower score is better
-        if($pm_score_by_unit <= $best_public_score) { // buy off private
-            if($pm_score_by_unit > $max_dollars_per_point)
+        if($best_pm_score <= $best_public_score) { // buy off private
+            if($best_pm_score > $max_dollars_per_point)
                 break; // best unit is too expensive
 
             $point_per_unit = $unit_points[$best_pm_unit];
@@ -202,7 +253,8 @@ function spend_money_on_markets(&$c, $cpref, $points_needed, $max_spend, $unit_w
 
                     PrivateMarket::buy($c, [$best_pm_unit => $pm_purchase_amount]);
 
-                    $money_spent = $money_before_purchase - $c->money;
+                    $money_spent_on_purchase = $money_before_purchase - $c->money;
+                    $total_spent += $money_spent_on_purchase;
                     $units_gained = max(0, $c->$best_pm_unit - $unit_count_before_purchase);
                     $total_points_gained += $point_per_unit * $units_gained;
 
@@ -211,7 +263,7 @@ function spend_money_on_markets(&$c, $cpref, $points_needed, $max_spend, $unit_w
                 }
 
                 // realistically shouldn't happen often
-                if($money_spent == 0)
+                if($money_spent_on_purchase == 0)
                     $c = get_advisor();
             }            
         } // end private buying
@@ -235,12 +287,12 @@ function spend_money_on_markets(&$c, $cpref, $points_needed, $max_spend, $unit_w
 
             PublicMarket::buy($c, [$best_public_unit => $best_unit_quantity], [$best_public_unit => $best_unit_price]);
 
-            $diff = $money_before_purchase - $c->money; // I don't like this but the return structure of PublicMarket::buy is tough to deal with
-            $total_spent += $diff;
+            $money_spent_on_purchase = $money_before_purchase - $c->money; // I don't like this but the return structure of PublicMarket::buy is tough to deal with
+            $total_spent += $money_spent_on_purchase;
             $units_gained = max(0, $c->$best_public_unit - $unit_count_before_purchase);
             $total_points_gained += $point_per_unit * $units_gained;
 
-            if ($diff == 0) {
+            if ($money_spent_on_purchase == 0) {
                 $missed_purchases++;
                 if ($missed_purchases % 10 == 0) // maybe cash was stolen or an SO was filled, so do an expensive refresh
                     $c = get_advisor();	
@@ -261,7 +313,7 @@ function spend_money_on_markets(&$c, $cpref, $points_needed, $max_spend, $unit_w
 
 	// some units might have shown up after we last refreshed prices, so call up to 2 more times recursively
 	if ($recursion_level < 2 and $total_spent + 10000 < $max_spend and $total_points_gained < $points_needed)
-		buyout_up_to_public_market_dpnw($c, $cpref, $points_needed, $max_spend, $unit_weights, $unit_points, $point_name, $max_dollars_per_point, $public_only, $total_spent, $total_points_gained, $recursion_level + 1);
+        spend_money_on_markets($c, $cpref, $points_needed, $max_spend, $unit_weights, $unit_points, $point_name, $max_dollars_per_point, $public_only, $total_spent, $total_points_gained, $recursion_level + 1);
 
     return $total_spent;
 }

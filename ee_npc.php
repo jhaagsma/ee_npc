@@ -155,7 +155,8 @@ while (1) {
         continue;                               //restart the loop
     }
 
-    if($server->is_debug) { // remove non-AI countries from $countries - useful on debug servers with human countries 
+    // TODO: DEBUG
+    if(false and $server->is_debug) { // remove non-AI countries from $countries - useful on debug servers with human countries 
         $countries = [];
         if (!$checked_for_non_ai) {
             log_main_message("Checking for non-AI countries on debug server, this may take tens of seconds remotely...");
@@ -336,9 +337,19 @@ while (1) {
             $prev_c_values = [];
             $init_c = get_advisor();
 
-            log_snapshot_message($init_c, "BEGIN", $cpref->strat, $is_destocking, $prev_c_values);
+            // TODO: DEBUG
+            $priority_list = [
+                ['type'=>'DPA','goal'=>10],
+                ['type'=>'DPA','goal'=>50],
+                ['type'=>'DPA','goal'=>100]
+            ];
+            spend_extra_money($init_c, $priority_list, $cpref->strat, $cpref, floor(0.5 * $init_c->money), false, 50, 50);
+
+
+            //log_snapshot_message($init_c, "BEGIN", $cpref->strat, $is_destocking, $prev_c_values);
             unset($init_c);
-            //continue;
+            sleep(1);
+            continue;
 
             try {    
                 if ($is_destocking) { // call special destocking code that passes back the next play time in $nexttime

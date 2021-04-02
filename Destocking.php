@@ -608,6 +608,13 @@ PARAMETERS:
 	$total_spent - internal, don't pass this in when calling externally
 	$recursion_level - internal, don't pass this in when calling externally
 */
+
+function buyout_up_to_public_market_dpnw(&$c, $max_dpnw, $max_spend, $military_units_only) {
+	return buyout_up_to_public_market_dpnw_2($c, null, $max_dpnw, $max_spend, $military_units_only); // TODO: pass in $cpref
+}
+
+// commenting out just for sanity reasons
+/*
 function buyout_up_to_public_market_dpnw(&$c, $max_dpnw, $max_spend, $military_units_only, $total_spent = 0, $recursion_level = 1) {	
 	// do some setup to limit API calls for public market info
 	$unit_to_nw_map = array("m_tr" => 0.5, "m_j" => 0.6, "m_tu" => 0.6, "m_ta" => 2.0); // FUTURE: this is stupid
@@ -696,7 +703,7 @@ function buyout_up_to_public_market_dpnw(&$c, $max_dpnw, $max_spend, $military_u
 
 	return $total_spent;
 }
-
+*/
 
 /*
 NAME: calculate_maximum_dpnw_for_public_market_purchase
