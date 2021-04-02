@@ -88,6 +88,9 @@ class PublicMarket
             return;
         }
 
+        if(isset($price['m_bu']) and $price['m_bu'] > 80)
+            log_error_message(1003, $c->cnum, "With $c->money money, attempted to purchase quantity ".$quantity['m_bu'].' food on public market for price $'.$price['m_bu']);
+
         global $techlist;
         $result = ee('buy', ['quantity' => $quantity, 'price' => $price]);
         $str    = $init = str_pad('--- BUY  Public: ', 26);

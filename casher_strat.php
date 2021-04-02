@@ -2,8 +2,9 @@
 
 namespace EENPC;
 
-function play_casher_strat($server, $cnum, $rules)
+function play_casher_strat($server, $cnum, $rules, &$exit_condition)
 {
+    $exit_condition = 'NORMAL';
     //global $cnum;
     //$main = get_main();     //get the basic stats
     //out_data($main);          //output the main data
@@ -66,6 +67,7 @@ function play_casher_strat($server, $cnum, $rules)
 
         $hold = food_management($c);
         if ($hold) {
+            $exit_condition = 'WAIT_FOR_PUBLIC_MARKET_FOOD';
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
         }
         

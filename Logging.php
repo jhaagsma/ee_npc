@@ -49,7 +49,9 @@ function log_get_name_of_error_type($error_type) {
     if($error_type == 116)
         return 'MISSING OR INVALID STRATEGY';        
     if($error_type == 117)
-        return 'UNSUPPORTED TECH TYPE FOR OPT TECH FN'; // get_optimal_tech_buying_array() 
+        return 'UNSUPPORTED TECH TYPE FOR OPT TECH FN'; // for get_optimal_tech_buying_array() 
+    if($error_type == 118)
+        return 'COUNTRY ATTEMPTED DESTOCK IN PROTECTION';       
 
 
     // 1000+ are country playing mistakes 
@@ -59,8 +61,10 @@ function log_get_name_of_error_type($error_type) {
         return 'COUNTRY PLAYED TURN WITHOUT MONEY';
     if($error_type == 1002)
         return 'COUNTRY BAD SELL OF MILITARY ON PM';     
-        
-        
+    if($error_type == 1003)
+        return 'COUNTRY BAD FOOD PURCHASE ON PUBLIC';           
+    if($error_type == 1004)
+        return 'COUNTRY PRIVATE MARKET FOOD PURCHASE';           
 
 
        

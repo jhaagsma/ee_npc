@@ -24,8 +24,9 @@ namespace EENPC;
  *
  * @return null
  */
-function play_farmer_strat($server, $cnum, $rules)
+function play_farmer_strat($server, $cnum, $rules, &$exit_condition)
 {
+    $exit_condition = 'NORMAL';
     //global $cnum;
     //$main = get_main();     //get the basic stats
     //out_data($main);          //output the main data
@@ -111,6 +112,7 @@ PHP Warning:  Invalid argument supplied for foreach() in /mnt/c/Users/joe/Docume
         $hold = food_management($c);
         if ($hold) {
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
+            $exit_condition = 'WAIT_FOR_PUBLIC_MARKET_FOOD'; // ???
         }
 
         // 40 turns of food

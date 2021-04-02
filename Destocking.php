@@ -17,9 +17,10 @@ PARAMETERS:
 	$server - server object
 	$rules - rules object
 	$next_play_time_in_seconds - output for the number of seconds to the next play
-	
+	$exit_condition - output for country condition when we finished destocking
 */
-function execute_destocking_actions($cnum, $strategy, $server, $rules, &$next_play_time_in_seconds) {
+function execute_destocking_actions($cnum, $strategy, $server, $rules, &$next_play_time_in_seconds, &$exit_condition) {
+	$exit_condition = 'NORMAL';
 	$reset_end_time = $server->reset_end;
 	$server_seconds_per_turn = $server->turn_rate;
 	$max_market_package_time_in_seconds = $rules->max_time_to_market;
@@ -68,7 +69,8 @@ function execute_destocking_actions($cnum, $strategy, $server, $rules, &$next_pl
 	$c = get_advisor();
 
 	if($c->protection == 1) { // somehow we are in protection still
-		log_country_message($cnum, "DESTOCK ERROR: country still in protection"); // FUTURE: should be an error
+		log_error_message(118, $cnum, "Turns played is $c->turns_played");
+		$exit_condition = 'ERROR';
 		$next_play_time_in_seconds = TURNS_TO_PASS_BEFORE_NEXT_DESTOCK_ATTEMPT * $server_seconds_per_turn;
 		return $c;
 	}
@@ -170,8 +172,10 @@ function execute_destocking_actions($cnum, $strategy, $server, $rules, &$next_pl
 	}
 	
 	// calculate next play time
-	if($did_resell_military or $sold_bushels_on_public)
+	if($did_resell_military or $sold_bushels_on_public) {
+		$exit_condition = 'WAIT FOR MARKET SALE';
 		$next_play_time_in_seconds = $max_market_package_time_in_seconds;
+	}
 	else
 		$next_play_time_in_seconds = TURNS_TO_PASS_BEFORE_NEXT_DESTOCK_ATTEMPT * $server_seconds_per_turn;
 	
@@ -591,6 +595,7 @@ function buyout_up_to_private_market_unit_dpnw(&$c, $pm_buy_price, $unit_type, $
 }
 
 
+// TODO: comment this out, call spend_money_on_markets() instead
 /*
 NAME: buyout_up_to_public_market_dpnw
 PURPOSE: attempts to purchase from the public market below a dpnw while following certain rules, loops up to two times
@@ -690,77 +695,6 @@ function buyout_up_to_public_market_dpnw(&$c, $max_dpnw, $max_spend, $military_u
 		buyout_up_to_public_market_dpnw($c, $max_dpnw, $max_spend, $military_units_only, $total_spent, $recursion_level + 1);
 
 	return $total_spent;
-}
-
-
-/*
-NAME: estimate_future_private_market_capacity_for_military_unit
-PURPOSE: calculates the amount of money needed to purchase all future generated private market units of a single type
-RETURNS: the amount of money needed to purchase all future generated private market units of a single type
-PARAMETERS:
-	$military_unit_price - private military price of the unit
-	$land - land for the country
-	$replenishment_rate - number of units generated per acre per turn, typically within 1-3 for military units
-	$reset_seconds_remaining - seconds left in the reset
-	$server_seconds_per_turn - seconds per turn
-*/
-function estimate_future_private_market_capacity_for_military_unit($military_unit_price, $land, $replenishment_rate, $reset_seconds_remaining, $server_seconds_per_turn) {
-	return round($military_unit_price * $land * $replenishment_rate * floor($reset_seconds_remaining / $server_seconds_per_turn));
-}
-
-/*
-NAME: can_resell_bushels_from_public_market
-PURPOSE: checks if current public market bushel price allows for profitable reselling on private market
-RETURNS: true if reselling is profitable, false otherwise
-PARAMETERS:
-	$private_market_bushel_price - private market bushel price in dollars
-	$public_market_tax_rate - public market tax rate as a decimal: 6% would be 1.06 for example
-	$current_public_market_bushel_price - current public market bushel price in dollars
-	$max_profitable_public_market_bushel_price - output parameter that has the maximum public price that is still profitable
-*/
-function can_resell_bushels_from_public_market ($private_market_bushel_price, $public_market_tax_rate, $current_public_market_bushel_price, &$max_profitable_public_market_bushel_price) {	
-	$max_profitable_public_market_bushel_price = ceil($private_market_bushel_price / $public_market_tax_rate - 1);	
-	return ($max_profitable_public_market_bushel_price >= $current_public_market_bushel_price ? true : false);
-}
-
-
-/*
-NAME: do_public_market_bushel_resell_loop 
-PURPOSE: in a loop, buys bushels off public to sell on private market
-RETURNS: nothing
-PARAMETERS:
-	$c - country object
-	$max_public_market_bushel_purchase_price - maximum public price that is still profitable
-*/
-function do_public_market_bushel_resell_loop (&$c, $max_public_market_bushel_purchase_price) {	
-	$current_public_market_bushel_price = PublicMarket::price('m_bu');
-	$price_refreshes = 0;
-	
-	// limited to 500 because I don't want an insane number of purchases if the buyer has low cash compared to market volume
-	for ($number_of_purchases = 0; $number_of_purchases < 500; $number_of_purchases++) {
-		if ($current_public_market_bushel_price == 0 or $current_public_market_bushel_price == null or $current_public_market_bushel_price > $max_public_market_bushel_purchase_price)
-			break;
-		
-		$max_quantity_to_buy_at_once = floor($c->money / ($current_public_market_bushel_price * $c->tax()));
-		if($max_quantity_to_buy_at_once == 0)
-			break;
-
-		$previous_food = $c->food;
-		$result = PublicMarket::buy($c, ['m_bu' => $max_quantity_to_buy_at_once], ['m_bu' => $current_public_market_bushel_price]);
-		// FUTURE: sometimes see an error here with an unexpected price (1 below last) - expected? taxes?
-		$bushels_purchased_quantity = $c->food - $previous_food;
-		if ($bushels_purchased_quantity == 0) {
-			 // most likely explanation is price changed, so update it
-			$current_public_market_bushel_price = PublicMarket::price('m_bu');
-			$price_refreshes++;
-			if ($price_refreshes % 10 == 0) // maybe cash was stolen or an SO was filled, so do an expensive refresh
-				$c = get_advisor();
-		}			
-		else // sell what we purchased on the private market
-			PrivateMarket::sell_single_good($c, 'm_bu', $bushels_purchased_quantity);
-	}
-	
-	return;
 }
 
 

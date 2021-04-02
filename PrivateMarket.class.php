@@ -92,6 +92,7 @@ class PrivateMarket
         foreach ($result->goods as $type => $amount) {
             if ($type == 'm_bu') {
                 $c_type = 'food';
+                log_error_message(1004, $c->cnum, "With $c->money money, attempted to purchase $amount food from PM at $c->turns_played turns played");
             } elseif ($type == 'm_oil') {
                 $c_type = 'oil';
             } else {

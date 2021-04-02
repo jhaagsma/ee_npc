@@ -216,14 +216,14 @@ function food_management(&$c)
     }
 
     //WE HAVE MONEY, WAIT FOR FOOD ON MKT
-    if ($c->protection == 0 && $c->turns_stored < 30 && $c->income > $pm_info->buy_price->m_bu * $foodloss) {
+    if ($c->protection == 0 && $c->turns_stored < 30 && $c->income > 64 * $foodloss) { // 64 is a reasonably high price for public bushel price
         //Text for screen
         log_country_message($c->cnum, "We make enough to buy food if we want to; hold turns for now, and wait for food on MKT.");
         return true;
     }
 
     //WAIT FOR GOODS/TECH TO SELL
-    if ($c->protection == 0 && $c->turns_stored < 30 && onmarket_value() > $pm_info->buy_price->m_bu * $foodloss) {
+    if ($c->protection == 0 && $c->turns_stored < 30 && onmarket_value() > 64 * $foodloss) {
         log_country_message($c->cnum, "We have goods on market; hold turns for now.");    //Text for screen
         return true;
     }
@@ -239,7 +239,7 @@ function food_management(&$c)
             "Less than $turns_buy turns worth of food! (".$c->foodnet."/turn) ".
             "We're rich, so buy food on PM (\${$pm_info->buy_price->m_bu})!~"
         );
-        $result = PrivateMarket::buy($c, ['m_bu' => $turns_buy * $foodloss]);  //Buy 3 turns of food!
+        $result = PrivateMarket::buy($c, ['m_bu' => $turns_buy * $foodloss]);  //Buy 3 turns of food!        
         return false;
     } elseif ($c->food < $turns_of_food && total_military($c) > 50) {
         log_error_message(1002, $c->cnum, "We're too poor to buy food! Sell 1/10 of our military");
@@ -249,7 +249,7 @@ function food_management(&$c)
     }
 
     log_country_message($c->cnum, 'We have exhausted all food options. Valar Morguhlis.');
-    return false; // FUTURE: why isn't this true? better to save turns than to commit suicide by running turns with no food?
+    return true; // FUTURE: changed to true. isn't it better to save turns than to commit suicide by running turns with no food?
 }//end food_management()
 
 

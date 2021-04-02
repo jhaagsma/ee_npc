@@ -344,7 +344,9 @@ while (1) {
                 if ($is_destocking) { // call special destocking code that passes back the next play time in $nexttime
                     log_main_message("Playing destocking ".Bots::txtStrat($cnum)." Turns for #$cnum ".siteURL($cnum));
                     log_country_message($cnum, 'Doing destocking actions' . log_translate_forced_debug($debug_force_destocking));
-                    $c = execute_destocking_actions($cnum, $cpref->strat, $server, $rules, $nexttime);
+                    $exit_condition = "NORMAL";
+                    $c = execute_destocking_actions($cnum, $cpref->strat, $server, $rules, $nexttime, $exit_condition);
+                    
                 }
                 else { // not destocking
                     log_country_message($cnum, 'Not doing destocking actions');    
@@ -362,10 +364,9 @@ while (1) {
 
                     Events::new();
                     Country::listRetalsDue();
-                    //sleep(1);
 
-                    //$playfactor = 1; // now handled in calculate_next_play_in_seconds
                     $nexttime = null;
+                    $exit_condition = null;
 
                     log_main_message("Playing Standard ".Bots::txtStrat($cnum)." Turns for #$cnum ".siteURL($cnum));
                     log_country_message($cnum, "Begin playing standard ".Bots::txtStrat($cnum)." turns");
@@ -373,19 +374,19 @@ while (1) {
                     // FUTURE: careful with the $cnum global removal, maybe this breaks things? seems fine so far - 20210323
                     switch ($cpref->strat) {
                         case 'F':
-                            $c = play_farmer_strat($server, $cnum, $rules);
+                            $c = play_farmer_strat($server, $cnum, $rules, $exit_condition);
                             break;
                         case 'T':
-                            $c = play_techer_strat($server, $cnum, $rules);
+                            $c = play_techer_strat($server, $cnum, $rules, $exit_condition);
                             break;
                         case 'C':
-                            $c = play_casher_strat($server, $cnum, $rules);
+                            $c = play_casher_strat($server, $cnum, $rules, $exit_condition);
                             break;
                         case 'I':
-                            $c = play_indy_strat($server, $cnum, $rules);
+                            $c = play_indy_strat($server, $cnum, $rules, $exit_condition);
                             break;
                         default:
-                            $c = play_rainbow_strat($server, $cnum, $rules);
+                            $c = play_rainbow_strat($server, $cnum, $rules, $exit_condition);
                     }
 
                     if ($cpref->gdi && !$c->gdi) {
@@ -398,11 +399,16 @@ while (1) {
                         $cpref->retal = []; //clear the damned retal thing
                     }
 
+                    if($exit_condition == 'WAIT_FOR_PUBLIC_MARKET_FOOD') {
+                        log_country_message($cnum, "Country is holding turns while waiting for cheaper public market food to appear");
+                        $nexttime = 4 * $server->turn_rate;
+                    }
+
                     // $maxin           = Bots::furthest_play($cpref); // now handled in calculate_next_play_in_seconds
                     // $nexttime        = round(min($maxin, $nexttime));
                 }
 
-                log_country_message($cnum, "End playing standard ".Bots::txtStrat($cnum)." turns");
+                log_country_message($cnum, "End playing standard ".Bots::txtStrat($cnum)." turns with exit condition $exit_condition");
 
                 $seconds_to_next_play = calculate_next_play_in_seconds($cnum, $nexttime, $cpref->strat, $rules->is_clan_server, $rules->max_time_to_market, $rules->max_possible_market_sell, $cpref->playrand, $server->reset_start, $server->reset_end, $server->turn_rate, $cpref->lastTurns, $rules->maxturns, $cpref->turnsStored, $rules->maxstore);
                 $cpref->lastplay = time();
@@ -433,7 +439,7 @@ while (1) {
             }
 
             log_country_message($cnum, "Ending country loop");
-            log_main_message("Finished playing turns for #$cnum");
+            log_main_message("Finished playing turns for #$cnum with exit condition $exit_condition");
         }
 
         if ($save) {
