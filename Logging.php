@@ -320,7 +320,7 @@ function create_local_directory_if_needed($path_name) {
     $success = true;
     if(!is_dir($path_name)) {
         out("Creating local directory $path_name"); // have to use out() here because folders don't exist yet
-        $success = mkdir("$path_name", 0700, true);
+        $success = mkdir("$path_name", 0770, true);
     }
     if(!$success)
         die("Failed to create local directory $path_name");
