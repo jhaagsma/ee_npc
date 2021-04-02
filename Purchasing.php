@@ -6,12 +6,15 @@ namespace EENPC;
 // TODO: need landgoal function somewhere... call server code for explore acres?
 
 // buy military or tech (future should include stocking bushels?)
-function spend_extra_money (&$c, $priority_list, $strat, $cpref, $money_to_reserve, $delay_military_purchases, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array = []) {
+function spend_extra_money (&$c, $priority_list, $strat, $cpref, $money_to_reserve, $delay_military_purchases, $cost_for_military_point_guess, $dpnw_guess, &$optimal_tech_buying_array = []) {
+    if(empty($priority_list)) {
+        log_error(120, $c->cnum, "");
+        return false;
+    }
 
 
     $target_dpa = $c->defPerAcreTarget();
-    $target_dpnw = 0; // TODO
-    // get $goal_nwpa, $goal_dpa from functions
+    $target_dpnw = $c->nlgTarget(); 
 
     // TODO: in AI testing, set different schedules based on magic number to compete
     /*
@@ -54,22 +57,47 @@ function spend_extra_money (&$c, $priority_list, $strat, $cpref, $money_to_reser
 
         if($priority_type == 'DPA') {
             $step_purchase_was_delayed = $delay_military_purchases;
-            $total_defense_points_goal = $target_dpa * $priority_goal * $c->land;
+            $total_defense_points_goal = $target_dpa * $priority_goal * $c->land / 100;
             $current_defense_points = $c->defPerAcre() * $c->land;
             $defense_unit_points_needed = max(0, $total_defense_points_goal - $current_defense_points);
             log_country_message($c->cnum, "Def points needed is $defense_unit_points_needed with goal of $total_defense_points_goal and current value of $current_defense_points");
             if($defense_unit_points_needed > 0) {
                 $total_spent_by_step = buy_defense_from_markets($c, $cpref, $defense_unit_points_needed, $max_spend, $delay_military_purchases, $cost_for_military_point_guess);
+                $max_spend -= $total_spent_by_step;
             }
         }
-        elseif($priority_type == 'INCOME_TECHS')
-            continue; // FUTURE
-        elseif($priority_type == 'NWPA')
-            continue; // FUTURE
+        elseif($priority_type == 'INCOME_TECHS') {
+            if(empty($optimal_tech_buying_array))
+                log_country_message($c->cnum, "Optimal tech array is empty, which either means tech is too expensive or it wasn't passed in correctly");
+            elseif(isset($optimal_tech_buying_array[$priority_goal])) { // a bucket might not appear if tech is too expensive
+                foreach($optimal_tech_buying_array[$priority_goal] as $key => $t_p_q) {
+                    $tech_name = $t_p_q['t'];
+                    $max_tech_price = $t_p_q['p'];
+                    $tech_point_limit = $t_p_q['q'];
+                    if($max_spend > 10 * $max_tech_price) {
+                        $total_spent_on_single_tech = PublicMarket::buy_tech($c, $tech_name, $max_spend, $max_tech_price, $tech_point_limit);
+                        $max_spend -= $total_spent_on_single_tech;
+                        $total_spent_by_step += $total_spent_on_single_tech;
+                        if($max_spend > 10 * $max_tech_price) // still have money left, so we likely exhausted the public market supply
+                            unset($optimal_tech_buying_array[$priority_goal][$key]); // TODO; safe?
+                    }
+                }
+            }
+        }
+        elseif($priority_type == 'NWPA') {            
+            $step_purchase_was_delayed = $delay_military_purchases;
+            $total_nw_goal = $target_dpnw * $priority_goal * $c->land / 100;
+            $current_nw = $c->networth;
+            $nw_needed = max(0, $total_nw_goal - $current_nw);
+            log_country_message($c->cnum, "Networth needed is $nw_needed with goal of $total_nw_goal and current value of $current_nw");
+            if($nw_needed > 0) {
+                $total_spent_by_step = buy_military_networth_from_markets($c, $cpref, $nw_needed, $max_spend, $delay_military_purchases, $dpnw_guess);
+                $max_spend -= $total_spent_by_step;
+            }
+        }            
         else
             log_error_message(119, $c->cnum, "Invalid priority type: $priority_type. Allowed values are 'DPA', 'INCOME_TECHS', and 'NWPA'");  
-            
-        $max_spend -= $total_spent_by_step;
+
         if($step_purchase_was_delayed)
             $delayed_money += $total_spent_by_step;
         else
@@ -82,6 +110,11 @@ function spend_extra_money (&$c, $priority_list, $strat, $cpref, $money_to_reser
 
 
 function get_cost_per_military_points_for_caching() { // parameters?
+    return 80; // TODO: implement
+}
+
+
+function get_dpnw_for_caching() { // parameters?
     return 80; // TODO: implement
 }
 
@@ -102,7 +135,7 @@ function buy_defense_from_markets(&$c, $cpref, $defense_unit_points_needed, $max
     return spend_money_on_markets($c, $cpref, $defense_unit_points_needed, $max_spend, $unit_weights, $unit_points, "dpdef"); 
 }
 
-/* // current unused
+/* // currently unused
 function buy_military_points_from_markets(&$c, $cpref, $military_unit_points_needed, $max_spend) {
     // FUTURE: use country preferences
     $unit_weights = ['m_tr'=>0.7, 'm_j' => 0.9, 'm_tu' => 1.0, 'm_ta' => 2.9];
@@ -111,18 +144,22 @@ function buy_military_points_from_markets(&$c, $cpref, $military_unit_points_nee
 }
 */
 
-function buy_military_networth_from_markets(&$c, $cpref, $nw_needed, $max_spend) {
-    // TODO: add delay
+function buy_military_networth_from_markets(&$c, $cpref, $nw_needed, $max_spend, $delay_military_purchases, $dpnw_guess = null) {
+    if($delay_military_purchases) {
+        if($dpnw_guess == null)
+            $dpnw_guess = 80; // TODO: call get_dpnw_for_caching
+        return $dpnw_guess * $nw_needed;
+    }
 
     $unit_weights = ['m_tr'=>0.5, 'm_j' => 0.6, 'm_tu' => 0.6, 'm_ta' => 2.0];
-    $unit_points = ['m_tr'=>0.5, 'm_tu' => 0.6, 'm_ta' => 0.6, 'm_ta' => 2.0];
+    $unit_points = ['m_tr'=>0.5, 'm_j' => 0.6, 'm_tu' => 0.6, 'm_ta' => 2.0];
     return spend_money_on_markets($c, $cpref, $nw_needed, $max_spend, $unit_weights, $unit_points, "dpnw");    
 }
 
 
 function buyout_up_to_public_market_dpnw_2(&$c, $cpref, $max_dpnw, $max_spend, $military_units_only) {
     $unit_weights = ['m_tr'=>0.5, 'm_j' => 0.6, 'm_tu' => 0.6, 'm_ta' => 2.0];
-    $unit_points = ['m_tr'=>0.5, 'm_tu' => 0.6, 'm_ta' => 0.6, 'm_ta' => 2.0];
+    $unit_points = ['m_tr'=>0.5, 'm_j' => 0.6, 'm_tu' => 0.6, 'm_ta' => 2.0];
 	if(!$military_units_only) {	// FUTURE: this is kind of stupid
 		$unit_weights["mil"] = 2.0;
 		$unit_weights["med"] = 2.0;
@@ -319,17 +356,12 @@ function spend_money_on_markets(&$c, $cpref, $points_needed, $max_spend, $unit_w
 }
 
 
-function get_optimal_tech_buying_array($cnum, $tech_type_to_ipa, $max_tech_price, $max_possible_spend, $base_tech_value) {
+function get_optimal_tech_buying_array($cnum, $tech_type_to_ipa, $max_tech_price, $base_tech_value) {
     // FUTURE: support weapons tech
     log_country_message($cnum, "Creating optimal tech buying array");
 
     $expected_avg_land = get_average_future_land(240, 0);
     log_country_message($cnum, "Average future land is calculated as: $expected_avg_land");
-
-
-
-    // log_main_message("land goal for $cnum is $lg");
-    // get_average_future_land($min_cs = 240, $turns_to_exclude_from_growth = 0)
 
     $optimal_tech_buying_array = [];
     for($key_num = 10; $key_num <= 100; $key_num+=10){
@@ -347,10 +379,13 @@ function get_optimal_tech_buying_array($cnum, $tech_type_to_ipa, $max_tech_price
             log_country_message($cnum, "No $tech_type tech available on public market so skipping optimal tech calculations");
             continue;
         }
+        else {
+            log_country_message($cnum, "Initial market price for $tech_type tech is $current_tech_price");
+        }
 
         // dump results into the array, further process the array later
         log_country_message($cnum, "Querying server for optimal tech buying results...");
-        $res = get_optimal_tech_buying_info ($tech_type, $expected_avg_land, $current_tech_price, $max_tech_price, $max_possible_spend, $ipa, $base_tech_value);
+        $res = get_optimal_tech_buying_info ($tech_type, $expected_avg_land, $current_tech_price, $max_tech_price, $ipa, $base_tech_value);
         // no need for additional error handling because comm should handle that
         if(is_array($res)) {
             foreach($res as $turn_bucket => $pq_results) {
@@ -396,12 +431,11 @@ function get_optimal_tech_buying_array($cnum, $tech_type_to_ipa, $max_tech_price
 
 
 
-// TODO: build the other end of this
-// TODO: add validation in communication.php
-function get_optimal_tech_buying_info ($tech_type, $expected_avg_land, $min_tech_price, $max_tech_price, $max_possible_spend, $base_income_per_acre, $base_tech_value) {
+// TODO: test
+function get_optimal_tech_buying_info ($tech_type, $expected_avg_land, $min_tech_price, $max_tech_price, $base_income_per_acre, $base_tech_value) {
     // return a fake array here to use for testing other functions
-    // TODO: why does $max_possible_spend matter?
 
+    /*
     $debug_result = [
         10 => [1=> ['t'=>$tech_type, 'p' => 1500, 'q' => 10000], 2=> ['t'=>$tech_type, 'p' => 2500, 'q' => 9000], 3=> ['t'=>$tech_type, 'p' => 3000, 'q' => 8888]],
         20 => [1=> ['t'=>$tech_type, 'p' => 1500, 'q' => 8000], 2=> ['t'=>$tech_type, 'p' => 2500, 'q' => 7777]],
@@ -409,29 +443,39 @@ function get_optimal_tech_buying_info ($tech_type, $expected_avg_land, $min_tech
     ];
 
     return $debug_result;
-
+    */
 
     /*
     // result is a multidim array ($p is price, q is quantity)
 
     $result = [
         10 => [1=> ['t'=>'t_agri', 'p' => $p1, 'q' => $q1], 2=> ['t'=>'t_agri', 'p' => $p2, 'q' => $q2], ... 10=> ['t'=>'t_agri', 'p' => $p10, 'q' => $q10]],
-        20 => [1=> ['t'=>'t_agri', 'p' => $p11, 'q' => $q11], 2=> ['t'=>'t_agri', 'p' => $p19, 'q' => $q19], ... 10=> ['t'=>'t_agri', 'p' => $p20, 'q' => $q20]],
+        20 => [1=> ['t'=>'t_agri', 'p' => $p1, 'q' => $q11], 2=> ['t'=>'t_agri', 'p' => $p2, 'q' => $q19], ... 10=> ['t'=>'t_agri', 'p' => $p10, 'q' => $q20]],
         ...
-        100 => [1=> ['t'=>'t_agri', 'p' => $57, 'q' => $58]]
+        100 => [1=> ['t'=>'t_agri', 'p' => $p1, 'q' => $q101]]
     ];
     */
 
-    return ee('get_optimal_tech_buying_info', [
+    $result = ee('get_optimal_tech_buying_info', [
         'tech' => $tech_type,
         'avg_land' => $expected_avg_land,
         'min_price' => $min_tech_price,
         'max_price' => $max_tech_price,
-        //'budget' => $max_possible_spend,
         'ipa' => $base_income_per_acre,
         'tech_value' => $base_tech_value
     ]);
-};
+    //out_data($result->debug);
+    //$optimal_tech_array = $result->optimal_tech;
+    // copying object values instead of a reference to an array is madness
+    $optimal_tech_array = [];
+    foreach($result->optimal_tech as $turn_bucket => $turn_results)
+        foreach($turn_results as $turn_key => $t_p_q)
+            $optimal_tech_array[$turn_bucket][$turn_key] = (array)$t_p_q;
+
+    //out_data($optimal_tech_array);
+
+    return $optimal_tech_array; //$optimal_tech_array;
+}
 
 
 /*

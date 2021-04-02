@@ -4,7 +4,7 @@ namespace EENPC;
 
 $techlist = ['t_mil','t_med','t_bus','t_res','t_agri','t_war','t_ms','t_weap','t_indy','t_spy','t_sdi'];
 
-function play_techer_strat($server, $cnum, $rules, &$exit_condition)
+function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
 {
     $exit_condition = 'NORMAL';
     //global $cnum;
@@ -12,6 +12,9 @@ function play_techer_strat($server, $cnum, $rules, &$exit_condition)
     //out_data($main);          //output the main data
     $c = get_advisor();     //c as in country! (get the advisor)
     $c->setIndy('pro_spy');
+
+    $cost_for_military_point_guess = get_cost_per_military_points_for_caching();
+    $dpnw_guess = get_dpnw_for_caching();
 
 
     if ($c->m_spy > 10000) {
@@ -77,10 +80,10 @@ function play_techer_strat($server, $cnum, $rules, &$exit_condition)
     }
 
     if (turns_of_food($c) > 50 && turns_of_money($c) > 50 && $c->money > 3500 * 500 && ($c->built() > 80 || $c->money > $c->fullBuildCost() - $c->runCash()) && $c->tpt > 200) { // 40 turns of food
-        buy_techer_goals($c, $c->money - $c->fullBuildCost() - $c->runCash()); //keep enough money to build out everything
+        buy_techer_goals($c, $c->fullBuildCost() + $c->runCash(), $cpref); //keep enough money to build out everything
     }
 
-    $c->countryStats(TECHER, techerGoals($c));
+    $c->countryStats(TECHER); // , techerGoals($c) // TODO: implement?
 
     return $c;
 }//end play_techer_strat()
@@ -294,13 +297,19 @@ function tech_techer(&$c, $turns = 1)
 
 
 
-function buy_techer_goals(&$c, $spend = null)
+function buy_techer_goals(&$c, $money_to_reserve, $cpref)
 {
-    $goals = techerGoals($c);
-    Country::countryGoals($c, $goals, $spend);
+    $priority_list = [
+        ['type'=>'DPA','goal'=>100],
+        ['type'=>'NWPA','goal'=>100]
+    ]; // techers shouldn't buy tech
+    spend_extra_money($c, $priority_list, "T", $cpref, $money_to_reserve, false, 100, 100);
+
+    //$goals = techerGoals($c);
+    //Country::countryGoals($c, $goals, $spend);
 }//end buy_techer_goals()
 
-
+/*
 function techerGoals(&$c)
 {
     return [
@@ -309,3 +318,4 @@ function techerGoals(&$c)
         ['nlg', $c->nlgTarget(),2 ],
     ];
 }//end techerGoals()
+*/

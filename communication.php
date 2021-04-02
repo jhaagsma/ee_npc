@@ -236,9 +236,9 @@ function expected_result($input)
         'gdi/join' => 'GDIJOIN',
         'gdi/leave' => 'GDILEAVE',
         'events' => 'NEW_EVENTS',
-        //'events' => 'EVENTSNEW', // this is a mistake? - Slagpit 20210329
         'ranks/{cnum}' => 'SEARCH',
-        'get_average_future_land' => 'AVG_FUTURE_LAND'
+        'get_average_future_land' => 'AVG_FUTURE_LAND',
+        'get_optimal_tech_buying_info' => 'OPTIMAL_TECH'
     ];
 
     return $expected[$lastFunction] ?? null;

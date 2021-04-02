@@ -40,15 +40,6 @@ if ($config === null) {
     die("Config not included successfully! Do you have config.php set up properly?");
 }
 
-if (file_exists($config['save_settings_file'])) {
-    out("Try to load saved settings");
-    global $settings;
-    $settings = json_decode(file_get_contents($config['save_settings_file']));
-    out("Successfully loaded settings!");
-} else {
-    out("No Settings File Found");
-}
-
 require_once 'country_functions.php';
 require_once 'Country.class.php';
 require_once 'PublicMarket.class.php';
@@ -93,6 +84,15 @@ if (isset($config['local_path_for_log_files'])) {
 
 // function below sets $local_file_path
 create_logging_directories($server, 0); // don't purge old files here because we want startup to be as fast as possible
+
+if (file_exists($config['save_settings_file'])) {
+    log_main_message("Try to load saved settings");
+    global $settings;
+    $settings = json_decode(file_get_contents($config['save_settings_file']));
+    log_main_message("Successfully loaded settings!");
+} else {
+    log_error_message(121, null, "No Settings File Found");
+}
 
 log_main_message("BOT IS STARTING AND HAS CLEARED INITIAL CHECKS", 'purple');
 log_main_message('Current Unix Time: '.time());
@@ -318,6 +318,9 @@ while (1) {
             //log_main_message("Setting GDI to ".($cpref->gdi ? "true" : "false"), true, 'brown');
         }
 
+        if($cpref->strat <> 'T') // TODO DEBUG
+            continue;
+
         if ($cpref->nextplay < time()) {
 
             log_country_message($cnum, "\n\n");
@@ -330,7 +333,15 @@ while (1) {
             $debug_force_destocking = false; // DEBUG: change to true to force destocking code to run
             $is_destocking = ($debug_force_destocking or time() >= $earliest_destock_time? true : false);
 
-            //$is_destocking = false; // DEBUG
+            $is_destocking = false; // TODO DEBUG
+
+            //TODO: debug
+            /*
+            $tech_type_to_ipa = ['t_agri' => 170, 't_bus' => 40]; //, 't_res' => 40]; //, 't_indy' => 200, 't_mil' => -30]; 
+            $optimal_tech = get_optimal_tech_buying_array ($cnum, $tech_type_to_ipa, 9999, 700);
+            out_data($optimal_tech);
+            continue;
+            */
 
             // log snapshot of country status
             $prev_c_values = [];
@@ -360,13 +371,6 @@ while (1) {
                 else { // not destocking
                     log_country_message($cnum, 'Not doing destocking actions');    
 
-
-                    // TODO: DEBUG
-                    //$tech_type_to_ipa = ['t_bus' => 40, 't_res' => 40, 't_agri' => 170];
-                    //$a = get_optimal_tech_buying_array($cnum, $tech_type_to_ipa, 15000, 9999, 100000000, 700);
-                    //out_data($a);
-                    //continue;
-
                     if ($cpref->allyup) {
                         Allies::fill('def');
                     }
@@ -386,13 +390,13 @@ while (1) {
                             $c = play_farmer_strat($server, $cnum, $rules, $exit_condition);
                             break;
                         case 'T':
-                            $c = play_techer_strat($server, $cnum, $rules, $exit_condition);
+                            $c = play_techer_strat($server, $cnum, $rules, $cpref, $exit_condition);
                             break;
                         case 'C':
                             $c = play_casher_strat($server, $cnum, $rules, $exit_condition);
                             break;
                         case 'I':
-                            $c = play_indy_strat($server, $cnum, $rules, $exit_condition);
+                            $c = play_indy_strat($server, $cnum, $rules, $cpref, $exit_condition);
                             break;
                         default:
                             $c = play_rainbow_strat($server, $cnum, $rules, $exit_condition);
@@ -440,7 +444,7 @@ while (1) {
                 // FUTURE: skip snapshot parameter for speed for remote play?
                 $c = get_advisor(); // this call probably can't be avoided - market info, events, and tax/expenses could be wrong without it
                 log_snapshot_message($c, "DELTA", $cpref->strat, $is_destocking, $dummy, $prev_c_values);
-                log_snapshot_message($c, "END", $cpref->strat, $is_destocking, $dummy);
+                log_snapshot_message($c, "END", $cpref->strat, $is_destocking, $dummy); // TODO: why does this take six seconds remotely?
                 
 
             } catch (Exception $e) {

@@ -4,7 +4,7 @@ namespace EENPC;
 
 $military_list = ['m_tr','m_j','m_tu','m_ta'];
 
-function play_indy_strat($server, $cnum, $rules, &$exit_condition)
+function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition)
 {
     $exit_condition = 'NORMAL';
     //global $cnum;
@@ -13,6 +13,11 @@ function play_indy_strat($server, $cnum, $rules, &$exit_condition)
     $c = get_advisor();     //c as in country! (get the advisor)
     $c->setIndyFromMarket(false); // changing to not check DPA - Slagpit 20210321
     log_country_message($cnum, "Indy: {$c->pt_indy}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%");
+
+    $tech_type_to_ipa = ['t_indy' => 315, 't_bus' => 40, 't_res' => 40]; // TODO: be smarter about this - is negative mil tech not acceptable?
+    $optimal_tech_buying_array = get_optimal_tech_buying_array($cnum, $tech_type_to_ipa, 9999, 700);
+    out_data($optimal_tech_buying_array);
+
     //out_data($c) && exit;             //ouput the advisor data
     if ($c->govt == 'M') {
         $rand = rand(0, 100);
@@ -41,7 +46,7 @@ function play_indy_strat($server, $cnum, $rules, &$exit_condition)
 
     // indies buy tech instead of building when no limit on goals here- Slagpit 20210321
     // the 80% is here because indies seemed to not be buying tech through 800 turns of play
-    buy_indy_goals($c, $c->money - floor(0.8 * $c->fullBuildCost()) - $c->runCash());
+    buy_indy_goals($c, floor(0.8 * $c->fullBuildCost()) + $c->runCash(), $cpref, $optimal_tech_buying_array);
 
     while ($c->turns > 0) {
         //$result = PublicMarket::buy($c,array('m_bu'=>100),array('m_bu'=>400));
@@ -72,11 +77,11 @@ function play_indy_strat($server, $cnum, $rules, &$exit_condition)
            || $c->money > $c->fullBuildCost() - $c->runCash())
         ) {
             //keep enough money to build out everything
-            buy_indy_goals($c, $c->money - $c->fullBuildCost() - $c->runCash());
+            buy_indy_goals($c, $c->fullBuildCost() + $c->runCash(), $cpref, $optimal_tech_buying_array);
         }
     }
 
-    $c->countryStats(INDY, indyGoals($c));
+    $c->countryStats(INDY); // indyGoals($c) // TODO: implement?
 
     return $c;
 }//end play_indy_strat()
@@ -140,14 +145,18 @@ function sellmilitarytime(&$c)
 }//end sellmilitarytime()
 
 
-function buy_indy_goals(&$c, $spend = null)
+function buy_indy_goals(&$c, $money_to_reserve, $cpref, $optimal_tech_buying_array)
 {
-    $goals = indyGoals($c);
 
-    Country::countryGoals($c, $goals, $spend);
+    $priority_list = [['type'=>'INCOME_TECHS','goal'=>100]]; // indies shouldn't buy military 
+    spend_extra_money($c, $priority_list, "I", $cpref, $money_to_reserve, false, 100, 100, $optimal_tech_buying_array);
+
+    //$goals = indyGoals($c);
+    //Country::countryGoals($c, $goals, $spend);
 }//end buy_indy_goals()
 
 
+/*
 function indyGoals(&$c)
 {
     return [
@@ -158,3 +167,4 @@ function indyGoals(&$c)
         ['t_mil',94,4],
     ];
 }//end indyGoals()
+*/

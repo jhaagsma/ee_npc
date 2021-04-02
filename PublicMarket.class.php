@@ -263,6 +263,7 @@ class PublicMarket
         $c_tech = $tech; // deal with t_ mismatch
         $tech = substr($tech, 2);
         $max_spend = $max_spend ?? $c->money;
+        log_country_message($c->cnum, "Buying up ".($tech_limit == 999999999 ? "" : "to $tech_limit total points of ")."$tech tech up to price $maxprice");
         //$market_info = get_market_info();   //get the Public Market info
         //log_country_message($c->cnum, 'Here;P:'.PublicMarket::price($tech).';Q:'.PublicMarket::available($tech).';S:'.$max_spend.';M:'.$maxprice.';');
         if (self::price($tech) != null && self::available($tech) > 0) {

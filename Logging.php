@@ -53,8 +53,11 @@ function log_get_name_of_error_type($error_type) {
     if($error_type == 118)
         return 'COUNTRY ATTEMPTED DESTOCK IN PROTECTION'; 
     if($error_type == 119)
-        return 'INVALID PRIORITY TYPE'; // for spend_extra_money
-
+        return 'spend_extra_money: INVALID PRIORITY TYPE';
+    if($error_type == 120)
+        return 'spend_extra_money: EMPTY PRIORITY LIST';
+    if($error_type == 121)
+        return 'NO SETTINGS FILE FOUND';        
 
     // 1000+ are country playing mistakes 
     if($error_type == 1000)
