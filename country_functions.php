@@ -228,7 +228,8 @@ function food_management(&$c)
         return true;
     }
 
-    //PUT GOODS/TECH ON MKT AS APPROPRIATE
+    // TODO: pass in strat, sell tech/military on public and hold if needed
+    // right now indies can still get screwed if they buy tech and don't have goods on market
 
 
     if ($c->food < $turns_of_food && $c->money > $turns_buy * $foodloss * $pm_info->buy_price->m_bu) {
