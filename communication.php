@@ -238,6 +238,7 @@ function expected_result($input)
         'events' => 'NEW_EVENTS',
         //'events' => 'EVENTSNEW', // this is a mistake? - Slagpit 20210329
         'ranks/{cnum}' => 'SEARCH',
+        'get_average_future_land' => 'AVG_FUTURE_LAND'
     ];
 
     return $expected[$lastFunction] ?? null;

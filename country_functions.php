@@ -4,6 +4,19 @@ namespace EENPC;
 
 
 
+// TODO: validate
+function get_average_future_land($min_cs = 240, $turns_to_exclude = 0) {
+    $result = ee('get_average_future_land', [
+        'min_cs' => $min_cs,
+        'turns_to_exclude' => $turns_to_exclude
+    ]);
+    
+    // TODO: what about the changes stuff? everything else ignores it?
+    return $result->avg_future_land;
+}
+
+
+
 function get_total_value_of_on_market_goods($c, $max_price_bushels_to_include = 999) {
     $owned_on_market_info = get_owned_on_market_info();
 

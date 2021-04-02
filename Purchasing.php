@@ -319,13 +319,21 @@ function spend_money_on_markets(&$c, $cpref, $points_needed, $max_spend, $unit_w
 }
 
 
-function get_optimal_tech_buying_array($cnum, $tech_type_to_ipa, $expected_avg_land, $max_tech_price, $max_possible_spend, $base_tech_value) {
+function get_optimal_tech_buying_array($cnum, $tech_type_to_ipa, $max_tech_price, $max_possible_spend, $base_tech_value) {
     // FUTURE: support weapons tech
     log_country_message($cnum, "Creating optimal tech buying array");
 
+    $expected_avg_land = get_average_future_land(240, 0);
+    log_country_message($cnum, "Average future land is calculated as: $expected_avg_land");
+
+
+
+    // log_main_message("land goal for $cnum is $lg");
+    // get_average_future_land($min_cs = 240, $turns_to_exclude_from_growth = 0)
+
     $optimal_tech_buying_array = [];
     for($key_num = 10; $key_num <= 100; $key_num+=10){
-        $optimal_tech_buying_array["turns$key_num"] = [];
+        $optimal_tech_buying_array[$key_num] = [];
     }
 
     foreach($tech_type_to_ipa as $tech_type => $ipa) {
@@ -358,10 +366,10 @@ function get_optimal_tech_buying_array($cnum, $tech_type_to_ipa, $expected_avg_l
     /*   
     // goal is single array with right structure, with $p1 <= $p2 <= ... $p50 and so on
     $result = [
-        'turns10' => [1=> ['t'=>'t_agri', 'p' => $p1, 'q' => $q1], 2=> ['t'=>'bus', 'p' => $p2, 'q' => $q2], ... 50=> ['t'=>'bus', 'p' => $p50, 'q' => $q50]],
-        'turns20' => [1=> ['t'=>'t_agri', 'p' => $p51, 'q' => $q51], 2=> ['t'=>'bus', 'p' => $p52, 'q' => $q52], ... 40=> ['t'=>'bus', 'p' => $p90, 'q' => $q90]],
+        10 => [1=> ['t'=>'t_agri', 'p' => $p1, 'q' => $q1], 2=> ['t'=>'bus', 'p' => $p2, 'q' => $q2], ... 50=> ['t'=>'bus', 'p' => $p50, 'q' => $q50]],
+        20 => [1=> ['t'=>'t_agri', 'p' => $p51, 'q' => $q51], 2=> ['t'=>'bus', 'p' => $p52, 'q' => $q52], ... 40=> ['t'=>'bus', 'p' => $p90, 'q' => $q90]],
         ...
-        'turns100' => 1=> ['t'=>'t_agri', 'p' => $p356, 'q' => $q357], ...
+        100 => 1=> ['t'=>'t_agri', 'p' => $p356, 'q' => $q357], ...
     ];
     */
 
@@ -392,11 +400,12 @@ function get_optimal_tech_buying_array($cnum, $tech_type_to_ipa, $expected_avg_l
 // TODO: add validation in communication.php
 function get_optimal_tech_buying_info ($tech_type, $expected_avg_land, $min_tech_price, $max_tech_price, $max_possible_spend, $base_income_per_acre, $base_tech_value) {
     // return a fake array here to use for testing other functions
+    // TODO: why does $max_possible_spend matter?
 
     $debug_result = [
-        'turns10' => [1=> ['t'=>$tech_type, 'p' => 1500, 'q' => 10000], 2=> ['t'=>$tech_type, 'p' => 2500, 'q' => 9000], 3=> ['t'=>$tech_type, 'p' => 3000, 'q' => 8888]],
-        'turns20' => [1=> ['t'=>$tech_type, 'p' => 1500, 'q' => 8000], 2=> ['t'=>$tech_type, 'p' => 2500, 'q' => 7777]],
-        'turns100' => [1=> ['t'=>$tech_type, 'p' => 1500, 'q' => 6000]]
+        10 => [1=> ['t'=>$tech_type, 'p' => 1500, 'q' => 10000], 2=> ['t'=>$tech_type, 'p' => 2500, 'q' => 9000], 3=> ['t'=>$tech_type, 'p' => 3000, 'q' => 8888]],
+        20 => [1=> ['t'=>$tech_type, 'p' => 1500, 'q' => 8000], 2=> ['t'=>$tech_type, 'p' => 2500, 'q' => 7777]],
+        100 => [1=> ['t'=>$tech_type, 'p' => 1500, 'q' => 6000]]
     ];
 
     return $debug_result;
@@ -406,18 +415,10 @@ function get_optimal_tech_buying_info ($tech_type, $expected_avg_land, $min_tech
     // result is a multidim array ($p is price, q is quantity)
 
     $result = [
-        'turns10' => [1=> ['t'=>'t_agri', 'p' => $p1, 'q' => $q1], 2=> ['t'=>'t_agri', 'p' => $p2, 'q' => $q2], ... 10=> ['t'=>'t_agri', 'p' => $p10, 'q' => $q10]],
-        'turns20' => [1=> ['t'=>'t_agri', 'p' => $p11, 'q' => $q11], 2=> ['t'=>'t_agri', 'p' => $p19, 'q' => $q19], ... 40=> ['t'=>'t_agri', 'p' => $p20, 'q' => $q20]],
+        10 => [1=> ['t'=>'t_agri', 'p' => $p1, 'q' => $q1], 2=> ['t'=>'t_agri', 'p' => $p2, 'q' => $q2], ... 10=> ['t'=>'t_agri', 'p' => $p10, 'q' => $q10]],
+        20 => [1=> ['t'=>'t_agri', 'p' => $p11, 'q' => $q11], 2=> ['t'=>'t_agri', 'p' => $p19, 'q' => $q19], ... 10=> ['t'=>'t_agri', 'p' => $p20, 'q' => $q20]],
         ...
-        'turns100' => [1=> ['t'=>'t_agri', 'p' => $57, 'q' => $58]]
-    ];
-
-
-    $result = [
-        'turns10' => [$p1 => $q1_1, $p2 => $q2_1, ... $p10 => $q10_1],
-        'turns20' => [$p1 => $q1_2, $p2 => $q2_2, ... $p10 => $q10_2],
-        ...
-        'turns100' => [$p1 => $q1_10, $p2 => $q2_10, ... $p10 => $q10_10],
+        100 => [1=> ['t'=>'t_agri', 'p' => $57, 'q' => $58]]
     ];
     */
 
@@ -426,7 +427,7 @@ function get_optimal_tech_buying_info ($tech_type, $expected_avg_land, $min_tech
         'avg_land' => $expected_avg_land,
         'min_price' => $min_tech_price,
         'max_price' => $max_tech_price,
-        'budget' => $max_possible_spend,
+        //'budget' => $max_possible_spend,
         'ipa' => $base_income_per_acre,
         'tech_value' => $base_tech_value
     ]);
