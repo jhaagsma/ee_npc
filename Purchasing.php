@@ -25,25 +25,6 @@ function spend_extra_money (&$c, $priority_list, $strat, $cpref, $money_to_reser
     $target_dpnw = $c->nlgTarget(); 
 
     // TODO: in AI testing, set different schedules based on magic number to compete
-    /*
-    // example structure of $priority_list:
-    $priority_list = [
-        ['DPA',10],
-        ['INCOME_TECHS',20],
-        ['DPA',40],
-        ['INCOME_TECHS',40],
-        ['DPA',70],
-        ['INCOME_TECHS',60],
-        ['DPA',100],
-        ['INCOME_TECHS',80],
-        ['NWPA',100],
-        ['INCOME_TECHS',100]
-    ];
-    */
-
-    // for each item in $priority_list, call buy_tech OR buy_defense_from_markets() OR buy_military_networth_from_markets()
-    // buy_tech(&$c, $tech = 't_bus', $max_spend = null, $maxprice = 9999, $tech_limit = 999999999)
-    // stop when budget is up
 
     log_country_message($c->cnum, "Attempting to spend money with $c->money money, $money_to_reserve money to reserve, and schedule 0");
     if($delay_military_purchases)
@@ -63,6 +44,9 @@ function spend_extra_money (&$c, $priority_list, $strat, $cpref, $money_to_reser
         $total_spent_by_step = 0;
         $step_purchase_was_delayed = false;
 
+        // TODO: skip if DPA is high enough
+        // TODO: skip if tech array is empty
+        // TODO: more concise when delaying purchase, also log delayed amount
         log_country_message($c->cnum, "Next priority is $priority_type with goal $priority_goal");
 
         if($priority_type == 'DPA') {

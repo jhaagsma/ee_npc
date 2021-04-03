@@ -148,7 +148,7 @@ function buy_casher_goals(&$c, $money_to_reserve, $cpref, $delay_military_purcha
         ['type'=>'DPA','goal'=>60],  
         ['type'=>'INCOME_TECHS','goal'=>100],            
         ['type'=>'DPA','goal'=>100],  
-        ['type'=>'NPWA','goal'=>100],  
+        ['type'=>'NWPA','goal'=>100],  
     ];
     spend_extra_money($c, $priority_list, "C", $cpref, $money_to_reserve, $delay_military_purchases, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array);
 
