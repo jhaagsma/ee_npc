@@ -319,7 +319,7 @@ while (1) {
         }
 
         //if($cpref->strat <> 'T') // TODO DEBUG
-        //    continue;
+         //   continue;
 
         if ($cpref->nextplay < time()) {
 

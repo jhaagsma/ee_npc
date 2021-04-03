@@ -293,7 +293,7 @@ class Country
     {
         //out("Turns Played: {$this->turns_played}");
         $dpat = floor(75 + pow($this->turns_played + $this->turns + $this->turns_stored, $powfactor) / 10) * $mult;
-        log_country_message($this->cnum, "DPAT: $dpat");
+        //log_country_message($this->cnum, "DPAT: $dpat"); // too much log spam - Slagpit
         return $dpat;
     }//end defPerAcreTarget()
 

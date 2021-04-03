@@ -16,6 +16,49 @@ function get_average_future_land($min_cs = 240, $turns_to_exclude = 0) {
 }
 
 
+/*
+NAME: food_and_money_for_turns
+PURPOSE: as needed, try to acquire food and money to run the specified number of turns
+RETURNS: true if we have enough food and money to run turns, false otherwise
+PARAMETERS:
+	$c - the country object
+	$turns_to_play - number of turns we want to play
+	$money_to_reserve - money that we cannot spend and have to keep in reserve
+	$is_cashing - 1 if cashing, 0 if not	
+*/
+function food_and_money_for_turns(&$c, $turns_to_play, $money_to_reserve, $is_cashing) {
+	$incoming_money_per_turn = ($is_cashing ? 1.0 : 1.2) * $c->taxes;
+	$additional_turns_for_expenses_growth = floor($turns_to_play / 5);
+	// check money
+	if(!has_money_for_turns($turns_to_play + $additional_turns_for_expenses_growth, $c->money, $incoming_money_per_turn, $c->expenses, $money_to_reserve)) {
+		// not enough money to play a turn - can we make up the difference by selling a turn's worth of food production?
+		if($c->food > 0 and $c->foodnet > 0) {
+			// log_country_message($c->cnum, "TEMP DEBUG: Food is ".$c->food); // FUTURE: figure out why this errors sometimes? could be fixed now - Slagpit 20210329
+			PrivateMarket::sell_single_good($c, 'm_bu', min($c->food, ($turns_to_play + $additional_turns_for_expenses_growth) * $c->foodnet));
+		}
+		
+		if (!has_money_for_turns($turns_to_play + $additional_turns_for_expenses_growth, $c->money, $incoming_money_per_turn, $c->expenses, $money_to_reserve)) {
+			// playing turns is no longer productive
+			log_country_message($c->cnum, "Not enough money to play $turns_to_play turns. Money is $c->money and money to reserve is $money_to_reserve");
+			return false;
+		}
+	}
+
+	// try to buy food if needed up to $60, quit if we can't find cheap enough food
+	// FUTURE - be smarter about picking $60
+
+	$food_needed = max(0, get_food_needs_for_turns($turns_to_play + $additional_turns_for_expenses_growth, $c->foodpro, $c->foodcon) - $c->food);
+	//log_country_message($c->cnum, "Food is $c->food, food consumption is $c->foodcon, and calculated food needs are $food_needed");	
+			
+	if(!buy_full_food_quantity_if_possible($c, $food_needed, 60, $money_to_reserve)) {
+		log_country_message($c->cnum, "Not enough food to play $turns_to_play turns. Food is $c->food, money is $c->money, and money to reserve is $money_to_reserve");				
+		return false;
+	}
+
+	return true;
+}
+
+
 
 function get_total_value_of_on_market_goods($c, $max_price_bushels_to_include = 999) {
     $owned_on_market_info = get_owned_on_market_info();

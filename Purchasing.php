@@ -4,7 +4,6 @@ namespace EENPC;
 
 // TODO: move other purchasing functions here
 // TODO: support for mil tech
-// TODO: if a bot wants to buy tech but can't, should it hold money? right now it will buy defense
 
 
 // buy military or tech (future should include stocking bushels?)
@@ -14,93 +13,122 @@ function spend_extra_money (&$c, $priority_list, $strat, $cpref, $money_to_reser
         return false;
     }
 
-    $skip_tech = empty($optimal_tech_buying_array) ? true : false;
+    // check if the tech array has anything relevant for this country's goals
+    $skip_tech = true;
+    $is_tech_goal_present = false;
+    foreach($priority_list as $priority_item) {
+        if($priority_item['type'] == 'INCOME_TECHS') {
+            $is_tech_goal_present = true;
+            if(!empty($optimal_tech_buying_array[$priority_item['goal']])) {
+                $skip_tech = false;
+                break;
+            }
+        }
+    }
+    reset ($priority_list); // just in case
 
+    // no reason to run calculations if we can't buy tech and we can't buying military
     if($delay_military_purchases and $skip_tech)
         return true;
 
-    if($skip_tech)
-        log_country_message($c->cnum, "Optimal tech array is empty, which either means tech is too expensive or it wasn't passed in correctly");    
+    if($is_tech_goal_present and $skip_tech) // log this here to avoid spam
+        log_country_message($c->cnum, "Optimal tech array is empty for goals which usually means tech is too expensive");    
 
     $target_dpa = $c->defPerAcreTarget();
     $target_dpnw = $c->nlgTarget(); 
 
     // TODO: in AI testing, set different schedules based on magic number to compete
 
-    log_country_message($c->cnum, "Attempting to spend money with $c->money money, $money_to_reserve money to reserve, and schedule 0");
+    // TODO: add in schedule?
+    log_country_message($c->cnum, "Attempting to spend money with $c->money money and $money_to_reserve money to reserve");
     if($delay_military_purchases)
-        log_country_message($c->cnum, "Military purchases are delayed in this evaluation");    
+        log_country_message($c->cnum, "Military purchases are delayed in this evaluation and will increase reserved money instead");    
 
-    $delayed_money = 0;
     $total_spent = 0;
     $max_spend = $c->money - $money_to_reserve;
     if($max_spend <= 10000)
         return false; // TODO: error
 
     foreach($priority_list as $priority_item) {
-        if($c->money - $delayed_money <= 10000 + $money_to_reserve) {
-            log_country_message($c->cnum, "Ran out of money to spend with $c->money money, $money_to_reserve money to reserve, and $delayed_money in delay cost");
+        if($c->money + 10000 <= $money_to_reserve) {
+            log_country_message($c->cnum, "Ran out of money to spend");
             break;
         }
 
         $priority_type = $priority_item['type'];
         $priority_goal = $priority_item['goal'];
-        $total_spent_by_step = 0;
-        $step_purchase_was_delayed = false;
-
-        // TODO: skip if DPA is high enough
-        // TODO: skip if tech array is empty
-        // TODO: more concise when delaying purchase, also log delayed amount
-        log_country_message($c->cnum, "Next priority is $priority_type with goal $priority_goal");
+        $log_message_for_updated_values = false;
 
         if($priority_type == 'DPA') {
-            $step_purchase_was_delayed = $delay_military_purchases;
             $total_defense_points_goal = $target_dpa * $priority_goal * $c->land / 100;
             $current_defense_points = $c->defPerAcre() * $c->land;
-            $defense_unit_points_needed = max(0, $total_defense_points_goal - $current_defense_points);
-            log_country_message($c->cnum, "Def points needed is $defense_unit_points_needed with goal of $total_defense_points_goal and current value of $current_defense_points");
+            $defense_unit_points_needed = ceil(max(0, $total_defense_points_goal - $current_defense_points));            
             if($defense_unit_points_needed > 0) {
-                $total_spent_by_step = buy_defense_from_markets($c, $cpref, $defense_unit_points_needed, $max_spend, $delay_military_purchases, $cost_for_military_point_guess);
-                $max_spend -= $total_spent_by_step;
+                $log_message_for_updated_values = true;
+                $total_spent_or_reserved_by_step = buy_defense_from_markets($c, $cpref, $defense_unit_points_needed, $max_spend, $delay_military_purchases, $cost_for_military_point_guess);
+                if($delay_military_purchases) {
+                    log_country_message($c->cnum, "DPA goal $priority_goal%: Reserved an additional $total_spent_or_reserved_by_step to eventually buy $defense_unit_points_needed defense to meet goal of $total_defense_points_goal points");
+                    $money_to_reserve += $total_spent_or_reserved_by_step;
+                }
+                else {
+                    $defense_points_after_purchase = $c->defPerAcre() * $c->land;
+                    $was_goal_met = $defense_points_after_purchase >= $total_defense_points_goal ? true : false;
+                    log_country_message($c->cnum, "DPA goal $priority_goal%: Spent $total_spent_or_reserved_by_step to buy defense and ended with $defense_points_after_purchase defense which did ".($was_goal_met ? "" : 'NOT ')."meet the goal of $total_defense_points_goal points");
+                    $max_spend -= $total_spent_or_reserved_by_step;
+                    $total_spent += $total_spent_or_reserved_by_step;
+                }
             }
         }
         elseif($priority_type == 'INCOME_TECHS') {
             if(!$skip_tech and isset($optimal_tech_buying_array[$priority_goal])) { // a bucket might not appear if tech is too expensive
+                $total_spent_by_step = 0;
                 foreach($optimal_tech_buying_array[$priority_goal] as $key => $t_p_q) {
                     $tech_name = $t_p_q['t'];
                     $max_tech_price = $t_p_q['p'];
                     $tech_point_limit = $t_p_q['q'];
                     if($max_spend > 10 * $max_tech_price) {
                         $total_spent_on_single_tech = PublicMarket::buy_tech($c, $tech_name, $max_spend, $max_tech_price, $tech_point_limit);
-                        $max_spend -= $total_spent_on_single_tech;
+                        $max_spend -= $total_spent_on_single_tech; // have to update here for buy_tech() to not overbuy
                         $total_spent_by_step += $total_spent_on_single_tech;
                         if($max_spend > 10 * $max_tech_price) // still have money left, so we likely exhausted the public market supply
-                            unset($optimal_tech_buying_array[$priority_goal][$key]); // TODO: safe?
+                            unset($optimal_tech_buying_array[$priority_goal][$key]); // this looks shady but seems to work ok
                     }
+                }
+                if($total_spent_by_step > 0) {
+                    $log_message_for_updated_values = true;
+                    $total_spent += $total_spent_by_step;
+                    log_country_message($c->cnum, "TECH goal $priority_goal%: Spent $total_spent_by_step to buy tech");
                 }
             }
         }
         elseif($priority_type == 'NWPA') {            
-            $step_purchase_was_delayed = $delay_military_purchases;
             $total_nw_goal = $target_dpnw * $priority_goal * $c->land / 100;
             $current_nw = $c->networth;
-            $nw_needed = max(0, $total_nw_goal - $current_nw);
-            log_country_message($c->cnum, "Networth needed is $nw_needed with goal of $total_nw_goal and current value of $current_nw");
+            $nw_needed = ceil(max(0, $total_nw_goal - $current_nw));
             if($nw_needed > 0) {
-                $total_spent_by_step = buy_military_networth_from_markets($c, $cpref, $nw_needed, $max_spend, $delay_military_purchases, $dpnw_guess);
-                $max_spend -= $total_spent_by_step;
+                $log_message_for_updated_values = true;
+                $total_spent_or_reserved_by_step = buy_military_networth_from_markets($c, $cpref, $nw_needed, $max_spend, $delay_military_purchases, $dpnw_guess);
+                if($delay_military_purchases) {
+                    log_country_message($c->cnum, "NWPA goal $priority_goal%: Reserved an additional $total_spent_or_reserved_by_step to eventually buy $nw_needed NW to meet goal of $total_nw_goal NW");
+                    $money_to_reserve += $total_spent_or_reserved_by_step;
+                }
+                else {
+                    $was_goal_met = $c->networth >= $total_nw_goal ? true : false;
+                    log_country_message($c->cnum, "NWPA goal $priority_goal%: Spent $total_spent_or_reserved_by_step to increase NW and did ".($was_goal_met ? "" : 'NOT ')."meet the goal of $total_defense_points_goal NW");
+                    $max_spend -= $total_spent_or_reserved_by_step;
+                    $total_spent += $total_spent_or_reserved_by_step;
+                }
             }
         }            
         else
             log_error_message(119, $c->cnum, "Invalid priority type: $priority_type. Allowed values are 'DPA', 'INCOME_TECHS', and 'NWPA'");  
 
-        if($step_purchase_was_delayed)
-            $delayed_money += $total_spent_by_step;
-        else
-            $total_spent += $total_spent_by_step;
+        if($log_message_for_updated_values)
+            log_country_message($c->cnum, "Reached end of goal. Money: $c->money, max to spend: $max_spend, total spent: $total_spent, total reserved: $money_to_reserve");
     }
 
-    log_country_message($c->cnum, "Completed spending money with $total_spent in total purchases, with $c->money money remaining, $money_to_reserve money to reserve, $delayed_money in delay cost, and schedule 0");
+    // TODO: schedule code
+    log_country_message($c->cnum, "Completed spending money. Money: $c->money, max to spend: $max_spend, total spent: $total_spent, total reserved: $money_to_reserve");
     return true;
 }
 
@@ -436,9 +464,7 @@ function get_optimal_tech_buying_array($cnum, $tech_type_to_ipa, $max_tech_price
             });
     }
 
-    // TODO: some kind of validation or error checking? unfortunately, the array could be empty if prices are too high though...
     log_country_message($cnum, "Array processing complete for optimal tech buying array");
-
     log_country_data($cnum, $optimal_tech_buying_array);
 
     return $optimal_tech_buying_array;
