@@ -3,8 +3,9 @@
 namespace EENPC;
 
 // TODO: move other purchasing functions here
-// TODO: tech buying array needs to go into log file
 // TODO: support for mil tech
+// TODO: if a bot wants to buy tech but can't, should it hold money? right now it will buy defense
+
 
 // buy military or tech (future should include stocking bushels?)
 function spend_extra_money (&$c, $priority_list, $strat, $cpref, $money_to_reserve, $delay_military_purchases, $cost_for_military_point_guess, $dpnw_guess, &$optimal_tech_buying_array = []) {

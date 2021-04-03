@@ -192,6 +192,12 @@ function food_management(&$c)
     while ($turns_buy > 1 && $c->food <= $turns_buy * $foodloss && PublicMarket::price('m_bu') != null) {
         $turns_of_food = $foodloss * $turns_buy;
         $market_price  = PublicMarket::price('m_bu');
+
+        if($market_price >= 100 && $c->turns_stored < 30) { // FUTURE: this isn't really any good, but it's better than nothing
+            log_country_message($c->cnum, "Public market food is too expensive at $market_price; hold turns for now, and wait for food on MKT.");
+            return true;
+        }
+
         //log_country_message($c->cnum, "Market Price: " . $market_price);
         if ($c->food < $turns_of_food && $c->money > $turns_of_food * $market_price * $c->tax() && $c->money - $turns_of_food * $market_price * $c->tax() + $c->income * $turns_buy > 0) { //losing food, less than turns_buy turns left, AND have the money to buy it
             $quantity = min($foodloss * $turns_buy, PublicMarket::available('m_bu'));
