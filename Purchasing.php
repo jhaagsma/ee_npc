@@ -128,7 +128,7 @@ function spend_extra_money (&$c, $priority_list, $strat, $cpref, $money_to_reser
     }
 
     // TODO: schedule code
-    log_country_message($c->cnum, "Completed spending money. Money: $c->money, max to spend: $max_spend, total spent: $total_spent, total reserved: $money_to_reserve");
+    //log_country_message($c->cnum, "Completed spending money. Money: $c->money, max to spend: $max_spend, total spent: $total_spent, total reserved: $money_to_reserve");
     return true;
 }
 
