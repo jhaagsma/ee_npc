@@ -302,7 +302,7 @@ function spend_money_on_markets(&$c, $cpref, $points_needed, $max_spend, $unit_w
                 $pm_purchase_amount = min(
                     $pm_info->available->$best_pm_unit,
                     floor(min($c->money, $max_spend) / $pm_info->buy_price->$best_pm_unit),
-                    ceil(($points_needed - $total_points_gained) / $point_per_unit),
+                    ceil(($points_needed - $total_points_gained) / $point_per_unit)
                 );
                 
                 if ($pm_purchase_amount > 0) {
