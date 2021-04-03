@@ -144,7 +144,7 @@ function buy_casher_goals(&$c, $money_to_reserve, $cpref, $delay_military_purcha
         ['type'=>'DPA','goal'=>5],
         ['type'=>'INCOME_TECHS','goal'=>50],
         ['type'=>'DPA','goal'=>30],
-        ['type'=>'INCOME_TECHS','goal'=>75],
+        ['type'=>'INCOME_TECHS','goal'=>80],
         ['type'=>'DPA','goal'=>60],  
         ['type'=>'INCOME_TECHS','goal'=>100],            
         ['type'=>'DPA','goal'=>100],  

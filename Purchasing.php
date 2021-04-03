@@ -33,6 +33,9 @@ function spend_extra_money (&$c, $priority_list, $strat, $cpref, $money_to_reser
     $delayed_money = 0;
     $total_spent = 0;
     $max_spend = $c->money - $money_to_reserve;
+    if($max_spend <= 10000)
+        return false; // TODO: error
+
     foreach($priority_list as $priority_item) {
         if($c->money - $delayed_money <= 10000 + $money_to_reserve) {
             log_country_message($c->cnum, "Ran out of money to spend with $c->money money, $money_to_reserve money to reserve, and $delayed_money in delay cost");
@@ -293,7 +296,7 @@ function spend_money_on_markets(&$c, $cpref, $points_needed, $max_spend, $unit_w
             else { 
                 $pm_purchase_amount = min(
                     $pm_info->available->$best_pm_unit,
-                    floor(min($c->money, $max_spend) / $pm_info->buy_price->$best_pm_unit),
+                    floor(($max_spend - $total_spent) / $pm_info->buy_price->$best_pm_unit),
                     ceil(($points_needed - $total_points_gained) / $point_per_unit)
                 );
                 
