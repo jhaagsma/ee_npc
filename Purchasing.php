@@ -3,6 +3,7 @@
 namespace EENPC;
 
 // TODO: move other purchasing functions here
+// TODO: tech buying array needs to go into log file
 // TODO: support for mil tech
 
 // buy military or tech (future should include stocking bushels?)
@@ -78,7 +79,7 @@ function spend_extra_money (&$c, $priority_list, $strat, $cpref, $money_to_reser
                         $max_spend -= $total_spent_on_single_tech;
                         $total_spent_by_step += $total_spent_on_single_tech;
                         if($max_spend > 10 * $max_tech_price) // still have money left, so we likely exhausted the public market supply
-                            unset($optimal_tech_buying_array[$priority_goal][$key]); // TODO; safe?
+                            unset($optimal_tech_buying_array[$priority_goal][$key]); // TODO: safe?
                     }
                 }
             }
@@ -405,7 +406,7 @@ function get_optimal_tech_buying_array($cnum, $tech_type_to_ipa, $max_tech_price
 
         // dump results into the array, further process the array later
         log_country_message($cnum, "Querying server for optimal tech buying results...");
-        $res = get_optimal_tech_buying_info ($tech_type, $expected_avg_land, $current_tech_price, $max_tech_price, $ipa, $base_tech_value);
+        $res = get_optimal_tech_from_ee($tech_type, $expected_avg_land, $current_tech_price, $max_tech_price, $ipa, $base_tech_value);
         // no need for additional error handling because comm should handle that
         if(is_array($res)) {
             foreach($res as $turn_bucket => $pq_results) {
@@ -441,15 +442,16 @@ function get_optimal_tech_buying_array($cnum, $tech_type_to_ipa, $max_tech_price
 
     // TODO: some kind of validation or error checking? unfortunately, the array could be empty if prices are too high though...
     log_country_message($cnum, "Array processing complete for optimal tech buying array");
-    return $optimal_tech_buying_array;  
-    
 
+    log_country_data($cnum, $optimal_tech_buying_array);
+
+    return $optimal_tech_buying_array;
 };
 
 
 
 
-function get_optimal_tech_buying_info ($tech_type, $expected_avg_land, $min_tech_price, $max_tech_price, $base_income_per_acre, $base_tech_value) {
+function get_optimal_tech_from_ee ($tech_type, $expected_avg_land, $min_tech_price, $max_tech_price, $base_income_per_acre, $base_tech_value) {
     // return a fake array here to use for testing other functions
 
     /*

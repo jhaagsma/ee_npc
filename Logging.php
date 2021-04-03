@@ -99,6 +99,16 @@ function log_snapshot_message($c, $snapshot_type, $strat, $is_destocking, &$outp
 };
 
 
+function log_country_data($cnum_input, $data) {
+    $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+    //out(str_replace("\n", " ", var_export($backtrace, true)));
+    //This function is to output and format some data nicely
+    $line = $backtrace[3]['line'] ?? '--';
+    $file = $backtrace[3]['file'] ?? '--';
+    $message = "DATA: ($file:$line)\n".json_encode($data);
+    log_country_message($cnum_input, $message);
+}
+
 // examples of things to log: what decisions were made (and why), how turns are spent
 function log_country_message($cnum_input, $message) {
     global $log_country_to_screen, $log_to_local, $local_file_path;

@@ -39,7 +39,6 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
 
     $tech_type_to_ipa = ['t_bus' => 40, 't_res' => 40, 't_agri' => 190]; // TODO: be smarter about this - is negative mil tech not acceptable?
     $optimal_tech_buying_array = get_optimal_tech_buying_array($cnum, $tech_type_to_ipa, 9999, 700);
-    out_data($optimal_tech_buying_array);
 
     $cost_for_military_point_guess = get_cost_per_military_points_for_caching($c);
     $dpnw_guess = get_dpnw_for_caching($c);

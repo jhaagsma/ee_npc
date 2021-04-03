@@ -14,9 +14,8 @@ function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     $c->setIndyFromMarket(false); // changing to not check DPA - Slagpit 20210321
     log_country_message($cnum, "Indy: {$c->pt_indy}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%");
 
-    $tech_type_to_ipa = ['t_indy' => 315, 't_bus' => 40, 't_res' => 40]; // TODO: be smarter about this - is negative mil tech not acceptable?
+    $tech_type_to_ipa = ['t_indy' => 300, 't_bus' => 40, 't_res' => 40]; // TODO: be smarter about this - is negative mil tech not acceptable?
     $optimal_tech_buying_array = get_optimal_tech_buying_array($cnum, $tech_type_to_ipa, 9999, 700);
-    out_data($optimal_tech_buying_array);
 
     //out_data($c) && exit;             //ouput the advisor data
     if ($c->govt == 'M') {

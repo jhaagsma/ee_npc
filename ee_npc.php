@@ -318,8 +318,8 @@ while (1) {
             //log_main_message("Setting GDI to ".($cpref->gdi ? "true" : "false"), true, 'brown');
         }
 
-        if($cpref->strat <> 'T') // TODO DEBUG
-            continue;
+        //if($cpref->strat <> 'T') // TODO DEBUG
+        //    continue;
 
         if ($cpref->nextplay < time()) {
 
@@ -333,7 +333,7 @@ while (1) {
             $debug_force_destocking = false; // DEBUG: change to true to force destocking code to run
             $is_destocking = ($debug_force_destocking or time() >= $earliest_destock_time? true : false);
 
-            $is_destocking = false; // TODO DEBUG
+            //$is_destocking = false; // TODO DEBUG
 
             //TODO: debug
             /*
@@ -346,14 +346,6 @@ while (1) {
             // log snapshot of country status
             $prev_c_values = [];
             $init_c = get_advisor();
-
-            // TODO: DEBUG
-            // $priority_list = [
-            //     ['type'=>'DPA','goal'=>10],
-            //     ['type'=>'DPA','goal'=>50],
-            //     ['type'=>'DPA','goal'=>100]
-            // ];
-            // spend_extra_money($init_c, $priority_list, $cpref->strat, $cpref, floor(0.5 * $init_c->money), false, 50, 50);
 
             log_snapshot_message($init_c, "BEGIN", $cpref->strat, $is_destocking, $prev_c_values);
             unset($init_c);
