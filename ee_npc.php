@@ -387,13 +387,13 @@ while (1) {
                     // FUTURE: careful with the $cnum global removal, maybe this breaks things? seems fine so far - 20210323
                     switch ($cpref->strat) {
                         case 'F':
-                            $c = play_farmer_strat($server, $cnum, $rules, $exit_condition);
+                            $c = play_farmer_strat($server, $cnum, $rules, $cpref, $exit_condition);
                             break;
                         case 'T':
                             $c = play_techer_strat($server, $cnum, $rules, $cpref, $exit_condition);
                             break;
                         case 'C':
-                            $c = play_casher_strat($server, $cnum, $rules, $exit_condition);
+                            $c = play_casher_strat($server, $cnum, $rules, $cpref, $exit_condition);
                             break;
                         case 'I':
                             $c = play_indy_strat($server, $cnum, $rules, $cpref, $exit_condition);

@@ -145,7 +145,7 @@ function sellmilitarytime(&$c)
 }//end sellmilitarytime()
 
 
-function buy_indy_goals(&$c, $money_to_reserve, $cpref, $optimal_tech_buying_array)
+function buy_indy_goals(&$c, $money_to_reserve, $cpref, &$optimal_tech_buying_array)
 {
 
     $priority_list = [['type'=>'INCOME_TECHS','goal'=>100]]; // indies shouldn't buy military 

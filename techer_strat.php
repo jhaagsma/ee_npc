@@ -13,10 +13,6 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     $c = get_advisor();     //c as in country! (get the advisor)
     $c->setIndy('pro_spy');
 
-    $cost_for_military_point_guess = get_cost_per_military_points_for_caching();
-    $dpnw_guess = get_dpnw_for_caching();
-
-
     if ($c->m_spy > 10000) {
         Allies::fill('spy');
     }

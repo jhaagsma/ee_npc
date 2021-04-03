@@ -2,7 +2,7 @@
 
 namespace EENPC;
 
-function play_casher_strat($server, $cnum, $rules, &$exit_condition)
+function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition)
 {
     $exit_condition = 'NORMAL';
     //global $cnum;
@@ -16,6 +16,13 @@ function play_casher_strat($server, $cnum, $rules, &$exit_condition)
     if ($c->m_spy > 10000) {
         Allies::fill('spy');
     }
+
+    $tech_type_to_ipa = ['t_bus' => 200, 't_res' => 200]; // TODO: be smarter about this - is negative mil tech not acceptable?
+    $optimal_tech_buying_array = get_optimal_tech_buying_array($cnum, $tech_type_to_ipa, 9999, 700);
+    out_data($optimal_tech_buying_array);
+
+    $cost_for_military_point_guess = get_cost_per_military_points_for_caching($c);
+    $dpnw_guess = get_dpnw_for_caching($c);
 
     log_country_message($cnum, "Bus: {$c->pt_bus}%; Res: {$c->pt_res}%");
     if ($c->govt == 'M') {
@@ -79,12 +86,20 @@ function play_casher_strat($server, $cnum, $rules, &$exit_condition)
 
             if ($spend > $c->income * 7) {
                 //try to batch a little bit...
-                buy_casher_goals($c, $spend);
+                buy_casher_goals($c, $c->fullBuildCost(), $cpref, true, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array);
             }
         }
     }
 
-    $c->countryStats(CASHER, casherGoals($c));
+    if (turns_of_food($c) > 40
+            && $c->money > 3500 * 500
+            && ($c->built() > 80 || $c->money > $c->fullBuildCost())
+        ) { // 40 turns of food
+        // buy military at the end
+        buy_casher_goals($c, $c->fullBuildCost(), $cpref, false, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array);
+    }
+
+    $c->countryStats(CASHER); // TODO: implement? , casherGoals($c));
     return $c;
 }//end play_casher_strat()
 
@@ -123,12 +138,26 @@ function play_casher_turn(&$c)
 }//end play_casher_turn()
 
 
-function buy_casher_goals(&$c, $spend = null)
+function buy_casher_goals(&$c, $money_to_reserve, $cpref, $delay_military_purchases, $cost_for_military_point_guess, $dpnw_guess, &$optimal_tech_buying_array)
 {
-    Country::countryGoals($c, casherGoals($c), $spend);
+    // TODO: randomize
+    $priority_list = [
+        ['type'=>'DPA','goal'=>5],
+        ['type'=>'INCOME_TECHS','goal'=>50],
+        ['type'=>'DPA','goal'=>30],
+        ['type'=>'INCOME_TECHS','goal'=>75],
+        ['type'=>'DPA','goal'=>60],  
+        ['type'=>'INCOME_TECHS','goal'=>100],            
+        ['type'=>'DPA','goal'=>100],  
+        ['type'=>'NPWA','goal'=>100],  
+    ];
+    spend_extra_money($c, $priority_list, "C", $cpref, $money_to_reserve, $delay_military_purchases, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array);
+
+
+    //Country::countryGoals($c, casherGoals($c), $spend);
 }//end buy_casher_goals()
 
-
+/*
 function casherGoals(&$c)
 {
     $bus_res_goal = ($c->govt == "H" ? 148 : 178);
@@ -142,3 +171,4 @@ function casherGoals(&$c)
         ['food', 1000000000, 1],
     ];
 }//end casherGoals()
+*/

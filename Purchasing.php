@@ -3,7 +3,7 @@
 namespace EENPC;
 
 // TODO: move other purchasing functions here
-// TODO: need landgoal function somewhere... call server code for explore acres?
+// TODO: support for mil tech
 
 // buy military or tech (future should include stocking bushels?)
 function spend_extra_money (&$c, $priority_list, $strat, $cpref, $money_to_reserve, $delay_military_purchases, $cost_for_military_point_guess, $dpnw_guess, &$optimal_tech_buying_array = []) {
@@ -11,7 +11,6 @@ function spend_extra_money (&$c, $priority_list, $strat, $cpref, $money_to_reser
         log_error(120, $c->cnum, "");
         return false;
     }
-
 
     $target_dpa = $c->defPerAcreTarget();
     $target_dpnw = $c->nlgTarget(); 
@@ -109,13 +108,35 @@ function spend_extra_money (&$c, $priority_list, $strat, $cpref, $money_to_reser
 }
 
 
-function get_cost_per_military_points_for_caching() { // parameters?
-    return 80; // TODO: implement
+function get_cost_per_military_points_for_caching($c) { // parameters?
+    $pm_info = PrivateMarket::getInfo();
+    $public_market_tax_rate = $c->tax();
+    
+    // FUTURE: account for weights somehow?
+    $guess_at_cost_per_point = ceil(min(
+        $pm_info->buy_price->m_tr,
+        10 + $public_market_tax_rate * PublicMarket::price('m_tr'), 
+        10 + $public_market_tax_rate * PublicMarket::price('m_tu') / 2, 
+        30 + $public_market_tax_rate * PublicMarket::price('m_ta') / 4
+    ));
+
+    return $guess_at_cost_per_point;
 }
 
 
-function get_dpnw_for_caching() { // parameters?
-    return 80; // TODO: implement
+function get_dpnw_for_caching($c) { // parameters?
+    $pm_info = PrivateMarket::getInfo();
+    $public_market_tax_rate = $c->tax();
+    
+    $guess_at_cost_per_point = ceil(min(
+        $pm_info->buy_price->m_tr / 0.5,
+        10 + $public_market_tax_rate * PublicMarket::price('m_tr') / 0.5, 
+        10 + $public_market_tax_rate * PublicMarket::price('m_j') / 0.6,        
+        10 + $public_market_tax_rate * 0.5 * PublicMarket::price('m_tu') / 0.6, 
+        30 + $public_market_tax_rate * 0.25 * PublicMarket::price('m_ta') / 2.0
+    ));
+
+    return $guess_at_cost_per_point;
 }
 
 
@@ -123,7 +144,7 @@ function get_dpnw_for_caching() { // parameters?
 function buy_defense_from_markets(&$c, $cpref, $defense_unit_points_needed, $max_spend, $delay_military_purchases, $cost_for_military_point_guess = null) {
     if($delay_military_purchases) {
         if($cost_for_military_point_guess == null)
-            $cost_for_military_point_guess = 80; // TODO: call get_cost_per_military_points_for_caching
+            $cost_for_military_point_guess = get_cost_per_military_points_for_caching($c);
         return $cost_for_military_point_guess * $defense_unit_points_needed;
     }
 
@@ -147,7 +168,7 @@ function buy_military_points_from_markets(&$c, $cpref, $military_unit_points_nee
 function buy_military_networth_from_markets(&$c, $cpref, $nw_needed, $max_spend, $delay_military_purchases, $dpnw_guess = null) {
     if($delay_military_purchases) {
         if($dpnw_guess == null)
-            $dpnw_guess = 80; // TODO: call get_dpnw_for_caching
+            $dpnw_guess = get_dpnw_for_caching($c);
         return $dpnw_guess * $nw_needed;
     }
 
@@ -191,7 +212,6 @@ function buyout_up_to_public_market_dpnw_2(&$c, $cpref, $max_dpnw, $max_spend, $
 
 // $point_name is for message logging only
 function spend_money_on_markets(&$c, $cpref, $points_needed, $max_spend, $unit_weights, $unit_points, $point_name, $max_dollars_per_point = 100000, $public_only = false, $total_spent = 0, $total_points_gained = 0, $recursion_level = 1) {
-    // TODO: TEST THIS!!!!!!!!!
     log_country_message($c->cnum, "Iteration $recursion_level for public".($public_only ? "" : " and private")." market purchasing based on $point_name");
     log_country_message($c->cnum, "Budget is ".($max_spend - $total_spent).", purchase limit is ".($points_needed - $total_points_gained)." points, and price limit is $max_dollars_per_point $point_name");
 
@@ -429,9 +449,6 @@ function get_optimal_tech_buying_array($cnum, $tech_type_to_ipa, $max_tech_price
 
 
 
-
-
-// TODO: test
 function get_optimal_tech_buying_info ($tech_type, $expected_avg_land, $min_tech_price, $max_tech_price, $base_income_per_acre, $base_tech_value) {
     // return a fake array here to use for testing other functions
 

@@ -24,7 +24,7 @@ namespace EENPC;
  *
  * @return null
  */
-function play_farmer_strat($server, $cnum, $rules, &$exit_condition)
+function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
 {
     $exit_condition = 'NORMAL';
     //global $cnum;
@@ -36,6 +36,13 @@ function play_farmer_strat($server, $cnum, $rules, &$exit_condition)
     if ($c->m_spy > 10000) {
         Allies::fill('spy');
     }
+
+    $tech_type_to_ipa = ['t_bus' => 40, 't_res' => 40, 't_agri' => 190]; // TODO: be smarter about this - is negative mil tech not acceptable?
+    $optimal_tech_buying_array = get_optimal_tech_buying_array($cnum, $tech_type_to_ipa, 9999, 700);
+    out_data($optimal_tech_buying_array);
+
+    $cost_for_military_point_guess = get_cost_per_military_points_for_caching($c);
+    $dpnw_guess = get_dpnw_for_caching($c);
 
     log_country_message($cnum, "Agri: {$c->pt_agri}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%");
     //out_data($c) && exit;             //ouput the advisor data
@@ -106,13 +113,13 @@ PHP Warning:  Invalid argument supplied for foreach() in /mnt/c/Users/joe/Docume
         // management is here to make sure that food is sold
         $hold = money_management($c, $rules->max_possible_market_sell);
         if ($hold) {
-            break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
+              break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!            
         }
 
         $hold = food_management($c);
         if ($hold) {
-            break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
             $exit_condition = 'WAIT_FOR_PUBLIC_MARKET_FOOD'; // ???
+            break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!            
         }
 
         // 40 turns of food
@@ -125,12 +132,21 @@ PHP Warning:  Invalid argument supplied for foreach() in /mnt/c/Users/joe/Docume
 
             if ($spend > abs($c->income) * 5) {
                 //try to batch a little bit...
-                buy_farmer_goals($c, $spend);
+                buy_farmer_goals($c, $c->fullBuildCost(), $cpref, true, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array);
             }
         }
     }
 
-    $c->countryStats(FARMER, farmerGoals($c));
+    // buy military at the end
+    if (turns_of_food($c) > 50
+            && turns_of_money($c) > 50
+            && $c->money > 3500 * 500
+            && ($c->built() > 80 || $c->money > $c->fullBuildCost())
+        ) {
+        buy_farmer_goals($c, $c->fullBuildCost(), $cpref, false, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array);
+    }
+
+    $c->countryStats(FARMER); // , farmerGoals($c) TODO: implement?
     return $c;
 }//end play_farmer_strat()
 
@@ -209,14 +225,26 @@ function sellextrafood_farmer(&$c, $server_base_pm_bushel_sell_price = 29)
 }//end sellextrafood_farmer()
 
 
-function buy_farmer_goals(&$c, $spend = null)
+function buy_farmer_goals(&$c, $money_to_reserve, $cpref, $delay_military_purchases, $cost_for_military_point_guess, $dpnw_guess, &$optimal_tech_buying_array)
 {
-    $goals = farmerGoals($c);
+    // TODO: randomize
+    $priority_list = [
+        ['type'=>'DPA','goal'=>5],
+        ['type'=>'INCOME_TECHS','goal'=>50],
+        ['type'=>'DPA','goal'=>30],
+        ['type'=>'INCOME_TECHS','goal'=>75],
+        ['type'=>'DPA','goal'=>60],  
+        ['type'=>'INCOME_TECHS','goal'=>100],            
+        ['type'=>'DPA','goal'=>100],  
+        ['type'=>'NPWA','goal'=>100],  
+    ];
+    spend_extra_money($c, $priority_list, "F", $cpref, $money_to_reserve, $delay_military_purchases, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array);
 
-    Country::countryGoals($c, $goals, $spend);
+    //$goals = farmerGoals($c);
+    //Country::countryGoals($c, $goals, $spend);
 }//end buy_farmer_goals()
 
-
+/*
 function farmerGoals(&$c)
 {
     return [
@@ -230,3 +258,4 @@ function farmerGoals(&$c)
         ['food', 1000000000, 5],
     ];
 }//end farmerGoals()
+*/
