@@ -60,9 +60,9 @@ function spend_extra_money (&$c, $priority_list, $strat, $cpref, $money_to_reser
         $log_message_for_updated_values = false;
 
         if($priority_type == 'DPA') {
-            $total_defense_points_goal = $target_dpa * $priority_goal * $c->land / 100;
-            $current_defense_points = $c->defPerAcre() * $c->land;
-            $defense_unit_points_needed = ceil(max(0, $total_defense_points_goal - $current_defense_points));            
+            $total_defense_points_goal = ceil($target_dpa * $priority_goal * $c->land / 100);
+            $current_defense_points = ceil($c->defPerAcre() * $c->land);
+            $defense_unit_points_needed = max(0, $total_defense_points_goal - $current_defense_points);            
             if($defense_unit_points_needed > 0) {
                 $log_message_for_updated_values = true;
                 $total_spent_or_reserved_by_step = buy_defense_from_markets($c, $cpref, $defense_unit_points_needed, $max_spend, $delay_military_purchases, $cost_for_military_point_guess);
@@ -102,9 +102,9 @@ function spend_extra_money (&$c, $priority_list, $strat, $cpref, $money_to_reser
             }
         }
         elseif($priority_type == 'NWPA') {            
-            $total_nw_goal = $target_dpnw * $priority_goal * $c->land / 100;
+            $total_nw_goal = ceil($target_dpnw * $priority_goal * $c->land / 100);
             $current_nw = $c->networth;
-            $nw_needed = ceil(max(0, $total_nw_goal - $current_nw));
+            $nw_needed = max(0, $total_nw_goal - $current_nw);
             if($nw_needed > 0) {
                 $log_message_for_updated_values = true;
                 $total_spent_or_reserved_by_step = buy_military_networth_from_markets($c, $cpref, $nw_needed, $max_spend, $delay_military_purchases, $dpnw_guess);
