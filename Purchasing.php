@@ -13,6 +13,14 @@ function spend_extra_money (&$c, $priority_list, $strat, $cpref, $money_to_reser
         return false;
     }
 
+    $skip_tech = empty($optimal_tech_buying_array) ? true : false;
+
+    if($delay_military_purchases and $skip_tech)
+        return true;
+
+    if($skip_tech)
+        log_country_message($c->cnum, "Optimal tech array is empty, which either means tech is too expensive or it wasn't passed in correctly");    
+
     $target_dpa = $c->defPerAcreTarget();
     $target_dpnw = $c->nlgTarget(); 
 
@@ -38,6 +46,8 @@ function spend_extra_money (&$c, $priority_list, $strat, $cpref, $money_to_reser
     // stop when budget is up
 
     log_country_message($c->cnum, "Attempting to spend money with $c->money money, $money_to_reserve money to reserve, and schedule 0");
+    if($delay_military_purchases)
+        log_country_message($c->cnum, "Military purchases are delayed in this evaluation");    
 
     $delayed_money = 0;
     $total_spent = 0;
@@ -67,9 +77,7 @@ function spend_extra_money (&$c, $priority_list, $strat, $cpref, $money_to_reser
             }
         }
         elseif($priority_type == 'INCOME_TECHS') {
-            if(empty($optimal_tech_buying_array))
-                log_country_message($c->cnum, "Optimal tech array is empty, which either means tech is too expensive or it wasn't passed in correctly");
-            elseif(isset($optimal_tech_buying_array[$priority_goal])) { // a bucket might not appear if tech is too expensive
+            if(!$skip_tech and isset($optimal_tech_buying_array[$priority_goal])) { // a bucket might not appear if tech is too expensive
                 foreach($optimal_tech_buying_array[$priority_goal] as $key => $t_p_q) {
                     $tech_name = $t_p_q['t'];
                     $max_tech_price = $t_p_q['p'];
