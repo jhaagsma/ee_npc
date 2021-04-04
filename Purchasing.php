@@ -63,6 +63,7 @@ function spend_extra_money(&$c, $buying_priorities, $cpref, $money_to_reserve, $
         if($priority_type == 'DPA') {
             $total_defense_points_goal = ceil($target_dpa * $priority_goal * $c->land / 100);
             $defense_unit_points_needed = ceil(($total_defense_points_goal - $c->totalDefense()) / (0.01 * $c->pt_weap)); // FUTURE: govt?       
+            // could be a little weird as weapons tech drops from exploring... tech won't be recalculated by that. whatever
             if($defense_unit_points_needed > 0) {
                 $log_message_for_updated_values = true;
                 $total_spent_or_reserved_by_step = buy_defense_from_markets($c, $cpref, $defense_unit_points_needed, $max_spend, $delay_military_purchases, $cost_for_military_point_guess);
