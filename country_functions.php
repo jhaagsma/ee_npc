@@ -288,7 +288,7 @@ function food_management(&$c)
 
         $turns_buy--;
     }
-    $turns_buy     = min(4, max(1, $turns_buy)); // changed from 3 to 4 to cover scenario of building 4 cs
+    $turns_buy     = min(4, max(1, $turns_buy)); // changed from 3 to 4 to cover scenario of building 4 cs????? this doesn't work
     $turns_of_food = $foodloss * $turns_buy;
 
     if ($c->food > $turns_of_food) {

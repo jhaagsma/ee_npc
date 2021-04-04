@@ -41,19 +41,6 @@ function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition)
 
     $turns_played_for_last_spend_money_attempt = 0;
     while ($c->turns > 0) {
-
-        // should be okay to move these here because cashers don't sell anything?
-        $hold = money_management($c, $rules->max_possible_market_sell);
-        if ($hold) {
-            break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
-        }
-
-        $hold = food_management($c);
-        if ($hold) {
-            $exit_condition = 'WAIT_FOR_PUBLIC_MARKET_FOOD';
-            break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
-        }
-
         $result = play_casher_turn($c, $is_allowed_to_mass_explore);
         if ($result === false) {  //UNEXPECTED RETURN VALUE
             $c = get_advisor();     //UPDATE EVERYTHING
@@ -62,6 +49,11 @@ function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition)
         update_c($c, $result);
         if (!$c->turns % 5) {                   //Grab new copy every 5 turns
             $c->updateMain(); //we probably don't need to do this *EVERY* turn
+        }
+
+        $hold = money_management($c, $rules->max_possible_market_sell);
+        if ($hold) {
+            break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
         }
 
         $hold = food_management($c);
