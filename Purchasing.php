@@ -235,6 +235,8 @@ function spend_money_on_markets(&$c, $cpref, $points_needed, $max_spend, $unit_w
     log_country_message($c->cnum, "Iteration $recursion_level for public".($public_only ? "" : " and private")." market purchasing based on $point_name");
     log_country_message($c->cnum, "Budget is ".($max_spend - $total_spent).", purchase limit is ".($points_needed - $total_points_gained)." points, and score limit is $max_dollars_per_point ($point_name)");
 
+    $start_time = time();
+
     $pm_purchase_prices_by_unit = [];
     $pm_score_by_unit = [];
     // identify best purchase from private market
@@ -309,10 +311,7 @@ function spend_money_on_markets(&$c, $cpref, $points_needed, $max_spend, $unit_w
         // log_country_message($c->cnum, "pm score: $best_pm_score; public score: $best_public_score; max: $max_dollars_per_point");
 
         // lower score is better
-        if($best_pm_score <= $best_public_score) { // buy off private
-            if($best_pm_score > $max_dollars_per_point)
-                break; // best unit is too expensive
-
+        if($best_pm_score <= $best_public_score and $best_pm_score <= $max_dollars_per_point) { // buy off private
             $point_per_unit = $unit_points[$best_pm_unit];
             $best_unit_price = $pm_purchase_prices_by_unit[$best_pm_unit];            
     
@@ -342,15 +341,14 @@ function spend_money_on_markets(&$c, $cpref, $points_needed, $max_spend, $unit_w
                         unset($pm_score_by_unit[$best_pm_unit]); // we bought everything
                 }
 
-                // realistically shouldn't happen often
-                if($money_spent_on_purchase == 0)
+                // realistically shouldn't happen often, so get_advisor is fine
+                if($money_spent_on_purchase == 0) {
                     $c = get_advisor();
+                    $missed_purchases++;
+                }
             }            
         } // end private buying
-        else { // buy off public
-            if($best_public_score > $max_dollars_per_point)
-                break; // best unit is too expensive
-		
+        elseif($best_public_score <= $max_dollars_per_point) { // buy off public
             $point_per_unit = $unit_points[$best_public_unit];
             $best_unit_price = $public_purchase_prices_by_unit[$best_public_unit];            
 
@@ -387,12 +385,14 @@ function spend_money_on_markets(&$c, $cpref, $points_needed, $max_spend, $unit_w
                 $public_score_by_unit[$best_public_unit] = round($public_market_tax_rate * $new_public_market_price / $unit_weights[$best_public_unit]);			
             }
         } // end public
+        else
+            break;
 
 		$total_purchase_loops++;
 	}
 
-	// some units might have shown up after we last refreshed prices, so call up to 2 more times recursively
-	if ($recursion_level < 2 and $total_spent + 10000 < $max_spend and $total_points_gained < $points_needed)
+	// if we spent more than 2 seconds buying stuff, maybe something new showed up that's cheaper. call up to 2 more times recursively
+	if (time() > ($start_time + 2) and $recursion_level < 3 and $total_spent + 10000 < $max_spend and $total_points_gained < $points_needed)
         spend_money_on_markets($c, $cpref, $points_needed, $max_spend, $unit_weights, $unit_points, $point_name, $max_dollars_per_point, $public_only, $total_spent, $total_points_gained, $recursion_level + 1);
 
     return $total_spent;
