@@ -9,8 +9,12 @@ function is_country_allowed_to_mass_explore($c, $cpref, $server) {
         log_country_message($c->cnum, "Country is not allowed to mass explore because explore rate is the minimum $c->explore_min");
         return false;
     }
-    elseif($server->is_clan_server and $c->land > 8000) {
-        log_country_message($c->cnum, "Country is not allowed to mass explore because it has more than 8000 acres on a non-clan server");
+    elseif(!$server->is_clan_server and $c->govt == "R" and $c->land > 10000) {
+        log_country_message($c->cnum, "Country is not allowed to mass explore because it is a rep with more than 10000 acres on a non-clan server");
+        return false;
+    }
+    elseif(!$server->is_clan_server and $c->govt <> "R" and $c->land > 8200) {
+        log_country_message($c->cnum, "Country is not allowed to mass explore because it is a non-rep with more than 8200 acres on a non-clan server");
         return false;
     }
     else {
