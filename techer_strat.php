@@ -74,7 +74,7 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
         spend_extra_money($c, $buying_priorities, $cpref, $c->fullBuildCost() - $c->runCash(), false);//keep enough money to build out everything
     }
 
-    $c->countryStats(TECHER); // , techerGoals($c) // TODO: implement?
+    $c->countryStats(TECHER); // , techerGoals($c) // FUTURE: implement?
 
     return $c;
 }//end play_techer_strat()

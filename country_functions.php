@@ -20,14 +20,12 @@ function is_country_allowed_to_mass_explore($c, $cpref, $server) {
 }
 
 
-// TODO: validate
 function get_average_future_land($min_cs = 240, $turns_to_exclude = 0) {
     $result = ee('get_average_future_land', [
         'min_cs' => $min_cs,
         'turns_to_exclude' => $turns_to_exclude
     ]);
     
-    // TODO: what about the changes stuff? everything else ignores it?
     return $result->avg_future_land;
 }
 
@@ -305,10 +303,6 @@ function food_management(&$c)
         log_country_message($c->cnum, "We have goods on market; hold turns for now.");    //Text for screen
         return true;
     }
-
-    // TODO: pass in strat, sell tech/military on public and hold if needed
-    // right now indies can still get screwed if they buy tech and don't have goods on market
-
 
     if ($c->food < $turns_of_food && $c->money > $turns_buy * $foodloss * $pm_info->buy_price->m_bu) {
         //losing food, less than turns_buy turns left, AND have the money to buy it

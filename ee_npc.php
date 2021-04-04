@@ -318,7 +318,7 @@ while (1) {
             //log_main_message("Setting GDI to ".($cpref->gdi ? "true" : "false"), true, 'brown');
         }
 
-        //if($cpref->strat <> 'C') // TODO DEBUG
+        //if($cpref->strat <> 'C') // DEBUG
         //    continue;
 
         if ($cpref->nextplay < time()) {
@@ -333,7 +333,7 @@ while (1) {
             $debug_force_destocking = false; // DEBUG: change to true to force destocking code to run
             $is_destocking = ($debug_force_destocking or time() >= $earliest_destock_time? true : false);
 
-           // $is_destocking = false; // TODO DEBUG
+           // $is_destocking = false; // DEBUG
 
             // log snapshot of country status
             $prev_c_values = [];
@@ -425,7 +425,7 @@ while (1) {
                 // FUTURE: skip snapshot parameter for speed for remote play?
                 $c = get_advisor(); // this call probably can't be avoided - market info, events, and tax/expenses could be wrong without it
                 log_snapshot_message($c, "DELTA", $cpref->strat, $is_destocking, $dummy, $prev_c_values);
-                log_snapshot_message($c, "END", $cpref->strat, $is_destocking, $dummy); // TODO: why does this take six seconds remotely?
+                log_snapshot_message($c, "END", $cpref->strat, $is_destocking, $dummy); // FUTURE: why does this take six seconds remotely?
                 
 
             } catch (Exception $e) {

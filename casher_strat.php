@@ -24,7 +24,7 @@ function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     // setup for spending extra money (not on food or building costs)
     $buying_schedule = casher_get_buying_schedule($cnum, $cpref);
     $buying_priorities = casher_get_buying_priorities ($cnum, $buying_schedule);
-    $eligible_techs = ['t_bus', 't_res', 't_mil']; // TODO: fix   
+    $eligible_techs = ['t_bus', 't_res', 't_mil']; 
     $optimal_tech_buying_array = get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, 9999, 700);
     $cost_for_military_point_guess = get_cost_per_military_points_for_caching($c);
     $dpnw_guess = get_dpnw_for_caching($c);    
@@ -74,7 +74,8 @@ function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition)
         }
     }
 
-    if (turns_of_food($c) > 40
+    // buy military at the end
+    if (turns_of_food($c) > 20 // otherwise if a country buys food on the last turn, we end up not buying any military
             && $c->money > 3500 * 500
             && ($c->money > $c->fullBuildCost())
         ) { // 40 turns of food
@@ -82,7 +83,7 @@ function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition)
         spend_extra_money($c, $buying_priorities, $cpref, $c->fullBuildCost(), false, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array, $buying_schedule);
     }
 
-    $c->countryStats(CASHER); // TODO: implement? , casherGoals($c));
+    $c->countryStats(CASHER); // FUTURE: implement? , casherGoals($c));
     return $c;
 }//end play_casher_strat()
 

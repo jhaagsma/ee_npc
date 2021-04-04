@@ -259,7 +259,7 @@ function spend_money_on_markets(&$c, $cpref, $points_needed, $max_spend, $unit_w
                 // log_country_message($c->cnum, "unit:$unit_name, price:$pm_price");
                 $unit_score = floor($pm_price / $unit_weights[$unit_name]); // slightly favor over public that uses round()
                 $pm_score_by_unit[$unit_name] = $unit_score;
-                log_country_message($c->cnum, "Iteration $recursion_level initial private market conditions for $unit_name are price $pm_price and weight $unit_score ($point_name)");
+                log_country_message($c->cnum, "Iteration $recursion_level initial private market conditions for $unit_name are price $pm_price and score $unit_score ($point_name)");
             }
             else {
                 log_country_message($c->cnum, "Iteration $recursion_level initial private market conditions for $unit_name are nothing on market");
@@ -278,7 +278,7 @@ function spend_money_on_markets(&$c, $cpref, $points_needed, $max_spend, $unit_w
 			// log_country_message($c->cnum, "unit:$unit_name, price:$public_market_price");
 			$unit_score = round($public_market_tax_rate * $public_market_price / $unit_weights[$unit_name]);
 			$public_score_by_unit[$unit_name] = $unit_score;
-			log_country_message($c->cnum, "Iteration $recursion_level initial public market conditions for $unit_name are price $public_market_price and weight $unit_score ($point_name)");
+			log_country_message($c->cnum, "Iteration $recursion_level initial public market conditions for $unit_name are price $public_market_price and score $unit_score ($point_name)");
 		}
 		else {
 			log_country_message($c->cnum, "Iteration $recursion_level initial public market conditions for $unit_name are nothing on market");

@@ -39,6 +39,8 @@ function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     $owned_on_market_info = get_owned_on_market_info(); //find out what we have on the market
     //out_data($owned_on_market_info);  //output the Owned on Public Market info
 
+    // FUTURE: get a turn of food before doing anything?
+
     // indies buy tech instead of building when no limit on goals here- Slagpit 20210321
     // the 80% is here because indies seemed to not be buying tech through 800 turns of play
     if ($c->money > floor(0.8 * $c->fullBuildCost()) - $c->runCash()) {
@@ -84,7 +86,7 @@ function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     // total_cansell_military > 20000?
 
 
-    $c->countryStats(INDY); // indyGoals($c) // TODO: implement?
+    $c->countryStats(INDY); // indyGoals($c) // FUTURE: implement?
 
     return $c;
 }//end play_indy_strat()

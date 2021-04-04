@@ -96,9 +96,7 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!            
         }
 
-        // 40 turns of food
-        if (turns_of_food($c) > 50
-            && turns_of_money($c) > 50
+        if (turns_of_money($c) > 50
             && $c->money > 3500 * 500
             && ($c->money > floor(0.8*$c->fullBuildCost()))
         ) {
@@ -110,15 +108,14 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     }
 
     // buy military at the end
-    if (turns_of_food($c) > 50
-            && turns_of_money($c) > 50
+    if (turns_of_money($c) > 30 // try to spend something if we get unlucky
             && $c->money > 3500 * 500
             && ($c->money > floor(0.8*$c->fullBuildCost()))
         ) {
         spend_extra_money($c, $buying_priorities, $cpref, floor(0.8*$c->fullBuildCost()), false, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array, $buying_schedule);
     }
 
-    $c->countryStats(FARMER); // , farmerGoals($c) TODO: implement?
+    $c->countryStats(FARMER); // , farmerGoals($c) FUTURE: implement?
     return $c;
 }//end play_farmer_strat()
 

@@ -548,7 +548,6 @@ function buyout_up_to_private_market_unit_dpnw(&$c, $pm_buy_price, $unit_type, $
 }
 
 
-// TODO: comment this out, call spend_money_on_markets() instead
 /*
 NAME: buyout_up_to_public_market_dpnw
 PURPOSE: attempts to purchase from the public market below a dpnw while following certain rules, loops up to two times
@@ -563,7 +562,7 @@ PARAMETERS:
 */
 
 function buyout_up_to_public_market_dpnw(&$c, $max_dpnw, $max_spend, $military_units_only) {
-	return buyout_up_to_public_market_dpnw_2($c, null, $max_dpnw, $max_spend, $military_units_only); // TODO: pass in $cpref
+	return buyout_up_to_public_market_dpnw_2($c, null, $max_dpnw, $max_spend, $military_units_only);
 }
 
 
