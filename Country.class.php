@@ -304,8 +304,14 @@ class Country
      */
     public function defPerAcre()
     {
-        return round((1 * $this->m_tr + 2 * $this->m_tu + 4 * $this->m_ta) / $this->land);
+        return round((1 * $this->m_tr + 2 * $this->m_tu + 4 * $this->m_ta) / $this->land); // FUTURE: weapons tech?
     }//end defPerAcre()
+
+
+    public function totalDefense()
+    {
+        return (1 * $this->m_tr + 2 * $this->m_tu + 4 * $this->m_ta); // FUTURE: weapons tech?
+    }//end defPerAcre()   
 
 
 

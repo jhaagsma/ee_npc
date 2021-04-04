@@ -62,8 +62,7 @@ function spend_extra_money(&$c, $buying_priorities, $cpref, $money_to_reserve, $
 
         if($priority_type == 'DPA') {
             $total_defense_points_goal = ceil($target_dpa * $priority_goal * $c->land / 100);
-            $current_defense_points = ceil($c->defPerAcre() * $c->land);
-            $defense_unit_points_needed = max(0, $total_defense_points_goal - $current_defense_points);            
+            $defense_unit_points_needed = max(0, $total_defense_points_goal - $c->totalDefense());            
             if($defense_unit_points_needed > 0) {
                 $log_message_for_updated_values = true;
                 $total_spent_or_reserved_by_step = buy_defense_from_markets($c, $cpref, $defense_unit_points_needed, $max_spend, $delay_military_purchases, $cost_for_military_point_guess);
@@ -72,7 +71,7 @@ function spend_extra_money(&$c, $buying_priorities, $cpref, $money_to_reserve, $
                     $money_to_reserve += $total_spent_or_reserved_by_step;
                 }
                 else {
-                    $defense_points_after_purchase = $c->defPerAcre() * $c->land;
+                    $defense_points_after_purchase = $c->totalDefense();
                     $was_goal_met = $defense_points_after_purchase >= $total_defense_points_goal ? true : false;
                     log_country_message($c->cnum, "DPA goal $priority_goal%: Spent $total_spent_or_reserved_by_step to buy defense and ended with $defense_points_after_purchase defense which did ".($was_goal_met ? "" : 'NOT ')."meet the goal of $total_defense_points_goal points");
                     $max_spend -= $total_spent_or_reserved_by_step;
