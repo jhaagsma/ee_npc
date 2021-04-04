@@ -193,8 +193,9 @@ class Country
             $new['pro_tu'] = 100;
         }
         else { // not the first 150 turns
-            // for now, 200 indy's worth of production with 1% min and 5% max
-            $spy = max(1, min(5, round(200 / ($this->b_indy + 1))));
+            // for now, 400 indy's worth of production with 1% min and 5% max
+            // 200 was too low - maybe because of OOF and OOM events?
+            $spy = max(1, min(5, round(400 / ($this->b_indy + 1))));
 
             // commented out by Slagpit 20210323 - not clear why indies want so many spies
             /*
