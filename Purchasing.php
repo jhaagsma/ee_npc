@@ -537,8 +537,8 @@ function get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, 
                 unset($optimal_tech_buying_array[$turn_bucket]);
             else
                 usort($optimal_tech_buying_array[$turn_bucket],
-                function ($a, $b) {
-                    return $a['p'] <=> $b['p']; // spaceship!
+                function ($a, $b) { // sort by quantity desc, not price asc - otherwise farmers are likely to buy bus/res before agri! still not perfect, but good enough?
+                    return -1 * ($a['q'] <=> $b['q']); // spaceship!
                 });
         }
 
