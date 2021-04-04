@@ -10,6 +10,8 @@ function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     //out_data($main);          //output the main data
     $c = get_advisor();     //c as in country! (get the advisor)
     //out_data($c) && exit;             //ouput the advisor data
+    $is_allowed_to_mass_explore = is_country_allowed_to_mass_explore($c, $cpref, $server);
+    log_country_message($cnum, "Bus: {$c->pt_bus}%; Res: {$c->pt_res}%");
 
     $c->setIndy('pro_spy');
 
@@ -17,45 +19,29 @@ function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition)
         Allies::fill('spy');
     }
 
-    $tech_type_to_ipa = ['t_bus' => 200, 't_res' => 200]; // TODO: be smarter about this - is negative mil tech not acceptable?
-    $optimal_tech_buying_array = get_optimal_tech_buying_array($cnum, $tech_type_to_ipa, 9999, 700);
+    casher_switch_government_if_needed($c);
 
+    // setup for spending extra money (not on food or building costs)
+    $buying_schedule = casher_get_buying_schedule($cnum, $cpref);
+    $buying_priorities = casher_get_buying_priorities ($cnum, $buying_schedule);
+    $eligible_techs = ['t_bus', 't_res', 't_mil']; // TODO: fix   
+    $optimal_tech_buying_array = get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, 9999, 700);
     $cost_for_military_point_guess = get_cost_per_military_points_for_caching($c);
-    $dpnw_guess = get_dpnw_for_caching($c);
+    $dpnw_guess = get_dpnw_for_caching($c);    
 
-    log_country_message($cnum, "Bus: {$c->pt_bus}%; Res: {$c->pt_res}%");
-    if ($c->govt == 'M') {
-        $rand = rand(0, 100);
-        switch ($rand) {
-            case $rand < 10:
-                Government::change($c, 'I');
-                break;
-            case $rand < 25:
-                Government::change($c, 'D');
-                break;
-            case $rand < 40:
-                Government::change($c, 'H');
-                break;
-            default:
-                Government::change($c, 'R');
-                break;
-        }
-    }
-
+    // log useful information about country state
     log_country_message($cnum, $c->turns.' turns left');
-    log_country_message($cnum, 'Explore Rate: '.$c->explore_rate.'; Min Rate: '.$c->explore_min);
+    //log_country_message($cnum, 'Explore Rate: '.$c->explore_rate.'; Min Rate: '.$c->explore_min);
     //$pm_info = get_pm_info(); //get the PM info
     //out_data($pm_info);       //output the PM info
     //$market_info = get_market_info(); //get the Public Market info
     //out_data($market_info);       //output the PM info
 
-    $owned_on_market_info = get_owned_on_market_info();     //find out what we have on the market
-    //out_data($owned_on_market_info);  //output the Owned on Public Market info
+    //$owned_on_market_info = get_owned_on_market_info();     //find out what we have on the market
 
+    $turned_played_for_last_spend_money_attempt = 0;
     while ($c->turns > 0) {
-        //$result = PublicMarket::buy($c,array('m_bu'=>100),array('m_bu'=>400));
-
-        $result = play_casher_turn($c);
+        $result = play_casher_turn($c, $is_allowed_to_mass_explore);
         if ($result === false) {  //UNEXPECTED RETURN VALUE
             $c = get_advisor();     //UPDATE EVERYTHING
             continue;
@@ -79,23 +65,21 @@ function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition)
         
         if (turns_of_food($c) > 40
             && $c->money > 3500 * 500
-            && ($c->built() > 80 || $c->money > $c->fullBuildCost())
+            && ($c->money > $c->fullBuildCost())
         ) { // 40 turns of food
-            $spend = $c->money - $c->fullBuildCost(); //keep enough money to build out everything
-
-            if ($spend > $c->income * 7) {
-                //try to batch a little bit...
-                buy_casher_goals($c, $c->fullBuildCost(), $cpref, true, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array);
+            if ($c->turns_played >= $turned_played_for_last_spend_money_attempt + 7) { // wait at least 7 turns before trying again
+                spend_extra_money($c, $buying_priorities, $cpref, $c->fullBuildCost(), true, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array, $buying_schedule);
+                $turned_played_for_last_spend_money_attempt = $c->turns_played;
             }
         }
     }
 
     if (turns_of_food($c) > 40
             && $c->money > 3500 * 500
-            && ($c->built() > 80 || $c->money > $c->fullBuildCost())
+            && ($c->money > $c->fullBuildCost())
         ) { // 40 turns of food
         // buy military at the end
-        buy_casher_goals($c, $c->fullBuildCost(), $cpref, false, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array);
+        spend_extra_money($c, $buying_priorities, $cpref, $c->fullBuildCost(), false, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array, $buying_schedule);
     }
 
     $c->countryStats(CASHER); // TODO: implement? , casherGoals($c));
@@ -103,7 +87,7 @@ function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition)
 }//end play_casher_strat()
 
 
-function play_casher_turn(&$c)
+function play_casher_turn(&$c, $is_allowed_to_mass_explore)
 {
  //c as in country!
     $target_bpt = 65;
@@ -125,11 +109,8 @@ function play_casher_turn(&$c)
         return Build::cs(4); //build 4 CS
     } elseif ($c->built() > 50) {
         //otherwise... explore if we can
-        if ($c->explore_rate == $c->explore_min) {
-            return explore($c, min(5, $c->turns, max(1, turns_of_food($c) - 3)));
-        } else {
-            return explore($c, min($c->turns, max(1, turns_of_food($c) - 3)));
-        }
+        $explore_turn_limit = $is_allowed_to_mass_explore ? 999 : 5;
+        return explore($c, max(1, min($explore_turn_limit, $c->turns, turns_of_food($c) - 4)));
     } else {
         //otherwise...  cash
         return cash($c);
@@ -137,24 +118,88 @@ function play_casher_turn(&$c)
 }//end play_casher_turn()
 
 
-function buy_casher_goals(&$c, $money_to_reserve, $cpref, $delay_military_purchases, $cost_for_military_point_guess, $dpnw_guess, &$optimal_tech_buying_array)
-{
-    // TODO: randomize
-    $priority_list = [
-        ['type'=>'DPA','goal'=>5],
-        ['type'=>'INCOME_TECHS','goal'=>50],
-        ['type'=>'DPA','goal'=>30],
-        ['type'=>'INCOME_TECHS','goal'=>80],
-        ['type'=>'DPA','goal'=>60],  
-        ['type'=>'INCOME_TECHS','goal'=>100],            
-        ['type'=>'DPA','goal'=>100],  
-        ['type'=>'NWPA','goal'=>100],  
-    ];
-    spend_extra_money($c, $priority_list, "C", $cpref, $money_to_reserve, $delay_military_purchases, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array);
+function casher_get_buying_schedule($cnum, $cpref) {
+    $country_fixed_random_number = decode_bot_secret($cpref->bot_secret, 2);
+    $buying_schedule = $country_fixed_random_number % 4;
+    log_country_message($cnum, "Buying schedule number is: $buying_schedule");
+    return $buying_schedule;
+} // casher_get_buying_schedule
 
 
-    //Country::countryGoals($c, casherGoals($c), $spend);
-}//end buy_casher_goals()
+function casher_get_buying_priorities ($cnum, $buying_schedule) {
+    $buying_priorities = [];
+    
+    if($buying_schedule == 0) { // heavy military
+        $buying_priorities = [
+            ['type'=>'DPA','goal'=>100],
+            ['type'=>'INCOME_TECHS','goal'=>100],
+            ['type'=>'NWPA','goal'=>100]
+        ];
+    }
+    elseif($buying_schedule == 1) { // heavy teach
+        $buying_priorities = [
+            ['type'=>'DPA','goal'=>1],
+            ['type'=>'INCOME_TECHS','goal'=>100],
+            ['type'=>'DPA','goal'=>100],
+            ['type'=>'NWPA','goal'=>100]
+        ];
+    }
+    elseif($buying_schedule == 2) { // favor military
+        $buying_priorities = [
+            ['type'=>'DPA','goal'=>3],
+            ['type'=>'INCOME_TECHS','goal'=>10],
+            ['type'=>'DPA','goal'=>60],
+            ['type'=>'INCOME_TECHS','goal'=>40],
+            ['type'=>'DPA','goal'=>100],
+            ['type'=>'INCOME_TECHS','goal'=>100],
+            ['type'=>'NWPA','goal'=>100]
+        ];
+    }
+    elseif($buying_schedule == 3) { // favor tech
+        $buying_priorities = [
+            ['type'=>'DPA','goal'=>2],
+            ['type'=>'INCOME_TECHS','goal'=>50],
+            ['type'=>'DPA','goal'=>35], 
+            ['type'=>'INCOME_TECHS','goal'=>100],          
+            ['type'=>'DPA','goal'=>100],
+            ['type'=>'NWPA','goal'=>100]
+        ];
+    }
+    else {
+        log_error_message(999, $cnum, 'casher_get_buying_priorities() invalid parameter $buying_schedule value of:'.$buying_schedule);
+    }
+
+    log_country_message($cnum, "Country buying priority order listed below:");
+    $priority_number = 0;
+    foreach($buying_priorities as $priority) {
+        log_country_message($cnum, "    Priority $priority_number: ".$priority['type']." ".$priority['goal']."%");
+        $priority_number++;
+    }
+
+    return $buying_priorities;
+} // casher_get_buying_priorities()
+
+function casher_switch_government_if_needed($c) {
+    // FUTURE: should obviously call a function with priorities... (same with other strats)
+    if ($c->govt == 'M') {
+        $rand = rand(0, 100);
+        switch ($rand) {
+            case $rand < 10:
+                Government::change($c, 'I');
+                break;
+            case $rand < 25:
+                Government::change($c, 'D');
+                break;
+            case $rand < 40:
+                Government::change($c, 'H');
+                break;
+            default:
+                Government::change($c, 'R');
+                break;
+        }
+    }
+} // casher_switch_government_if_needed()
+
 
 /*
 function casherGoals(&$c)

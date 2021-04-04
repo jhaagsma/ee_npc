@@ -263,7 +263,7 @@ class Country
             $turns = $this->turns;
         }
 
-        return max(0, $this->income) * $turns;
+        return min(0, $this->income) * $turns;
     }//end runCash()
 
 

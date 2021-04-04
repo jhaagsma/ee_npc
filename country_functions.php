@@ -4,6 +4,22 @@ namespace EENPC;
 
 
 
+function is_country_allowed_to_mass_explore($c, $cpref, $server) {    
+    if($c->explore_rate == $c->explore_min) {
+        log_country_message($c->cnum, "Country is not allowed to mass explore because explore rate is the minimum $c->explore_min");
+        return false;
+    }
+    elseif($server->is_clan_server and $c->land > 8000) {
+        log_country_message($c->cnum, "Country is not allowed to mass explore because it has more than 8000 acres on a non-clan server");
+        return false;
+    }
+    else {
+        log_country_message($c->cnum, "Country is allowed to mass explore");
+        return true;
+    }
+}
+
+
 // TODO: validate
 function get_average_future_land($min_cs = 240, $turns_to_exclude = 0) {
     $result = ee('get_average_future_land', [
@@ -270,7 +286,7 @@ function food_management(&$c)
 
         $turns_buy--;
     }
-    $turns_buy     = min(3, max(1, $turns_buy));
+    $turns_buy     = min(4, max(1, $turns_buy)); // changed from 3 to 4 to cover scenario of building 4 cs
     $turns_of_food = $foodloss * $turns_buy;
 
     if ($c->food > $turns_of_food) {

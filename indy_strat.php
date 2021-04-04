@@ -11,46 +11,45 @@ function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     //$main = get_main();     //get the basic stats
     //out_data($main);          //output the main data
     $c = get_advisor();     //c as in country! (get the advisor)
-    $c->setIndyFromMarket(false); // changing to not check DPA - Slagpit 20210321
+    $is_allowed_to_mass_explore = is_country_allowed_to_mass_explore($c, $cpref, $server);
     log_country_message($cnum, "Indy: {$c->pt_indy}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%");
 
-    $tech_type_to_ipa = ['t_indy' => 300, 't_bus' => 40, 't_res' => 40]; // TODO: be smarter about this - is negative mil tech not acceptable?
-    $optimal_tech_buying_array = get_optimal_tech_buying_array($cnum, $tech_type_to_ipa, 9999, 700);
-
-    //out_data($c) && exit;             //ouput the advisor data
-    if ($c->govt == 'M') {
-        $rand = rand(0, 100);
-        switch ($rand) {
-            case $rand < 5:
-                Government::change($c, 'D');
-                break;
-            default:
-                Government::change($c, 'C');
-                break;
-        }
-    }
-    log_country_message($cnum, $c->turns.' turns left');
-    log_country_message($cnum, 'Explore Rate: '.$c->explore_rate.'; Min Rate: '.$c->explore_min);
-    //$pm_info = get_pm_info();   //get the PM info
-    //out_data($pm_info);       //output the PM info
-    //$market_info = get_market_info();   //get the Public Market info
-    //out_data($market_info);       //output the PM info
+    $c->setIndyFromMarket(false); // changing to not check DPA - Slagpit 20210321
 
     if ($c->m_spy > 10000) {
         Allies::fill('spy');
     }
+
+    indy_switch_government_if_needed($c);
+
+    $buying_priorities = [
+        ['type'=>'INCOME_TECHS','goal'=>100]
+    ];
+    $eligible_techs = ['t_bus', 't_res', 't_indy', 't_mil'];
+    $optimal_tech_buying_array = get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, 9999, 700);
+
+    // log useful information about country state
+    log_country_message($cnum, $c->turns.' turns left');
+    //log_country_message($cnum, 'Explore Rate: '.$c->explore_rate.'; Min Rate: '.$c->explore_min);
+    //$pm_info = get_pm_info();   //get the PM info
+    //out_data($pm_info);       //output the PM info
+    //$market_info = get_market_info();   //get the Public Market info
+    //out_data($market_info);       //output the PM info
 
     $owned_on_market_info = get_owned_on_market_info(); //find out what we have on the market
     //out_data($owned_on_market_info);  //output the Owned on Public Market info
 
     // indies buy tech instead of building when no limit on goals here- Slagpit 20210321
     // the 80% is here because indies seemed to not be buying tech through 800 turns of play
-    buy_indy_goals($c, floor(0.8 * $c->fullBuildCost()) + $c->runCash(), $cpref, $optimal_tech_buying_array);
+    if ($c->money > floor(0.8 * $c->fullBuildCost()) - $c->runCash()) {
+        spend_extra_money_no_military($c, $buying_priorities, $cpref, floor(0.8 * $c->fullBuildCost()) - $c->runCash(), $optimal_tech_buying_array);
+    }
 
+    $turned_played_for_last_spend_money_attempt = $c->turns_played;
     while ($c->turns > 0) {
         //$result = PublicMarket::buy($c,array('m_bu'=>100),array('m_bu'=>400));
                 
-        $result = play_indy_turn($c, $rules->max_possible_market_sell);
+        $result = play_indy_turn($c, $rules->max_possible_market_sell, $is_allowed_to_mass_explore);
         if ($result === false) {  //UNEXPECTED RETURN VALUE
             $c = get_advisor();     //UPDATE EVERYTHING
             continue;
@@ -72,13 +71,18 @@ function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition)
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
         }
 
-        if (turns_of_food($c) > (30 + $c->turns) && turns_of_money($c) > (30 + $c->turns) && $c->money > 3500 * 500 && ($c->built() > 80
-           || $c->money > $c->fullBuildCost() - $c->runCash())
+        if (turns_of_food($c) > (10 + $c->turns) && turns_of_money($c) > (10 + $c->turns) && $c->money > 3500 * 500 && ($c->money > floor(0.8 * $c->fullBuildCost()) - $c->runCash())
         ) {
-            //keep enough money to build out everything
-            buy_indy_goals($c, $c->fullBuildCost() + $c->runCash(), $cpref, $optimal_tech_buying_array);
+            if ($c->turns_played >= $turned_played_for_last_spend_money_attempt + 7) { // wait at least 7 turns before trying again
+                spend_extra_money_no_military($c, $buying_priorities, $cpref, floor(0.8 * $c->fullBuildCost()) - $c->runCash(), $optimal_tech_buying_array);
+                $turned_played_for_last_spend_money_attempt = $c->turns_played;
+            }
         }
     }
+    // FUTURE: do food and money management first
+    // FUTURE: always sell at end if possible - make sell_max_military get food/money to avoid OOF and OOM
+    // total_cansell_military > 20000?
+
 
     $c->countryStats(INDY); // indyGoals($c) // TODO: implement?
 
@@ -86,7 +90,7 @@ function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition)
 }//end play_indy_strat()
 
 
-function play_indy_turn(&$c, $server_max_possible_market_sell)
+function play_indy_turn(&$c, $server_max_possible_market_sell, $is_allowed_to_mass_explore)
 {
  //c as in country!
     $target_bpt = 65;
@@ -109,18 +113,8 @@ function play_indy_turn(&$c, $server_max_possible_market_sell)
         return Build::cs(4); //build 4 CS
     } elseif ($c->built() > 50) {  //otherwise... explore if we can
         //1.15 is my growth factor for indies
-        if ($c->explore_rate == $c->explore_min) {
-            return explore(
-                $c,
-                min(5, max(1, $c->turns - 1), max(1, min(turns_of_money($c) / 1.15, turns_of_food($c)) - 3))
-            );
-        } else {
-            // don't let indies ME more than 100 turns at a time because they have money management problems
-            return explore(
-                $c,
-                min(100, max(1, $c->turns - 1), max(1, min(turns_of_money($c) / 1.15, turns_of_food($c)) - 3)) 
-            );
-        }
+        $explore_turn_limit = $is_allowed_to_mass_explore ? 999 : 5;
+        return explore($c, max(1, min($explore_turn_limit, $c->turns - 1, turns_of_money($c) / 1.15 - 4, turns_of_food($c) - 4)));
     } else { //otherwise...  cash
         return cash($c);
     }
@@ -144,15 +138,19 @@ function sellmilitarytime(&$c)
 }//end sellmilitarytime()
 
 
-function buy_indy_goals(&$c, $money_to_reserve, $cpref, &$optimal_tech_buying_array)
-{
-
-    $priority_list = [['type'=>'INCOME_TECHS','goal'=>100]]; // indies shouldn't buy military 
-    spend_extra_money($c, $priority_list, "I", $cpref, $money_to_reserve, false, 100, 100, $optimal_tech_buying_array);
-
-    //$goals = indyGoals($c);
-    //Country::countryGoals($c, $goals, $spend);
-}//end buy_indy_goals()
+function indy_switch_government_if_needed($c) {
+    if ($c->govt == 'M') {
+        $rand = rand(0, 100);
+        switch ($rand) {
+            case $rand < 5:
+                Government::change($c, 'D');
+                break;
+            default:
+                Government::change($c, 'C');
+                break;
+        }
+    }
+} // indy_switch_government_if_needed()
 
 
 /*

@@ -2,21 +2,32 @@
 
 namespace EENPC;
 
-// TODO: move other purchasing functions here
-// TODO: support for mil tech
+// wrapper for spend_extra_money()
+function spend_extra_money_no_military(&$c, $buying_priorities, $cpref, $money_to_reserve, &$optimal_tech_buying_array, $buying_schedule = 0) {
+    return spend_extra_money ($c, $buying_priorities, $cpref, $money_to_reserve, false, 999, 999, $optimal_tech_buying_array, $buying_schedule);
+} 
 
-
-// buy military or tech (future should include stocking bushels?)
-function spend_extra_money (&$c, $priority_list, $strat, $cpref, $money_to_reserve, $delay_military_purchases, $cost_for_military_point_guess, $dpnw_guess, &$optimal_tech_buying_array = []) {
-    if(empty($priority_list)) {
-        log_error(120, $c->cnum, "");
+// buy military or tech with money not needed for food, expenses, or buildings (future should include stocking bushels?)
+// 999 are dummy values because those parameters are only needed when $delay_military_purchases = true
+function spend_extra_money(&$c, $buying_priorities, $cpref, $money_to_reserve, $delay_military_purchases = false, $cost_for_military_point_guess = 999, $dpnw_guess = 999, &$optimal_tech_buying_array = [], $buying_schedule = 0) {
+    $strat = $cpref->strat;
+        
+    if(empty($buying_priorities)) {
+        log_error(999, $c->cnum, "spend_extra_money(): EMPTY PRIORITY LIST");
         return false;
+    }
+
+    $total_spent = 0;
+    $max_spend = $c->money - $money_to_reserve;
+    if($max_spend < 10000) {
+        log_country_message($c->cnum, "Not attempting to spend money because max spend is $max_spend which is less than $10,000");
+        return true;
     }
 
     // check if the tech array has anything relevant for this country's goals
     $skip_tech = true;
     $is_tech_goal_present = false;
-    foreach($priority_list as $priority_item) {
+    foreach($buying_priorities as $priority_item) {
         if($priority_item['type'] == 'INCOME_TECHS') {
             $is_tech_goal_present = true;
             if(!empty($optimal_tech_buying_array[$priority_item['goal']])) {
@@ -25,7 +36,7 @@ function spend_extra_money (&$c, $priority_list, $strat, $cpref, $money_to_reser
             }
         }
     }
-    reset ($priority_list); // just in case
+    reset ($buying_priorities);
 
     // no reason to run calculations if we can't buy tech and we can't buying military
     if($delay_military_purchases and $skip_tech)
@@ -37,21 +48,11 @@ function spend_extra_money (&$c, $priority_list, $strat, $cpref, $money_to_reser
     $target_dpa = $c->defPerAcreTarget();
     $target_dpnw = $c->nlgTarget(); 
 
-    // TODO: in AI testing, set different schedules based on magic number to compete
+    log_country_message($c->cnum, "Using schedule $buying_schedule, spend money with ".($delay_military_purchases ? "delayed mil purchases, " : "")."money: $c->money, max to spend: $max_spend, total reserved: $money_to_reserve");
 
-    // TODO: add in schedule?
-    log_country_message($c->cnum, "Attempting to spend money with $c->money money and $money_to_reserve money to reserve");
-    if($delay_military_purchases)
-        log_country_message($c->cnum, "Military purchases are delayed in this evaluation and will increase reserved money instead");    
-
-    $total_spent = 0;
-    $max_spend = $c->money - $money_to_reserve;
-    if($max_spend <= 10000)
-        return false; // TODO: error
-
-    foreach($priority_list as $priority_item) {
-        if($c->money + 10000 <= $money_to_reserve) {
-            log_country_message($c->cnum, "Ran out of money to spend");
+    foreach($buying_priorities as $priority_item) {
+        if($c->money < $money_to_reserve + 10000) {
+            log_country_message($c->cnum, "Using schedule $buying_schedule, ran out of money to spend");
             break;
         }
 
@@ -121,13 +122,11 @@ function spend_extra_money (&$c, $priority_list, $strat, $cpref, $money_to_reser
             }
         }            
         else
-            log_error_message(119, $c->cnum, "Invalid priority type: $priority_type. Allowed values are 'DPA', 'INCOME_TECHS', and 'NWPA'");  
+            log_error_message(999, $c->cnum, "spend_extra_money{} invalid priority type: $priority_type. Allowed values are 'DPA', 'INCOME_TECHS', and 'NWPA'");  
 
         if($log_message_for_updated_values)
             log_country_message($c->cnum, "Reached end of goal. Money: $c->money, max to spend: $max_spend, total spent: $total_spent, total reserved: $money_to_reserve");
-    }
-
-    // TODO: schedule code
+    }    
     //log_country_message($c->cnum, "Completed spending money. Money: $c->money, max to spend: $max_spend, total spent: $total_spent, total reserved: $money_to_reserve");
     return true;
 }
@@ -136,15 +135,18 @@ function spend_extra_money (&$c, $priority_list, $strat, $cpref, $money_to_reser
 function get_cost_per_military_points_for_caching($c) { // parameters?
     $pm_info = PrivateMarket::getInfo();
     $public_market_tax_rate = $c->tax();
+    $public_tr_price = PublicMarket::price('m_tr');
+    $public_tu_price = PublicMarket::price('m_tu');
+    $public_ta_price = PublicMarket::price('m_ta');
     
     // FUTURE: account for weights somehow?
     $guess_at_cost_per_point = ceil(min(
         $pm_info->buy_price->m_tr,
-        10 + $public_market_tax_rate * PublicMarket::price('m_tr'), 
-        10 + $public_market_tax_rate * PublicMarket::price('m_tu') / 2, 
-        30 + $public_market_tax_rate * PublicMarket::price('m_ta') / 4
+        (8 + $public_market_tax_rate * ($public_tr_price ? $public_tr_price : 10000)), // so annoying...
+        (10 + $public_market_tax_rate * ($public_tu_price ? $public_tu_price : 10000)) / 2, 
+        (30 + $public_market_tax_rate * ($public_ta_price ? $public_ta_price : 10000)) / 4
     ));
-
+    log_country_message($c->cnum, "Market rough estimate for dollars per defense point: $guess_at_cost_per_point");
     return $guess_at_cost_per_point;
 }
 
@@ -152,15 +154,19 @@ function get_cost_per_military_points_for_caching($c) { // parameters?
 function get_dpnw_for_caching($c) { // parameters?
     $pm_info = PrivateMarket::getInfo();
     $public_market_tax_rate = $c->tax();
-    
+    $public_tr_price = PublicMarket::price('m_tr');
+    $public_j_price = PublicMarket::price('m_j');   
+    $public_tu_price = PublicMarket::price('m_tu');
+    $public_ta_price = PublicMarket::price('m_ta');
+
     $guess_at_cost_per_point = ceil(min(
         $pm_info->buy_price->m_tr / 0.5,
-        10 + $public_market_tax_rate * PublicMarket::price('m_tr') / 0.5, 
-        10 + $public_market_tax_rate * PublicMarket::price('m_j') / 0.6,        
-        10 + $public_market_tax_rate * 0.5 * PublicMarket::price('m_tu') / 0.6, 
-        30 + $public_market_tax_rate * 0.25 * PublicMarket::price('m_ta') / 2.0
+        (810 + $public_market_tax_rate * ($public_tr_price ? $public_tr_price : 10000)) / 0.5, 
+        (10 + $public_market_tax_rate * ($public_j_price ? $public_j_price : 10000)) / 0.6,        
+        (10 + $public_market_tax_rate * ($public_tu_price ? $public_tu_price : 10000)) / 0.6, 
+        (30 + $public_market_tax_rate * ($public_ta_price ? $public_ta_price : 10000)) / 2.0
     ));
-
+    log_country_message($c->cnum, "Market rough estimate for dollars per NW: $guess_at_cost_per_point");
     return $guess_at_cost_per_point;
 }
 
@@ -338,7 +344,7 @@ function spend_money_on_markets(&$c, $cpref, $points_needed, $max_spend, $unit_w
                     $money_spent_on_purchase = $money_before_purchase - $c->money;
                     $total_spent += $money_spent_on_purchase;
                     $units_gained = max(0, $c->$best_pm_unit - $unit_count_before_purchase);
-                    $total_points_gained += $point_per_unit * $units_gained;
+                    $total_points_gained += floor($point_per_unit * $units_gained);
 
                     if($pm_info->available->$best_pm_unit == 0)
                         unset($pm_score_by_unit[$best_pm_unit]); // we bought everything
@@ -372,7 +378,7 @@ function spend_money_on_markets(&$c, $cpref, $points_needed, $max_spend, $unit_w
             $money_spent_on_purchase = $money_before_purchase - $c->money; // I don't like this but the return structure of PublicMarket::buy is tough to deal with
             $total_spent += $money_spent_on_purchase;
             $units_gained = max(0, $c->$best_public_unit - $unit_count_before_purchase);
-            $total_points_gained += $point_per_unit * $units_gained;
+            $total_points_gained += floor($point_per_unit * $units_gained);
 
             if ($money_spent_on_purchase == 0) {
                 $missed_purchases++;
@@ -401,36 +407,96 @@ function spend_money_on_markets(&$c, $cpref, $points_needed, $max_spend, $unit_w
 }
 
 
-function get_optimal_tech_buying_array($cnum, $tech_type_to_ipa, $max_tech_price, $base_tech_value) {
-    // FUTURE: support weapons tech
-    log_country_message($cnum, "Creating optimal tech buying array");
 
-    $expected_avg_land = get_average_future_land(240, 0);
-    log_country_message($cnum, "Average future land is calculated as: $expected_avg_land");
 
-    $optimal_tech_buying_array = [];
-    for($key_num = 10; $key_num <= 100; $key_num+=10){
-        $optimal_tech_buying_array[$key_num] = [];
+function get_ipas_for_tech_purchasing($c, $eligible_techs) {
+    $ipas = [];
+    foreach($eligible_techs as $tech_handle) {
+        $ipa = get_single_income_per_acre($c, $tech_handle);
+        if($ipa <> null) {
+            log_country_message($c->cnum, "Base income per acre for $tech_handle tech calculated as: $ipa");
+            $ipas[$tech_handle] = $ipa;
+        }
     }
 
+    if(empty($ipas)) {
+        log_error(999, $c->cnum, 'get_ipas_for_tech_purchasing() call result is empty array');
+    }
+
+    return $ipas;
+}
+
+function get_single_income_per_acre($c, $tech_handle) {
+    switch($tech_handle) {
+        case 't_mil':
+            return round(($c->expenses_mil / (0.01 * $c->pt_res)) / $c->land, 0); // must be positive (the ee API cleans it up)
+        case 't_bus':
+            return round(($c->taxes / (0.01 * $c->pt_res * 0.01 * $c->pt_bus)) / $c->land, 0);
+        case 't_res':
+            return round(($c->taxes / (0.01 * $c->pt_res * 0.01 * $c->pt_bus)) / $c->land, 0);
+        case 't_agri':
+            return round((36 * $c->foodpro / (0.01 * $c->pt_agri)) / $c->land, 0);
+        case 't_indy':
+            return round(140 * 1.86 * ($c->govt == 'C' ? 1.35 : 1.0), 0); // FUTURE: from game code
+        default:
+            log_error(999, $c->cnum, 'get_single_ipa() call with invalid $tech_handle value: '.($tech_handle ?? ''));
+            return null;
+    }
+}
+
+
+function get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, $max_tech_price, $base_tech_value, $force_all_turn_buckets = false) {
+    // FUTURE: support weapons tech
+
+    $turn_buckets = [];
+    if($force_all_turn_buckets) {
+        for($turn_bucket_num = 10; $turn_bucket_num <= 100; $turn_bucket_num+=10){
+            $turn_buckets[] = $turn_bucket_num;
+        }
+    }
+    else {
+        foreach($buying_priorities as $priority_item)
+            if($priority_item['type'] == 'INCOME_TECHS')
+                $turn_buckets[] = $priority_item['goal'];
+    }
+
+    if(empty($turn_buckets)) {
+        log_error_message(999, $c->cnum, 'get_optimal_tech_buying_array() was called without income tech goals and with $force_all_turn_buckets = false');
+        return $turn_buckets;
+    }
+
+    $tech_type_to_ipa = get_ipas_for_tech_purchasing($c, $eligible_techs);
+
+    log_country_message($c->cnum, "Creating optimal tech buying array");
+
+    $expected_avg_land = get_average_future_land(240, 0);
+    log_country_message($c->cnum, "Average future land is calculated as: $expected_avg_land");
+
+    $optimal_tech_buying_array = [];
+    //for($key_num = 10; $key_num <= 100; $key_num+=10){
+    //    $optimal_tech_buying_array[$key_num] = [];
+    //}
+
+    $was_server_queried_at_least_once = false;
     foreach($tech_type_to_ipa as $tech_type => $ipa) {
         if($tech_type <> 't_agri' and $tech_type <> 't_indy' and $tech_type <> 't_bus' and $tech_type <> 't_res' and $tech_type <> 't_mil') {
-            log_error_message(117, $cnum, "Invalid tech type value is: $tech_type");
+            log_error_message(999, $c->cnum, "get_optimal_tech_buying_array(): Invalid tech type value is: $tech_type");
             continue;
         }
 
         $current_tech_price = PublicMarket::price($tech_type);
         if(!$current_tech_price) {
-            log_country_message($cnum, "No $tech_type tech available on public market so skipping optimal tech calculations");
+            log_country_message($c->cnum, "No $tech_type tech available on public market so skipping optimal tech calculations");
             continue;
         }
         else {
-            log_country_message($cnum, "Initial market price for $tech_type tech is $current_tech_price");
+            log_country_message($c->cnum, "Initial market price for $tech_type tech is $current_tech_price");
         }
 
         // dump results into the array, further process the array later
-        log_country_message($cnum, "Querying server for optimal tech buying results...");
-        $res = get_optimal_tech_from_ee($tech_type, $expected_avg_land, $current_tech_price, $max_tech_price, $ipa, $base_tech_value);
+        log_country_message($c->cnum, "Querying server for optimal tech buying results...");
+        $was_server_queried_at_least_once = true;
+        $res = get_optimal_tech_from_ee($tech_type, $expected_avg_land, $current_tech_price, $max_tech_price, $ipa, $base_tech_value, $turn_buckets);
         // no need for additional error handling because comm should handle that
         if(is_array($res)) {
             foreach($res as $turn_bucket => $pq_results) {
@@ -453,19 +519,21 @@ function get_optimal_tech_buying_array($cnum, $tech_type_to_ipa, $max_tech_price
     ];
     */
 
-    log_country_message($cnum, "Final processing for optimal tech buying array");
-    foreach($optimal_tech_buying_array as $turn_bucket => $pq_results) {
-        if(empty($pq_results))
-            unset($optimal_tech_buying_array[$turn_bucket]);
-        else
-            usort($optimal_tech_buying_array[$turn_bucket],
-            function ($a, $b) {
-                return $a['p'] <=> $b['p']; // spaceship!
-            });
-    }
+    if($was_server_queried_at_least_once) {
+    //log_country_message($c->cnum, "Final processing for optimal tech buying array");
+        foreach($optimal_tech_buying_array as $turn_bucket => $pq_results) {
+            if(empty($pq_results))
+                unset($optimal_tech_buying_array[$turn_bucket]);
+            else
+                usort($optimal_tech_buying_array[$turn_bucket],
+                function ($a, $b) {
+                    return $a['p'] <=> $b['p']; // spaceship!
+                });
+        }
 
-    log_country_message($cnum, "Array processing complete for optimal tech buying array");
-    log_country_data($cnum, $optimal_tech_buying_array);
+        //log_country_message($c->cnum, "Array processing complete for optimal tech buying array");
+        log_country_data($c->cnum, $optimal_tech_buying_array, "Results for optimal tech array:");
+    }
 
     return $optimal_tech_buying_array;
 };
@@ -473,7 +541,7 @@ function get_optimal_tech_buying_array($cnum, $tech_type_to_ipa, $max_tech_price
 
 
 
-function get_optimal_tech_from_ee ($tech_type, $expected_avg_land, $min_tech_price, $max_tech_price, $base_income_per_acre, $base_tech_value) {
+function get_optimal_tech_from_ee ($tech_type, $expected_avg_land, $min_tech_price, $max_tech_price, $base_income_per_acre, $base_tech_value, $turn_buckets) {
     // return a fake array here to use for testing other functions
 
     /*
@@ -503,7 +571,8 @@ function get_optimal_tech_from_ee ($tech_type, $expected_avg_land, $min_tech_pri
         'min_price' => $min_tech_price,
         'max_price' => $max_tech_price,
         'ipa' => $base_income_per_acre,
-        'tech_value' => $base_tech_value
+        'tech_value' => $base_tech_value,
+        'turn_buckets' => $turn_buckets
     ]);
     //out_data($result->debug);
     //$optimal_tech_array = $result->optimal_tech;

@@ -11,6 +11,8 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     //$main = get_main();     //get the basic stats
     //out_data($main);          //output the main data
     $c = get_advisor();     //c as in country! (get the advisor)
+    $is_allowed_to_mass_explore = is_country_allowed_to_mass_explore($c, $cpref, $server);
+
     $c->setIndy('pro_spy');
 
     if ($c->m_spy > 10000) {
@@ -21,23 +23,16 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
         Allies::fill('res');
     }
 
-    log_country_message($cnum, $c->turns.' turns left');
-    log_country_message($cnum, 'Explore Rate: '.$c->explore_rate.'; Min Rate: '.$c->explore_min);
+    techer_switch_government_if_needed($c);
 
-    if ($c->govt == 'M') {
-        $rand = rand(0, 100);
-        switch ($rand) {
-            case $rand < 40:
-                Government::change($c, 'H');
-                break;
-            case $rand < 80:
-                Government::change($c, 'D');
-                break;
-            default:
-                Government::change($c, 'T');
-                break;
-        }
-    }
+    $buying_priorities = [
+        ['type'=>'DPA','goal'=>100],
+        ['type'=>'NWPA','goal'=>100]
+    ];
+
+    // log useful information about country state
+    log_country_message($cnum, $c->turns.' turns left');
+    //log_country_message($cnum, 'Explore Rate: '.$c->explore_rate.'; Min Rate: '.$c->explore_min);
 
     //out_data($c);             //ouput the advisor data
     //$pm_info = get_pm_info();   //get the PM info
@@ -52,7 +47,7 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     while ($c->turns > 0) {
         //$result = PublicMarket::buy($c,array('m_bu'=>100),array('m_bu'=>400));
                 
-        $result = play_techer_turn($c, $rules->market_autobuy_tech_price, $rules->max_possible_market_sell);
+        $result = play_techer_turn($c, $rules->market_autobuy_tech_price, $rules->max_possible_market_sell, $is_allowed_to_mass_explore);
         if ($result === false) {  //UNEXPECTED RETURN VALUE
             $c = get_advisor();     //UPDATE EVERYTHING
             continue;
@@ -75,8 +70,8 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
         }
     }
 
-    if (turns_of_food($c) > 50 && turns_of_money($c) > 50 && $c->money > 3500 * 500 && ($c->built() > 80 || $c->money > $c->fullBuildCost() - $c->runCash()) && $c->tpt > 200) { // 40 turns of food
-        buy_techer_goals($c, $c->fullBuildCost() + $c->runCash(), $cpref); //keep enough money to build out everything
+    if (turns_of_food($c) > 50 && turns_of_money($c) > 50 && $c->money > 3500 * 500 && ($c->money > $c->fullBuildCost() - $c->runCash()) && $c->tpt > 200) { // 40 turns of food
+        spend_extra_money($c, $buying_priorities, $cpref, $c->fullBuildCost() - $c->runCash(), false);//keep enough money to build out everything
     }
 
     $c->countryStats(TECHER); // , techerGoals($c) // TODO: implement?
@@ -85,7 +80,7 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
 }//end play_techer_strat()
 
 
-function play_techer_turn(&$c, $market_autobuy_tech_price, $server_max_possible_market_sell)
+function play_techer_turn(&$c, $market_autobuy_tech_price, $server_max_possible_market_sell, $is_allowed_to_mass_explore)
 {
  //c as in country!
     $target_bpt = 65;
@@ -122,11 +117,8 @@ function play_techer_turn(&$c, $market_autobuy_tech_price, $server_max_possible_
         && ($c->land < 5000 || rand(0, 100) > 95 && $c->land < $server_avg_land)
     ) {
         //otherwise... explore if we can, for the early bits of the set
-        if ($c->explore_rate == $c->explore_min) {
-            return explore($c, min(5, max(1, $c->turns - 1), max(1, min(turns_of_money($c), turns_of_food($c)) - 3)));
-        } else {
-            return explore($c, min(max(1, $c->turns - 1), max(1, min(turns_of_money($c), turns_of_food($c)) - 3)));
-        }
+        $explore_turn_limit = $is_allowed_to_mass_explore ? 999 : 5;
+        return explore($c, max(1, min($explore_turn_limit, $c->turns - 1, turns_of_money($c) - 4, turns_of_food($c) - 4)));
     } else { //otherwise, tech, obviously
         //so, 10 if they can... cap at turns - 1
         return tech_techer($c, max(1, min(turns_of_money($c), turns_of_food($c), 13, $c->turns + 2) - 3));
@@ -292,18 +284,23 @@ function tech_techer(&$c, $turns = 1)
 }//end tech_techer()
 
 
+function techer_switch_government_if_needed($c) {
+    if ($c->govt == 'M') {
+        $rand = rand(0, 100);
+        switch ($rand) {
+            case $rand < 40:
+                Government::change($c, 'H');
+                break;
+            case $rand < 80:
+                Government::change($c, 'D');
+                break;
+            default:
+                Government::change($c, 'T');
+                break;
+        }
+    }
+} // techer_switch_government_if_needed()
 
-function buy_techer_goals(&$c, $money_to_reserve, $cpref)
-{
-    $priority_list = [
-        ['type'=>'DPA','goal'=>100],
-        ['type'=>'NWPA','goal'=>100]
-    ]; // techers shouldn't buy tech
-    spend_extra_money($c, $priority_list, "T", $cpref, $money_to_reserve, false, 100, 100);
-
-    //$goals = techerGoals($c);
-    //Country::countryGoals($c, $goals, $spend);
-}//end buy_techer_goals()
 
 /*
 function techerGoals(&$c)

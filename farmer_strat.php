@@ -31,41 +31,27 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     //$main = get_main();     //get the basic stats
     //out_data($main);          //output the main data
     $c = get_advisor();     //c as in country! (get the advisor)
+    $is_allowed_to_mass_explore = is_country_allowed_to_mass_explore($c, $cpref, $server);
+    log_country_message($cnum, "Agri: {$c->pt_agri}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%");
+    
     $c->setIndy('pro_spy');
 
     if ($c->m_spy > 10000) {
         Allies::fill('spy');
     }
 
-    $tech_type_to_ipa = ['t_bus' => 40, 't_res' => 40, 't_agri' => 190]; // TODO: be smarter about this - is negative mil tech not acceptable?
-    $optimal_tech_buying_array = get_optimal_tech_buying_array($cnum, $tech_type_to_ipa, 9999, 700);
+    farmer_switch_government_if_needed($c);
 
+    $buying_schedule = farmer_get_buying_schedule($cnum, $cpref);
+    $buying_priorities = farmer_get_buying_priorities ($cnum, $buying_schedule);
+    $eligible_techs = ['t_bus', 't_res', 't_agri', 't_mil'];
+    $optimal_tech_buying_array = get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, 9999, 700);
     $cost_for_military_point_guess = get_cost_per_military_points_for_caching($c);
     $dpnw_guess = get_dpnw_for_caching($c);
 
-    log_country_message($cnum, "Agri: {$c->pt_agri}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%");
-    //out_data($c) && exit;             //ouput the advisor data
-    if ($c->govt == 'M') {
-        $rand = rand(0, 100);
-        switch ($rand) {
-            case $rand < 12:
-                Government::change($c, 'D');
-                break;
-            case $rand < 20:
-                Government::change($c, 'I');
-                break;
-            case $rand < 30:
-                Government::change($c, 'R');
-                break;
-            default:
-                Government::change($c, 'F');
-                break;
-        }
-    }
-
-
+    // log useful information about country state
     log_country_message($cnum, $c->turns.' turns left');
-    log_country_message($cnum, 'Explore Rate: '.$c->explore_rate.'; Min Rate: '.$c->explore_min);
+    //log_country_message($cnum, 'Explore Rate: '.$c->explore_rate.'; Min Rate: '.$c->explore_min);
     //$pm_info = get_pm_info();   //get the PM info
     //out_data($pm_info);       //output the PM info
     //$market_info = get_market_info();   //get the Public Market info
@@ -74,10 +60,11 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     $owned_on_market_info = get_owned_on_market_info();     //find out what we have on the market
     //out_data($owned_on_market_info);  //output the Owned on Public Market info
 
+    $turned_played_for_last_spend_money_attempt = 0;
     while ($c->turns > 0) {
         //$result = PublicMarket::buy($c,array('m_bu'=>100),array('m_bu'=>400));
 
-        $result = play_farmer_turn($c, $rules->base_pm_food_sell_price);
+        $result = play_farmer_turn($c, $rules->base_pm_food_sell_price, $is_allowed_to_mass_explore);
         if ($result === false) {  //UNEXPECTED RETURN VALUE
             $c = get_advisor();     //UPDATE EVERYTHING
             continue;
@@ -95,18 +82,6 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
             //sell 1/4 of our military
             $pm_info = PrivateMarket::getRecent();
             PrivateMarket::sell($c, ['m_bu' => min($c->food, floor(-10 * $c->income / $pm_info->sell_price->m_bu))]);
-            /* FUTURE: $c->food gets out of sync?
-            -- could be fixed as of 20210329 - Slagpit
-
-[21:54:35] Almost out of money! Sell 10 turns of income in food!
-[21:54:36]
-
-Unexpected Result for 'pm': ERROR:OWNED
-
-PHP Notice:  Trying to get property 'money' of non-object in /mnt/c/Users/joe/Documents/GitHub/ee_npc/PrivateMarket.class.php on line 146
-PHP Notice:  Trying to get property 'goods' of non-object in /mnt/c/Users/joe/Documents/GitHub/ee_npc/PrivateMarket.class.php on line 151
-PHP Warning:  Invalid argument supplied for foreach() in /mnt/c/Users/joe/Documents/GitHub/ee_npc/PrivateMarket.class.php on line 151
-*/
         }
         
         // management is here to make sure that food is sold
@@ -125,13 +100,11 @@ PHP Warning:  Invalid argument supplied for foreach() in /mnt/c/Users/joe/Docume
         if (turns_of_food($c) > 50
             && turns_of_money($c) > 50
             && $c->money > 3500 * 500
-            && ($c->built() > 80 || $c->money > $c->fullBuildCost())
+            && ($c->money > floor(0.8*$c->fullBuildCost()))
         ) {
-            $spend = $c->money - $c->fullBuildCost(); //keep enough money to build out everything
-
-            if ($spend > abs($c->income) * 5) {
-                //try to batch a little bit...
-                buy_farmer_goals($c, $c->fullBuildCost(), $cpref, true, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array);
+            if ($c->turns_played >= $turned_played_for_last_spend_money_attempt + 7) { // wait at least 7 turns before trying again
+                spend_extra_money($c, $buying_priorities, $cpref, floor(0.8*$c->fullBuildCost()), true, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array, $buying_schedule);
+                $turned_played_for_last_spend_money_attempt = $c->turns_played;
             }
         }
     }
@@ -140,16 +113,16 @@ PHP Warning:  Invalid argument supplied for foreach() in /mnt/c/Users/joe/Docume
     if (turns_of_food($c) > 50
             && turns_of_money($c) > 50
             && $c->money > 3500 * 500
-            && ($c->built() > 80 || $c->money > $c->fullBuildCost())
+            && ($c->money > floor(0.8*$c->fullBuildCost()))
         ) {
-        buy_farmer_goals($c, $c->fullBuildCost(), $cpref, false, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array);
+        spend_extra_money($c, $buying_priorities, $cpref, floor(0.8*$c->fullBuildCost()), false, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array, $buying_schedule);
     }
 
     $c->countryStats(FARMER); // , farmerGoals($c) TODO: implement?
     return $c;
 }//end play_farmer_strat()
 
-function play_farmer_turn(&$c, $server_base_pm_bushel_sell_price = 29)
+function play_farmer_turn(&$c, $server_base_pm_bushel_sell_price = 29, $is_allowed_to_mass_explore)
 {
  //c as in country!
     $target_bpt = 65;
@@ -177,11 +150,8 @@ function play_farmer_turn(&$c, $server_base_pm_bushel_sell_price = 29)
         //build 4CS if we can afford it and are below our target BPT (80)
         return Build::cs(4); //build 4 CS
     } elseif ($c->built() > 50) {  //otherwise... explore if we can
-        if ($c->explore_rate == $c->explore_min) {
-            return explore($c, min(5, max(1, $c->turns - 1), max(1, turns_of_money($c) - 3)));
-        } else {
-            return explore($c, min(max(1, $c->turns - 1), max(1, turns_of_money($c) - 3)));
-        }
+        $explore_turn_limit = $is_allowed_to_mass_explore ? 999 : 5;
+        return explore($c, max(1,min($explore_turn_limit, $c->turns - 1, turns_of_money($c) - 4)));
     } else { //otherwise...  cash
         return cash($c);
     }
@@ -224,24 +194,36 @@ function sellextrafood_farmer(&$c, $server_base_pm_bushel_sell_price = 29)
 }//end sellextrafood_farmer()
 
 
-function buy_farmer_goals(&$c, $money_to_reserve, $cpref, $delay_military_purchases, $cost_for_military_point_guess, $dpnw_guess, &$optimal_tech_buying_array)
-{
-    // TODO: randomize
-    $priority_list = [
-        ['type'=>'DPA','goal'=>5],
-        ['type'=>'INCOME_TECHS','goal'=>50],
-        ['type'=>'DPA','goal'=>30],
-        ['type'=>'INCOME_TECHS','goal'=>80],
-        ['type'=>'DPA','goal'=>60],  
-        ['type'=>'INCOME_TECHS','goal'=>100],            
-        ['type'=>'DPA','goal'=>100],  
-        ['type'=>'NWPA','goal'=>100],  
-    ];
-    spend_extra_money($c, $priority_list, "F", $cpref, $money_to_reserve, $delay_military_purchases, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array);
+function farmer_switch_government_if_needed($c) {
+    if ($c->govt == 'M') {
+        $rand = rand(0, 100);
+        switch ($rand) {
+            case $rand < 12:
+                Government::change($c, 'D');
+                break;
+            case $rand < 20:
+                Government::change($c, 'I');
+                break;
+            case $rand < 30:
+                Government::change($c, 'R');
+                break;
+            default:
+                Government::change($c, 'F');
+                break;
+        }
+    }
+} // farmer_switch_government_if_needed()
 
-    //$goals = farmerGoals($c);
-    //Country::countryGoals($c, $goals, $spend);
-}//end buy_farmer_goals()
+
+function farmer_get_buying_schedule($cnum, $cpref) {
+    return casher_get_buying_schedule($cnum, $cpref); // same as casher for now
+} // farmer_get_buying_schedule()
+
+
+function farmer_get_buying_priorities ($cnum, $buying_schedule) {
+    return casher_get_buying_priorities ($cnum, $buying_schedule); // same as casher for now
+} // farmer_get_buying_priorities()
+
 
 /*
 function farmerGoals(&$c)

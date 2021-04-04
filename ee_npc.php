@@ -91,7 +91,7 @@ if (file_exists($config['save_settings_file'])) {
     $settings = json_decode(file_get_contents($config['save_settings_file']));
     log_main_message("Successfully loaded settings!");
 } else {
-    log_error_message(121, null, "No Settings File Found");
+    log_error_message(117, null, "No Settings File Found");
 }
 
 log_main_message("BOT IS STARTING AND HAS CLEARED INITIAL CHECKS", 'purple');
@@ -318,8 +318,8 @@ while (1) {
             //log_main_message("Setting GDI to ".($cpref->gdi ? "true" : "false"), true, 'brown');
         }
 
-        //if($cpref->strat <> 'T') // TODO DEBUG
-         //   continue;
+        //if($cpref->strat <> 'C') // TODO DEBUG
+        //    continue;
 
         if ($cpref->nextplay < time()) {
 
@@ -333,26 +333,15 @@ while (1) {
             $debug_force_destocking = false; // DEBUG: change to true to force destocking code to run
             $is_destocking = ($debug_force_destocking or time() >= $earliest_destock_time? true : false);
 
-            //$is_destocking = false; // TODO DEBUG
-
-            //TODO: debug
-            /*
-            $tech_type_to_ipa = ['t_agri' => 170, 't_bus' => 40]; //, 't_res' => 40]; //, 't_indy' => 200, 't_mil' => -30]; 
-            $optimal_tech = get_optimal_tech_buying_array ($cnum, $tech_type_to_ipa, 9999, 700);
-            out_data($optimal_tech);
-            continue;
-            */
+           // $is_destocking = false; // TODO DEBUG
 
             // log snapshot of country status
             $prev_c_values = [];
             $init_c = get_advisor();
-
             log_snapshot_message($init_c, "BEGIN", $cpref->strat, $is_destocking, $prev_c_values);
             unset($init_c);
-            //sleep(1);
-            //continue;
 
-            try {    
+            try {
                 if ($is_destocking) { // call special destocking code that passes back the next play time in $nexttime
                     log_main_message("Playing destocking ".Bots::txtStrat($cnum)." Turns for #$cnum ".siteURL($cnum));
                     log_country_message($cnum, 'Doing destocking actions' . log_translate_forced_debug($debug_force_destocking));

@@ -47,17 +47,17 @@ function log_get_name_of_error_type($error_type) {
     if($error_type == 115)
         return 'UNDETECTED COUNTRY OUT OF MONEY';
     if($error_type == 116)
-        return 'MISSING OR INVALID STRATEGY';        
+        return 'MISSING OR INVALID STRATEGY';  
     if($error_type == 117)
-        return 'UNSUPPORTED TECH TYPE FOR OPT TECH FN'; // for get_optimal_tech_buying_array() 
+        return 'NO SETTINGS FILE FOUND'; 
     if($error_type == 118)
         return 'COUNTRY ATTEMPTED DESTOCK IN PROTECTION'; 
-    if($error_type == 119)
-        return 'spend_extra_money: INVALID PRIORITY TYPE';
-    if($error_type == 120)
-        return 'spend_extra_money: EMPTY PRIORITY LIST';
-    if($error_type == 121)
-        return 'NO SETTINGS FILE FOUND';        
+
+
+
+        
+    if($error_type == 999) // use when functions are given stupid input and it isn't worth defining a new error
+        return 'GENERIC EE_NPC CODE BAD INPUT'; 
 
     // 1000+ are country playing mistakes 
     if($error_type == 1000)
@@ -99,13 +99,8 @@ function log_snapshot_message($c, $snapshot_type, $strat, $is_destocking, &$outp
 };
 
 
-function log_country_data($cnum_input, $data) {
-    $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
-    //out(str_replace("\n", " ", var_export($backtrace, true)));
-    //This function is to output and format some data nicely
-    $line = $backtrace[3]['line'] ?? '--';
-    $file = $backtrace[3]['file'] ?? '--';
-    $message = "DATA: ($file:$line)\n".json_encode($data);
+function log_country_data($cnum_input, $data, $intro_message) {    
+    $message = "$intro_message\n".json_encode($data);
     log_country_message($cnum_input, $message);
 }
 
