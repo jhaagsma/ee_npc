@@ -444,6 +444,16 @@ function get_single_income_per_acre($c, $tech_handle) {
 }
 
 
+function get_extra_income_affected_by_tech ($c, $tech_type) {
+    // don't want to prioritize mil tech for destocking that may never happen...
+    // any money over 500 M feels somewhat reasonable?
+    $extra_income = ($tech_type == 't_mil' ? max(0, $c->money - 500000000) : 0); // FUTURE: when stocking is enabled, account for bushels and OM bushels
+    if($extra_income > 0)
+        log_country_message($c->cnum, "Extra income for $tech_type tech computed as $extra_income");
+    return $extra_income;
+}
+
+
 function get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, $max_tech_price, $base_tech_value, $force_all_turn_buckets = false) {
     // FUTURE: support weapons tech
 
@@ -492,10 +502,12 @@ function get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, 
             log_country_message($c->cnum, "Initial market price for $tech_type tech is $current_tech_price");
         }
 
+        $extra_money_for_tech_impact = get_extra_income_affected_by_tech($c, $tech_type);
+
         // dump results into the array, further process the array later
         log_country_message($c->cnum, "Querying server for optimal tech buying results...");
         $was_server_queried_at_least_once = true;
-        $res = get_optimal_tech_from_ee($tech_type, $expected_avg_land, $current_tech_price, $max_tech_price, $ipa, $base_tech_value, $turn_buckets);
+        $res = get_optimal_tech_from_ee($tech_type, $expected_avg_land, $current_tech_price, $max_tech_price, $ipa, $base_tech_value, $extra_money_for_tech_impact, $turn_buckets);
         // no need for additional error handling because comm should handle that
         if(is_array($res)) {
             foreach($res as $turn_bucket => $pq_results) {
@@ -538,9 +550,7 @@ function get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, 
 };
 
 
-
-
-function get_optimal_tech_from_ee ($tech_type, $expected_avg_land, $min_tech_price, $max_tech_price, $base_income_per_acre, $base_tech_value, $turn_buckets) {
+function get_optimal_tech_from_ee ($tech_type, $expected_avg_land, $min_tech_price, $max_tech_price, $base_income_per_acre, $base_tech_value, $extra_money_for_tech_impact, $turn_buckets) {
     // return a fake array here to use for testing other functions
 
     /*
@@ -571,6 +581,7 @@ function get_optimal_tech_from_ee ($tech_type, $expected_avg_land, $min_tech_pri
         'max_price' => $max_tech_price,
         'ipa' => $base_income_per_acre,
         'tech_value' => $base_tech_value,
+        'extra_money_for_tech_impact' => $extra_money_for_tech_impact,
         'turn_buckets' => $turn_buckets
     ]);
     //out_data($result->debug);
