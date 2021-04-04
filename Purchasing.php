@@ -203,14 +203,13 @@ function buy_military_networth_from_markets(&$c, $cpref, $nw_needed, $max_spend,
     }
 
     $unit_weights = ['m_tr'=>0.5, 'm_j' => 0.6, 'm_tu' => 0.6, 'm_ta' => 2.0];
-    $unit_points = ['m_tr'=>0.5, 'm_j' => 0.6, 'm_tu' => 0.6, 'm_ta' => 2.0];
+    $unit_points = $unit_weights;
     return spend_money_on_markets($c, $cpref, $nw_needed, $max_spend, $unit_weights, $unit_points, "dpnw");    
 }
 
 
-function buyout_up_to_public_market_dpnw_2(&$c, $cpref, $max_dpnw, $max_spend, $military_units_only) {
+function buyout_up_to_market_dpnw(&$c, $cpref, $max_dpnw, $max_spend, $military_units_only, $public_only) {
     $unit_weights = ['m_tr'=>0.5, 'm_j' => 0.6, 'm_tu' => 0.6, 'm_ta' => 2.0];
-    $unit_points = ['m_tr'=>0.5, 'm_j' => 0.6, 'm_tu' => 0.6, 'm_ta' => 2.0];
 	if(!$military_units_only) {	// FUTURE: this is kind of stupid
 		$unit_weights["mil"] = 2.0;
 		$unit_weights["med"] = 2.0;
@@ -223,47 +222,41 @@ function buyout_up_to_public_market_dpnw_2(&$c, $cpref, $max_dpnw, $max_spend, $
 		$unit_weights["indy"] = 2.0;
 		$unit_weights["spy"] = 2.0;
 		$unit_weights["sdi"] = 2.0;
-        $unit_points["mil"] = 2.0;
-		$unit_points["med"] = 2.0;
-		$unit_points["bus"] = 2.0;
-		$unit_points["res"] = 2.0;
-		$unit_points["agri"] = 2.0;
-		$unit_points["war"] = 2.0;
-		$unit_points["ms"] = 2.0;
-		$unit_points["weap"] = 2.0;
-		$unit_points["indy"] = 2.0;
-		$unit_points["spy"] = 2.0;
-		$unit_points["sdi"] = 2.0;
 	}
 
-    return spend_money_on_markets($c, $cpref, 999999999, $max_spend, $unit_weights, $unit_points, "dpnw", $max_dpnw, true);   
+    $unit_points = $unit_weights;
+
+    return spend_money_on_markets($c, $cpref, 999999999, $max_spend, $unit_weights, $unit_points, "dpnw", $max_dpnw, $public_only);   
 }
 
 
 // $point_name is for message logging only
 function spend_money_on_markets(&$c, $cpref, $points_needed, $max_spend, $unit_weights, $unit_points, $point_name, $max_dollars_per_point = 100000, $public_only = false, $total_spent = 0, $total_points_gained = 0, $recursion_level = 1) {
     log_country_message($c->cnum, "Iteration $recursion_level for public".($public_only ? "" : " and private")." market purchasing based on $point_name");
-    log_country_message($c->cnum, "Budget is ".($max_spend - $total_spent).", purchase limit is ".($points_needed - $total_points_gained)." points, and price limit is $max_dollars_per_point $point_name");
+    log_country_message($c->cnum, "Budget is ".($max_spend - $total_spent).", purchase limit is ".($points_needed - $total_points_gained)." points, and score limit is $max_dollars_per_point ($point_name)");
 
     $pm_purchase_prices_by_unit = [];
     $pm_score_by_unit = [];
     // identify best purchase from private market
     if(!$public_only) {
         $pm_info = PrivateMarket::getInfo();
+        $skipped_units_message = null;
         foreach($unit_weights as $unit_name => $weight_for_unit) {
             $pm_price = $pm_info->buy_price->$unit_name;
             $pm_quantity = $pm_info->available->$unit_name;
-            if ($pm_quantity > 0) {
+            $unit_score = floor($pm_price / $unit_weights[$unit_name]); // slightly favor over public that uses round()
+            if ($pm_quantity > 0 and $unit_score <= $max_dollars_per_point) {
                 $pm_purchase_prices_by_unit[$unit_name] = $pm_price;
-                // log_country_message($c->cnum, "unit:$unit_name, price:$pm_price");
-                $unit_score = floor($pm_price / $unit_weights[$unit_name]); // slightly favor over public that uses round()
+                // log_country_message($c->cnum, "unit:$unit_name, price:$pm_price");                
                 $pm_score_by_unit[$unit_name] = $unit_score;
-                log_country_message($c->cnum, "Iteration $recursion_level initial private market conditions for $unit_name are price $pm_price and score $unit_score ($point_name)");
+                log_country_message($c->cnum, "Initial private market conditions for $unit_name are price $pm_price, quantity $pm_quantity, and score $unit_score ($point_name)");
             }
-            else {
-                log_country_message($c->cnum, "Iteration $recursion_level initial private market conditions for $unit_name are nothing on market");
+            else {                
+                $skipped_units_message .= "$unit_name: ".($pm_quantity <= 0 ? "quantity 0; " : "high score $unit_score ($point_name); ");
             }
         }
+        if($skipped_units_message)
+            log_country_message($c->cnum, "Skipped PM units $skipped_units_message");
     }
 
 	$public_market_tax_rate = $c->tax();

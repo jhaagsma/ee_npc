@@ -13,13 +13,14 @@ PURPOSE: implements destocking logic. plays turns, makes purchases, and calculat
 RETURNS: the country object
 PARAMETERS:
 	$cnum - the country number
-	$strategy - single letter strategy name abbreviation
+	$cpref - country preference object
 	$server - server object
 	$rules - rules object
 	$next_play_time_in_seconds - output for the number of seconds to the next play
 	$exit_condition - output for country condition when we finished destocking
 */
-function execute_destocking_actions($cnum, $strategy, $server, $rules, &$next_play_time_in_seconds, &$exit_condition) {
+function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_time_in_seconds, &$exit_condition) {
+	$strategy = $cpref->strat;
 	$exit_condition = 'NORMAL';
 	$reset_end_time = $server->reset_end;
 	$server_seconds_per_turn = $server->turn_rate;
@@ -109,7 +110,7 @@ function execute_destocking_actions($cnum, $strategy, $server, $rules, &$next_pl
 
 		if ($max_spend > 0) {
 			log_country_message($cnum, "Attempting to spend money on private and public markets on units better or equal to PM $military_unit...");
-			buyout_up_to_private_market_unit_dpnw ($c, $pm_info->buy_price->$military_unit, $military_unit, $max_spend);
+			buyout_up_to_private_market_unit_dpnw ($c, $cpref, $pm_info->buy_price->$military_unit, $military_unit, $max_spend);
 		}
 
 		// estimate future private market unit generation	
@@ -138,7 +139,7 @@ function execute_destocking_actions($cnum, $strategy, $server, $rules, &$next_pl
 		if($c->money > 10000000) {
 			log_country_message($cnum, "Buying anything available off public market...");
 			// FUTURE: buyout private again too? can end up with 55 M that could be better spent on private
-			buyout_up_to_public_market_dpnw($c, 5000, $c->money, false); // buy anything ($10000 tech is 5000 dpnw)
+			buyout_up_to_market_dpnw($c, $cpref, 5000, $c->money, false, false); // buy anything ($10000 tech is 5000 dpnw)
 			log_country_message($cnum, "Done with public market purchases. Money is $c->money");
 		}
 		else
@@ -156,7 +157,7 @@ function execute_destocking_actions($cnum, $strategy, $server, $rules, &$next_pl
 		else {
 			log_country_message($c->cnum, "Attempting to spend budget of $max_spend on public market military goods at or below $max_dpnw dpnw...");
 			$money_before_purchase = $c->money;
-			buyout_up_to_public_market_dpnw($c, $max_dpnw, $max_spend, true); // don't buy tech, maybe the humans want it
+			buyout_up_to_market_dpnw($c, $cpref, $max_dpnw, $max_spend, true, true); // don't buy tech, maybe the humans want it
 			$money_spent = $money_before_purchase - $c->money;
 			log_country_message($c->cnum, "Completed public market purchasing. Budget was $max_spend and spent $money_spent money.");
 		}
@@ -518,21 +519,22 @@ PARAMETERS:
 	$unit_type - the unit that we're processing: m_tr, m_j, m_tu, or m_ta
 	$max_spend - don't spend more money than this
 */
-function buyout_up_to_private_market_unit_dpnw(&$c, $pm_buy_price, $unit_type, $max_spend) {
+function buyout_up_to_private_market_unit_dpnw(&$c, $cpref, $pm_buy_price, $unit_type, $max_spend) {
 	// FUTURE: error checking on $unit_type
 	
 	$unit_to_nw_map = array("m_tr" => 0.5, "m_j" => 0.6, "m_tu" => 0.6, "m_ta" => 2.0); // FUTURE: this is stupid
 	$pm_unit_nw = $unit_to_nw_map[$unit_type];
-	$max_dpnw = floor(($pm_buy_price / $pm_unit_nw) / $c->tax());
+	$max_dpnw = floor(($pm_buy_price / $pm_unit_nw)); // buyout_up_to_market_dpnw deals with market commissions
 
 	$c = get_advisor();	// money must be correct because we get an error if we try to buy too much
 
 	$money_before_purchase = $c->money;
-	buyout_up_to_public_market_dpnw($c, $max_dpnw, $max_spend, true);
+	buyout_up_to_market_dpnw($c, $cpref, $max_dpnw, $max_spend, true, false); // buy off private too
 	$money_spent = $money_before_purchase - $c->money;
 	$max_spend -= $money_spent;
-	log_country_message($c->cnum, "Spent $money_spent money on public market military cheaper than $max_dpnw dpnw (on $unit_type pm iterations)");
+	log_country_message($c->cnum, "Spent $money_spent money on public and private market military <= $max_dpnw dpnw (on $unit_type pm iterations)");
 
+	/*
 	$c = get_advisor(); // money must be correct because we get an error if we try to buy too much
 	
 	// fresh update because maybe prices changed or units decayed
@@ -544,25 +546,8 @@ function buyout_up_to_private_market_unit_dpnw(&$c, $pm_buy_price, $unit_type, $
 		$money_spent = $money_before_purchase - $c->money;
 		//log_country_message($c->cnum, "Spent $money_spent money on pm $unit_type"); // logged for free
 	}
+	*/
 	return;	
-}
-
-
-/*
-NAME: buyout_up_to_public_market_dpnw
-PURPOSE: attempts to purchase from the public market below a dpnw while following certain rules, loops up to two times
-RETURNS: total money spent so far by all iterations
-PARAMETERS:
-	$c - the country object
-	$max_dpnw - don't buy anything with a higher dpnw than this
-	$max_spend - don't spend more money than this
-	$military_units_only - true if should only buy military units, false is buying tech is okay too
-	$total_spent - internal, don't pass this in when calling externally
-	$recursion_level - internal, don't pass this in when calling externally
-*/
-
-function buyout_up_to_public_market_dpnw(&$c, $max_dpnw, $max_spend, $military_units_only) {
-	return buyout_up_to_public_market_dpnw_2($c, null, $max_dpnw, $max_spend, $military_units_only);
 }
 
 

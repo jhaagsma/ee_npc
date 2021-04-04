@@ -361,6 +361,7 @@ function minDpnw(&$c, $onlyDef = false)
 }//end minDpnw()
 
 
+// Can't retire this code yet because the rainbow strat uses it
 function defend_self(&$c, $reserve_cash = 50000, $dpnwMax = 380)
 {
     if ($c->protection) {

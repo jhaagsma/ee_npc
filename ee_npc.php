@@ -346,7 +346,7 @@ while (1) {
                     log_main_message("Playing destocking ".Bots::txtStrat($cnum)." Turns for #$cnum ".siteURL($cnum));
                     log_country_message($cnum, 'Doing destocking actions' . log_translate_forced_debug($debug_force_destocking));
                     $exit_condition = "NORMAL";
-                    $c = execute_destocking_actions($cnum, $cpref->strat, $server, $rules, $nexttime, $exit_condition);
+                    $c = execute_destocking_actions($cnum, $cpref, $server, $rules, $nexttime, $exit_condition);
                     
                 }
                 else { // not destocking
