@@ -60,7 +60,7 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     $owned_on_market_info = get_owned_on_market_info();     //find out what we have on the market
     //out_data($owned_on_market_info);  //output the Owned on Public Market info
 
-    $turned_played_for_last_spend_money_attempt = 0;
+    $turns_played_for_last_spend_money_attempt = 0;
     while ($c->turns > 0) {
         //$result = PublicMarket::buy($c,array('m_bu'=>100),array('m_bu'=>400));
 
@@ -100,9 +100,9 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
             && $c->money > 3500 * 500
             && ($c->money > floor(0.8*$c->fullBuildCost()))
         ) {
-            if ($c->turns_played >= $turned_played_for_last_spend_money_attempt + 7) { // wait at least 7 turns before trying again
+            if ($c->turns_played >= $turns_played_for_last_spend_money_attempt + 7) { // wait at least 7 turns before trying again
                 spend_extra_money($c, $buying_priorities, $cpref, floor(0.8*$c->fullBuildCost()), true, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array, $buying_schedule);
-                $turned_played_for_last_spend_money_attempt = $c->turns_played;
+                $turns_played_for_last_spend_money_attempt = $c->turns_played;
             }
         }
     }

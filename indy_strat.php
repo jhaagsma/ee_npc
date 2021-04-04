@@ -47,7 +47,7 @@ function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition)
         spend_extra_money_no_military($c, $buying_priorities, $cpref, floor(0.8 * $c->fullBuildCost()) - $c->runCash(), $optimal_tech_buying_array);
     }
 
-    $turned_played_for_last_spend_money_attempt = $c->turns_played;
+    $turns_played_for_last_spend_money_attempt = $c->turns_played;
     while ($c->turns > 0) {
         //$result = PublicMarket::buy($c,array('m_bu'=>100),array('m_bu'=>400));
                 
@@ -75,9 +75,9 @@ function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition)
 
         if (turns_of_food($c) > (10 + $c->turns) && turns_of_money($c) > (10 + $c->turns) && $c->money > 3500 * 500 && ($c->money > floor(0.8 * $c->fullBuildCost()) - $c->runCash())
         ) {
-            if ($c->turns_played >= $turned_played_for_last_spend_money_attempt + 7) { // wait at least 7 turns before trying again
+            if ($c->turns_played >= $turns_played_for_last_spend_money_attempt + 7) { // wait at least 7 turns before trying again
                 spend_extra_money_no_military($c, $buying_priorities, $cpref, floor(0.8 * $c->fullBuildCost()) - $c->runCash(), $optimal_tech_buying_array);
-                $turned_played_for_last_spend_money_attempt = $c->turns_played;
+                $turns_played_for_last_spend_money_attempt = $c->turns_played;
             }
         }
     }

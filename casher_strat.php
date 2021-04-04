@@ -39,19 +39,10 @@ function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition)
 
     //$owned_on_market_info = get_owned_on_market_info();     //find out what we have on the market
 
-    $turned_played_for_last_spend_money_attempt = 0;
+    $turns_played_for_last_spend_money_attempt = 0;
     while ($c->turns > 0) {
-        $result = play_casher_turn($c, $is_allowed_to_mass_explore);
-        if ($result === false) {  //UNEXPECTED RETURN VALUE
-            $c = get_advisor();     //UPDATE EVERYTHING
-            continue;
-        }
-        update_c($c, $result);
-        if (!$c->turns % 5) {                   //Grab new copy every 5 turns
-            $c->updateMain(); //we probably don't need to do this *EVERY* turn
-        }
 
-        
+        // should be okay to move these here because cashers don't sell anything?
         $hold = money_management($c, $rules->max_possible_market_sell);
         if ($hold) {
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
@@ -62,14 +53,30 @@ function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition)
             $exit_condition = 'WAIT_FOR_PUBLIC_MARKET_FOOD';
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
         }
-        
+
+        $result = play_casher_turn($c, $is_allowed_to_mass_explore);
+        if ($result === false) {  //UNEXPECTED RETURN VALUE
+            $c = get_advisor();     //UPDATE EVERYTHING
+            continue;
+        }
+        update_c($c, $result);
+        if (!$c->turns % 5) {                   //Grab new copy every 5 turns
+            $c->updateMain(); //we probably don't need to do this *EVERY* turn
+        }
+
+        $hold = food_management($c);
+        if ($hold) {
+            $exit_condition = 'WAIT_FOR_PUBLIC_MARKET_FOOD';
+            break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
+        }
+
         if (turns_of_food($c) > 40
             && $c->money > 3500 * 500
             && ($c->money > $c->fullBuildCost())
         ) { // 40 turns of food
-            if ($c->turns_played >= $turned_played_for_last_spend_money_attempt + 7) { // wait at least 7 turns before trying again
+            if ($c->turns_played >= $turns_played_for_last_spend_money_attempt + 7) { // wait at least 7 turns before trying again
                 spend_extra_money($c, $buying_priorities, $cpref, $c->fullBuildCost(), true, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array, $buying_schedule);
-                $turned_played_for_last_spend_money_attempt = $c->turns_played;
+                $turns_played_for_last_spend_money_attempt = $c->turns_played;
             }
         }
     }
