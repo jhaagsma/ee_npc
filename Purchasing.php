@@ -490,11 +490,6 @@ function get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, 
 
     $was_server_queried_at_least_once = false;
     foreach($tech_type_to_ipa as $tech_type => $ipa) {
-        if($tech_type <> 't_agri' and $tech_type <> 't_indy' and $tech_type <> 't_bus' and $tech_type <> 't_res' and $tech_type <> 't_mil') {
-            log_error_message(999, $c->cnum, "get_optimal_tech_buying_array(): Invalid tech type value is: $tech_type");
-            continue;
-        }
-
         $current_tech_price = PublicMarket::price($tech_type);
         if(!$current_tech_price) {
             log_country_message($c->cnum, "No $tech_type tech available on public market so skipping optimal tech calculations");
