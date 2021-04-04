@@ -109,7 +109,7 @@ function play_casher_turn(&$c, $is_allowed_to_mass_explore)
         return Build::cs(4); //build 4 CS
     } elseif ($c->built() > 50) {
         //otherwise... explore if we can
-        $explore_turn_limit = $is_allowed_to_mass_explore ? 999 : 5;
+        $explore_turn_limit = $is_allowed_to_mass_explore ? 999 : 7; // match spend_money call
         return explore($c, max(1, min($explore_turn_limit, $c->turns, turns_of_food($c) - 4)));
     } else {
         //otherwise...  cash

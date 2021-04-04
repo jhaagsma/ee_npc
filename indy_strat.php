@@ -113,7 +113,7 @@ function play_indy_turn(&$c, $server_max_possible_market_sell, $is_allowed_to_ma
         return Build::cs(4); //build 4 CS
     } elseif ($c->built() > 50) {  //otherwise... explore if we can
         //1.15 is my growth factor for indies
-        $explore_turn_limit = $is_allowed_to_mass_explore ? 999 : 5;
+        $explore_turn_limit = $is_allowed_to_mass_explore ? 999 : 7; // match spend_money call
         return explore($c, max(1, min($explore_turn_limit, $c->turns - 1, turns_of_money($c) / 1.15 - 4, turns_of_food($c) - 4)));
     } else { //otherwise...  cash
         return cash($c);

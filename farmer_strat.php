@@ -150,7 +150,7 @@ function play_farmer_turn(&$c, $server_base_pm_bushel_sell_price = 29, $is_allow
         //build 4CS if we can afford it and are below our target BPT (80)
         return Build::cs(4); //build 4 CS
     } elseif ($c->built() > 50) {  //otherwise... explore if we can
-        $explore_turn_limit = $is_allowed_to_mass_explore ? 999 : 5;
+        $explore_turn_limit = $is_allowed_to_mass_explore ? 999 : 7; // match spend_money call
         return explore($c, max(1,min($explore_turn_limit, $c->turns - 1, turns_of_money($c) - 4)));
     } else { //otherwise...  cash
         return cash($c);
