@@ -12,7 +12,7 @@ function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     //out_data($main);          //output the main data
     $c = get_advisor();     //c as in country! (get the advisor)
     $is_allowed_to_mass_explore = is_country_allowed_to_mass_explore($c, $cpref, $server);
-    log_country_message($cnum, "Indy: {$c->pt_indy}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%");
+    log_country_message($cnum, "Indy: {$c->pt_indy}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%; Mil: {$c->pt_mil}%; Weap: {$c->pt_weap}%");
 
     $c->setIndyFromMarket(false); // changing to not check DPA - Slagpit 20210321
 
@@ -25,7 +25,7 @@ function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     $buying_priorities = [
         ['type'=>'INCOME_TECHS','goal'=>100]
     ];
-    $eligible_techs = ['t_bus', 't_res', 't_indy', 't_mil'];
+    $eligible_techs = ['t_bus', 't_res', 't_indy', 't_mil', 't_weap'];
     $optimal_tech_buying_array = get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, 9999, 700);
 
     // log useful information about country state

@@ -305,13 +305,13 @@ class Country
      */
     public function defPerAcre()
     {
-        return round((1 * $this->m_tr + 2 * $this->m_tu + 4 * $this->m_ta) / $this->land); // FUTURE: weapons tech?
+        return round(0.01 * $c->pt_weap * (1 * $this->m_tr + 2 * $this->m_tu + 4 * $this->m_ta) / $this->land); // FUTURE: govt modifiers?
     }//end defPerAcre()
 
 
     public function totalDefense()
     {
-        return (1 * $this->m_tr + 2 * $this->m_tu + 4 * $this->m_ta); // FUTURE: weapons tech?
+        return floor(0.01 * $c->pt_weap * (1 * $this->m_tr + 2 * $this->m_tu + 4 * $this->m_ta)); // FUTURE: govt modifiers?
     }//end defPerAcre()   
 
 

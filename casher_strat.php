@@ -11,7 +11,7 @@ function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     $c = get_advisor();     //c as in country! (get the advisor)
     //out_data($c) && exit;             //ouput the advisor data
     $is_allowed_to_mass_explore = is_country_allowed_to_mass_explore($c, $cpref, $server);
-    log_country_message($cnum, "Bus: {$c->pt_bus}%; Res: {$c->pt_res}%");
+    log_country_message($cnum, "Bus: {$c->pt_bus}%; Res: {$c->pt_res}%; Mil: {$c->pt_mil}%; Weap: {$c->pt_weap}%");
 
     $c->setIndy('pro_spy');
 
@@ -24,7 +24,7 @@ function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     // setup for spending extra money (not on food or building costs)
     $buying_schedule = casher_get_buying_schedule($cnum, $cpref);
     $buying_priorities = casher_get_buying_priorities ($cnum, $buying_schedule);
-    $eligible_techs = ['t_bus', 't_res', 't_mil']; 
+    $eligible_techs = ['t_bus', 't_res', 't_mil', 't_weap'];
     $optimal_tech_buying_array = get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, 9999, 700);
     $cost_for_military_point_guess = get_cost_per_military_points_for_caching($c);
     $dpnw_guess = get_dpnw_for_caching($c);    

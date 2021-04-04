@@ -428,13 +428,15 @@ function get_ipas_for_tech_purchasing($c, $eligible_techs) {
 function get_single_income_per_acre($c, $tech_handle) {
     switch($tech_handle) {
         case 't_mil':
-            return round(($c->expenses_mil / (0.01 * $c->pt_res)) / $c->land, 0); // must be positive (the ee API cleans it up)
+            return round(($c->expenses_mil / (0.01 * $c->pt_mil)) / $c->land, 0); // must be positive (the ee API cleans it up)
         case 't_bus':
             return round(($c->taxes / (0.01 * $c->pt_res * 0.01 * $c->pt_bus)) / $c->land, 0);
         case 't_res':
             return round(($c->taxes / (0.01 * $c->pt_res * 0.01 * $c->pt_bus)) / $c->land, 0);
         case 't_agri':
             return round((36 * $c->foodpro / (0.01 * $c->pt_agri)) / $c->land, 0);
+        case 't_weap':
+            return round(($c->expenses_mil / (0.01 * $c->pt_weap)) / $c->land, 0); // could be kind of weird late game, but whatever
         case 't_indy':
             return round(140 * 1.86 * ($c->govt == 'C' ? 1.35 : 1.0), 0); // FUTURE: from game code
         default:
