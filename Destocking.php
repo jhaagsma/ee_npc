@@ -35,8 +35,10 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 
 	// FUTURE: cancel all SOs
 	
-	// change indy production to 100% jets
-	$c->setIndy('pro_j');
+	// for indy, set production to 50% jets and 50% turrets because it gives the most NW
+	// ideally we'd set to 100% jets (which is common for humans), but doing so makes bots too vulnerable to player abuse
+	if($strategy == 'I')
+		$c->setIndy(['pro_j' => 50, 'pro_tu' => 50]);
 
 	$debug_force_final_attempt = false; // DEBUG change to true to force final attempt
 	$calc_final_attempt = is_final_destock_attempt($reset_seconds_remaining, $server_seconds_per_turn);
