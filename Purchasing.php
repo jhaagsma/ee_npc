@@ -489,13 +489,12 @@ function get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, 
             continue;
         }
         else {
-            log_country_message($c->cnum, "Initial market price for $tech_type tech is $current_tech_price");
+            log_country_message($c->cnum, "Initial market price for $tech_type tech is $current_tech_price. Querying server for optimal tech buying results...");
         }
 
         $extra_money_for_tech_impact = get_extra_income_affected_by_tech($c, $tech_type);
 
         // dump results into the array, further process the array later
-        log_country_message($c->cnum, "Querying server for optimal tech buying results...");
         $was_server_queried_at_least_once = true;
         $res = get_optimal_tech_from_ee($tech_type, $expected_avg_land, $current_tech_price, $max_tech_price, $ipa, $base_tech_value, $extra_money_for_tech_impact, $turn_buckets);
         // no need for additional error handling because comm should handle that
