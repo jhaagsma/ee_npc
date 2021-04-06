@@ -498,7 +498,7 @@ function get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, 
         if(is_array($res)) {
             foreach($res as $turn_bucket => $pq_results) {
                 foreach($pq_results as $pq_result) {
-                    $optimal_tech_buying_array[$turn_bucket][] = $pq_result;
+                    $optimal_tech_buying_array[(int)$turn_bucket][] = $pq_result;
                 }
             }
         }
