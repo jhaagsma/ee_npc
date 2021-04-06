@@ -4,7 +4,7 @@ namespace EENPC;
 
 // wrapper for spend_extra_money()
 function spend_extra_money_no_military(&$c, $buying_priorities, $cpref, $money_to_reserve, &$optimal_tech_buying_array, $buying_schedule = 0) {
-    return spend_extra_money ($c, $buying_priorities, $cpref, $money_to_reserve, true, 999, 999, $optimal_tech_buying_array, $buying_schedule); // delay mil purchases to avoid log spam
+    return spend_extra_money ($c, $buying_priorities, $cpref, $money_to_reserve, false, 999, 999, $optimal_tech_buying_array, $buying_schedule);
 } 
 
 // buy military or tech with money not needed for food, expenses, or buildings (future should include stocking bushels?)
