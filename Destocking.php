@@ -584,7 +584,8 @@ PARAMETERS:
 */
 function is_final_destock_attempt ($reset_seconds_remaining, $server_seconds_per_turn) {
 	// don't have to worry about longer logouts due to market selling because market selling is only done if there's enough time left in the set for it
-	return ($reset_seconds_remaining / $server_seconds_per_turn < TURNS_TO_PASS_BEFORE_NEXT_DESTOCK_ATTEMPT ? true : false);
+	// 120 second buffer because bots don't play in the final minute of a reset
+	return (($reset_seconds_remaining - 120) / $server_seconds_per_turn < TURNS_TO_PASS_BEFORE_NEXT_DESTOCK_ATTEMPT ? true : false);
 }
 
 
