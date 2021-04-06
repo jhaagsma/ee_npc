@@ -474,9 +474,6 @@ function get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, 
     log_country_message($c->cnum, "Creating optimal tech buying array");
 
     $optimal_tech_buying_array = [];
-    //for($key_num = 10; $key_num <= 100; $key_num+=10){
-    //    $optimal_tech_buying_array[$key_num] = [];
-    //}
 
     $was_server_queried_at_least_once = false;
     foreach($tech_type_to_ipa as $tech_type => $ipa) {
@@ -517,6 +514,8 @@ function get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, 
     */
 
     if($was_server_queried_at_least_once) {
+        if(empty($optimal_tech_buying_array))
+            log_country_message($c->cnum, "Optimal tech buying array is empty because prices are too expensive");
         foreach($optimal_tech_buying_array as $turn_bucket => $pq_results) {
             if(empty($pq_results))
                 unset($optimal_tech_buying_array[$turn_bucket]);
