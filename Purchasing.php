@@ -51,7 +51,7 @@ function spend_extra_money(&$c, $buying_priorities, $cpref, $money_to_reserve, $
     log_country_message($c->cnum, "Using schedule $buying_schedule, spend money with ".($delay_military_purchases ? "delayed mil purchases, " : "")."money: $c->money, max to spend: $max_spend, total reserved: $money_to_reserve");
 
     foreach($buying_priorities as $priority_item) {
-        if($c->money < $money_to_reserve + 10000) {
+        if($max_spend < 10000) {
             log_country_message($c->cnum, "Using schedule $buying_schedule, ran out of money to spend");
             break;
         }
@@ -75,9 +75,9 @@ function spend_extra_money(&$c, $buying_priorities, $cpref, $money_to_reserve, $
                     $defense_points_after_purchase = $c->totalDefense();
                     $was_goal_met = $defense_points_after_purchase >= $total_defense_points_goal ? true : false;
                     log_country_message($c->cnum, "DPA goal $priority_goal%: Spent $total_spent_or_reserved_by_step to buy defense and ended with $defense_points_after_purchase defense which did ".($was_goal_met ? "" : 'NOT ')."meet the goal of $total_defense_points_goal points");
-                    $max_spend -= $total_spent_or_reserved_by_step;
                     $total_spent += $total_spent_or_reserved_by_step;
                 }
+                $max_spend -= $total_spent_or_reserved_by_step;
             }
         }
         elseif($priority_type == 'INCOME_TECHS') {
@@ -115,9 +115,9 @@ function spend_extra_money(&$c, $buying_priorities, $cpref, $money_to_reserve, $
                 else {
                     $was_goal_met = $c->networth >= $total_nw_goal ? true : false;
                     log_country_message($c->cnum, "NWPA goal $priority_goal%: Spent $total_spent_or_reserved_by_step to increase NW and did ".($was_goal_met ? "" : 'NOT ')."meet the goal of $total_defense_points_goal NW");
-                    $max_spend -= $total_spent_or_reserved_by_step;
                     $total_spent += $total_spent_or_reserved_by_step;
                 }
+                $max_spend -= $total_spent_or_reserved_by_step;
             }
         }            
         else
