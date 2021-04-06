@@ -98,10 +98,10 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
 
         if (turns_of_money($c) > 50
             && $c->money > 3500 * 500
-            && ($c->money > floor(0.8*$c->fullBuildCost()))
+            && ($c->money > floor(0.9*$c->fullBuildCost()))
         ) {
             if ($c->turns_played >= $turns_played_for_last_spend_money_attempt + 7) { // wait at least 7 turns before trying again
-                spend_extra_money($c, $buying_priorities, $cpref, floor(0.8*$c->fullBuildCost()), true, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array, $buying_schedule);
+                spend_extra_money($c, $buying_priorities, $cpref, floor(0.9*$c->fullBuildCost()), true, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array, $buying_schedule);
                 $turns_played_for_last_spend_money_attempt = $c->turns_played;
             }
         }
@@ -110,9 +110,9 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     // buy military at the end
     if (turns_of_money($c) > 30 // try to spend something if we get unlucky
             && $c->money > 3500 * 500
-            && ($c->money > floor(0.8*$c->fullBuildCost()))
+            && ($c->money > floor(0.9*$c->fullBuildCost()))
         ) {
-        spend_extra_money($c, $buying_priorities, $cpref, floor(0.8*$c->fullBuildCost()), false, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array, $buying_schedule);
+        spend_extra_money($c, $buying_priorities, $cpref, floor(0.9*$c->fullBuildCost()), false, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array, $buying_schedule);
     }
 
     $c->countryStats(FARMER); // , farmerGoals($c) FUTURE: implement?
