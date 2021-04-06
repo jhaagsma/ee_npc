@@ -554,7 +554,7 @@ function calculate_next_play_in_seconds($cnum, $nexttime, $strat, $is_clan_serve
     // shrink the window up to 25% based on the country's preference for play
     // $country_play_rand_factor is random number in range (1, 2)
     $seconds_to_subtract_from_max = round(0.25 * ($country_play_rand_factor - 1) * ($play_seconds_maximum - $play_seconds_minimum));
-    log_country_message($cnum, "Country preference is $country_play_rand_factor, so adjusting max down by $seconds_to_subtract_from_max seconds");
+    log_country_message($cnum, "Country playing activity preference is $country_play_rand_factor, so adjusting max down by $seconds_to_subtract_from_max seconds");
     $play_seconds_maximum -= $seconds_to_subtract_from_max;
 
     $std_dev = round($play_seconds_maximum - $play_seconds_minimum) / 4; // 2.5% chance of min and max values
