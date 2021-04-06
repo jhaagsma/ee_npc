@@ -237,7 +237,6 @@ function expected_result($input)
         'gdi/leave' => 'GDILEAVE',
         'events' => 'NEW_EVENTS',
         'ranks/{cnum}' => 'SEARCH',
-        'get_average_future_land' => 'AVG_FUTURE_LAND',
         'get_optimal_tech_buying_info' => 'OPTIMAL_TECH'
     ];
 

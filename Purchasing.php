@@ -473,9 +473,6 @@ function get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, 
 
     log_country_message($c->cnum, "Creating optimal tech buying array");
 
-    $expected_avg_land = get_average_future_land(240, 0);
-    log_country_message($c->cnum, "Average future land is calculated as: $expected_avg_land");
-
     $optimal_tech_buying_array = [];
     //for($key_num = 10; $key_num <= 100; $key_num+=10){
     //    $optimal_tech_buying_array[$key_num] = [];
@@ -496,7 +493,7 @@ function get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, 
 
         // dump results into the array, further process the array later
         $was_server_queried_at_least_once = true;
-        $res = get_optimal_tech_from_ee($tech_type, $expected_avg_land, $current_tech_price, $max_tech_price, $ipa, $base_tech_value, $extra_money_for_tech_impact, $turn_buckets);
+        $res = get_optimal_tech_from_ee($tech_type, 260, $current_tech_price, $max_tech_price, $ipa, $base_tech_value, $extra_money_for_tech_impact, $turn_buckets);
         // no need for additional error handling because comm should handle that
         if(is_array($res)) {
             foreach($res as $turn_bucket => $pq_results) {
@@ -539,7 +536,7 @@ function get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, 
 };
 
 
-function get_optimal_tech_from_ee ($tech_type, $expected_avg_land, $min_tech_price, $max_tech_price, $base_income_per_acre, $base_tech_value, $extra_money_for_tech_impact, $turn_buckets) {
+function get_optimal_tech_from_ee ($tech_type, $min_cs, $min_tech_price, $max_tech_price, $base_income_per_acre, $base_tech_value, $extra_money_for_tech_impact, $turn_buckets) {
     // return a fake array here to use for testing other functions
 
     /*
@@ -565,7 +562,7 @@ function get_optimal_tech_from_ee ($tech_type, $expected_avg_land, $min_tech_pri
 
     $result = ee('get_optimal_tech_buying_info', [
         'tech' => $tech_type,
-        'avg_land' => $expected_avg_land,
+        'min_cs' => $min_cs,
         'min_price' => $min_tech_price,
         'max_price' => $max_tech_price,
         'ipa' => $base_income_per_acre,

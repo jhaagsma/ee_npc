@@ -24,16 +24,6 @@ function is_country_allowed_to_mass_explore($c, $cpref, $server) {
 }
 
 
-function get_average_future_land($min_cs = 240, $turns_to_exclude = 0) {
-    $result = ee('get_average_future_land', [
-        'min_cs' => $min_cs,
-        'turns_to_exclude' => $turns_to_exclude
-    ]);
-    
-    return $result->avg_future_land;
-}
-
-
 /*
 NAME: food_and_money_for_turns
 PURPOSE: as needed, try to acquire food and money to run the specified number of turns
