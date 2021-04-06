@@ -87,7 +87,9 @@ function spend_extra_money(&$c, $buying_priorities, $cpref, $money_to_reserve, $
                     $tech_name = $t_p_q['t'];
                     $max_tech_price = $t_p_q['p'];
                     $tech_point_limit = $t_p_q['q'];
-                    if($max_spend > 10 * $max_tech_price) {
+                    if($c->$tech_name >= $tech_point_limit) // already have enough tech at this price range
+                        unset($optimal_tech_buying_array[$priority_goal][$key]);
+                    elseif($max_spend > 10 * $max_tech_price) {
                         $total_spent_on_single_tech = PublicMarket::buy_tech($c, $tech_name, $max_spend, $max_tech_price, $tech_point_limit);
                         $max_spend -= $total_spent_on_single_tech; // have to update here for buy_tech() to not overbuy
                         $total_spent_by_step += $total_spent_on_single_tech;
