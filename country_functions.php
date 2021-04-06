@@ -4,6 +4,70 @@ namespace EENPC;
 
 
 
+function is_country_allowed_to_mass_explore($c, $cpref, $server) {    
+    if($c->explore_rate == $c->explore_min) {
+        log_country_message($c->cnum, "Country is not allowed to mass explore because explore rate is the minimum $c->explore_min");
+        return false;
+    }
+    elseif(!$server->is_clan_server and $c->govt == "R" and $c->land > 10000) {
+        log_country_message($c->cnum, "Country is not allowed to mass explore because it is a rep with more than 10000 acres on a non-clan server");
+        return false;
+    }
+    elseif(!$server->is_clan_server and $c->govt <> "R" and $c->land > 8200) {
+        log_country_message($c->cnum, "Country is not allowed to mass explore because it is a non-rep with more than 8200 acres on a non-clan server");
+        return false;
+    }
+    else {
+        log_country_message($c->cnum, "Country is allowed to mass explore");
+        return true;
+    }
+}
+
+
+/*
+NAME: food_and_money_for_turns
+PURPOSE: as needed, try to acquire food and money to run the specified number of turns
+RETURNS: true if we have enough food and money to run turns, false otherwise
+PARAMETERS:
+	$c - the country object
+	$turns_to_play - number of turns we want to play
+	$money_to_reserve - money that we cannot spend and have to keep in reserve
+	$is_cashing - 1 if cashing, 0 if not	
+*/
+function food_and_money_for_turns(&$c, $turns_to_play, $money_to_reserve, $is_cashing) {
+	$incoming_money_per_turn = ($is_cashing ? 1.0 : 1.2) * $c->taxes;
+	$additional_turns_for_expenses_growth = floor($turns_to_play / 5);
+	// check money
+	if(!has_money_for_turns($turns_to_play + $additional_turns_for_expenses_growth, $c->money, $incoming_money_per_turn, $c->expenses, $money_to_reserve)) {
+		// not enough money to play a turn - can we make up the difference by selling a turn's worth of food production?
+		if($c->food > 0 and $c->foodnet > 0) {
+			// log_country_message($c->cnum, "TEMP DEBUG: Food is ".$c->food); // FUTURE: figure out why this errors sometimes? could be fixed now - Slagpit 20210329
+			PrivateMarket::sell_single_good($c, 'm_bu', min($c->food, ($turns_to_play + $additional_turns_for_expenses_growth) * $c->foodnet));
+		}
+		
+		if (!has_money_for_turns($turns_to_play + $additional_turns_for_expenses_growth, $c->money, $incoming_money_per_turn, $c->expenses, $money_to_reserve)) {
+			// playing turns is no longer productive
+			log_country_message($c->cnum, "Not enough money to play $turns_to_play turns. Money is $c->money and money to reserve is $money_to_reserve");
+			return false;
+		}
+	}
+
+	// try to buy food if needed up to $60, quit if we can't find cheap enough food
+	// FUTURE - be smarter about picking $60
+
+	$food_needed = max(0, get_food_needs_for_turns($turns_to_play + $additional_turns_for_expenses_growth, $c->foodpro, $c->foodcon) - $c->food);
+	//log_country_message($c->cnum, "Food is $c->food, food consumption is $c->foodcon, and calculated food needs are $food_needed");	
+			
+	if(!buy_full_food_quantity_if_possible($c, $food_needed, 60, $money_to_reserve)) {
+		log_country_message($c->cnum, "Not enough food to play $turns_to_play turns. Food is $c->food, money is $c->money, and money to reserve is $money_to_reserve");				
+		return false;
+	}
+
+	return true;
+}
+
+
+
 function get_total_value_of_on_market_goods($c, $max_price_bushels_to_include = 999) {
     $owned_on_market_info = get_owned_on_market_info();
 
@@ -179,6 +243,12 @@ function food_management(&$c)
     while ($turns_buy > 1 && $c->food <= $turns_buy * $foodloss && PublicMarket::price('m_bu') != null) {
         $turns_of_food = $foodloss * $turns_buy;
         $market_price  = PublicMarket::price('m_bu');
+
+        if($market_price >= 100 && $c->turns_stored < 30) { // FUTURE: this isn't really any good, but it's better than nothing
+            log_country_message($c->cnum, "Public market food is too expensive at $market_price; hold turns for now, and wait for food on MKT.");
+            return true;
+        }
+
         //log_country_message($c->cnum, "Market Price: " . $market_price);
         if ($c->food < $turns_of_food && $c->money > $turns_of_food * $market_price * $c->tax() && $c->money - $turns_of_food * $market_price * $c->tax() + $c->income * $turns_buy > 0) { //losing food, less than turns_buy turns left, AND have the money to buy it
             $quantity = min($foodloss * $turns_buy, PublicMarket::available('m_bu'));
@@ -208,7 +278,7 @@ function food_management(&$c)
 
         $turns_buy--;
     }
-    $turns_buy     = min(3, max(1, $turns_buy));
+    $turns_buy     = min(4, max(1, $turns_buy)); // changed from 3 to 4 to cover scenario of building 4 cs????? this doesn't work
     $turns_of_food = $foodloss * $turns_buy;
 
     if ($c->food > $turns_of_food) {
@@ -216,20 +286,17 @@ function food_management(&$c)
     }
 
     //WE HAVE MONEY, WAIT FOR FOOD ON MKT
-    if ($c->protection == 0 && $c->turns_stored < 30 && $c->income > $pm_info->buy_price->m_bu * $foodloss) {
+    if ($c->protection == 0 && $c->turns_stored < 30 && $c->income > 64 * $foodloss) { // 64 is a reasonably high price for public bushel price
         //Text for screen
         log_country_message($c->cnum, "We make enough to buy food if we want to; hold turns for now, and wait for food on MKT.");
         return true;
     }
 
     //WAIT FOR GOODS/TECH TO SELL
-    if ($c->protection == 0 && $c->turns_stored < 30 && onmarket_value() > $pm_info->buy_price->m_bu * $foodloss) {
+    if ($c->protection == 0 && $c->turns_stored < 30 && onmarket_value() > 64 * $foodloss) {
         log_country_message($c->cnum, "We have goods on market; hold turns for now.");    //Text for screen
         return true;
     }
-
-    //PUT GOODS/TECH ON MKT AS APPROPRIATE
-
 
     if ($c->food < $turns_of_food && $c->money > $turns_buy * $foodloss * $pm_info->buy_price->m_bu) {
         //losing food, less than turns_buy turns left, AND have the money to buy it
@@ -239,7 +306,7 @@ function food_management(&$c)
             "Less than $turns_buy turns worth of food! (".$c->foodnet."/turn) ".
             "We're rich, so buy food on PM (\${$pm_info->buy_price->m_bu})!~"
         );
-        $result = PrivateMarket::buy($c, ['m_bu' => $turns_buy * $foodloss]);  //Buy 3 turns of food!
+        $result = PrivateMarket::buy($c, ['m_bu' => $turns_buy * $foodloss]);  //Buy 3 turns of food!        
         return false;
     } elseif ($c->food < $turns_of_food && total_military($c) > 50) {
         log_error_message(1002, $c->cnum, "We're too poor to buy food! Sell 1/10 of our military");
@@ -249,7 +316,7 @@ function food_management(&$c)
     }
 
     log_country_message($c->cnum, 'We have exhausted all food options. Valar Morguhlis.');
-    return false; // FUTURE: why isn't this true? better to save turns than to commit suicide by running turns with no food?
+    return true; // FUTURE: changed to true. isn't it better to save turns than to commit suicide by running turns with no food?
 }//end food_management()
 
 
@@ -284,6 +351,7 @@ function minDpnw(&$c, $onlyDef = false)
 }//end minDpnw()
 
 
+// Can't retire this code yet because the rainbow strat uses it
 function defend_self(&$c, $reserve_cash = 50000, $dpnwMax = 380)
 {
     if ($c->protection) {

@@ -193,8 +193,9 @@ class Country
             $new['pro_tu'] = 100;
         }
         else { // not the first 150 turns
-            // for now, 200 indy's worth of production with 1% min and 5% max
-            $spy = max(1, min(5, round(200 / ($this->b_indy + 1))));
+            // for now, 400 indy's worth of production with 1% min and 5% max
+            // 200 was too low - maybe because of OOF and OOM events?
+            $spy = max(1, min(5, round(400 / ($this->b_indy + 1))));
 
             // commented out by Slagpit 20210323 - not clear why indies want so many spies
             /*
@@ -263,7 +264,7 @@ class Country
             $turns = $this->turns;
         }
 
-        return max(0, $this->income) * $turns;
+        return min(0, $this->income) * $turns;
     }//end runCash()
 
 
@@ -277,7 +278,7 @@ class Country
     public function nlgTarget($powfactor = 1.00)
     {
         //lets lower it from 80+turns_playwed/7, to compete
-        return floor(80 + pow($this->turns_played, $powfactor) / 15);
+        return floor(80 + pow($this->turns_played + $this->turns + $this->turns_stored, $powfactor) / 15);
     }//end nlgTarget()
 
 
@@ -292,8 +293,8 @@ class Country
     public function defPerAcreTarget($mult = 1.5, $powfactor = 1.0)
     {
         //out("Turns Played: {$this->turns_played}");
-        $dpat = floor(75 + pow($this->turns_played, $powfactor) / 10) * $mult;
-        log_country_message($this->cnum, "DPAT: $dpat");
+        $dpat = floor(75 + pow($this->turns_played + $this->turns + $this->turns_stored, $powfactor) / 10) * $mult;
+        //log_country_message($this->cnum, "DPAT: $dpat"); // too much log spam - Slagpit
         return $dpat;
     }//end defPerAcreTarget()
 
@@ -304,8 +305,14 @@ class Country
      */
     public function defPerAcre()
     {
-        return round((1 * $this->m_tr + 2 * $this->m_tu + 4 * $this->m_ta) / $this->land);
+        return round(0.01 * $this->pt_weap * (1 * $this->m_tr + 2 * $this->m_tu + 4 * $this->m_ta) / $this->land); // FUTURE: govt modifiers?
     }//end defPerAcre()
+
+
+    public function totalDefense()
+    {
+        return floor(0.01 * $this->pt_weap * (1 * $this->m_tr + 2 * $this->m_tu + 4 * $this->m_ta)); // FUTURE: govt modifiers?
+    }//end defPerAcre()   
 
 
 
@@ -413,7 +420,6 @@ class Country
 
         return key($score);
     }//end highestGoal()
-
 
     /**
      * Convoluted ladder logic to buy whichever goal is least fulfilled

@@ -45,9 +45,19 @@ function log_get_name_of_error_type($error_type) {
     if($error_type == 114)
         return 'UNDETECTED COUNTRY OUT OF FOOD';     
     if($error_type == 115)
-        return 'UNDETECTED COUNTRY OUT OF MONEY';     
+        return 'UNDETECTED COUNTRY OUT OF MONEY';
+    if($error_type == 116)
+        return 'MISSING OR INVALID STRATEGY';  
+    if($error_type == 117)
+        return 'NO SETTINGS FILE FOUND'; 
+    if($error_type == 118)
+        return 'COUNTRY ATTEMPTED DESTOCK IN PROTECTION'; 
 
 
+
+        
+    if($error_type == 999) // use when functions are given stupid input and it isn't worth defining a new error
+        return 'GENERIC EE_NPC CODE BAD INPUT'; 
 
     // 1000+ are country playing mistakes 
     if($error_type == 1000)
@@ -56,8 +66,10 @@ function log_get_name_of_error_type($error_type) {
         return 'COUNTRY PLAYED TURN WITHOUT MONEY';
     if($error_type == 1002)
         return 'COUNTRY BAD SELL OF MILITARY ON PM';     
-        
-        
+    if($error_type == 1003)
+        return 'COUNTRY BAD FOOD PURCHASE ON PUBLIC';           
+    if($error_type == 1004)
+        return 'COUNTRY PRIVATE MARKET FOOD PURCHASE';           
 
 
        
@@ -86,6 +98,11 @@ function log_snapshot_message($c, $snapshot_type, $strat, $is_destocking, &$outp
     return log_to_targets($log_country_to_screen, $log_to_local, $full_local_file_path_and_name, $message, $c->cnum, null);
 };
 
+
+function log_country_data($cnum_input, $data, $intro_message) {    
+    $message = "$intro_message\n".json_encode($data);
+    log_country_message($cnum_input, $message);
+}
 
 // examples of things to log: what decisions were made (and why), how turns are spent
 function log_country_message($cnum_input, $message) {
@@ -181,13 +198,15 @@ function get_full_country_file_path_and_name($local_file_path, $cnum, $is_snapsh
 }
 
 function get_full_error_file_path_and_name($local_file_path) {
+    global $username;
     $iso_date = date('Ymd');
-    return "$local_file_path/errors/ERRORS_$iso_date.txt";
+    return "$local_file_path/errors/ERRORS_$username"."_$iso_date.txt";
 }
 
 function get_full_main_file_path_and_name($local_file_path) {
+    global $username;
     $iso_date = date('Ymd');
-    return "$local_file_path/main/LOOP_$iso_date.txt";
+    return "$local_file_path/main/LOOP_$username"."_$iso_date.txt";
 }
 
 
@@ -522,8 +541,8 @@ function log_translate_simple_strat_name($strat) {
             return "TECHER";
         case 'R':
             return "RAINBOW";
-        case 'O':
-            return "OILER";
+        //case 'O':
+        //    return "OILER";
         default:
             return "UNKNOWN";  
     }   

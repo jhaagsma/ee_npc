@@ -60,6 +60,9 @@ class PublicMarket
 
     public static function price($item = 'm_bu')
     {
+        if(substr($item, 0, 2) == 't_') // allow 'indy' or 't_indy'
+            $item = substr($item, 2);
+
         if (self::elapsed() > 60) {
             self::update();
         }
@@ -84,6 +87,9 @@ class PublicMarket
             $c->updateMain();
             return;
         }
+
+        if(isset($price['m_bu']) and $price['m_bu'] > 80)
+            log_error_message(1003, $c->cnum, "With $c->money money, attempted to purchase quantity ".$quantity['m_bu'].' food on public market for price $'.$price['m_bu']);
 
         global $techlist;
         $result = ee('buy', ['quantity' => $quantity, 'price' => $price]);
@@ -247,41 +253,48 @@ class PublicMarket
     }//end sell()
 
 
-
-    public static function buy_tech(&$c, $tech = 't_bus', $spend = 0, $maxprice = 9999)
+    // return amount spent
+    // $tech_limit is an amount of tech that the country should not exceed
+    public static function buy_tech(&$c, $tech = 't_bus', $max_spend = null, $maxprice = 9999, $tech_limit = 999999999)
     {
+        // $max_spend is now static, spent money is tracked via $total_spent
         $update = false;
-        //$market_info = get_market_info();   //get the Public Market info
+        $total_spent = 0;
+        $c_tech = $tech; // deal with t_ mismatch
         $tech = substr($tech, 2);
-        $diff = $c->money - $spend;
-        //log_country_message($c->cnum, 'Here;P:'.PublicMarket::price($tech).';Q:'.PublicMarket::available($tech).';S:'.$spend.';M:'.$maxprice.';');
+        $max_spend = $max_spend ?? $c->money;
+        log_country_message($c->cnum, "Buying up ".($tech_limit == 999999999 ? "" : "to $tech_limit total points of ")."$tech tech up to price $maxprice");
+        //$market_info = get_market_info();   //get the Public Market info
+        //log_country_message($c->cnum, 'Here;P:'.PublicMarket::price($tech).';Q:'.PublicMarket::available($tech).';S:'.$max_spend.';M:'.$maxprice.';');
         if (self::price($tech) != null && self::available($tech) > 0) {
             while (self::price($tech) != null
                 && self::available($tech) > 0
                 && self::price($tech) <= $maxprice
-                && $spend > 0
             ) {
                 $price = self::price($tech);
-                $tobuy = min(floor($spend / ($price * $c->tax())), self::available($tech));
-                if ($tobuy == 0) {
-                    return;
+                // I don't think the available call is needed - buying more than quantity on public is fine
+                $tobuy = min(floor(($max_spend-$total_spent) / ($price * $c->tax())), $tech_limit - $c->$c_tech); //self::available($tech))
+                if ($tobuy <= 0) {
+                    return $total_spent;
                 }
 
                 //log_country_message($c->cnum, $tech . $tobuy . "@$" . $price);
-                $result = PublicMarket::buy($c, [$tech => $tobuy], [$tech => $price]);     //Buy troops!
+                $money_before_purchase = $c->money;
+                $result = PublicMarket::buy($c, [$tech => $tobuy], [$tech => $price]);
+                $total_spent += $money_before_purchase - $c->money; // FUTURE - not safe if country loses cash for other reason
                 if ($result === false) {
                     if ($update == false) {
                         $update = true;
                         self::update(); //force update once more, and let it loop again
                     } else {
-                        return;
+                        return $total_spent;
                     }
                 }
-
-                $spend = $c->money - $diff;
 
                 //out_data($result);
             }
         }
+        return $total_spent;
+
     }//end buy_tech()
 }//end class

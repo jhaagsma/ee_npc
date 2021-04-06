@@ -40,15 +40,6 @@ if ($config === null) {
     die("Config not included successfully! Do you have config.php set up properly?");
 }
 
-if (file_exists($config['save_settings_file'])) {
-    out("Try to load saved settings");
-    global $settings;
-    $settings = json_decode(file_get_contents($config['save_settings_file']));
-    out("Successfully loaded settings!");
-} else {
-    out("No Settings File Found");
-}
-
 require_once 'country_functions.php';
 require_once 'Country.class.php';
 require_once 'PublicMarket.class.php';
@@ -61,6 +52,7 @@ require_once 'indy_strat.php';
 require_once 'oiler_strat.php';
 require_once 'Destocking.php';
 require_once 'Logging.php';
+require_once 'Purchasing.php';
 
 define("RAINBOW", Colors::getColoredString("Rainbow", "purple"));
 define("FARMER", Colors::getColoredString("Farmer", "cyan"));
@@ -69,6 +61,7 @@ define("CASHER", Colors::getColoredString("Casher", "green"));
 define("INDY", Colors::getColoredString("Indy", "yellow"));
 define("OILER", Colors::getColoredString("Oiler", "red"));
 
+global $username; // need this for logging
 $username     = $config['username'];    //<======== PUT IN YOUR USERNAME IN config.php
 $aiKey        = $config['ai_key'];      //<======== PUT IN YOUR AI API KEY IN config.php
 $baseURL      = $config['base_url'];    //<======== PUT IN THE BASE URL IN config.php
@@ -91,6 +84,15 @@ if (isset($config['local_path_for_log_files'])) {
 
 // function below sets $local_file_path
 create_logging_directories($server, 0); // don't purge old files here because we want startup to be as fast as possible
+
+if (file_exists($config['save_settings_file'])) {
+    log_main_message("Try to load saved settings");
+    global $settings;
+    $settings = json_decode(file_get_contents($config['save_settings_file']));
+    log_main_message("Successfully loaded settings!");
+} else {
+    log_error_message(117, null, "No Settings File Found");
+}
 
 log_main_message("BOT IS STARTING AND HAS CLEARED INITIAL CHECKS", 'purple');
 log_main_message('Current Unix Time: '.time());
@@ -165,6 +167,11 @@ while (1) {
                 else {
                     log_main_message("Removing non-AI country with cnum #$cnum from the list of countries to play", 'red');
                     $non_ai_countries[$cnum] = 1;
+                    if(isset($settings->$cnum)) {
+                        $settings->$cnum = null;
+                        log_main_message("Clearing out strategy from file for country #$cnum", 'purple');
+                        file_put_contents($config['save_settings_file'], json_encode($settings));
+                    }
                 }
             }
             $checked_for_non_ai = true;
@@ -247,7 +254,17 @@ while (1) {
         global $cpref;
         $cpref = $settings->$cnum;
 
-        // log_main_message("Evaluating settings for $cnum");
+        // check for missing strategy just in case
+        if (!isset($cpref->strat)) {
+            log_error_message(116, $cnum, "Strategy is not set in settings.json file");
+            continue;
+        }
+
+        // check for invalid strategy just in case
+        if (log_translate_simple_strat_name($cpref->strat) == "UNKNOWN") {
+            log_error_message(116, $cnum, "Invalid strategy is set in settings.json file");
+            continue;
+        }
 
         if (!isset($cpref->retal)) {
             $cpref->retal = [];
@@ -301,6 +318,9 @@ while (1) {
             //log_main_message("Setting GDI to ".($cpref->gdi ? "true" : "false"), true, 'brown');
         }
 
+        //if($cpref->strat <> 'C') // DEBUG
+        //    continue;
+
         if ($cpref->nextplay < time()) {
 
             log_country_message($cnum, "\n\n");
@@ -313,21 +333,21 @@ while (1) {
             $debug_force_destocking = false; // DEBUG: change to true to force destocking code to run
             $is_destocking = ($debug_force_destocking or time() >= $earliest_destock_time? true : false);
 
-            //$is_destocking = false; // DEBUG
+           // $is_destocking = false; // DEBUG
 
             // log snapshot of country status
             $prev_c_values = [];
             $init_c = get_advisor();
-
             log_snapshot_message($init_c, "BEGIN", $cpref->strat, $is_destocking, $prev_c_values);
             unset($init_c);
-            //continue;
 
-            try {    
+            try {
                 if ($is_destocking) { // call special destocking code that passes back the next play time in $nexttime
                     log_main_message("Playing destocking ".Bots::txtStrat($cnum)." Turns for #$cnum ".siteURL($cnum));
                     log_country_message($cnum, 'Doing destocking actions' . log_translate_forced_debug($debug_force_destocking));
-                    $c = execute_destocking_actions($cnum, $cpref->strat, $server, $rules, $nexttime);
+                    $exit_condition = "NORMAL";
+                    $c = execute_destocking_actions($cnum, $cpref, $server, $rules, $nexttime, $exit_condition);
+                    
                 }
                 else { // not destocking
                     log_country_message($cnum, 'Not doing destocking actions');    
@@ -338,10 +358,9 @@ while (1) {
 
                     Events::new();
                     Country::listRetalsDue();
-                    //sleep(1);
 
-                    //$playfactor = 1; // now handled in calculate_next_play_in_seconds
                     $nexttime = null;
+                    $exit_condition = null;
 
                     log_main_message("Playing Standard ".Bots::txtStrat($cnum)." Turns for #$cnum ".siteURL($cnum));
                     log_country_message($cnum, "Begin playing standard ".Bots::txtStrat($cnum)." turns");
@@ -349,19 +368,19 @@ while (1) {
                     // FUTURE: careful with the $cnum global removal, maybe this breaks things? seems fine so far - 20210323
                     switch ($cpref->strat) {
                         case 'F':
-                            $c = play_farmer_strat($server, $cnum, $rules);
+                            $c = play_farmer_strat($server, $cnum, $rules, $cpref, $exit_condition);
                             break;
                         case 'T':
-                            $c = play_techer_strat($server, $cnum, $rules);
+                            $c = play_techer_strat($server, $cnum, $rules, $cpref, $exit_condition);
                             break;
                         case 'C':
-                            $c = play_casher_strat($server, $cnum, $rules);
+                            $c = play_casher_strat($server, $cnum, $rules, $cpref, $exit_condition);
                             break;
                         case 'I':
-                            $c = play_indy_strat($server, $cnum, $rules);
+                            $c = play_indy_strat($server, $cnum, $rules, $cpref, $exit_condition);
                             break;
                         default:
-                            $c = play_rainbow_strat($server, $cnum, $rules);
+                            $c = play_rainbow_strat($server, $cnum, $rules, $exit_condition);
                     }
 
                     if ($cpref->gdi && !$c->gdi) {
@@ -374,11 +393,16 @@ while (1) {
                         $cpref->retal = []; //clear the damned retal thing
                     }
 
+                    if($exit_condition == 'WAIT_FOR_PUBLIC_MARKET_FOOD') {
+                        log_country_message($cnum, "Country is holding turns while waiting for cheaper public market food to appear");
+                        $nexttime = 4 * $server->turn_rate;
+                    }
+
                     // $maxin           = Bots::furthest_play($cpref); // now handled in calculate_next_play_in_seconds
                     // $nexttime        = round(min($maxin, $nexttime));
                 }
 
-                log_country_message($cnum, "End playing standard ".Bots::txtStrat($cnum)." turns");
+                log_country_message($cnum, "End playing standard ".Bots::txtStrat($cnum)." turns with exit condition $exit_condition");
 
                 $seconds_to_next_play = calculate_next_play_in_seconds($cnum, $nexttime, $cpref->strat, $rules->is_clan_server, $rules->max_time_to_market, $rules->max_possible_market_sell, $cpref->playrand, $server->reset_start, $server->reset_end, $server->turn_rate, $cpref->lastTurns, $rules->maxturns, $cpref->turnsStored, $rules->maxstore);
                 $cpref->lastplay = time();
@@ -389,7 +413,7 @@ while (1) {
                 $save   = true;
 
                 /*
-                // TODO: more delta checking, especially for destocking
+                // FUTURE: more delta checking, especially for destocking
                 $prev_c_values = [];
                 log_snapshot_message($c, "BEGIN", $cpref->strat, 0, false, $prev_c_values);
  
@@ -401,7 +425,7 @@ while (1) {
                 // FUTURE: skip snapshot parameter for speed for remote play?
                 $c = get_advisor(); // this call probably can't be avoided - market info, events, and tax/expenses could be wrong without it
                 log_snapshot_message($c, "DELTA", $cpref->strat, $is_destocking, $dummy, $prev_c_values);
-                log_snapshot_message($c, "END", $cpref->strat, $is_destocking, $dummy);
+                log_snapshot_message($c, "END", $cpref->strat, $is_destocking, $dummy); // FUTURE: why does this take six seconds remotely?
                 
 
             } catch (Exception $e) {
@@ -409,7 +433,7 @@ while (1) {
             }
 
             log_country_message($cnum, "Ending country loop");
-            log_main_message("Finished playing turns for #$cnum");
+            log_main_message("Finished playing turns for #$cnum with exit condition $exit_condition");
         }
 
         if ($save) {
@@ -430,9 +454,10 @@ while (1) {
         log_main_message("\n");
         while($server->reset_end + 1 >= time()) {
             $end = $server->reset_end - time();
+            // FUTURE: this doesn't print correctly like outNext() - why not?
             out("Sleep until end: ".$end, false); // keep as out() - the single line updates
             //log_main_message("\n");
-            sleep(1);//don't let them fluff things up, sleep through end of reset
+            sleep(1);
         }
         log_main_message("Done Sleeping!");
         log_main_message("\n");
@@ -529,7 +554,7 @@ function calculate_next_play_in_seconds($cnum, $nexttime, $strat, $is_clan_serve
     // shrink the window up to 25% based on the country's preference for play
     // $country_play_rand_factor is random number in range (1, 2)
     $seconds_to_subtract_from_max = round(0.25 * ($country_play_rand_factor - 1) * ($play_seconds_maximum - $play_seconds_minimum));
-    log_country_message($cnum, "Country preference is $country_play_rand_factor, so adjusting max down by $seconds_to_subtract_from_max seconds");
+    log_country_message($cnum, "Country playing activity preference is $country_play_rand_factor, so adjusting max down by $seconds_to_subtract_from_max seconds");
     $play_seconds_maximum -= $seconds_to_subtract_from_max;
 
     $std_dev = round($play_seconds_maximum - $play_seconds_minimum) / 4; // 2.5% chance of min and max values
