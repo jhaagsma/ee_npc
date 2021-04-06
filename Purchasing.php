@@ -517,7 +517,6 @@ function get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, 
     */
 
     if($was_server_queried_at_least_once) {
-    //log_country_message($c->cnum, "Final processing for optimal tech buying array");
         foreach($optimal_tech_buying_array as $turn_bucket => $pq_results) {
             if(empty($pq_results))
                 unset($optimal_tech_buying_array[$turn_bucket]);
@@ -526,10 +525,11 @@ function get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, 
                 function ($a, $b) { // sort by quantity desc, not price asc - otherwise farmers are likely to buy bus/res before agri! still not perfect, but good enough?
                     return -1 * ($a['q'] <=> $b['q']); // spaceship!
                 });
+            log_country_data($c->cnum, $optimal_tech_buying_array[$turn_bucket], "Results for optimal tech array at $turn_bucket% turn goal:");
         }
 
         //log_country_message($c->cnum, "Array processing complete for optimal tech buying array");
-        log_country_data($c->cnum, $optimal_tech_buying_array, "Results for optimal tech array:");
+        //log_country_data($c->cnum, $optimal_tech_buying_array[$turn_bucket], "Results for optimal tech array at $turn_bucket%:");
     }
 
     return $optimal_tech_buying_array;
