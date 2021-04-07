@@ -232,6 +232,18 @@ function buyout_up_to_market_dpnw(&$c, $cpref, $max_dpnw, $max_spend, $military_
 }
 
 
+function get_country_owned_resolve_market_name_mismatches($c, $good_name) {
+    if(substr($good_name, 1, 2) == 't_')
+        $c_name = substr($good_name, 2);
+    elseif($good_name == 'm_bu')
+        $c_name = 'food';
+    elseif($good_name == 'm_oil')
+        $c_name = 'oil';
+    else   
+        $c_name = $good_name;
+
+    return $c->$good_name;
+}
 
 
 
@@ -341,13 +353,13 @@ function spend_money_on_markets(&$c, $cpref, $points_needed, $max_spend, $unit_w
                 
                 if ($pm_purchase_amount > 0) {
                     $money_before_purchase = $c->money;
-                    $unit_count_before_purchase = $c->$best_pm_unit; // FUTURE: should use return value
-
+                    $unit_count_before_purchase = get_country_owned_resolve_market_name_mismatches($c, $best_pm_unit); // FUTURE: should use return value
+                    
                     PrivateMarket::buy($c, [$best_pm_unit => $pm_purchase_amount]);
 
                     $money_spent_on_purchase = $money_before_purchase - $c->money;
                     $total_spent += $money_spent_on_purchase;
-                    $units_gained = max(0, $c->$best_pm_unit - $unit_count_before_purchase);
+                    $units_gained = max(0, get_country_owned_resolve_market_name_mismatches($c, $best_pm_unit) - $unit_count_before_purchase);
                     $total_points_gained += floor($point_per_unit * $units_gained);
 
                     if($pm_info->available->$best_pm_unit == 0)
@@ -374,13 +386,13 @@ function spend_money_on_markets(&$c, $cpref, $points_needed, $max_spend, $unit_w
             // log_country_message($c->cnum, "Best unit:$best_public_unit, quantity:$best_unit_quantity, price:$best_unit_price ");
 
             $money_before_purchase = $c->money; // this is repeated because we want it as close as possible to the buy call
-            $unit_count_before_purchase = $c->$best_public_unit; // FUTURE: should use return value
-
+            $unit_count_before_purchase = get_country_owned_resolve_market_name_mismatches($c, $best_public_unit); // FUTURE: should use return value
+            
             PublicMarket::buy($c, [$best_public_unit => $best_unit_quantity], [$best_public_unit => $best_unit_price]);
 
             $money_spent_on_purchase = $money_before_purchase - $c->money; // I don't like this but the return structure of PublicMarket::buy is tough to deal with
             $total_spent += $money_spent_on_purchase;
-            $units_gained = max(0, $c->$best_public_unit - $unit_count_before_purchase);
+            $units_gained = max(0, get_country_owned_resolve_market_name_mismatches($c, $best_public_unit) - $unit_count_before_purchase);
             $total_points_gained += floor($point_per_unit * $units_gained);
 
             if ($money_spent_on_purchase == 0) {
