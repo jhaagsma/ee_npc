@@ -224,6 +224,7 @@ function expected_result($input)
         'onmarket' => 'ONMARKET',
         'buy' => 'BUY',
         'sell' => 'SELL',
+        'market_recall' => 'MARKET_RECALL',
         'govt' => 'GOVT',
         'rules' => 'RULES',
         'indy' => 'INDY',

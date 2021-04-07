@@ -51,7 +51,10 @@ function log_get_name_of_error_type($error_type) {
     if($error_type == 117)
         return 'NO SETTINGS FILE FOUND'; 
     if($error_type == 118)
-        return 'COUNTRY ATTEMPTED DESTOCK IN PROTECTION'; 
+        return 'COUNTRY ATTEMPTED DESTOCK IN PROTECTION';
+    if($error_type == 119)
+        return 'FORCED ADVISOR UPDATE WITH NO REASON';
+
 
 
 

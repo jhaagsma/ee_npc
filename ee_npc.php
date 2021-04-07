@@ -719,6 +719,9 @@ function onmarket_value($good = null, &$c = null)
 }//end onmarket_value()
 
 
+
+
+
 function totaltech($c)
 {
     return $c->t_mil + $c->t_med + $c->t_bus + $c->t_res + $c->t_agri + $c->t_war + $c->t_ms + $c->t_weap + $c->t_indy + $c->t_spy + $c->t_sdi;
@@ -893,7 +896,7 @@ function update_c(&$c, $result)
         
         if (isset($turn->event)) {
             if ($turn->event == 'earthquake') {   //if an earthquake happens...
-                log_country_message($c->cnum, "Earthquake destroyed {$turn->earthquake} Buildings! Update Advisor"); //Text for screen
+                log_country_message($c->cnum, "Earthquake destroyed {$turn->earthquake} Buildings! Update Advisor");
 
                 //update the advisor, because we no longer know what information is valid
                 $advisor_update = true;
@@ -967,7 +970,7 @@ function update_c(&$c, $result)
     $netmoney = str_pad('($'.($netmoney > 0 ? '+' : null).engnot($netmoney).')', 14, ' ', STR_PAD_LEFT);
 
     $str  = str_pad($str, 26 + $extrapad).str_pad($explain, 12).str_pad('$'.engnot($c->money), 16, ' ', STR_PAD_LEFT);
-    $str .= $netmoney.str_pad(engnot($c->food).' Bu', 14, ' ', STR_PAD_LEFT).engnot($netfood); //Text for screen
+    $str .= $netmoney.str_pad(engnot($c->food).' Bu', 14, ' ', STR_PAD_LEFT).engnot($netfood);
 
     global $APICalls;
     $str = str_pad($c->turns, 3).' Turns - '.$str.' '.str_pad($event, 8).' API: '.$APICalls;
@@ -976,6 +979,18 @@ function update_c(&$c, $result)
     }
 
     log_country_message($c->cnum, $str);
+
+    // check that there aren't other reasons to update the advisor
+    // current example is recall goods and recall tech don't tell us what was sent back
+    if(isset($result->force_advisor_update)) { 
+        if($result->force_advisor_update) {
+            if(isset($result->market_recalled_type))            
+                log_country_message($c->cnum, "Update Advisor for market recall of goods or tech");
+            else
+                log_error_message(119, $c->cnum, "Update Advisor for unknown reason");
+            $advisor_update = true;
+        }
+    }
 
     // need to track this to log the right error message if we ran out of food or money
     // it's worse to run out food or money when the object thinks that we didn't
@@ -1162,6 +1177,18 @@ function get_owned_on_market_info()
     $goods = ee('onmarket');    //get and return the GOODS OWNED ON PUBLIC MARKET information
     return $goods->goods;
 }//end get_owned_on_market_info()
+
+
+function recall_goods()
+{
+    return ee('market_recall', ['type' => 'GOODS']);
+}//end recall_goods()
+
+
+function recall_tech()
+{
+    return ee('market_recall', ['type' => 'TECH']);
+}//end recall_tech()
 
 
 /**
