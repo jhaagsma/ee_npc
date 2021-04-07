@@ -24,19 +24,40 @@ function stash_excess_bushels_on_public_if_needed(&$c, $rules) {
 }
 
 function get_inherent_value_for_tech ($c, $rules, $min_cash_to_calc = 2000000000) {
-    if($c->money + $c->turns * max(0, $c->income)  < $min_cash_to_calc)
-        return 700; // use 700 if we don't need to stockpile yet
+    if($c->money + $c->turns * max(0, $c->income)  < $min_cash_to_calc) {
+        $tech_value = 700; // use 700 if we don't need to stockpile yet
+    }
+    else {
+        $bushel_sell_price = predict_destock_bushel_sell_price($c, $rules);
 
-    $sell_price = predict_destock_bushel_sell_price($c, $rules);
-
-    $current_market_price  = PublicMarket::price('m_bu');
-    $value_kept_decimal = $sell_price / ((2 + $current_market_price) * $c->tax());
-    // no taxes in below code because buying functions handle that
-    $tech_value = round(700 / max($value_kept_decimal, 0.4)); // don't stock tech if we expect to lose more than 60% / TODO: cpref
+        $current_bushel_market_price  = PublicMarket::price('m_bu');
+        log_country_message($c->cnum, "The expected bushel buy price for stocking is 2 above current price of $current_bushel_market_price");
+        $value_kept_decimal = $bushel_sell_price / ((2 + $current_bushel_market_price) * $c->tax());
+        // no taxes in below code because buying functions handle that
+        $tech_value = round(700 / max($value_kept_decimal, 0.4)); // don't sell tech at prices where we expect to lose more than 60% / TODO: cpref
+    }
 
     log_country_message($c->cnum, "The inherent value for tech is calculated as $tech_value");
-
     return $tech_value;
+}
+
+
+function get_techer_min_sell_price($c, $cpref, $rules, $min_cash_to_calc = 2000000000) {
+    if($c->money + $c->turns * max(0, $c->income)  < $min_cash_to_calc) {
+        $tech_min_price = $rules->market_autobuy_tech_price; // use server min if we don't have tons of cash
+        log_country_message($c->cnum, "Tech minimum sell price calculated as $tech_min_price based on server rules");
+    }
+    else {
+        // if we're stockpiling then our min tech sell price should be based on the bushel price
+        // it doesn't make sense to sell tech for $800 to buy bushels for $50 to sell those bushels later for $36
+        $bushel_sell_price = predict_destock_bushel_sell_price($c, $rules);
+        $current_bushel_market_price  = PublicMarket::price('m_bu');
+        log_country_message($c->cnum, "The expected bushel buy price for stocking is 2 above current price of $current_bushel_market_price");
+        $value_kept_decimal = $bushel_sell_price / ((2 + $current_bushel_market_price) * $c->tax());
+        $tech_min_price = round((2 - $c->tax()) * 700 / max($value_kept_decimal, 0.4)); // TODO: cpref
+        log_country_message($c->cnum, "Tech minimum sell price calculated as $tech_min_price based on bushel prices");
+    }
+    return $tech_min_price;
 }
 
 
@@ -50,7 +71,7 @@ function get_stockpiling_weights ($c, $server, $rules, $cpref, $min_cash_to_calc
     if($c->money + $c->turns * max(0, $c->income)  < $min_cash_to_calc)
         return $stockpiling_weights;
 
-    log_country_message($c->cnum, "Calculating stockpiling weights. Price / weight = 1000 for expected $60 loss of value");    
+    log_country_message($c->cnum, "Calculating stockpiling weights. Price / weight = 1000 for expected 60% loss of value");    
 
     if($allow_bushels) {
         $bushel_sell_price = predict_destock_bushel_sell_price($c, $rules);

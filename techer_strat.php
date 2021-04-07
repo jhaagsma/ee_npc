@@ -31,6 +31,7 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     ];
     $money_to_keep_after_stockpiling = 1800000000;
     $stockpiling_weights = get_stockpiling_weights ($c, $server, $rules, $cpref, $money_to_keep_after_stockpiling, true, false, true);
+    $tech_price_min_sell_price = get_techer_min_sell_price($c, $cpref, $rules);
 
     // log useful information about country state
     log_country_message($cnum, $c->turns.' turns left');
@@ -45,6 +46,7 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     $owned_on_market_info = get_owned_on_market_info();     //find out what we have on the market
     //out_data($owned_on_market_info); //output the owned on market info
 
+
     if($c->money > 2000000000) { // try to stockpile to avoid corruption and to limit bot abuse
         // first spend extra money normally so we can buy needed military
         spend_extra_money($c, $buying_priorities, $cpref, $money_to_keep_after_stockpiling, false);
@@ -53,14 +55,10 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
 
     stash_excess_bushels_on_public_if_needed($c, $rules); // TODO: money check (should be inside function)
 
-    // TODO: At start of turns, decide if we sell tech at market prices or if we aim higher.
-    // Use market prices if cash is less than 2 billion or bushel market is empty.
-    // Otherwise, if market prices are too low, then set sell prices based on the current market price of bushels.
-
     while ($c->turns > 0) {
         //$result = PublicMarket::buy($c,array('m_bu'=>100),array('m_bu'=>400));
                 
-        $result = play_techer_turn($c, $rules->market_autobuy_tech_price, $rules->max_possible_market_sell, $is_allowed_to_mass_explore);
+        $result = play_techer_turn($c, $tech_price_min_sell_price, $rules->max_possible_market_sell, $is_allowed_to_mass_explore);
         if ($result === false) {  //UNEXPECTED RETURN VALUE
             $c = get_advisor();     //UPDATE EVERYTHING
             continue;
@@ -98,7 +96,7 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
 }//end play_techer_strat()
 
 
-function play_techer_turn(&$c, $market_autobuy_tech_price, $server_max_possible_market_sell, $is_allowed_to_mass_explore)
+function play_techer_turn(&$c, $tech_price_min_sell_price, $server_max_possible_market_sell, $is_allowed_to_mass_explore)
 {
  //c as in country!
     $target_bpt = 65;
@@ -117,7 +115,7 @@ function play_techer_turn(&$c, $market_autobuy_tech_price, $server_max_possible_
     ) {
         //never sell less than 20 turns worth of tech
         //always sell if we can????
-        return sell_max_tech($c, $market_autobuy_tech_price, $server_max_possible_market_sell);
+        return sell_max_tech($c, $tech_price_min_sell_price, $server_max_possible_market_sell);
     } elseif ($c->shouldBuildSpyIndies($target_bpt)) {
         //build a full BPT of indies if we have less than that, and we're out of protection
         return Build::indy($c);
@@ -161,7 +159,7 @@ function selltechtime(&$c)
 }//end selltechtime()
 
 
-function sell_max_tech(&$c, $market_autobuy_tech_price, $server_max_possible_market_sell)
+function sell_max_tech(&$c, $tech_price_min_sell_price, $server_max_possible_market_sell)
 {
     $c = get_advisor();     //UPDATE EVERYTHING
     $c->updateOnMarket();
@@ -215,7 +213,7 @@ function sell_max_tech(&$c, $market_autobuy_tech_price, $server_max_possible_mar
                 $max = $c->goodsStuck($key) ? 0.98 : $rmax; //undercut if we have goods stuck
                 Debug::msg("sell_max_tech:B:$key");
 
-                $price[$key] = max($market_autobuy_tech_price, 
+                $price[$key] = max($tech_price_min_sell_price, 
                     min(9999,
                         floor(PublicMarket::price($key) * Math::purebell($rmin, $max, $rstddev, $rstep))
                     )
