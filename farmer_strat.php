@@ -44,8 +44,9 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
 
     $buying_schedule = farmer_get_buying_schedule($cnum, $cpref);
     $buying_priorities = farmer_get_buying_priorities ($cnum, $buying_schedule);
+    $tech_inherent_value = get_inherent_value_for_tech($c, $rules);
     $eligible_techs = ['t_bus', 't_res', 't_agri', 't_mil', 't_weap'];
-    $optimal_tech_buying_array = get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, 9999, 700);
+    $optimal_tech_buying_array = get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, 9999, $tech_inherent_value);
     $cost_for_military_point_guess = get_cost_per_military_points_for_caching($c);
     $dpnw_guess = get_dpnw_for_caching($c);
 

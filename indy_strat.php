@@ -25,8 +25,9 @@ function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     $buying_priorities = [
         ['type'=>'INCOME_TECHS','goal'=>100]
     ];
+    $tech_inherent_value = get_inherent_value_for_tech($c, $rules);
     $eligible_techs = ['t_bus', 't_res', 't_indy', 't_mil']; // don't buy t_weap for now - indies would over-prioritize it
-    $optimal_tech_buying_array = get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, 9999, 700);
+    $optimal_tech_buying_array = get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, 9999, $tech_inherent_value);
 
     // log useful information about country state
     log_country_message($cnum, $c->turns.' turns left');
