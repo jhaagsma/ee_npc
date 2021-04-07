@@ -320,7 +320,7 @@ while (1) {
             //log_main_message("Setting GDI to ".($cpref->gdi ? "true" : "false"), true, 'brown');
         }
 
-        //if($cpref->strat <> 'C') // DEBUG
+        //if($cpref->strat <> 'T') // DEBUG
         //    continue;
 
         if ($cpref->nextplay < time()) {

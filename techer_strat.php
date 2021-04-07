@@ -129,8 +129,9 @@ function play_techer_turn(&$c, $tech_price_min_sell_price, $server_max_possible_
         //tech per turn is greater than land*0.17 -- just kindof a rough "don't tech below this" rule...
         //so, 10 if they can... cap at turns - 1
         return tech_techer($c, max(1, min(turns_of_money($c), turns_of_food($c), 13, $c->turns + 2) - 3));
-    } elseif ($c->built() > 50
-        && ($c->land < 5000 || rand(0, 100) > 95 && $c->land < $server_avg_land)
+    } elseif ($c->built() > 50 and $c->land < 10000
+        //&& ($c->land < 5000 || rand(0, 100) > 95 && $c->land < $server_avg_land)
+        // 5k land is too low, techer bots are always below bot avg land, and the 5% chance is here is after the 3% chance from the prev line
     ) {
         //otherwise... explore if we can, for the early bits of the set
         $explore_turn_limit = $is_allowed_to_mass_explore ? 999 : 5;
@@ -159,7 +160,8 @@ function selltechtime(&$c)
 }//end selltechtime()
 
 
-function sell_max_tech(&$c, $tech_price_min_sell_price, $server_max_possible_market_sell)
+// future: $mil_tech_to_keep should be an array of all techs? new function or change the name?
+function sell_max_tech(&$c, $tech_price_min_sell_price, $server_max_possible_market_sell, $mil_tech_to_keep = 0, $dump_at_min_sell_price = false)
 {
     $c = get_advisor();     //UPDATE EVERYTHING
     $c->updateOnMarket();
@@ -168,7 +170,7 @@ function sell_max_tech(&$c, $tech_price_min_sell_price, $server_max_possible_mar
     //global $market;
 
     $quantity = [
-        'mil' => can_sell_tech($c, 't_mil', $server_max_possible_market_sell),
+        'mil' => min($c->t_mil - $mil_tech_to_keep, can_sell_tech($c, 't_mil', $server_max_possible_market_sell)),
         'med' => can_sell_tech($c, 't_med', $server_max_possible_market_sell),
         'bus' => can_sell_tech($c, 't_bus', $server_max_possible_market_sell),
         'res' => can_sell_tech($c, 't_res', $server_max_possible_market_sell),
@@ -213,11 +215,15 @@ function sell_max_tech(&$c, $tech_price_min_sell_price, $server_max_possible_mar
                 $max = $c->goodsStuck($key) ? 0.98 : $rmax; //undercut if we have goods stuck
                 Debug::msg("sell_max_tech:B:$key");
 
-                $price[$key] = max($tech_price_min_sell_price, 
-                    min(9999,
-                        floor(PublicMarket::price($key) * Math::purebell($rmin, $max, $rstddev, $rstep))
-                    )
-                );
+                if($dump_at_min_sell_price)
+                    $price[$key] = $tech_price_min_sell_price;
+                else {
+                    $price[$key] = max($tech_price_min_sell_price, 
+                        min(9999,
+                            floor(PublicMarket::price($key) * Math::purebell($rmin, $max, $rstddev, $rstep))
+                        )
+                    );
+                }
 
                 Debug::msg("sell_max_tech:C:$key");
             }
