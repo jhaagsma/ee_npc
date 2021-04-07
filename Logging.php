@@ -152,7 +152,7 @@ function log_error_message($error_type, $cnum, $message) {
     // always log to the error file
     // for the error file, use unprintable characters to separate fields and line breaks to pack everything on a single line
     // the error reader on the server will split out things appropriately
-    $error_message_for_error_file = $error_type.chr(9).$error_type_name.chr(9).$cnum.chr(9).str_replace(array("\r", "\n"), chr(17), $message);
+    $error_message_for_error_file = $error_type.chr(9).$error_type_name.chr(9)."#$cnum".chr(9).str_replace(array("\r", "\n"), chr(17), $message);
     $error_local_file_path_and_name = ($log_to_local ? get_full_error_file_path_and_name($local_file_path) : null);
     log_to_targets(false, $log_to_local, $error_local_file_path_and_name, $error_message_for_error_file, $cnum, null);  
     return true; 
