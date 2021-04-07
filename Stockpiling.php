@@ -50,7 +50,7 @@ function get_stockpiling_weights ($c, $server, $rules, $cpref, $min_cash_to_calc
     if($c->money + $c->turns * max(0, $c->income)  < $min_cash_to_calc)
         return $stockpiling_weights;
 
-    log_country_message($c->cnum, "Calculating stockpiling weights. Price / weight = 1000 for expected 60$ loss of value");    
+    log_country_message($c->cnum, "Calculating stockpiling weights. Price / weight = 1000 for expected $60 loss of value");    
 
     if($allow_bushels) {
         $bushel_sell_price = predict_destock_bushel_sell_price($c, $rules);
