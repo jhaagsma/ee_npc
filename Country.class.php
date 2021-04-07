@@ -631,10 +631,15 @@ class Country
      *
      * @return bool Yep or Nope
      */
-    public function shouldBuildSpyIndies()
+    public function shouldBuildSpyIndies($target_bpt)
     {
         if ($this->empty < $this->bpt) {
             //not enough land
+            return false;
+        }
+
+        if($this->bpt < $target_bpt) {
+            // don't build indies until we have full cs
             return false;
         }
 
@@ -643,8 +648,8 @@ class Country
             return false;
         }
 
-        if ($this->turns_played > 150 && $this->b_indy < $this->bpt) {
-            //We're out of protection and don't have a full BPT of indies
+        if ($this->turns_played > 300 && $this->b_indy < 2 * $this->bpt) {
+            //We're out of protection and don't have two full BPT of indies
             return true;
         }
 

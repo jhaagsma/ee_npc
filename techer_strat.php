@@ -100,7 +100,7 @@ function play_techer_turn(&$c, $market_autobuy_tech_price, $server_max_possible_
         //never sell less than 20 turns worth of tech
         //always sell if we can????
         return sell_max_tech($c, $market_autobuy_tech_price, $server_max_possible_market_sell);
-    } elseif ($c->shouldBuildSpyIndies()) {
+    } elseif ($c->shouldBuildSpyIndies($target_bpt)) {
         //build a full BPT of indies if we have less than that, and we're out of protection
         return Build::indy($c);
     } elseif ($c->shouldBuildFullBPT($target_bpt)) {

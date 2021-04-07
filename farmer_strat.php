@@ -137,7 +137,7 @@ function play_farmer_turn(&$c, $server_base_pm_bushel_sell_price = 29, $is_allow
         )
     ) { //Don't sell less than 30 turns of food unless you're on your last turn (and desperate?)
         return sellextrafood_farmer($c, $server_base_pm_bushel_sell_price);
-    } elseif ($c->shouldBuildSpyIndies()) {
+    } elseif ($c->shouldBuildSpyIndies($target_bpt)) {
         //build a full BPT of indies if we have less than that, and we're out of protection
         return Build::indy($c);
     } elseif ($c->shouldBuildFullBPT($target_bpt)) {
