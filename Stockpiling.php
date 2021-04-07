@@ -34,7 +34,7 @@ function get_inherent_value_for_tech ($c, $rules, $min_cash_to_calc = 2000000000
         log_country_message($c->cnum, "The expected bushel buy price for stocking is 2 above current price of $current_bushel_market_price");
         $value_kept_decimal = $bushel_sell_price / ((2 + $current_bushel_market_price) * $c->tax());
         // no taxes in below code because buying functions handle that
-        $tech_value = round(700 / max($value_kept_decimal, 0.4)); // don't sell tech at prices where we expect to lose more than 60% / TODO: cpref
+        $tech_value = max(700, round(700 / max($value_kept_decimal, 0.4))); // don't sell tech at prices where we expect to lose more than 60% / TODO: cpref
     }
 
     log_country_message($c->cnum, "The inherent value for tech is calculated as $tech_value");
@@ -54,7 +54,7 @@ function get_techer_min_sell_price($c, $cpref, $rules, $min_cash_to_calc = 20000
         $current_bushel_market_price  = PublicMarket::price('m_bu');
         log_country_message($c->cnum, "The expected bushel buy price for stocking is 2 above current price of $current_bushel_market_price");
         $value_kept_decimal = $bushel_sell_price / ((2 + $current_bushel_market_price) * $c->tax());
-        $tech_min_price = round((2 - $c->tax()) * 700 / max($value_kept_decimal, 0.4)); // TODO: cpref
+        $tech_min_price = max($rules->market_autobuy_tech_price, round((2 - $c->tax()) * 700 / max($value_kept_decimal, 0.4))); // TODO: cpref
         log_country_message($c->cnum, "Tech minimum sell price calculated as $tech_min_price based on bushel prices");
     }
     return $tech_min_price;
