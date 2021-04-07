@@ -237,7 +237,7 @@ function get_country_owned_resolve_market_name_mismatches($c, $good_name) {
         $c_name = 'food';
     elseif($good_name == 'm_oil')
         $c_name = 'oil';
-    elseif(substr($good_name, 1, 2) == 'm_' or $good_name == 'food' or $good_name == 'oil')
+    elseif(substr($good_name, 0, 2) == 'm_' or $good_name == 'food' or $good_name == 'oil')
         $c_name = $good_name;
     else // tech
         $c_name = "t_$good_name";
