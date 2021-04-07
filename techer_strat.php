@@ -133,7 +133,6 @@ function play_techer_turn(&$c, $tech_price_min_sell_price, $server_max_possible_
         //&& ($c->land < 5000 || rand(0, 100) > 95 && $c->land < $server_avg_land)
         // 5k land is too low, techer bots are always below bot avg land, and the 5% chance is here is after the 3% chance from the prev line
     ) {
-        //otherwise... explore if we can, for the early bits of the set
         $explore_turn_limit = $is_allowed_to_mass_explore ? 999 : 5;
         return explore($c, max(1, min($explore_turn_limit, $c->turns - 1, turns_of_money($c) - 4, turns_of_food($c) - 4)));
     } else { //otherwise, tech, obviously
