@@ -53,6 +53,8 @@ require_once 'oiler_strat.php';
 require_once 'Destocking.php';
 require_once 'Logging.php';
 require_once 'Purchasing.php';
+require_once 'Selling.php';
+require_once 'Stockpiling.php';
 
 define("RAINBOW", Colors::getColoredString("Rainbow", "purple"));
 define("FARMER", Colors::getColoredString("Farmer", "cyan"));
@@ -318,8 +320,8 @@ while (1) {
             //log_main_message("Setting GDI to ".($cpref->gdi ? "true" : "false"), true, 'brown');
         }
 
-        //if($cpref->strat <> 'C') // DEBUG
-        //    continue;
+        if($cpref->strat <> 'C') // DEBUG
+            continue;
 
         if ($cpref->nextplay < time()) {
 

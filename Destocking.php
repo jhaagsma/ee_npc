@@ -26,7 +26,6 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 	$server_seconds_per_turn = $server->turn_rate;
 	$max_market_package_time_in_seconds = $rules->max_time_to_market;
 	$is_oil_on_pm = $rules->is_oil_on_pm;
-	$base_pm_food_sell_price = $rules->base_pm_food_sell_price;
 	$reset_seconds_remaining = $reset_end_time - time();
 	$market_autobuy_tech_price = $rules->market_autobuy_tech_price;
 	$turns_left_in_set = floor($reset_seconds_remaining / $server_seconds_per_turn);
@@ -59,7 +58,7 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 	// FUTURE: replace 0.81667 (max demo mil tech) with game API call
 	// reasonable to assume that a greedy demo country will resell bushels for $2 less than max PM sell price on all servers
 	// FUTURE: use 1 dollar less than max on clan servers?
-	$estimated_public_market_bushel_sell_price = round($base_pm_food_sell_price / 0.81667) - 2;
+	$estimated_public_market_bushel_sell_price = get_max_demo_bushel_recycle_price($rules) - 2;
 	log_country_message($cnum, "Estimated public bushel sell price is $estimated_public_market_bushel_sell_price");
 
 	// FUTURE: buy mil tech - PM purchases, bushel reselling?, bushel selling - I expect this to be an annoying calculation
@@ -77,6 +76,9 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 		$next_play_time_in_seconds = TURNS_TO_PASS_BEFORE_NEXT_DESTOCK_ATTEMPT * $server_seconds_per_turn;
 		return $c;
 	}
+
+	// TODO: recall bushels if needed (cashers can stock now)
+
 
 	// resell bushels if profitable
 	$pm_info = PrivateMarket::getInfo();

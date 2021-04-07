@@ -24,10 +24,12 @@ function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     // setup for spending extra money (not on food or building costs)
     $buying_schedule = casher_get_buying_schedule($cnum, $cpref);
     $buying_priorities = casher_get_buying_priorities ($cnum, $buying_schedule);
+    $tech_inherent_value = get_inherent_value_for_tech($c, $rules);
     $eligible_techs = ['t_bus', 't_res', 't_mil', 't_weap'];
-    $optimal_tech_buying_array = get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, 9999, 700);
+    $optimal_tech_buying_array = get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, 9999, $tech_inherent_value);
     $cost_for_military_point_guess = get_cost_per_military_points_for_caching($c);
-    $dpnw_guess = get_dpnw_for_caching($c);    
+    $dpnw_guess = get_dpnw_for_caching($c);   
+    $stockpiling_weights = get_stockpiling_weights ($c, $server, $rules, $cpref, 1800000000, true, true, true);
 
     // log useful information about country state
     log_country_message($cnum, $c->turns.' turns left');
@@ -38,6 +40,15 @@ function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     //out_data($market_info);       //output the PM info
 
     //$owned_on_market_info = get_owned_on_market_info();     //find out what we have on the market
+
+
+    if($c->money > 2000000000) { // try to stockpile to avoid corruption and to limit bot abuse
+        // first spend extra money normally so we can buy needed military or income techs if they are worthwhile
+        spend_extra_money($c, $buying_priorities, $cpref, 1800000000, false, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array, $buying_schedule);
+        spend_extra_money_on_stockpiling($c, $cpref, 1800000000, $stockpiling_weights);
+    }
+
+    stash_excess_bushels_on_public_if_needed($c, $rules);
 
     $turns_played_for_last_spend_money_attempt = 0;
     while ($c->turns > 0) {
@@ -80,6 +91,11 @@ function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition)
         ) { // 40 turns of food
         // buy military at the end
         spend_extra_money($c, $buying_priorities, $cpref, $c->fullBuildCost(), false, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array, $buying_schedule);
+    }
+
+    if($c->money > 2000000000) { // try to stockpile to avoid corruption and to limit bot abuse
+        spend_extra_money_on_stockpiling($c, $cpref, 1800000000, $stockpiling_weights);
+        // don't see a strong reason to sell excess bushels at this step
     }
 
     $c->countryStats(CASHER); // FUTURE: implement? , casherGoals($c));

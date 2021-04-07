@@ -232,8 +232,17 @@ function buyout_up_to_market_dpnw(&$c, $cpref, $max_dpnw, $max_spend, $military_
 }
 
 
+
+
+
+
 // $point_name is for message logging only
 function spend_money_on_markets(&$c, $cpref, $points_needed, $max_spend, $unit_weights, $unit_points, $point_name, $max_dollars_per_point = 100000, $public_only = false, $total_spent = 0, $total_points_gained = 0, $recursion_level = 1) {
+    if($max_spend < 10000) {
+        log_country_message($c->cnum, "Spenting for $point_name not attempted because max spent is $max_spend which is less than $10000");
+        return 0;
+    }
+    
     log_country_message($c->cnum, "Iteration $recursion_level for public".($public_only ? "" : " and private")." market purchasing based on $point_name");
     log_country_message($c->cnum, "Budget is ".($max_spend - $total_spent).", purchase limit is ".($points_needed - $total_points_gained)." points, and score limit is $max_dollars_per_point ($point_name)");
 
@@ -246,6 +255,8 @@ function spend_money_on_markets(&$c, $cpref, $points_needed, $max_spend, $unit_w
         $pm_info = PrivateMarket::getInfo();
         $skipped_units_message = null;
         foreach($unit_weights as $unit_name => $weight_for_unit) {
+            if(!isset($pm_info->buy_price->$unit_name)) // not all units may be available on PM like tech
+                continue;
             $pm_price = $pm_info->buy_price->$unit_name;
             $pm_quantity = $pm_info->available->$unit_name;
             $unit_score = floor($pm_price / $unit_weights[$unit_name]); // slightly favor over public that uses round()
@@ -363,13 +374,16 @@ function spend_money_on_markets(&$c, $cpref, $points_needed, $max_spend, $unit_w
             // log_country_message($c->cnum, "Best unit:$best_public_unit, quantity:$best_unit_quantity, price:$best_unit_price ");
 
             $money_before_purchase = $c->money; // this is repeated because we want it as close as possible to the buy call
-            $unit_count_before_purchase = $c->$best_public_unit; // FUTURE: should use return value
+
+            // deal with m_bu and food mismatch...
+            $unit_count_before_purchase = ($best_public_unit == 'm_bu' ? $c->food : $c->$best_public_unit);
 
             PublicMarket::buy($c, [$best_public_unit => $best_unit_quantity], [$best_public_unit => $best_unit_price]);
 
             $money_spent_on_purchase = $money_before_purchase - $c->money; // I don't like this but the return structure of PublicMarket::buy is tough to deal with
             $total_spent += $money_spent_on_purchase;
-            $units_gained = max(0, $c->$best_public_unit - $unit_count_before_purchase);
+            $unit_count_after_purchase = ($best_public_unit == 'm_bu' ? $c->food : $c->$best_public_unit); // FUTURE: should use return value
+            $units_gained = max(0, $unit_count_after_purchase - $unit_count_before_purchase);
             $total_points_gained += floor($point_per_unit * $units_gained);
 
             if ($money_spent_on_purchase == 0) {
