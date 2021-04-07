@@ -242,7 +242,7 @@ function get_country_owned_resolve_market_name_mismatches($c, $good_name) {
     else   
         $c_name = $good_name;
 
-    return $c->$good_name;
+    return $c->$c_name;
 }
 
 
