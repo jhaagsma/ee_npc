@@ -233,14 +233,14 @@ function buyout_up_to_market_dpnw(&$c, $cpref, $max_dpnw, $max_spend, $military_
 
 
 function get_country_owned_resolve_market_name_mismatches($c, $good_name) {
-    if(substr($good_name, 1, 2) == 't_')
-        $c_name = substr($good_name, 2);
-    elseif($good_name == 'm_bu')
+    if($good_name == 'm_bu')
         $c_name = 'food';
     elseif($good_name == 'm_oil')
         $c_name = 'oil';
-    else   
+    elseif(substr($good_name, 1, 2) == 'm_' or $good_name == 'food' or $good_name == 'oil')
         $c_name = $good_name;
+    else // tech
+        $c_name = "t_$good_name";
 
     return $c->$c_name;
 }
