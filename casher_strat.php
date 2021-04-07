@@ -28,8 +28,9 @@ function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     $eligible_techs = ['t_bus', 't_res', 't_mil', 't_weap'];
     $optimal_tech_buying_array = get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, 9999, $tech_inherent_value);
     $cost_for_military_point_guess = get_cost_per_military_points_for_caching($c);
-    $dpnw_guess = get_dpnw_for_caching($c);   
-    $stockpiling_weights = get_stockpiling_weights ($c, $server, $rules, $cpref, 1800000000, true, true, true);
+    $dpnw_guess = get_dpnw_for_caching($c);
+    $money_to_keep_after_stockpiling = 1800000000;
+    $stockpiling_weights = get_stockpiling_weights ($c, $server, $rules, $cpref, $money_to_keep_after_stockpiling, true, true, true);
 
     // log useful information about country state
     log_country_message($cnum, $c->turns.' turns left');
@@ -44,8 +45,8 @@ function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition)
 
     if($c->money > 2000000000) { // try to stockpile to avoid corruption and to limit bot abuse
         // first spend extra money normally so we can buy needed military or income techs if they are worthwhile
-        spend_extra_money($c, $buying_priorities, $cpref, 1800000000, false, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array, $buying_schedule);
-        spend_extra_money_on_stockpiling($c, $cpref, 1800000000, $stockpiling_weights);
+        spend_extra_money($c, $buying_priorities, $cpref, $money_to_keep_after_stockpiling, false, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array, $buying_schedule);
+        spend_extra_money_on_stockpiling($c, $cpref, $money_to_keep_after_stockpiling, $stockpiling_weights);
     }
 
     stash_excess_bushels_on_public_if_needed($c, $rules);
@@ -94,7 +95,7 @@ function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     }
 
     if($c->money > 2000000000) { // try to stockpile to avoid corruption and to limit bot abuse
-        spend_extra_money_on_stockpiling($c, $cpref, 1800000000, $stockpiling_weights);
+        spend_extra_money_on_stockpiling($c, $cpref, $money_to_keep_after_stockpiling, $stockpiling_weights);
         // don't see a strong reason to sell excess bushels at this step
     }
 

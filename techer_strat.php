@@ -29,6 +29,8 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
         ['type'=>'DPA','goal'=>100],
         ['type'=>'NWPA','goal'=>100]
     ];
+    $money_to_keep_after_stockpiling = 1800000000;
+    $stockpiling_weights = get_stockpiling_weights ($c, $server, $rules, $cpref, $money_to_keep_after_stockpiling, true, false, true);
 
     // log useful information about country state
     log_country_message($cnum, $c->turns.' turns left');
@@ -43,6 +45,17 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     $owned_on_market_info = get_owned_on_market_info();     //find out what we have on the market
     //out_data($owned_on_market_info); //output the owned on market info
 
+    if($c->money > 2000000000) { // try to stockpile to avoid corruption and to limit bot abuse
+        // first spend extra money normally so we can buy needed military
+        spend_extra_money($c, $buying_priorities, $cpref, $money_to_keep_after_stockpiling, false);
+        spend_extra_money_on_stockpiling($c, $cpref, $money_to_keep_after_stockpiling, $stockpiling_weights);
+    }
+
+    stash_excess_bushels_on_public_if_needed($c, $rules); // TODO: money check (should be inside function)
+
+    // TODO: At start of turns, decide if we sell tech at market prices or if we aim higher.
+    // Use market prices if cash is less than 2 billion or bushel market is empty.
+    // Otherwise, if market prices are too low, then set sell prices based on the current market price of bushels.
 
     while ($c->turns > 0) {
         //$result = PublicMarket::buy($c,array('m_bu'=>100),array('m_bu'=>400));
@@ -72,6 +85,11 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
 
     if (turns_of_food($c) > 50 && turns_of_money($c) > 50 && $c->money > 3500 * 500 && ($c->money > $c->fullBuildCost() - $c->runCash()) && $c->tpt > 200) { // 40 turns of food
         spend_extra_money($c, $buying_priorities, $cpref, $c->fullBuildCost() - $c->runCash(), false);//keep enough money to build out everything
+    }
+
+    if($c->money > 2000000000) { // try to stockpile to avoid corruption and to limit bot abuse
+        spend_extra_money_on_stockpiling($c, $cpref, $money_to_keep_after_stockpiling, $stockpiling_weights);
+        // don't see a strong reason to sell excess bushels at this step
     }
 
     $c->countryStats(TECHER); // , techerGoals($c) // FUTURE: implement?
