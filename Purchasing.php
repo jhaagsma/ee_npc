@@ -374,16 +374,13 @@ function spend_money_on_markets(&$c, $cpref, $points_needed, $max_spend, $unit_w
             // log_country_message($c->cnum, "Best unit:$best_public_unit, quantity:$best_unit_quantity, price:$best_unit_price ");
 
             $money_before_purchase = $c->money; // this is repeated because we want it as close as possible to the buy call
-
-            // deal with m_bu and food mismatch...
-            $unit_count_before_purchase = ($best_public_unit == 'm_bu' ? $c->food : $c->$best_public_unit);
+            $unit_count_before_purchase = $c->$best_public_unit; // FUTURE: should use return value
 
             PublicMarket::buy($c, [$best_public_unit => $best_unit_quantity], [$best_public_unit => $best_unit_price]);
 
             $money_spent_on_purchase = $money_before_purchase - $c->money; // I don't like this but the return structure of PublicMarket::buy is tough to deal with
             $total_spent += $money_spent_on_purchase;
-            $unit_count_after_purchase = ($best_public_unit == 'm_bu' ? $c->food : $c->$best_public_unit); // FUTURE: should use return value
-            $units_gained = max(0, $unit_count_after_purchase - $unit_count_before_purchase);
+            $units_gained = max(0, $c->$best_public_unit - $unit_count_before_purchase);
             $total_points_gained += floor($point_per_unit * $units_gained);
 
             if ($money_spent_on_purchase == 0) {
