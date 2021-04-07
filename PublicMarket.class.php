@@ -216,8 +216,6 @@ class PublicMarket
         $str   = $init = str_pad('--- SELL Public: ', 26);
         $first = true;
         if (isset($result->sell)) {
-            if(count($result->sell) > 1)
-                $str .= "\n"; // add a line break when selling multiple things for easier reading
             foreach ($result->sell as $type => $details) {
                 //$bits = explode('_', $type);
                 //$omtype = 'om_' . $bits[1];
