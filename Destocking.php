@@ -50,7 +50,7 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 	$expensive_tech_on_market = false;
 	$expensive_bushels_on_market = false;	
 	$market_owned = get_owned_on_market_info();
-	out_data($market_owned);
+	//out_data($market_owned);
 	foreach($market_owned as $market_package_piece) {
 		// $market_package_piece structure: [{"type":"t_mil","price":6277,"quantity":103068,"time":1617827768,"on_market":true,"seconds_until_on_market":-2362}]
 		if($market_package_piece->type == 'food') {
