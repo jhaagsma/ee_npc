@@ -101,9 +101,11 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 	// stash bushels away on public market if needed
 	$expect_to_play_turns_for_income = temporary_cash_or_tech_at_end_of_set ($c, $strategy, $turns_to_keep, $money_to_reserve_temp, true);
 	if($expect_to_play_turns_for_income and $c->turns >= 20 + $turns_to_keep) {
-		if(stash_excess_bushels_on_public_if_needed($c, $rules, $estimated_public_market_bushel_sell_price) and !$bushel_recall_needed) {
-			$turns_to_keep += 3; // we probably are going to recall bushels, so save 3 more turns for that
-			$bushel_recall_needed = true;
+		if(stash_excess_bushels_on_public_if_needed($c, $rules, $estimated_public_market_bushel_sell_price)) { // sold bushels
+			if(!$bushel_recall_needed and !is_there_time_to_sell_on_public($reset_seconds_remaining, $max_market_package_time_in_seconds, $is_final_destocking_attempt, 1800)) {
+				$turns_to_keep += 3; // we are going to recall bushels, so save 3 more turns for that
+				$bushel_recall_needed = true;
+			} 
 		}
 	}
 
