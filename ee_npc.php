@@ -731,7 +731,7 @@ function total_military($c)
 }//end total_military()
 
 
-function total_cansell_tech($c, $server_max_possible_market_sell)
+function total_cansell_tech($c, $server_max_possible_market_sell, $mil_tech_to_keep = 0)
 {
     if ($c->turns_played < 100) {
         return 0;
@@ -740,7 +740,8 @@ function total_cansell_tech($c, $server_max_possible_market_sell)
     $cansell = 0;
     global $techlist;
     foreach ($techlist as $tech) {
-        $cansell += can_sell_tech($c, $tech, $server_max_possible_market_sell);
+        $tech_to_not_sell = ($tech == 't_mil' ? $mil_tech_to_keep : 0);
+        $cansell += can_sell_tech($c, $tech, $server_max_possible_market_sell, $tech_to_not_sell);
     }
 
     Debug::msg("CANSELL TECH: $cansell");
@@ -762,12 +763,15 @@ function total_cansell_military($c, $server_max_possible_market_sell)
 
 
 
-function can_sell_tech(&$c, $tech = 't_bus', $server_max_possible_market_sell = 25)
+function can_sell_tech(&$c, $tech = 't_bus', $server_max_possible_market_sell = 25, $tech_to_not_sell = 0)
 {
     $onmarket = $c->onMarket($tech);
     $tot      = $c->$tech + $onmarket;
     $sell     = floor($tot * 0.01 * $server_max_possible_market_sell) - $onmarket; // FUTURE: make work for commie
     //Debug::msg("Can Sell $tech: $sell; (At Home: {$c->$tech}; OnMarket: $onmarket)");
+
+    if($c->$tech - $sell < $tech_to_not_sell)
+        $sell = $c->$tech - $tech_to_not_sell;
 
     return $sell > 10 ? $sell : 0;
 }//end can_sell_tech()

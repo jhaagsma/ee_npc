@@ -343,6 +343,9 @@ function dump_tech(&$c, $strategy, $market_autobuy_tech_price, $server_max_possi
 	// I don't care if a country could sell a tech but not recall tech - ok to not do anything and try again later
 	$food_needed = max(0, get_food_needs_for_turns($turns_needed, $c->foodpro, $c->foodcon, true) - $c->food);
 
+	// demos should keep 42 mil tech per acre for bushel recycle reasons
+	$mil_tech_to_keep = ($c->govt == 'D' ? min($c->t_mil, 42 * $c->land) : 0);
+
 	$reason_for_not_selling_tech = null;
 	if ($strategy <> 'T')
 		$reason_for_not_selling_tech = "No support for non-techers at this time"; // FUTURE: add support
@@ -354,7 +357,7 @@ function dump_tech(&$c, $strategy, $market_autobuy_tech_price, $server_max_possi
 		$reason_for_not_selling_tech = "Not enough turns";	
 	elseif(!is_there_time_to_sell_on_public($reset_seconds_remaining, $max_market_package_time_in_seconds, $is_final_destocking_attempt, 0))
 		$reason_for_not_selling_tech = "Not enough time for goods to get to market";	
-	elseif(total_cansell_tech($c, $server_max_possible_market_sell) < 10000 ) // in place of a price check for normal sales
+	elseif(total_cansell_tech($c, $server_max_possible_market_sell, $mil_tech_to_keep) < 10000 ) // in place of a price check for normal sales
 		$reason_for_not_selling_tech = "Minimum allowed tech sale during destocking is 10000 units";			
 			
 	// passed all error checks, so try to sell tech
@@ -365,13 +368,9 @@ function dump_tech(&$c, $strategy, $market_autobuy_tech_price, $server_max_possi
 			update_c($c, $turn_result);
 		}
 
-		// demos should keep 42 mil tech per acre for bushel recycle reasons
-		if ($c->govt == 'D') {
-			$mil_tech_to_keep = min($c->t_mil, 42 * $c->land);
+		if ($mil_tech_to_keep) {
 			log_country_message($c->cnum, "With $c->land acres and $c->t_mil mil tech points, a demo should keep $mil_tech_to_keep mil tech");
 		}
-		else
-			$mil_tech_to_keep = 0;
 
 		// if there's time in the set or if auto buy prices are bad, do a normal tech sale
 		$dump_at_min_sell_price = ($can_sell_at_market_prices or $market_autobuy_tech_price <= 700) ? false : true;
