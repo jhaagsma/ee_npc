@@ -182,7 +182,7 @@ function sell_max_tech(&$c, $tech_price_min_sell_price, $server_max_possible_mar
         'sdi' => can_sell_tech($c, 't_sdi', $server_max_possible_market_sell)
     ];
 
-    if (array_sum($quantity) == 0) {
+    if (array_sum($quantity) == 0 and $mil_tech_to_keep) {
         log_country_message($c->cnum, 'Techer computing Zero Sell!');
         $c = get_advisor();
         $c->updateOnMarket();

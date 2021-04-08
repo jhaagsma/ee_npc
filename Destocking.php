@@ -704,7 +704,7 @@ function dump_bushel_stock(&$c, $turns_to_keep, $reset_seconds_remaining, $serve
 	if($sold_on_private_reason) {
 		log_country_message($c->cnum, "Not selling bushels on public for reason: $sold_on_private_reason");
 		$bushels_to_sell = max(0, $c->food - get_food_needs_for_turns($turns_to_keep, $c->foodpro, $c->foodcon, false));
-		while (true) { // while loop because bushel decay is factored into consumption now
+		while ($bushels_to_sell > 0) { // while loop because bushel decay is factored into consumption now
 			PrivateMarket::sell_single_good($c, 'm_bu', $bushels_to_sell);
 			$c->updateMain(); // foodcon won't get updated by a pm sale
 			$bushels_to_sell = max(0, $c->food - get_food_needs_for_turns($turns_to_keep, $c->foodpro, $c->foodcon, false));
