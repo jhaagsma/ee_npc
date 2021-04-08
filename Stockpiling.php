@@ -160,6 +160,7 @@ function spend_extra_money_on_stockpiling(&$c, $cpref, $money_to_reserve, $stock
     // this is useless, but spend_money_on_markets expects it
     $unit_points = array_combine(array_keys($stockpiling_weights), array_fill(0, count($stockpiling_weights), 1));
     // don't change 1000 without changing get_stockpiling_weights()
+    log_country_message($c->cnum, "Attempting to spend money on stockpiling purchases...");
     $spent = spend_money_on_markets($c, $cpref, 999999999999, $c->money - $money_to_reserve, $stockpiling_weights, $unit_points, "stock", 1000, false, $stockpiling_adjustments);
     log_country_message($c->cnum, "Spent $spent and finished stockpiling purchases");
     return $spent;
