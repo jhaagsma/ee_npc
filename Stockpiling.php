@@ -3,19 +3,25 @@
 namespace EENPC;
 
 
-function stash_excess_bushels_on_public_if_needed(&$c, $rules) {
+function stash_excess_bushels_on_public_if_needed(&$c, $rules, $max_sell_price = null) {
     $excess_bushels = $c->food + 10000 + ($c->turns + 20) * min(0, $c->foodnet);
 
     // TODO: check that income is positive so we don't OOM
 
     if($excess_bushels > 3500000) {
         $quantity = ['m_bu' => $excess_bushels];
-        $min_sell_price = PublicMarket::price('m_bu') + mt_rand(20, 40); // FUTURE: pref?
-        $max_sell_price = 200; // TODO: is this safe for all countries?
-        $std_dev = ($max_sell_price - $min_sell_price) / 2;   
-        $sell_price = floor(Math::half_bell_truncate_left_side($min_sell_price, $max_sell_price, $std_dev));
-        $price   = ['m_bu' => $sell_price]; 
-        log_country_message($c->cnum, "Selling $excess_bushels bushels at high prices to stash them away");
+        if($max_sell_price) {
+            $price   = ['m_bu' => $max_sell_price]; 
+            log_country_message($c->cnum, "Selling excess $excess_bushels bushels at $max_sell_price price");
+        }
+        else {
+            $min_sell_price = PublicMarket::price('m_bu') + mt_rand(20, 40); // FUTURE: pref?
+            $max_sell_price = 200; // TODO: is this safe for all countries?
+            $std_dev = ($max_sell_price - $min_sell_price) / 2;   
+            $sell_price = floor(Math::half_bell_truncate_left_side($min_sell_price, $max_sell_price, $std_dev));
+            $price   = ['m_bu' => $sell_price]; 
+            log_country_message($c->cnum, "Selling excess $excess_bushels bushels at high prices to stash them away");
+        }
         $res = PublicMarket::sell($c, $quantity, $price); 
         update_c($c, $res);
         return true; // FUTURE: catch fails?
