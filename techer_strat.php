@@ -30,7 +30,7 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
         ['type'=>'NWPA','goal'=>100]
     ];
     $money_to_keep_after_stockpiling = 1800000000;
-    $stockpiling_weights = get_stockpiling_weights ($c, $server, $rules, $cpref, $money_to_keep_after_stockpiling, true, false, true);
+    get_stockpiling_weights_and_adjustments ($stockpiling_weights, $stockpiling_adjustments, $c, $server, $rules, $cpref, $money_to_keep_after_stockpiling, true, false, true);
     $tech_price_min_sell_price = get_techer_min_sell_price($c, $cpref, $rules);
 
     // log useful information about country state
@@ -50,7 +50,7 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     if($c->money > 2000000000) { // try to stockpile to avoid corruption and to limit bot abuse
         // first spend extra money normally so we can buy needed military
         spend_extra_money($c, $buying_priorities, $cpref, $money_to_keep_after_stockpiling, false);
-        spend_extra_money_on_stockpiling($c, $cpref, $money_to_keep_after_stockpiling, $stockpiling_weights);
+        spend_extra_money_on_stockpiling($c, $cpref, $money_to_keep_after_stockpiling, $stockpiling_weights, $stockpiling_adjustments);
     }
 
     stash_excess_bushels_on_public_if_needed($c, $rules); // TODO: money check (should be inside function)
@@ -86,7 +86,7 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     }
 
     if($c->money > 2000000000) { // try to stockpile to avoid corruption and to limit bot abuse
-        spend_extra_money_on_stockpiling($c, $cpref, $money_to_keep_after_stockpiling, $stockpiling_weights);
+        spend_extra_money_on_stockpiling($c, $cpref, $money_to_keep_after_stockpiling, $stockpiling_weights, $stockpiling_adjustments);
         // don't see a strong reason to sell excess bushels at this step
     }
 

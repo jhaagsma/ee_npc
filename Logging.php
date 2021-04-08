@@ -13,7 +13,7 @@ function log_get_name_of_error_type($error_type) {
     if($error_type == 1)
         return 'INVALID $cnum LOGGING CALL'; // for log_country_message()
 
-    // 100 - 999 are communication or PHP errors
+    // 100 - 999 are communication or programmer errors
     if($error_type == 100)
         return 'COMM NOT ACCEPTABLE RESPONSE';
     if($error_type == 101)
@@ -54,15 +54,17 @@ function log_get_name_of_error_type($error_type) {
         return 'COUNTRY ATTEMPTED DESTOCK IN PROTECTION';
     if($error_type == 119)
         return 'FORCED ADVISOR UPDATE WITH NO REASON';
-
-
+    if($error_type == 120)
+        return 'DESTOCKING NOT ENOUGH TURNS TO RECALL';
+    if($error_type == 121)
+        return 'DESTOCKING CANNOT RECALL DUE TO OOF/OOM';
 
 
         
     if($error_type == 999) // use when functions are given stupid input and it isn't worth defining a new error
         return 'GENERIC EE_NPC CODE BAD INPUT'; 
 
-    // 1000+ are country playing mistakes 
+    // 1000-1999 are country playing mistakes 
     if($error_type == 1000)
         return 'COUNTRY PLAYED TURN WITHOUT FOOD';
     if($error_type == 1001)
@@ -73,6 +75,10 @@ function log_get_name_of_error_type($error_type) {
         return 'COUNTRY BAD FOOD PURCHASE ON PUBLIC';           
     if($error_type == 1004)
         return 'COUNTRY PRIVATE MARKET FOOD PURCHASE';           
+    if($error_type == 1004)
+        return 'COUNTRY PRIVATE MARKET FOOD PURCHASE';       
+
+    // 2000+ are PHP errors or warnings
 
 
        

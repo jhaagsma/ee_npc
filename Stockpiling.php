@@ -61,28 +61,44 @@ function get_techer_min_sell_price($c, $cpref, $rules, $min_cash_to_calc = 20000
 }
 
 
-function get_stockpiling_weights ($c, $server, $rules, $cpref, $min_cash_to_calc, $allow_bushels, $allow_tech, $allow_military) {
+function get_stockpiling_weights_and_adjustments (&$stockpiling_weights, &$stockpiling_adjustments, $c, $server, $rules, $cpref, $min_cash_to_calc, $allow_bushels, $allow_tech, $allow_military) {
     // the stockpiling weight should give the max price we're willing to buy a score of 1000 (score is price / weight)
-    // right now our max loss is 60% of value, so use that TODO: cpref
+    
+    $max_loss = 60; // right now our max loss is 60% of value, so use that TODO: cpref
     $stockpiling_weights = [];
-
-    // don't see a reason to log country messages at this time: spend_extra_money() has pretty verbose logging already
+    $stockpiling_adjustments = [];
 
     if($c->money + $c->turns * max(0, $c->income)  < $min_cash_to_calc)
-        return $stockpiling_weights;
+        return false;
 
-    log_country_message($c->cnum, "Calculating stockpiling weights. Price / weight = 1000 for expected 60% loss of value");    
+    log_country_message($c->cnum, "Calculating stockpiling weights. (Price + adjustment) / weight = 1000 for expected 60% loss of value");    
+
+    /*
+    weight = $max_loss * sell_value / (1000 * (100 - $max_loss))
+
+    sell_value is what we expect it to be worth end of set    
+
+    the point of all of this is to end up with a score of 0 for break even and a score of 1000 for the max_loss, with it linearly increasing as price goes up
+      
+    the adjustment for non-mil units is the sell_value
+    for military units, the adjustment is end of set buying plice + expenses- they make the paid price higher, but don't change the weight calculation
+    */
+
 
     if($allow_bushels) {
         $bushel_sell_price = predict_destock_bushel_sell_price($c, $rules);
-        $bushel_weight = round($bushel_sell_price / 400, 2); // this is the weight that makes a score of 1000 too high for 60% loss
-        log_country_message($c->cnum, "The stockpiling price weight for bushels is $bushel_weight");
+        $bushel_weight = round($max_loss * $bushel_sell_price / (1000 * (100 - $max_loss)), 4);
+        $bushel_adjustment = -1 * $bushel_sell_price;
+        log_country_message($c->cnum, "The stockpiling price weight for bushels is $bushel_weight and the adjustment is $bushel_adjustment");
         $stockpiling_weights['m_bu'] = $bushel_weight;
+        $stockpiling_adjustments['m_bu'] = $bushel_adjustment;
     }
 
 	if($allow_tech) {
-        $tech_weight = round(1750 / 1000, 2); // 1750 is 700 base value of tech with 60% loss
-        log_country_message($c->cnum, "The stockpiling price weight for tech is $tech_weight");
+        $tech_sell_price = 700; // inherent value of tech
+        $tech_weight = round($max_loss * $tech_sell_price / (1000 * (100 - $max_loss)), 4);
+        $tech_adjustment = -1 * $tech_sell_price;
+        log_country_message($c->cnum, "The stockpiling price weight for tech is $tech_weight and the adjustment is $tech_adjustment");
 		$stockpiling_weights["mil"] = $tech_weight; // FUTURE: :(
 		$stockpiling_weights["med"] = $tech_weight;
 		$stockpiling_weights["bus"] = $tech_weight;
@@ -94,34 +110,36 @@ function get_stockpiling_weights ($c, $server, $rules, $cpref, $min_cash_to_calc
 		$stockpiling_weights["indy"] = $tech_weight;
 		$stockpiling_weights["spy"] = $tech_weight;
 		$stockpiling_weights["sdi"] = $tech_weight;
+        $stockpiling_adjustments["mil"] = $tech_adjustment;
+		$stockpiling_adjustments["med"] = $tech_adjustment;
+		$stockpiling_adjustments["bus"] = $tech_adjustment;
+		$stockpiling_adjustments["res"] = $tech_adjustment;
+		$stockpiling_adjustments["agri"] = $tech_adjustment;
+		$stockpiling_adjustments["war"] = $tech_adjustment;
+		$stockpiling_adjustments["ms"] = $tech_adjustment;
+		$stockpiling_adjustments["weap"] = $tech_adjustment;
+		$stockpiling_adjustments["indy"] = $tech_adjustment;
+		$stockpiling_adjustments["spy"] = $tech_adjustment;
+		$stockpiling_adjustments["sdi"] = $tech_adjustment;
 	}
 
     if($allow_military){
         $server_new_turns_remaining = floor(($server->reset_end - time()) / $server->turn_rate); // FUTURE: function?
-
+        $military_end_dpnw = 2025 * 0.01 * ($c->govt == "H" ? 1.0 : 0.8) * $c->pt_mil / 6.5; // use what we can get on PM
         $unit_exp = ['m_tr' => 0.11,'m_j' => 0.14,'m_tu' => 0.18,'m_ta' => 0.57]; // TODO: food seems like a hassle, same with NW modifier
         $unit_nw = ['m_tr'=>0.5, 'm_j' => 0.6, 'm_tu' => 0.6, 'm_ta' => 2.0];
         foreach($unit_nw as $unit => $unit_nw) {
-            $mil_weight = round(0.001 * 0.01 * $c->pt_mil * 
-                (
-                    -1 * $unit_exp[$unit] * ($c->turns_stored + $server_new_turns_remaining) + // ignoring turns on hand feels reasonable, we might not play all turns anyway
-                    $unit_nw * 2025 * ($c->govt == "H" ? 0.8 : 1.0) / (6.5 * 0.4)
-                )
-            , 2);
-            if($mil_weight < 0) {
-                $mil_weight = 0.0001;    
-                log_country_message($c->cnum, "The stockpiling price weight for $unit is $mil_weight due to high expenses");
-            }
-            else
-                log_country_message($c->cnum, "The stockpiling price weight for $unit is $mil_weight");
-            $stockpiling_weights[$unit] = $mil_weight;
+            $military_unit_sell_price = $unit_nw * $military_end_dpnw;
+            $military_unit_weight = round($max_loss * $military_unit_sell_price / (1000 * (100 - $max_loss)), 4);
+            // expenses make the unit "cost" more
+            $military_unit_adjustment = round(0.01 * $c->pt_mil * $unit_exp[$unit] * ($c->turns_stored + $server_new_turns_remaining) - $military_unit_sell_price, 0);
+
+            $stockpiling_weights[$unit] = $military_unit_weight;
+            $stockpiling_adjustments[$unit] = $military_unit_adjustment;
+            log_country_message($c->cnum, "The stockpiling price weight for $unit is $military_unit_weight and the adjustment is $military_unit_adjustment");
         }
         
-        // TODO: techer should use fewer turns because it destocks earlier? although it can keep teching...
-
-        // the weight is based on the max price that we can buy that still retains 40% of value
-        // here we calc dpnw and compare it to 40% of the dpnw that we expect to get at the end from our private market
-        // if we're stocking military it's probably close to the end, so current mil tech is fine        
+        // TODO: techer should use fewer turns because it destocks earlier? although it can keep teching... 
     }
     
     // FUTURE: $allow_oil - hard to assign a base value outside of express
@@ -130,19 +148,19 @@ function get_stockpiling_weights ($c, $server, $rules, $cpref, $min_cash_to_calc
         log_error_message(999, $c->cnum, "get_stockpiling_weights(): must allow at least one type of good");        
     }
 
-    return $stockpiling_weights;
+    return true;
 }
 
 
-function spend_extra_money_on_stockpiling(&$c, $cpref, $money_to_reserve, $stockpiling_weights) {
-    if(empty($stockpiling_weights)) {
-        log_error_message(999, $c->cnum, "spend_extra_money_on_stockpiling(): passed in empty array for stockpiling weights");
+function spend_extra_money_on_stockpiling(&$c, $cpref, $money_to_reserve, $stockpiling_weights, $stockpiling_adjustments) {
+    if(empty($stockpiling_weights) or empty($stockpiling_adjustments)) {
+        log_error_message(999, $c->cnum, "spend_extra_money_on_stockpiling(): passed in empty array");
         return 0;
     }
     // this is useless, but spend_money_on_markets expects it
     $unit_points = array_combine(array_keys($stockpiling_weights), array_fill(0, count($stockpiling_weights), 1));
     // don't change 1000 without changing get_stockpiling_weights()
-    $spent = spend_money_on_markets($c, $cpref, 999999999999, $c->money - $money_to_reserve, $stockpiling_weights, $unit_points, "stock", 1000, false);
+    $spent = spend_money_on_markets($c, $cpref, 999999999999, $c->money - $money_to_reserve, $stockpiling_weights, $unit_points, "stock", 1000, false, $stockpiling_adjustments);
     log_country_message($c->cnum, "Spent $spent and finished stockpiling purchases");
     return $spent;
 }

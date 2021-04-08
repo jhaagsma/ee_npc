@@ -249,12 +249,17 @@ function get_country_owned_resolve_market_name_mismatches($c, $good_name) {
 
 
 // $point_name is for message logging only
-function spend_money_on_markets(&$c, $cpref, $points_needed, $max_spend, $unit_weights, $unit_points, $point_name, $max_dollars_per_point = 100000, $public_only = false, $total_spent = 0, $total_points_gained = 0, $recursion_level = 1) {
+function spend_money_on_markets(&$c, $cpref, $points_needed, $max_spend, $unit_weights, $unit_points, $point_name, $max_dollars_per_point = 100000, $public_only = false, $unit_price_adjustments = [], $total_spent = 0, $total_points_gained = 0, $recursion_level = 1) {
     if($max_spend < 10000) {
         log_country_message($c->cnum, "Spenting for $point_name not attempted because max spent is $max_spend which is less than $10000");
         return 0;
     }
-    
+
+    if(empty($unit_price_adjustments)) // most callers don't pass this in, so fill with 0s for that scenario
+        $unit_price_adjustments = array_combine(array_keys($unit_weights), array_fill(0, count($unit_weights), 0));
+    elseif($recursion_level == 1)
+        log_country_message($c->cnum, "NOTICE: unit price adjustments were passed in");
+
     log_country_message($c->cnum, "Iteration $recursion_level for public".($public_only ? "" : " and private")." market purchasing based on $point_name");
     log_country_message($c->cnum, "Budget is ".($max_spend - $total_spent).", purchase limit is ".($points_needed - $total_points_gained)." points, and score limit is $max_dollars_per_point ($point_name)");
 
@@ -271,7 +276,7 @@ function spend_money_on_markets(&$c, $cpref, $points_needed, $max_spend, $unit_w
                 continue;
             $pm_price = $pm_info->buy_price->$unit_name;
             $pm_quantity = $pm_info->available->$unit_name;
-            $unit_score = floor($pm_price / $unit_weights[$unit_name]); // slightly favor over public that uses round()
+            $unit_score = floor(($pm_price + $unit_price_adjustments[$unit_name]) / $unit_weights[$unit_name]); // slightly favor over public that uses round()
             if ($pm_quantity > 0 and $unit_score <= $max_dollars_per_point) {
                 $pm_purchase_prices_by_unit[$unit_name] = $pm_price;
                 // log_country_message($c->cnum, "unit:$unit_name, price:$pm_price");                
@@ -295,7 +300,7 @@ function spend_money_on_markets(&$c, $cpref, $points_needed, $max_spend, $unit_w
 		if ($public_market_price <> null and $public_market_price <> 0) {
 			$public_purchase_prices_by_unit[$unit_name] = $public_market_price;
 			// log_country_message($c->cnum, "unit:$unit_name, price:$public_market_price");
-			$unit_score = round($public_market_tax_rate * $public_market_price / $unit_weights[$unit_name]);
+			$unit_score = round(($public_market_tax_rate * $public_market_price + $unit_price_adjustments[$unit_name]) / $unit_weights[$unit_name]);
 			$public_score_by_unit[$unit_name] = $unit_score;
 			log_country_message($c->cnum, "Iteration $recursion_level initial public market conditions for $unit_name are price $public_market_price and score $unit_score ($point_name)");
 		}
@@ -407,7 +412,7 @@ function spend_money_on_markets(&$c, $cpref, $points_needed, $max_spend, $unit_w
                 unset($public_score_by_unit[$best_public_unit]);
             else {			
                 $public_purchase_prices_by_unit[$best_public_unit] = $new_public_market_price;
-                $public_score_by_unit[$best_public_unit] = round($public_market_tax_rate * $new_public_market_price / $unit_weights[$best_public_unit]);			
+                $public_score_by_unit[$best_public_unit] = round(($public_market_tax_rate * $new_public_market_price + $unit_price_adjustments[$unit_name]) / $unit_weights[$best_public_unit]);			
             }
         } // end public
         else
@@ -418,7 +423,7 @@ function spend_money_on_markets(&$c, $cpref, $points_needed, $max_spend, $unit_w
 
 	// if we spent more than 2 seconds buying stuff, maybe something new showed up that's cheaper. call up to 2 more times recursively
 	if (time() > ($start_time + 2) and $recursion_level < 3 and $total_spent + 10000 < $max_spend and $total_points_gained < $points_needed)
-        spend_money_on_markets($c, $cpref, $points_needed, $max_spend, $unit_weights, $unit_points, $point_name, $max_dollars_per_point, $public_only, $total_spent, $total_points_gained, $recursion_level + 1);
+        spend_money_on_markets($c, $cpref, $points_needed, $max_spend, $unit_weights, $unit_points, $point_name, $max_dollars_per_point, $public_only, $unit_price_adjustments, $total_spent, $total_points_gained, $recursion_level + 1);
 
     return $total_spent;
 }

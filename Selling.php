@@ -17,3 +17,12 @@ function predict_destock_bushel_sell_price($c, $rules) {
     log_country_message($c->cnum, "The predicted destocking bushel sell price (including commissions) is $sell_price");
     return $sell_price;
 }
+
+function emergency_sell_mil_on_pm (&$c, $money_needed) {
+
+    // TODO
+
+
+
+    return false;
+}

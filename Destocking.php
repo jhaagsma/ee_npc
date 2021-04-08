@@ -43,9 +43,6 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 	$calc_final_attempt = is_final_destock_attempt($reset_seconds_remaining, $server_seconds_per_turn);
 	$is_final_destocking_attempt = (($debug_force_final_attempt or $calc_final_attempt) ? true : false);
 
-	// FUTURE: keep 8 turns for possible recall tech, recall goods, double sale of goods, double sale of tech
-	// however, we don't recall yet so set this to 2 turns
-
 	$estimated_public_market_bushel_sell_price = get_max_demo_bushel_recycle_price($rules) - 2;
 
 	// get what's on the market so we can recall goods or tech as needed depending on time left in reset
@@ -57,12 +54,16 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 		// $market_package_piece structure: [{"type":"t_mil","price":6277,"quantity":103068,"time":1617827768,"on_market":true,"seconds_until_on_market":-2362}]
 		if($market_package_piece->type == 'm_bu') {
 			$bushels_on_market = true;
-			if ($market_package_piece->price > $estimated_public_market_bushel_sell_price)
+			if ($market_package_piece->price > $estimated_public_market_bushel_sell_price) {
 				$expensive_bushels_on_market = true;
+				log_country_message($cnum, "Country has expensive bushels on market");
+			}
 		}
 		elseif(substr($market_package_piece->type, 0, 2) == 't_') {
-			if ($market_package_piece->price > $market_autobuy_tech_price)
-			$expensive_tech_on_market = true;
+			if ($market_package_piece->price > $market_autobuy_tech_price) {
+				$expensive_tech_on_market = true;
+				//log_country_message($cnum, "Country has expensive tech on market");
+			}
 		}
 	}
 
@@ -74,7 +75,7 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 		$turns_to_keep += 3; // we probably are going to recall bushels, so save 3 more turns for that
 		$bushel_recall_needed = true;
 	}
-	if($strategy == 'T') // one more to sell tech
+	if($strategy == 'T') // one turn to sell tech
 		$turns_to_keep += 1;
 	if($strategy == 'T' and $expensive_tech_on_market and !is_there_time_for_selling_tech_at_market_prices($reset_seconds_remaining, $max_market_package_time_in_seconds, $market_autobuy_tech_price)) {
 		$turns_to_keep += 3; // probably need to recall tech, so save 3 more turns for that
@@ -89,14 +90,11 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 	$was_playing_turns_profitable = temporary_cash_or_tech_at_end_of_set ($c, $strategy, $turns_to_keep, $money_to_reserve);
 	log_country_message($cnum, "Finished cashing or teching");
 
-	// FUTURE: replace 0.81667 (max demo mil tech) with game API call
 	// reasonable to assume that a greedy demo country will resell bushels for $2 less than max PM sell price on all servers
 	// FUTURE: use 1 dollar less than max on clan servers?
 	$estimated_public_market_bushel_sell_price = get_max_demo_bushel_recycle_price($rules) - 2;
 	log_country_message($cnum, "Estimated public bushel sell price is $estimated_public_market_bushel_sell_price");
 
-	// FUTURE: buy mil tech - PM purchases, bushel reselling?, bushel selling - I expect this to be an annoying calculation
-	
 	// FUTURE: switch governments if that would help
 	
 	// make sure everything is correct because destocking is important
@@ -109,14 +107,27 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 		return $c;
 	}
 
-	// TODO: recall bushels if needed
+	// recall bushels if needed
 	if($bushel_recall_needed) {
-		// money, food, turn check
-	
-		//if($is_final_destocking_attempt) // FORCE if needed
-
-		//recall
-
+		if($c->turns < 3 and $is_final_destocking_attempt)
+			log_error_message(120, $cnum, "Could not recall bushels on final destock attempt because turn count is $c->turns");
+		else { // have enough turns		
+			if(food_and_money_for_turns($c, 3, $money_to_reserve, false)) { // now has get money and food for 3 turns
+				$turn_result = recall_goods();
+				update_c($c, $turn_result);		
+			}
+			elseif($is_final_destocking_attempt) {
+				$money_needed_for_recall = $money_to_reserve + 3 * min(0, $c->income) + 80 * max(0, get_food_needs_for_turns(3, $c->foodpro, $c->foodcon, true) - $c->food);
+				if(emergency_sell_mil_on_pm ($c, $money_needed_for_recall)) { // try to force recall if final destocking attempt
+					if(food_and_money_for_turns($c, 3, $money_to_reserve, false)) { // now has get money and food for 3 turns
+						$turn_result = recall_goods();
+						update_c($c, $turn_result);	
+					}	
+				}
+				else
+					log_error_message(120, $cnum, "Could not recall bushels on final destock attempt. Money: $c->money, food: $c->food");
+			}
+		}
 	}
 
 	// resell bushels if profitable
