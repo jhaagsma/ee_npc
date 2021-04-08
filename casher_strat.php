@@ -78,7 +78,7 @@ function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition)
             && $c->money > 3500 * 500
             && ($c->money > $c->fullBuildCost())
         ) { // 40 turns of food
-            if ($c->turns_played >= $turns_played_for_last_spend_money_attempt + 7) { // wait at least 7 turns before trying again
+            if ($c->turns_played >= $turns_played_for_last_spend_money_attempt + 5) { // wait at least 5 turns before trying again - lower for casher because it tech more than other strats
                 spend_extra_money($c, $buying_priorities, $cpref, $c->fullBuildCost(), true, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array, $buying_schedule);
                 $turns_played_for_last_spend_money_attempt = $c->turns_played;
             }
