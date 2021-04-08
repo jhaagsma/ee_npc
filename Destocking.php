@@ -32,6 +32,13 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 
 	$c = get_advisor();	// create object
 
+	if($c->protection == 1) { // somehow we are in protection still
+		log_error_message(118, $cnum, "Turns played is $c->turns_played");
+		$exit_condition = 'ERROR';
+		$next_play_time_in_seconds = TURNS_TO_PASS_BEFORE_NEXT_DESTOCK_ATTEMPT * $server_seconds_per_turn;
+		return $c;
+	}
+
 	// FUTURE: cancel all SOs
 	
 	// for indy, set production to 50% jets and 50% turrets because it gives the most NW
@@ -56,17 +63,19 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 		if($market_package_piece->type == 'food') {
 			$bushels_on_market = true;
 			if ($market_package_piece->price > $estimated_public_market_bushel_sell_price) {
-				$expensive_bushels_on_market = true;
-				log_country_message($cnum, "Country has expensive bushels on market");
+				$expensive_bushels_on_market = true;				
 			}
 		}
 		elseif(substr($market_package_piece->type, 0, 2) == 't_') {
 			if ($market_package_piece->price > $market_autobuy_tech_price) {
-				$expensive_tech_on_market = true;
-				//log_country_message($cnum, "Country has expensive tech on market");
+				$expensive_tech_on_market = true;				
 			}
 		}
 	}
+	if($expensive_bushels_on_market)
+		log_country_message($cnum, "Country has expensive bushels on market");
+	//log_country_message($cnum, "Country has expensive tech on market");
+
 
 	// note that we stay logged out for at least 6 turns
 	$turns_to_keep = 2; // 1 to sell bushels and 1 to sell military
@@ -83,11 +92,20 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 		log_country_message($cnum, "Country plans to recall tech because there's expensive tech on the market and not enough time to sell at market prices");
 		$tech_recall_needed = true;
 	}
-	
+		
+	// stash bushels away on public market if needed
+	$expect_to_play_turns_for_income = temporary_cash_or_tech_at_end_of_set ($c, $strategy, $turns_to_keep, $money_to_reserve, true);
+	if($expect_to_play_turns_for_income and $c->turns >= 20 + $turns_to_keep) {
+		if(stash_excess_bushels_on_public_if_needed($c, $rules) and !$bushel_recall_needed) {
+			$turns_to_keep += 3; // we probably are going to recall bushels, so save 3 more turns for that
+			$bushel_recall_needed = true;
+		}
+	}
+
 	$money_to_reserve = $turns_to_keep * max(-1 * $c->income, 10000000); // mil expenses can rise rapidly during destocking, so use 10 M per turn as a guess
 	// FUTURE: indies (and maybe other strats) should reserve money to play the rest of the turns they'll get in the set. see $turns_to_keep_for_bushel_calculation
 	log_country_message($cnum, "Money is $c->money and calculated money to reserve is $money_to_reserve");
-	log_country_message($cnum, "Turns left: $c->turns");
+	log_country_message($cnum, "Turns left: $c->turns and turns to keep is $turns_to_keep");
 	log_country_message($cnum, "Starting cashing or teching...");	
 	$was_playing_turns_profitable = temporary_cash_or_tech_at_end_of_set ($c, $strategy, $turns_to_keep, $money_to_reserve);
 	log_country_message($cnum, "Finished cashing or teching");
@@ -99,17 +117,8 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 
 	// FUTURE: switch governments if that would help
 	
-	// make sure everything is correct because destocking is important
-	$c = get_advisor();
 
-	if($c->protection == 1) { // somehow we are in protection still
-		log_error_message(118, $cnum, "Turns played is $c->turns_played");
-		$exit_condition = 'ERROR';
-		$next_play_time_in_seconds = TURNS_TO_PASS_BEFORE_NEXT_DESTOCK_ATTEMPT * $server_seconds_per_turn;
-		return $c;
-	}
-
-	// recall bushels if needed
+	// recall bushels if needed - TODO: function
 	if($bushel_recall_needed) {
 		if($c->turns < 3 and $is_final_destocking_attempt)
 			log_error_message(120, $cnum, "Could not recall bushels on final destock attempt because turn count is $c->turns");
@@ -133,6 +142,16 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 			}
 		}
 	}
+	else // make sure everything is correct because destocking is important (goods recall forces advisor update)
+		$c = get_advisor();
+
+
+	log_country_message($cnum, "Attempting to dump bushel stock...");
+	// keep bushels to keep running future turns if it's profitable to do so
+	$turns_to_keep_for_bushel_calculation = ($was_playing_turns_profitable ? min($rules->maxturns, $turns_left_in_set) : $turns_to_keep);
+	log_country_message($cnum, "Turns of bushels to keep is: $turns_to_keep_for_bushel_calculation");	
+	dump_bushel_stock($c, $turns_to_keep_for_bushel_calculation, $reset_seconds_remaining, $server_seconds_per_turn, $max_market_package_time_in_seconds, $private_market_bushel_price, $estimated_public_market_bushel_sell_price, $sold_bushels_on_public, $is_final_destocking_attempt);
+	log_country_message($cnum, "Done dumping bushel stock");
 
 	// resell bushels if profitable
 	$pm_info = PrivateMarket::getInfo();
@@ -146,13 +165,6 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 		do_public_market_bushel_resell_loop ($c, $max_profitable_public_market_bushel_price);
 		log_country_message($cnum, "Done with bushel reselling");
 	}
-
-	log_country_message($cnum, "Attempting to dump bushel stock...");
-	// keep bushels to keep running future turns if it's profitable to do so
-	$turns_to_keep_for_bushel_calculation = ($was_playing_turns_profitable ? $turns_left_in_set + $c->turns : $turns_to_keep);
-	log_country_message($cnum, "Turns of bushels to keep is: $turns_to_keep_for_bushel_calculation");	
-	dump_bushel_stock($c, $turns_to_keep_for_bushel_calculation, $reset_seconds_remaining, $server_seconds_per_turn, $max_market_package_time_in_seconds, $private_market_bushel_price, $estimated_public_market_bushel_sell_price, $sold_bushels_on_public, $is_final_destocking_attempt);
-	log_country_message($cnum, "Done dumping bushel stock");
 
 	// FUTURE: consider burning oil to generate private market units? maybe better to sell for humans
 
@@ -184,10 +196,7 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 	
 	$did_resell_military = false;
 	// check if this is our last shot at destocking
-	if($is_final_destocking_attempt) {
-
-		// FUTURE: recall stuck bushels if there are enough of them compared to expenses? no API
-		
+	if($is_final_destocking_attempt) {		
 		// note: a human would recall all military goods here, but I don't care if bots lose NW at the end if it allows a human to buy something
 		
 		log_country_message($cnum, "This is the FINAL destock attempt for this country". log_translate_forced_debug($debug_force_final_attempt));
@@ -196,7 +205,6 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 
 		if($c->money > 10000000) {
 			log_country_message($cnum, "Buying anything available off public market...");
-			// FUTURE: buyout private again too? can end up with 55 M that could be better spent on private
 			buyout_up_to_market_dpnw($c, $cpref, 5000, $c->money, false, false); // buy anything ($10000 tech is 5000 dpnw)
 			log_country_message($cnum, "Done with public market purchases. Money is $c->money");
 		}
@@ -480,7 +488,6 @@ function resell_military_on_public (&$c, $server_max_possible_market_sell, $targ
 		}
 		$turn_result = PublicMarket::sell($c, $market_quantities, $market_prices);
 		update_c($c, $turn_result);
-		// FUTURE: do something with the return object
 		return true;
 	}
 	else {
@@ -533,18 +540,22 @@ PARAMETERS:
 	$turns_to_keep - keep at least these many turns
 	$money_to_reserve - stop running turns if we think we'll end up with less money than this
 	$should_play_turns - output parameter set to true if playing turns are profitable
+	$profit_check_only - pass this in if you just want to see if turns would be profitable without playing them
 */
-function temporary_cash_or_tech_at_end_of_set (&$c, $strategy, $turns_to_keep, $money_to_reserve) {
+function temporary_cash_or_tech_at_end_of_set (&$c, $strategy, $turns_to_keep, $money_to_reserve, $profit_check_only = false) {
 	// FUTURE: this code is overly simple and shouldn't exist here - it should call standard code used for teching and cashing
 	// in this code rainbows cash because I expect rainbows to not be techers in the future - Slagpit 20210325
 	$is_cashing = ($strategy == 'T' ? false : true);
 	$incoming_money_per_turn = ($is_cashing ? 1.0 : 1.2) * $c->taxes - $c->expenses;
 
 	$should_play_turns = temporary_check_if_cash_or_tech_is_profitable($c->cnum, $strategy, $incoming_money_per_turn, $c->tpt, $c->foodnet, $c->govt, $c->land, $c->t_mil);
-	if(!$should_play_turns) {
+	if(!$should_play_turns and !$profit_check_only) {
 		log_country_message($c->cnum, "Not cashing or teching turns because playing turns is not expected to be profitable");
 		return false;
 	}
+
+	if($profit_check_only)
+		return $should_play_turns;
 	
 	$turns_to_play_at_once = 10;
 	while($c->turns > $turns_to_keep) {
@@ -670,8 +681,6 @@ PARAMETERS:
 	$sold_bushels_on_public - output parameter that is true if we sold bushels on public, false otherwise
 */
 function dump_bushel_stock(&$c, $turns_to_keep, $reset_seconds_remaining, $server_seconds_per_turn, $max_market_package_time_in_seconds, $private_market_bushel_price, $estimated_public_market_bushel_sell_price, &$sold_bushels_on_public, $is_final_destocking_attempt) {
-	// FUTURE: recall bushels if profitable (API doesn't exist)
-
 	// decide if should sell on public or private
 	$sold_bushels_on_public = false;
 	$sold_on_private_reason = null;
@@ -692,7 +701,7 @@ function dump_bushel_stock(&$c, $turns_to_keep, $reset_seconds_remaining, $serve
 
 	if($sold_on_private_reason) {
 		log_country_message($c->cnum, "Not selling bushels on public for reason: $sold_on_private_reason");
-		$bushels_to_sell = max(0, $c->food - get_food_needs_for_turns($turns_to_keep, $c->foodpro, $c->foodcon, true));
+		$bushels_to_sell = max(0, $c->food - get_food_needs_for_turns($turns_to_keep, $c->foodpro, $c->foodcon, false));
 		if ($bushels_to_sell > 0)
 			PrivateMarket::sell_single_good($c, 'm_bu', $bushels_to_sell);
 		return;
@@ -755,96 +764,3 @@ function final_dump_all_resources(&$c, $is_oil_on_pm) {
 
 	return;
 }
-
-
-// commenting out until buyout_up_to_public_market_dpnw_2 is proven
-/*
-function buyout_up_to_public_market_dpnw(&$c, $max_dpnw, $max_spend, $military_units_only, $total_spent = 0, $recursion_level = 1) {	
-	// do some setup to limit API calls for public market info
-	$unit_to_nw_map = array("m_tr" => 0.5, "m_j" => 0.6, "m_tu" => 0.6, "m_ta" => 2.0); // FUTURE: this is stupid
-	if(!$military_units_only) {	// FUTURE: this is also stupid
-		$unit_to_nw_map["mil"] = 2.0;
-		$unit_to_nw_map["med"] = 2.0;
-		$unit_to_nw_map["bus"] = 2.0;
-		$unit_to_nw_map["res"] = 2.0;
-		$unit_to_nw_map["agri"] = 2.0;
-		$unit_to_nw_map["war"] = 2.0;
-		$unit_to_nw_map["ms"] = 2.0;
-		$unit_to_nw_map["weap"] = 2.0;
-		$unit_to_nw_map["indy"] = 2.0;
-		$unit_to_nw_map["spy"] = 2.0;
-		$unit_to_nw_map["sdi"] = 2.0;
-	}
-
-	$public_market_tax_rate = $c->tax();
-	
-	log_country_message($c->cnum, "Iteration $recursion_level for public market purchasing with budget ".($max_spend - $total_spent)." at or below $max_dpnw dpnw");
-
-	// this is written like this to try to limit public market API calls
-	$candidate_purchase_prices_by_unit = [];
-	$candidate_dpnw_by_unit = [];
-	foreach($unit_to_nw_map as $unit_name => $nw_for_unit) {
-		$public_market_price = PublicMarket::price($unit_name);
-		if ($public_market_price <> null and $public_market_price <> 0) {
-			$candidate_purchase_prices_by_unit[$unit_name] = $public_market_price;
-			// log_country_message($c->cnum, "unit:$unit_name, price:$public_market_price");
-			$unit_dpnw = round($public_market_tax_rate * $public_market_price / $unit_to_nw_map[$unit_name]);
-			$candidate_dpnw_by_unit[$unit_name] = $unit_dpnw;
-			log_country_message($c->cnum, "Iteration $recursion_level initial public market conditions for $unit_name are price $public_market_price and dpnw $unit_dpnw");
-		}
-		else {
-			log_country_message($c->cnum, "Iteration $recursion_level initial public market conditions for $unit_name are nothing on market");
-		}
-	}	
-	
-	$missed_purchases = 0;
-	$total_purchase_loops = 0;
-	// spend as much money as possible on public market at or below $max_dpnw
-	while ($total_spent + 10000 < $max_spend and $total_purchase_loops < 500) {
-		if (empty($candidate_dpnw_by_unit)) // out of stuff to buy?
-			break;
-			
-		asort($candidate_dpnw_by_unit); // get next good to buy, undefined order in case of ties is fine
-		reset($candidate_dpnw_by_unit);
-		$best_unit = key($candidate_dpnw_by_unit); // no array_key_first until PHP 7.3
-
-		if($candidate_dpnw_by_unit[$best_unit] > $max_dpnw)
-			break; // best unit is too expensive
-		
-		$best_unit_quantity = floor(($max_spend - $total_spent) / ($public_market_tax_rate * $candidate_purchase_prices_by_unit[$best_unit]));
-		// deliberately ignoring market quantity because it doesn't matter. attempting to purchase more units than available is not an error
-		$best_unit_price = $candidate_purchase_prices_by_unit[$best_unit];
-	
-		// log_country_message($c->cnum, "Best unit:$best_unit, quantity:$best_unit_quantity, price:$best_unit_price ");
-
-		$money_before_purchase = $c->money;
-		// NOTE: might log some weird looking purchases here with the quantity slowly decreasing
-		// this can happen if the country buys off private instead of public
-		PublicMarket::buy($c, [$best_unit => $best_unit_quantity], [$best_unit => $best_unit_price]);
-		$diff = $money_before_purchase - $c->money; // I don't like this but the return structure of PublicMarket::buy is tough to deal with
-		$total_spent += $diff;
-		if ($diff == 0) {
-			$missed_purchases++;
-			if ($missed_purchases % 10 == 0) // maybe cash was stolen or an SO was filled, so do an expensive refresh
-				$c = get_advisor();	
-		}
-
-		// refresh price
-		$new_public_market_price = PublicMarket::price($best_unit);
-		if ($new_public_market_price == null or $new_public_market_price == 0)
-			unset($candidate_dpnw_by_unit[$best_unit]);
-		else {			
-			$candidate_purchase_prices_by_unit[$best_unit] = $new_public_market_price;
-			$candidate_dpnw_by_unit[$best_unit] = round($public_market_tax_rate * $new_public_market_price / $unit_to_nw_map[$best_unit]);			
-		}
-
-		$total_purchase_loops++;
-	}
-
-	// some units might have shown up after we last refreshed prices, so call up to 2 more times recursively
-	if ($recursion_level < 2 and $total_spent + 10000 < $max_spend)
-		buyout_up_to_public_market_dpnw($c, $max_dpnw, $max_spend, $military_units_only, $total_spent, $recursion_level + 1);
-
-	return $total_spent;
-}
-*/
