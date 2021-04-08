@@ -58,7 +58,8 @@ function log_get_name_of_error_type($error_type) {
         return 'DESTOCKING NOT ENOUGH TURNS TO RECALL';
     if($error_type == 121)
         return 'DESTOCKING CANNOT RECALL DUE TO OOF/OOM';
-
+    if($error_type == 122)
+        return 'TECHER COMPUTING ZERO SELL';
 
         
     if($error_type == 999) // use when functions are given stupid input and it isn't worth defining a new error

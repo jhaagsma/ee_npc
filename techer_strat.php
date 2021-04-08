@@ -182,13 +182,15 @@ function sell_max_tech(&$c, $tech_price_min_sell_price, $server_max_possible_mar
         'sdi' => can_sell_tech($c, 't_sdi', $server_max_possible_market_sell)
     ];
 
-    if (array_sum($quantity) == 0 and $mil_tech_to_keep) {
-        log_country_message($c->cnum, 'Techer computing Zero Sell!');
-        $c = get_advisor();
-        $c->updateOnMarket();
+    if (array_sum($quantity) == 0) {
+        if(!$mil_tech_to_keep) {
+            log_error_message(122, $c->cnum, 'Techer computing Zero Sell!');
+            $c = get_advisor();
+            $c->updateOnMarket();
 
-        Debug::on();
-        Debug::msg('This Quantity: '.array_sum($quantity).' TotalCanSellTech: '.total_cansell_tech($c, $server_max_possible_market_sell));
+            Debug::on();
+            Debug::msg('This Quantity: '.array_sum($quantity).' TotalCanSellTech: '.total_cansell_tech($c, $server_max_possible_market_sell));
+        }
         return;
     }
 
