@@ -93,8 +93,9 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 		$tech_recall_needed = true;
 	}
 		
+	$money_to_reserve_temp = $turns_to_keep * max(-1 * $c->income, 10000000); // TODO: this whole thing is gross with the true argument...
 	// stash bushels away on public market if needed
-	$expect_to_play_turns_for_income = temporary_cash_or_tech_at_end_of_set ($c, $strategy, $turns_to_keep, $money_to_reserve, true);
+	$expect_to_play_turns_for_income = temporary_cash_or_tech_at_end_of_set ($c, $strategy, $turns_to_keep, $money_to_reserve_temp, true);
 	if($expect_to_play_turns_for_income and $c->turns >= 20 + $turns_to_keep) {
 		if(stash_excess_bushels_on_public_if_needed($c, $rules) and !$bushel_recall_needed) {
 			$turns_to_keep += 3; // we probably are going to recall bushels, so save 3 more turns for that
@@ -146,6 +147,9 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 		$c = get_advisor();
 
 
+	$pm_info = PrivateMarket::getInfo();
+	$private_market_bushel_price = $pm_info->sell_price->m_bu;	
+
 	log_country_message($cnum, "Attempting to dump bushel stock...");
 	// keep bushels to keep running future turns if it's profitable to do so
 	$turns_to_keep_for_bushel_calculation = ($was_playing_turns_profitable ? min($rules->maxturns, $turns_left_in_set) : $turns_to_keep);
@@ -154,8 +158,6 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 	log_country_message($cnum, "Done dumping bushel stock");
 
 	// resell bushels if profitable
-	$pm_info = PrivateMarket::getInfo();
-	$private_market_bushel_price = $pm_info->sell_price->m_bu;
 	$current_public_market_bushel_price = PublicMarket::price('m_bu');
 	log_country_message($cnum, "Current private market food price is $private_market_bushel_price");
 	log_country_message($cnum, "Current public market food price is $current_public_market_bushel_price");
