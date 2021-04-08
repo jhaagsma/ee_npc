@@ -412,7 +412,7 @@ function spend_money_on_markets(&$c, $cpref, $points_needed, $max_spend, $unit_w
                 unset($public_score_by_unit[$best_public_unit]);
             else {			
                 $public_purchase_prices_by_unit[$best_public_unit] = $new_public_market_price;
-                $public_score_by_unit[$best_public_unit] = round(($public_market_tax_rate * $new_public_market_price + $unit_price_adjustments[$unit_name]) / $unit_weights[$best_public_unit]);			
+                $public_score_by_unit[$best_public_unit] = round(($public_market_tax_rate * $new_public_market_price + $unit_price_adjustments[$best_public_unit]) / $unit_weights[$best_public_unit]);			
             }
         } // end public
         else
@@ -472,7 +472,7 @@ function get_single_income_per_acre($c, $tech_handle) {
 function get_extra_income_affected_by_tech ($c, $tech_type) {
     // don't want to prioritize mil tech for destocking that may never happen...
     // any money over 500 M feels somewhat reasonable?
-    $extra_income = ($tech_type == 't_mil' ? max(0, $c->money - 500000000) : 0); // FUTURE: when stocking is enabled, account for bushels and OM bushels
+    $extra_income = ($tech_type == 't_mil' ? max(0, $c->money - 500000000) : 0); // TODO: account for bushels and OM bushels
     if($extra_income > 0)
         log_country_message($c->cnum, "Extra income for $tech_type tech computed as $extra_income");
     return $extra_income;
