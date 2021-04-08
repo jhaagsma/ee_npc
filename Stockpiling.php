@@ -4,7 +4,7 @@ namespace EENPC;
 
 
 function stash_excess_bushels_on_public_if_needed(&$c, $rules) {
-    $excess_bushels = $c->food + $rules->maxturns * min(0, $c->foodnet);
+    $excess_bushels = $c->food + 10000 + ($c->turns + 20) * min(0, $c->foodnet);
 
     // TODO: check that income is positive so we don't OOM
 
