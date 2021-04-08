@@ -407,7 +407,7 @@ while (1) {
                 $cpref->lastplay = time();
                 $cpref->nextplay = $cpref->lastplay + $seconds_to_next_play;
                 $nextturns       = floor($seconds_to_next_play / $server->turn_rate);
-                log_country_message($cnum, "This country next plays in: $seconds_to_next_play ($nextturns Turns)    ");
+                log_country_message($cnum, "This country next plays in $seconds_to_next_play seconds ($nextturns Turns) = ".log_translate_instant_to_human_readable(time() + $seconds_to_next_play));
                 $played = true;
                 $save   = true;
 

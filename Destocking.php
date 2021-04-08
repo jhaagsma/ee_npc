@@ -153,14 +153,14 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 	log_country_message($cnum, "Attempting to dump bushel stock...");
 	// keep bushels to keep running future turns if it's profitable to do so
 	$turns_to_keep_for_bushel_calculation = ($was_playing_turns_profitable ? min($rules->maxturns, $turns_left_in_set) : $turns_to_keep);
-	log_country_message($cnum, "Turns of bushels to keep is: $turns_to_keep_for_bushel_calculation");	
+	log_country_message($cnum, "Turns of bushels to keep is: $turns_to_keep_for_bushel_calculation");
+	$current_public_market_bushel_price = PublicMarket::price('m_bu');
+	log_country_message($cnum, "Current private market food price is $private_market_bushel_price");
+	log_country_message($cnum, "Current public market food price is $current_public_market_bushel_price");
 	dump_bushel_stock($c, $turns_to_keep_for_bushel_calculation, $reset_seconds_remaining, $server_seconds_per_turn, $max_market_package_time_in_seconds, $private_market_bushel_price, $estimated_public_market_bushel_sell_price, $sold_bushels_on_public, $is_final_destocking_attempt);
 	log_country_message($cnum, "Done dumping bushel stock");
 
 	// resell bushels if profitable
-	$current_public_market_bushel_price = PublicMarket::price('m_bu');
-	log_country_message($cnum, "Current private market food price is $private_market_bushel_price");
-	log_country_message($cnum, "Current public market food price is $current_public_market_bushel_price");
 	$should_attempt_bushel_reselling = can_resell_bushels_from_public_market ($private_market_bushel_price, $c->tax(), $current_public_market_bushel_price, $max_profitable_public_market_bushel_price);
 	log_country_message($cnum, "Decision on attempting public market bushel reselling: ".log_translate_boolean_to_YN($should_attempt_bushel_reselling));
 	if ($should_attempt_bushel_reselling) {
@@ -704,8 +704,13 @@ function dump_bushel_stock(&$c, $turns_to_keep, $reset_seconds_remaining, $serve
 	if($sold_on_private_reason) {
 		log_country_message($c->cnum, "Not selling bushels on public for reason: $sold_on_private_reason");
 		$bushels_to_sell = max(0, $c->food - get_food_needs_for_turns($turns_to_keep, $c->foodpro, $c->foodcon, false));
-		if ($bushels_to_sell > 0)
+		while (true) { // while loop because bushel decay is factored into consumption now
 			PrivateMarket::sell_single_good($c, 'm_bu', $bushels_to_sell);
+			$c->updateMain(); // foodcon won't get updated by a pm sale
+			$bushels_to_sell = max(0, $c->food - get_food_needs_for_turns($turns_to_keep, $c->foodpro, $c->foodcon, false));
+			if($bushels_to_sell < 3000000)
+				break;
+		}
 		return;
 	}
 
