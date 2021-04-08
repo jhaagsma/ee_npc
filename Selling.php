@@ -20,7 +20,7 @@ function predict_destock_bushel_sell_price($c, $rules) {
 
 function emergency_sell_mil_on_pm (&$c, $money_needed) {
 
-    // TODO
+    // TODO: implement emergency_sell_mil_on_pm()
 
 
 

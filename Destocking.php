@@ -50,9 +50,10 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 	$expensive_tech_on_market = false;
 	$expensive_bushels_on_market = false;	
 	$market_owned = get_owned_on_market_info();
+	out_data($market_owned);
 	foreach($market_owned as $market_package_piece) {
 		// $market_package_piece structure: [{"type":"t_mil","price":6277,"quantity":103068,"time":1617827768,"on_market":true,"seconds_until_on_market":-2362}]
-		if($market_package_piece->type == 'm_bu') {
+		if($market_package_piece->type == 'food') {
 			$bushels_on_market = true;
 			if ($market_package_piece->price > $estimated_public_market_bushel_sell_price) {
 				$expensive_bushels_on_market = true;
@@ -77,8 +78,9 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 	}
 	if($strategy == 'T') // one turn to sell tech
 		$turns_to_keep += 1;
-	if($strategy == 'T' and $expensive_tech_on_market and !is_there_time_for_selling_tech_at_market_prices($reset_seconds_remaining, $max_market_package_time_in_seconds, $market_autobuy_tech_price)) {
+	if($strategy == 'T' and $expensive_tech_on_market and !is_there_time_for_selling_tech_at_market_prices($reset_seconds_remaining, $max_market_package_time_in_seconds, $market_autobuy_tech_price, $is_final_destocking_attempt)) {
 		$turns_to_keep += 3; // probably need to recall tech, so save 3 more turns for that
+		log_country_message($cnum, "Country plans to recall tech because there's expensive tech on the market and not enough time to sell at market prices");
 		$tech_recall_needed = true;
 	}
 	
@@ -113,6 +115,7 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 			log_error_message(120, $cnum, "Could not recall bushels on final destock attempt because turn count is $c->turns");
 		else { // have enough turns		
 			if(food_and_money_for_turns($c, 3, $money_to_reserve, false)) { // now has get money and food for 3 turns
+				log_country_message($cnum, "Recalling bushels because we think the price is too high"); // TODO: what about alliance where bushel prices might still be high?
 				$turn_result = recall_goods();
 				update_c($c, $turn_result);		
 			}
@@ -120,6 +123,7 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 				$money_needed_for_recall = $money_to_reserve + 3 * min(0, $c->income) + 80 * max(0, get_food_needs_for_turns(3, $c->foodpro, $c->foodcon, true) - $c->food);
 				if(emergency_sell_mil_on_pm ($c, $money_needed_for_recall)) { // try to force recall if final destocking attempt
 					if(food_and_money_for_turns($c, 3, $money_to_reserve, false)) { // now has get money and food for 3 turns
+						log_country_message($cnum, "Recalling bushels because this is the final destock attempt");
 						$turn_result = recall_goods();
 						update_c($c, $turn_result);	
 					}	
@@ -147,7 +151,7 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 	// keep bushels to keep running future turns if it's profitable to do so
 	$turns_to_keep_for_bushel_calculation = ($was_playing_turns_profitable ? $turns_left_in_set + $c->turns : $turns_to_keep);
 	log_country_message($cnum, "Turns of bushels to keep is: $turns_to_keep_for_bushel_calculation");	
-	dump_bushel_stock($c, $turns_to_keep_for_bushel_calculation, $reset_seconds_remaining, $server_seconds_per_turn, $max_market_package_time_in_seconds, $private_market_bushel_price, $estimated_public_market_bushel_sell_price, $sold_bushels_on_public);
+	dump_bushel_stock($c, $turns_to_keep_for_bushel_calculation, $reset_seconds_remaining, $server_seconds_per_turn, $max_market_package_time_in_seconds, $private_market_bushel_price, $estimated_public_market_bushel_sell_price, $sold_bushels_on_public, $is_final_destocking_attempt);
 	log_country_message($cnum, "Done dumping bushel stock");
 
 	// FUTURE: consider burning oil to generate private market units? maybe better to sell for humans
@@ -220,10 +224,10 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 		// note: no need to reserve money in previous has_money_for_turns call - we reserved money earlier so we could spend turns like this
 		$value_of_public_market_goods = floor(get_total_value_of_on_market_goods($c));
 		log_country_message($cnum, "Considering military reselling...");
-		$did_resell_military = consider_and_do_military_reselling($c, $value_of_public_market_goods, $total_cost_to_buyout_future_private_market, $rules->max_possible_market_sell, $reset_seconds_remaining, $max_market_package_time_in_seconds);
+		$did_resell_military = consider_and_do_military_reselling($c, $value_of_public_market_goods, $total_cost_to_buyout_future_private_market, $rules->max_possible_market_sell, $reset_seconds_remaining, $max_market_package_time_in_seconds, $is_final_destocking_attempt);
 
 		log_country_message($cnum, "Considering tech sale...");
-		dump_tech($c, $strategy, $market_autobuy_tech_price, $rules->max_possible_market_sell, $reset_seconds_remaining, $max_market_package_time_in_seconds, $tech_recall_needed);
+		dump_tech($c, $strategy, $market_autobuy_tech_price, $rules->max_possible_market_sell, $reset_seconds_remaining, $max_market_package_time_in_seconds, $tech_recall_needed, $is_final_destocking_attempt);
 	}
 	
 	// calculate next play time
@@ -294,9 +298,11 @@ function get_earliest_possible_destocking_start_time_for_country($bot_secret_num
 }
 
 
-function is_there_time_for_selling_tech_at_market_prices ($reset_seconds_remaining, $max_market_package_time_in_seconds, $market_autobuy_tech_price) {
+function is_there_time_for_selling_tech_at_market_prices ($reset_seconds_remaining, $max_market_package_time_in_seconds, $market_autobuy_tech_price, $is_final_destocking_attempt) {
+	if ($is_final_destocking_attempt)
+		return false;
 	if($market_autobuy_tech_price <= 700)
-		return is_there_time_to_sell_on_public($reset_seconds_remaining, $max_market_package_time_in_seconds, 0);
+		return is_there_time_to_sell_on_public($reset_seconds_remaining, $max_market_package_time_in_seconds, $is_final_destocking_attempt, 0);
 	else
 		return ($reset_seconds_remaining >= ($max_market_package_time_in_seconds * 5) ? true : false);
 }
@@ -313,11 +319,11 @@ PARAMETERS:
 	$server_max_possible_market_sell - percentage of goods that can be sold at once as a whole number, usually 25
 	$reset_seconds_remaining, $max_market_package_time_in_seconds, $tech_recall_needed
 */
-function dump_tech(&$c, $strategy, $market_autobuy_tech_price, $server_max_possible_market_sell, $reset_seconds_remaining, $max_market_package_time_in_seconds, $tech_recall_needed) {
+function dump_tech(&$c, $strategy, $market_autobuy_tech_price, $server_max_possible_market_sell, $reset_seconds_remaining, $max_market_package_time_in_seconds, $tech_recall_needed, $is_final_destocking_attempt) {
 
 	$turns_needed = 1;
 	// if it can't sell at market prices, it still might be able to sell at autobuy
-	$can_sell_at_market_prices = is_there_time_for_selling_tech_at_market_prices($reset_seconds_remaining, $max_market_package_time_in_seconds, $market_autobuy_tech_price);
+	$can_sell_at_market_prices = is_there_time_for_selling_tech_at_market_prices($reset_seconds_remaining, $max_market_package_time_in_seconds, $market_autobuy_tech_price, $is_final_destocking_attempt);
 
 	if($strategy == 'T' and $tech_recall_needed) { // not worth the effort to check the value of the stuck tech
 		log_country_message($c->cnum, "Getting close to the end of the set with expensive tech on market, so try to recall tech");
@@ -336,7 +342,7 @@ function dump_tech(&$c, $strategy, $market_autobuy_tech_price, $server_max_possi
 		$reason_for_not_selling_tech = "Not enough money to play turns";			
 	elseif($c->turns < $turns_needed)
 		$reason_for_not_selling_tech = "Not enough turns";	
-	elseif(!is_there_time_to_sell_on_public($reset_seconds_remaining, $max_market_package_time_in_seconds, 0))
+	elseif(!is_there_time_to_sell_on_public($reset_seconds_remaining, $max_market_package_time_in_seconds, $is_final_destocking_attempt, 0))
 		$reason_for_not_selling_tech = "Not enough time for goods to get to market";	
 	elseif(total_cansell_tech($c, $server_max_possible_market_sell) < 10000 ) // in place of a price check for normal sales
 		$reason_for_not_selling_tech = "Minimum allowed tech sale during destocking is 10000 units";			
@@ -381,13 +387,13 @@ PARAMETERS:
 	$reset_start_time - time the current reset began
 	$max_market_package_time_in_seconds - server rule for maximum number of seconds it can take for a package to show up on the public market	
 */
-function consider_and_do_military_reselling(&$c, $value_of_public_market_goods, $total_cost_to_buyout_future_private_market, $server_max_possible_market_sell, $reset_seconds_remaining, $max_market_package_time_in_seconds) {
+function consider_and_do_military_reselling(&$c, $value_of_public_market_goods, $total_cost_to_buyout_future_private_market, $server_max_possible_market_sell, $reset_seconds_remaining, $max_market_package_time_in_seconds, $is_final_destocking_attempt) {
 	log_country_message($c->cnum, "Money is $c->money, on-market value is $value_of_public_market_goods, and future PM gen is $total_cost_to_buyout_future_private_market");
 	$target_sell_amount = max(0, $total_cost_to_buyout_future_private_market - $value_of_public_market_goods - $c->money);
 	log_country_message($c->cnum, "Future free PM military capacity is estimated at $target_sell_amount dollars");
 	$reason_for_not_reselling_military = null;
 
-	if(!is_there_time_to_sell_on_public($reset_seconds_remaining, $max_market_package_time_in_seconds, 300))
+	if(!is_there_time_to_sell_on_public($reset_seconds_remaining, $max_market_package_time_in_seconds, $is_final_destocking_attempt, 300))
 		$reason_for_not_reselling_military = "Not enough time left in set for military resell";	
 	elseif($target_sell_amount < 100000000)
 		$reason_for_not_reselling_military = "Target sell amount of $target_sell_amount is below minimum of 100 million";
@@ -663,14 +669,14 @@ PARAMETERS:
 	$estimated_public_market_bushel_sell_price - the max price that we expect demos to bushel clear at
 	$sold_bushels_on_public - output parameter that is true if we sold bushels on public, false otherwise
 */
-function dump_bushel_stock(&$c, $turns_to_keep, $reset_seconds_remaining, $server_seconds_per_turn, $max_market_package_time_in_seconds, $private_market_bushel_price, $estimated_public_market_bushel_sell_price, &$sold_bushels_on_public) {
+function dump_bushel_stock(&$c, $turns_to_keep, $reset_seconds_remaining, $server_seconds_per_turn, $max_market_package_time_in_seconds, $private_market_bushel_price, $estimated_public_market_bushel_sell_price, &$sold_bushels_on_public, $is_final_destocking_attempt) {
 	// FUTURE: recall bushels if profitable (API doesn't exist)
 
 	// decide if should sell on public or private
 	$sold_bushels_on_public = false;
 	$sold_on_private_reason = null;
 
-	if(!is_there_time_to_sell_on_public($reset_seconds_remaining, $max_market_package_time_in_seconds, 1800)) {
+	if(!is_there_time_to_sell_on_public($reset_seconds_remaining, $max_market_package_time_in_seconds, $is_final_destocking_attempt, 1800)) {
 		$sold_on_private_reason = 'not enough time';
 	}
 	
@@ -721,9 +727,12 @@ RETURNS: true if there's enough time, false otherwise
 PARAMETERS:
 	$reset_seconds_remaining - seconds left in the reset
 	$max_market_package_time_in_seconds - server rule for maximum number of seconds it can take for a package to show up on the public market
+	$is_final_destocking_attempt - is this the last destock attempt (can be set by debug)
 	$padding_seconds - additional seconds to add after the max time. for example, use 1800 if we are selling bushels and we expect it to take half an hour for bushels to be cleared
 */
-function is_there_time_to_sell_on_public($reset_seconds_remaining, $max_market_package_time_in_seconds, $padding_seconds = 3600) {
+function is_there_time_to_sell_on_public($reset_seconds_remaining, $max_market_package_time_in_seconds, $is_final_destocking_attempt, $padding_seconds = 3600) {
+	if($is_final_destocking_attempt)
+		return false;
 	return ($reset_seconds_remaining >= $padding_seconds + $max_market_package_time_in_seconds);
 }
 

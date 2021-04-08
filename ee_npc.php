@@ -320,9 +320,6 @@ while (1) {
             //log_main_message("Setting GDI to ".($cpref->gdi ? "true" : "false"), true, 'brown');
         }
 
-        //if($cpref->strat <> 'T') // DEBUG
-        //    continue;
-
         if ($cpref->nextplay < time()) {
 
             log_country_message($cnum, "\n\n");
@@ -863,7 +860,10 @@ function update_c(&$c, $result)
         $str = "Cashed ".actual_count($result->turns)." turns";     //Text for screen
     } elseif (isset($result->sell)) {
         $str = "Put goods on Public Market";
+    } elseif (isset($result->market_recalled_type)) {
+        $str = ($result->market_recalled_type == 'GOODS' ? 'Recalled goods' : 'Recalled tech');        
     }
+
 
     $event    = null; //Text for screen
     $netmoney = $netfood = 0;

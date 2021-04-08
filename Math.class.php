@@ -56,7 +56,7 @@ class Math
      */
     public static function standardDeviation($array)
     {
-        if (!$array) {
+        if (!$array or count($array) == 1) { // avoid division by zero error
             return 0;
         }
 
