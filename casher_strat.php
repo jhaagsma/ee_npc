@@ -29,7 +29,7 @@ function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     $optimal_tech_buying_array = get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, 9999, $tech_inherent_value);
     $cost_for_military_point_guess = get_cost_per_military_points_for_caching($c);
     $dpnw_guess = get_dpnw_for_caching($c);
-    $money_to_keep_after_stockpiling = 1800000000;
+    $money_to_keep_after_stockpiling = 1500000000;
     get_stockpiling_weights_and_adjustments ($stockpiling_weights, $stockpiling_adjustments, $c, $server, $rules, $cpref, $money_to_keep_after_stockpiling, true, true, true);
 
     // log useful information about country state
