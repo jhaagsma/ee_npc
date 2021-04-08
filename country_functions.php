@@ -143,9 +143,9 @@ function buy_full_food_quantity_if_possible(&$c, $food_needed, $max_food_price_t
 function get_food_needs_for_turns($number_of_turns_to_play, $food_production, $food_consumption, $force_negative_events = false) {
     // dividing by 3 is for food production negative events    
     if($number_of_turns_to_play <= 3) // multiplying by 2 is to account for military units on the market
-        $expected_food_change_from_turn = ceil($force_negative_events ? $food_production / 3 : $food_production - 2 * $food_consumption);
+        $expected_food_change_from_turn = floor(($force_negative_events ? $food_production / 3 : $food_production) - 2 * $food_consumption);
     else
-        $expected_food_change_from_turn = ceil($force_negative_events ? $food_production / 3 : $food_production - 1.1 * $food_consumption); 
+        $expected_food_change_from_turn = floor(($force_negative_events ? $food_production / 3 : $food_production) - 1.1 * $food_consumption);
 
     return max(0, -1 * $number_of_turns_to_play * $expected_food_change_from_turn);
 }
