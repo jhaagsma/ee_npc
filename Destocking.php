@@ -705,7 +705,7 @@ function dump_bushel_stock(&$c, $turns_to_keep, $reset_seconds_remaining, $serve
 		$bushels_to_sell = max(0, $c->food - get_food_needs_for_turns($turns_to_keep, $c->foodpro, $c->foodcon, false));
 		while ($bushels_to_sell > 0) { // while loop because bushel decay is factored into consumption now
 			PrivateMarket::sell_single_good($c, 'm_bu', $bushels_to_sell);
-			$c->updateMain(); // foodcon won't get updated by a pm sale
+			$c->updateMain(); // foodcon won't get updated by a pm sale -- TODO: this didn't work? http://bots.haagsma.ca/logging/ai/886/country/COUNTRY_4.txt
 			$bushels_to_sell = max(0, $c->food - get_food_needs_for_turns($turns_to_keep, $c->foodpro, $c->foodcon, false));
 			if($bushels_to_sell < 3000000)
 				break;
