@@ -129,7 +129,7 @@ function play_techer_turn(&$c, $tech_price_min_sell_price, $server_max_possible_
         //tech per turn is greater than land*0.17 -- just kindof a rough "don't tech below this" rule...
         //so, 10 if they can... cap at turns - 1
         return tech_techer($c, max(1, min(turns_of_money($c), turns_of_food($c), 13, $c->turns + 2) - 3));
-    } elseif ($c->built() > 50 and $c->land < 10000 and $c->money > $c->fullBuildCost()
+    } elseif ($c->built() > 50 and $c->land < 10000 and ($c->land < 5000 or $c->built() >= 97)
         //&& ($c->land < 5000 || rand(0, 100) > 95 && $c->land < $server_avg_land)
         // 5k land is too low, techer bots are always below bot avg land, and the 5% chance is here is after the 3% chance from the prev line
     ) {
