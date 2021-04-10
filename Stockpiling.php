@@ -93,7 +93,7 @@ function get_stockpiling_weights_and_adjustments (&$stockpiling_weights, &$stock
         $bushel_sell_price = predict_destock_bushel_sell_price($c, $rules);
         $bushel_weight = round($max_loss * $bushel_sell_price / (10 * $max_loss * (100 - $max_loss)), 4);
         $bushel_adjustment = -1 * $bushel_sell_price;
-        log_country_message($c->cnum, "The stockpiling price weight for bushels is $bushel_weight and the adjustment is $bushel_adjustment");
+        log_country_message($c->cnum, "The stockpiling price weight for bushels is $bushel_weight, value is $bushel_sell_price, and the adjustment is $bushel_adjustment");
         $stockpiling_weights['m_bu'] = $bushel_weight;
         $stockpiling_adjustments['m_bu'] = $bushel_adjustment;
     }
@@ -102,7 +102,7 @@ function get_stockpiling_weights_and_adjustments (&$stockpiling_weights, &$stock
         $tech_sell_price = $cpref->base_inherent_value_for_tech; // inherent value of tech
         $tech_weight = round($max_loss * $tech_sell_price / (10 * $max_loss * (100 - $max_loss)), 4);
         $tech_adjustment = -1 * $tech_sell_price;
-        log_country_message($c->cnum, "The stockpiling price weight for tech is $tech_weight and the adjustment is $tech_adjustment");
+        log_country_message($c->cnum, "The stockpiling price weight for tech is $tech_weight, value is $tech_sell_price, and the adjustment is $tech_adjustment");
 		$stockpiling_weights["mil"] = $tech_weight; // FUTURE: :(
 		$stockpiling_weights["med"] = $tech_weight;
 		$stockpiling_weights["bus"] = $tech_weight;
@@ -129,18 +129,19 @@ function get_stockpiling_weights_and_adjustments (&$stockpiling_weights, &$stock
 
     if($allow_military){
         $server_new_turns_remaining = floor(($server->reset_end - time()) / $server->turn_rate); // FUTURE: function?
-        $military_end_dpnw = 2025 * 0.01 * ($c->govt == "H" ? 1.0 : 0.8) * $c->pt_mil / 6.5; // use what we can get on PM
+        $military_end_dpnw = 2025 * 0.01 * ($c->govt == "H" ? 0.8 : 1.0) * $c->pt_mil / 6.5; // use what we can get on PM
         $unit_exp = ['m_tr' => 0.11,'m_j' => 0.14,'m_tu' => 0.18,'m_ta' => 0.57]; // TODO: food seems like a hassle, same with NW modifier
         $unit_nw = ['m_tr'=>0.5, 'm_j' => 0.6, 'm_tu' => 0.6, 'm_ta' => 2.0];
         foreach($unit_nw as $unit => $unit_nw) {
-            $military_unit_sell_price = $unit_nw * $military_end_dpnw;
+            $military_unit_sell_price = round($unit_nw * $military_end_dpnw, 0.2);
             $military_unit_weight = round($max_loss * $military_unit_sell_price / (10 * $max_loss * (100 - $max_loss)), 4);
             // expenses make the unit "cost" more
-            $military_unit_adjustment = round(0.01 * $c->pt_mil * $unit_exp[$unit] * ($c->turns_stored + $server_new_turns_remaining) - $military_unit_sell_price, 0);
+            $exp = round(0.01 * $c->pt_mil * $unit_exp[$unit] * ($c->turns_stored + $server_new_turns_remaining), 2);
+            $military_unit_adjustment = $exp - $military_unit_sell_price;
 
             $stockpiling_weights[$unit] = $military_unit_weight;
             $stockpiling_adjustments[$unit] = $military_unit_adjustment;
-            log_country_message($c->cnum, "The stockpiling price weight for $unit is $military_unit_weight and the adjustment is $military_unit_adjustment");
+            log_country_message($c->cnum, "The stockpiling price weight for $unit is $military_unit_weight, expenses are $exp, value is $military_unit_sell_price, and the adjustment is $military_unit_adjustment");
         }
         
         // TODO: techer should use fewer turns because it destocks earlier? although it can keep teching... 
