@@ -11,7 +11,7 @@ function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     //$main = get_main();     //get the basic stats
     //out_data($main);          //output the main data
     $c = get_advisor();     //c as in country! (get the advisor)
-    $is_allowed_to_mass_explore = is_country_allowed_to_mass_explore($c, $cpref, $server);
+    $is_allowed_to_mass_explore = is_country_allowed_to_mass_explore($c, $cpref);
     log_country_message($cnum, "Indy: {$c->pt_indy}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%; Mil: {$c->pt_mil}%; Weap: {$c->pt_weap}%");
 
     $c->setIndyFromMarket(false); // changing to not check DPA - Slagpit 20210321
@@ -25,9 +25,9 @@ function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     $buying_priorities = [
         ['type'=>'INCOME_TECHS','goal'=>100]
     ];
-    $tech_inherent_value = get_inherent_value_for_tech($c, $rules);
+    $tech_inherent_value = get_inherent_value_for_tech($c, $rules, $cpref);
     $eligible_techs = ['t_bus', 't_res', 't_indy', 't_mil']; // don't buy t_weap for now - indies would over-prioritize it
-    $optimal_tech_buying_array = get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, 9999, $tech_inherent_value);
+    $optimal_tech_buying_array = get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, $cpref->tech_max_purchase_price, $tech_inherent_value);
 
     // log useful information about country state
     log_country_message($cnum, $c->turns.' turns left');
@@ -76,7 +76,7 @@ function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition)
 
         if (turns_of_food($c) > (10 + $c->turns) && turns_of_money($c) > (10 + $c->turns) && $c->money > 3500 * 500 && ($c->money > floor(0.8 * $c->fullBuildCost()) - $c->runCash())
         ) {
-            if ($c->turns_played >= $turns_played_for_last_spend_money_attempt + 7) { // wait at least 7 turns before trying again
+            if ($c->turns_played >= $turns_played_for_last_spend_money_attempt + $cpref->spend_extra_money_cooldown_turns) { // wait some number of turns before trying again
                 spend_extra_money_no_military($c, $buying_priorities, $cpref, floor(0.8 * $c->fullBuildCost()) - $c->runCash(), $optimal_tech_buying_array);
                 $turns_played_for_last_spend_money_attempt = $c->turns_played;
             }

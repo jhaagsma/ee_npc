@@ -90,7 +90,7 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 	}
 	if($strategy == 'T') // one turn to sell tech
 		$turns_to_keep += 1;
-	if($strategy == 'T' and $expensive_tech_on_market and !is_there_time_for_selling_tech_at_market_prices($reset_seconds_remaining, $max_market_package_time_in_seconds, $market_autobuy_tech_price, $is_final_destocking_attempt)) {
+	if($strategy == 'T' and $expensive_tech_on_market and !is_there_time_for_selling_tech_at_market_prices($reset_seconds_remaining, $max_market_package_time_in_seconds, $market_autobuy_tech_price, $is_final_destocking_attempt, $cpref)) {
 		$turns_to_keep += 3; // probably need to recall tech, so save 3 more turns for that
 		log_country_message($cnum, "Country plans to recall tech because there's expensive tech on the market and not enough time to sell at market prices");
 		$tech_recall_needed = true;
@@ -253,65 +253,10 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 }
 
 
-/*
-NAME: get_earliest_possible_destocking_start_time_for_country
-PURPOSE: calculates the earliest time that a country can start destocking based on strategy, time in reset, and other things
-RETURNS: the earliest time
-PARAMETERS:
-	$bot_secret_number - 9 digit country specific number taken from the settings file
-	$strategy - single letter strategy name abbreviation
-	$reset_start_time - time the current reset began
-	$reset_end_time - time the current reset will end
-	
-*/
-function get_earliest_possible_destocking_start_time_for_country($bot_secret_number, $strategy, $reset_start_time, $reset_end_time) {
-	// I just made this up, can't say that the ranges are any good - Slagpit 20210316
-	// techer is last 80% to 92.5% of reset
-	// rainbow and indy are last 90% to 95% of reset
-	// farmer and casher are last 95% to 98.5% of reset	
-	// note: TURNS_TO_PASS_BEFORE_NEXT_DESTOCK_ATTEMPT value should allow for at least two executions for all strategies
-
-	$country_specific_interval_wait = 0.001 * decode_bot_secret($bot_secret_number, 3); // random number three digit number between 0.000 and 0.999 that's fixed for each country
-
-	// changes to here must be reflected also in calculate_next_play_in_seconds()
-	switch ($strategy) {
-		case 'F':
-			$window_start_time_factor = 0.95;
-			$window_end_time_factor = 0.985;
-			$country_specific_interval_wait = 0; // farmer window is too short to use the random factor
-			break;
-		case 'T':
-			$window_start_time_factor = 0.80;
-			$window_end_time_factor = 0.925;			
-			break;
-		case 'C':
-			$window_start_time_factor = 0.95;
-			$window_end_time_factor = 0.985;
-			$country_specific_interval_wait = 0; // casher window is too short to use the random factor
-			break;
-		case 'I':
-			$window_start_time_factor = 0.90;
-			$window_end_time_factor = 0.95;
-			break;
-		default:
-			$window_start_time_factor = 0.90;
-			$window_end_time_factor = 0.975;
-	}
-
-	$number_of_seconds_in_set = $reset_end_time - $reset_start_time;
-	$number_of_seconds_in_window = ($window_end_time_factor - $window_start_time_factor) * $number_of_seconds_in_set;
-	
-	// example of what we're doing here: suppose that start time factor is 90%, end time is 95% and interval wait is 0.25
-	// the earliest destock time then is after 25% has passed of the interval starting with 90% of the reset and ending with 95% of the reset
-	// so for a 100 day reset, this country should start destocking after 92.5 days have passed
-	return $reset_start_time + $window_start_time_factor * $number_of_seconds_in_set + $country_specific_interval_wait * $number_of_seconds_in_window;
-}
-
-
-function is_there_time_for_selling_tech_at_market_prices ($reset_seconds_remaining, $max_market_package_time_in_seconds, $market_autobuy_tech_price, $is_final_destocking_attempt) {
+function is_there_time_for_selling_tech_at_market_prices ($reset_seconds_remaining, $max_market_package_time_in_seconds, $market_autobuy_tech_price, $is_final_destocking_attempt, $cpref) {
 	if ($is_final_destocking_attempt)
 		return false;
-	if($market_autobuy_tech_price <= 700)
+	if($market_autobuy_tech_price <= $cpref->base_inherent_value_for_tech)
 		return is_there_time_to_sell_on_public($reset_seconds_remaining, $max_market_package_time_in_seconds, $is_final_destocking_attempt, 0);
 	else
 		return ($reset_seconds_remaining >= ($max_market_package_time_in_seconds * 5) ? true : false);
@@ -329,11 +274,11 @@ PARAMETERS:
 	$server_max_possible_market_sell - percentage of goods that can be sold at once as a whole number, usually 25
 	$reset_seconds_remaining, $max_market_package_time_in_seconds, $tech_recall_needed
 */
-function dump_tech(&$c, $strategy, $market_autobuy_tech_price, $server_max_possible_market_sell, $reset_seconds_remaining, $max_market_package_time_in_seconds, $tech_recall_needed, $is_final_destocking_attempt) {
+function dump_tech(&$c, $strategy, $market_autobuy_tech_price, $server_max_possible_market_sell, $reset_seconds_remaining, $max_market_package_time_in_seconds, $tech_recall_needed, $is_final_destocking_attempt, $cpref) {
 
 	$turns_needed = 1;
 	// if it can't sell at market prices, it still might be able to sell at autobuy
-	$can_sell_at_market_prices = is_there_time_for_selling_tech_at_market_prices($reset_seconds_remaining, $max_market_package_time_in_seconds, $market_autobuy_tech_price, $is_final_destocking_attempt);
+	$can_sell_at_market_prices = is_there_time_for_selling_tech_at_market_prices($reset_seconds_remaining, $max_market_package_time_in_seconds, $market_autobuy_tech_price, $is_final_destocking_attempt, $cpref);
 
 	if($strategy == 'T' and $tech_recall_needed) { // not worth the effort to check the value of the stuck tech
 		log_country_message($c->cnum, "Getting close to the end of the set with expensive tech on market, so try to recall tech");
@@ -374,7 +319,7 @@ function dump_tech(&$c, $strategy, $market_autobuy_tech_price, $server_max_possi
 		}
 
 		// if there's time in the set or if auto buy prices are bad, do a normal tech sale
-		$dump_at_min_sell_price = ($can_sell_at_market_prices or $market_autobuy_tech_price <= 700) ? false : true;
+		$dump_at_min_sell_price = ($can_sell_at_market_prices or $market_autobuy_tech_price <= $cpref->base_inherent_value_for_tech) ? false : true;
 		$turn_result = sell_max_tech($c, $market_autobuy_tech_price, $server_max_possible_market_sell, $mil_tech_to_keep, $dump_at_min_sell_price);
 		update_c($c, $turn_result);
 	}
@@ -524,7 +469,7 @@ function temporary_check_if_cash_or_tech_is_profitable ($cnum, $strategy, $incom
 		return true;
 	}
 	elseif ($strategy == 'T') {
-		//log_country_message($cnum, "Teching turns because income is positive with implied tech value of $700 per point");
+		//log_country_message($cnum, "Teching turns because income is positive with implied tech value of $1500 per point");
 		return ($incoming_money_per_turn + 1500 * $tpt + 34 * $foodnet > 0 ? true: false); // TODO: get a tech sell price somehow
 	}
 	else

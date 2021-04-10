@@ -31,7 +31,7 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     //$main = get_main();     //get the basic stats
     //out_data($main);          //output the main data
     $c = get_advisor();     //c as in country! (get the advisor)
-    $is_allowed_to_mass_explore = is_country_allowed_to_mass_explore($c, $cpref, $server);
+    $is_allowed_to_mass_explore = is_country_allowed_to_mass_explore($c, $cpref);
     log_country_message($cnum, "Agri: {$c->pt_agri}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%; Mil: {$c->pt_mil}%; Weap: {$c->pt_weap}%");
     
     $c->setIndy('pro_spy');
@@ -42,11 +42,11 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
 
     farmer_switch_government_if_needed($c);
 
-    $buying_schedule = farmer_get_buying_schedule($cnum, $cpref);
+    $buying_schedule = $cpref->purchase_schedule_number;
     $buying_priorities = farmer_get_buying_priorities ($cnum, $buying_schedule);
-    $tech_inherent_value = get_inherent_value_for_tech($c, $rules);
+    $tech_inherent_value = get_inherent_value_for_tech($c, $rules, $cpref);
     $eligible_techs = ['t_bus', 't_res', 't_agri', 't_mil', 't_weap'];
-    $optimal_tech_buying_array = get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, 9999, $tech_inherent_value);
+    $optimal_tech_buying_array = get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, $cpref->tech_max_purchase_price, $tech_inherent_value);
     $cost_for_military_point_guess = get_cost_per_military_points_for_caching($c);
     $dpnw_guess = get_dpnw_for_caching($c);
 
@@ -101,7 +101,7 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
             && $c->money > 3500 * 500
             && ($c->money > floor(0.9*$c->fullBuildCost()))
         ) {
-            if ($c->turns_played >= $turns_played_for_last_spend_money_attempt + 7) { // wait at least 7 turns before trying again
+            if ($c->turns_played >= $turns_played_for_last_spend_money_attempt + $cpref->spend_extra_money_cooldown_turns) { // wait some number of turns before trying again
                 spend_extra_money($c, $buying_priorities, $cpref, floor(0.9*$c->fullBuildCost()), true, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array, $buying_schedule);
                 $turns_played_for_last_spend_money_attempt = $c->turns_played;
             }
@@ -211,11 +211,6 @@ function farmer_switch_government_if_needed($c) {
         }
     }
 } // farmer_switch_government_if_needed()
-
-
-function farmer_get_buying_schedule($cnum, $cpref) {
-    return casher_get_buying_schedule($cnum, $cpref); // same as casher for now
-} // farmer_get_buying_schedule()
 
 
 function farmer_get_buying_priorities ($cnum, $buying_schedule) {

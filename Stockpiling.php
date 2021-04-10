@@ -29,9 +29,9 @@ function stash_excess_bushels_on_public_if_needed(&$c, $rules, $max_sell_price =
     return false;
 }
 
-function get_inherent_value_for_tech ($c, $rules, $min_cash_to_calc = 2000000000) {
+function get_inherent_value_for_tech ($c, $rules, $cpref, $min_cash_to_calc = 2000000000) {
     if($c->money + $c->turns * max(0, $c->income)  < $min_cash_to_calc) {
-        $tech_value = 700; // use 700 if we don't need to stockpile yet
+        $tech_value = $cpref->base_inherent_value_for_tech; // use 700 if we don't need to stockpile yet
     }
     else {
         $bushel_sell_price = predict_destock_bushel_sell_price($c, $rules);
@@ -40,7 +40,7 @@ function get_inherent_value_for_tech ($c, $rules, $min_cash_to_calc = 2000000000
         log_country_message($c->cnum, "The expected bushel buy price for stocking is 2 above current price of $current_bushel_market_price");
         $value_kept_decimal = $bushel_sell_price / ((2 + $current_bushel_market_price) * $c->tax());
         // no taxes in below code because buying functions handle that
-        $tech_value = max(700, round(700 / max($value_kept_decimal, 0.4))); // don't sell tech at prices where we expect to lose more than 60% / TODO: cpref
+        $tech_value = max($cpref->base_inherent_value_for_tech, round($cpref->base_inherent_value_for_tech / max($value_kept_decimal, 0.4))); // don't sell tech at prices where we expect to lose more than 60% / TODO: cpref
     }
 
     log_country_message($c->cnum, "The inherent value for tech is calculated as $tech_value");
@@ -60,7 +60,7 @@ function get_techer_min_sell_price($c, $cpref, $rules, $min_cash_to_calc = 20000
         $current_bushel_market_price  = PublicMarket::price('m_bu');
         log_country_message($c->cnum, "The expected bushel buy price for stocking is 2 above current price of $current_bushel_market_price");
         $value_kept_decimal = $bushel_sell_price / ((2 + $current_bushel_market_price) * $c->tax());
-        $tech_min_price = max($rules->market_autobuy_tech_price, round((2 - $c->tax()) * 700 / max($value_kept_decimal, 0.4))); // TODO: cpref
+        $tech_min_price = max($rules->market_autobuy_tech_price, round((2 - $c->tax()) * $cpref->base_inherent_value_for_tech / max($value_kept_decimal, 0.4))); // TODO: cpref
         log_country_message($c->cnum, "Tech minimum sell price calculated as $tech_min_price based on bushel prices");
     }
     return $tech_min_price;
@@ -70,7 +70,7 @@ function get_techer_min_sell_price($c, $cpref, $rules, $min_cash_to_calc = 20000
 function get_stockpiling_weights_and_adjustments (&$stockpiling_weights, &$stockpiling_adjustments, $c, $server, $rules, $cpref, $min_cash_to_calc, $allow_bushels, $allow_tech, $allow_military) {
     // the stockpiling weight should give the max price we're willing to buy a score of 1000 (score is price / weight)
     
-    $max_loss = 60; // right now our max loss is 60% of value, so use that TODO: cpref
+    $max_loss = $cpref->max_stockpiling_loss_percent; // right now our max loss is 60% of value, so use that TODO: cpref
     $stockpiling_weights = [];
     $stockpiling_adjustments = [];
 
@@ -95,7 +95,7 @@ function get_stockpiling_weights_and_adjustments (&$stockpiling_weights, &$stock
 
     if($allow_bushels) {
         $bushel_sell_price = predict_destock_bushel_sell_price($c, $rules);
-        $bushel_weight = round($max_loss * $bushel_sell_price / (1000 * (100 - $max_loss)), 4);
+        $bushel_weight = round($max_loss * $bushel_sell_price / (10 * $max_loss * (100 - $max_loss)), 4);
         $bushel_adjustment = -1 * $bushel_sell_price;
         log_country_message($c->cnum, "The stockpiling price weight for bushels is $bushel_weight and the adjustment is $bushel_adjustment");
         $stockpiling_weights['m_bu'] = $bushel_weight;
@@ -103,8 +103,8 @@ function get_stockpiling_weights_and_adjustments (&$stockpiling_weights, &$stock
     }
 
 	if($allow_tech) {
-        $tech_sell_price = 700; // inherent value of tech
-        $tech_weight = round($max_loss * $tech_sell_price / (1000 * (100 - $max_loss)), 4);
+        $tech_sell_price = $cpref->base_inherent_value_for_tech; // inherent value of tech
+        $tech_weight = round($max_loss * $tech_sell_price / (10 * $max_loss * (100 - $max_loss)), 4);
         $tech_adjustment = -1 * $tech_sell_price;
         log_country_message($c->cnum, "The stockpiling price weight for tech is $tech_weight and the adjustment is $tech_adjustment");
 		$stockpiling_weights["mil"] = $tech_weight; // FUTURE: :(
@@ -138,7 +138,7 @@ function get_stockpiling_weights_and_adjustments (&$stockpiling_weights, &$stock
         $unit_nw = ['m_tr'=>0.5, 'm_j' => 0.6, 'm_tu' => 0.6, 'm_ta' => 2.0];
         foreach($unit_nw as $unit => $unit_nw) {
             $military_unit_sell_price = $unit_nw * $military_end_dpnw;
-            $military_unit_weight = round($max_loss * $military_unit_sell_price / (1000 * (100 - $max_loss)), 4);
+            $military_unit_weight = round($max_loss * $military_unit_sell_price / (10 * $max_loss * (100 - $max_loss)), 4);
             // expenses make the unit "cost" more
             $military_unit_adjustment = round(0.01 * $c->pt_mil * $unit_exp[$unit] * ($c->turns_stored + $server_new_turns_remaining) - $military_unit_sell_price, 0);
 
@@ -167,9 +167,8 @@ function spend_extra_money_on_stockpiling(&$c, $cpref, $money_to_reserve, $stock
     }
     // this is useless, but spend_money_on_markets expects it
     $unit_points = array_combine(array_keys($stockpiling_weights), array_fill(0, count($stockpiling_weights), 1));
-    // don't change 1000 without changing get_stockpiling_weights()
     log_country_message($c->cnum, "Attempting to spend money on stockpiling purchases...");
-    $spent = spend_money_on_markets($c, $cpref, 999999999999, $c->money - $money_to_reserve, $stockpiling_weights, $unit_points, "stock", 1000, false, $stockpiling_adjustments);
+    $spent = spend_money_on_markets($c, $cpref, 999999999999, $c->money - $money_to_reserve, $stockpiling_weights, $unit_points, "stock", 10 * $this->max_stockpiling_loss_percent, false, $stockpiling_adjustments);
     log_country_message($c->cnum, "Spent $spent and finished stockpiling purchases");
     return $spent;
 }

@@ -34,9 +34,9 @@ class Country
             $this->$k = $var;
         }
 
-        global $cpref;
-        $cpref->networth = $this->networth;
-        $cpref->land     = $this->land;
+        global $cpref_file;
+        $cpref_file->networth = $this->networth;
+        $cpref_file->land     = $this->land;
     }//end __construct()
 
 
@@ -463,8 +463,8 @@ class Country
             return;
         }
 
-        global $cpref;
-        $tol = $cpref->price_tolerance; //should be between 0.5 and 1.5
+        global $cpref_file;
+        $tol = $cpref_file->price_tolerance; //should be between 0.5 and 1.5
 
         $what = $c->highestGoal($goals, $skip);
         //out("Highest Goal: ".$what.' Buy $'.$spend_partial);
@@ -746,28 +746,28 @@ class Country
      */
     public static function addRetalDue($cnum, $type, $land)
     {
-        global $cpref;
+        global $cpref_file;
 
-        if (!isset($cpref->retal[$cnum])) {
-            $cpref->retal[$cnum] = ['cnum' => $cnum, 'num' => 1, 'land' => $land];
+        if (!isset($cpref_file->retal[$cnum])) {
+            $cpref_file->retal[$cnum] = ['cnum' => $cnum, 'num' => 1, 'land' => $land];
         } else {
-             $cpref->retal[$cnum]['num']++;
-             $cpref->retal[$cnum]['land'] += $land;
+             $cpref_file->retal[$cnum]['num']++;
+             $cpref_file->retal[$cnum]['land'] += $land;
         }
     }//end addRetalDue()
 
     public static function listRetalsDue()
     {
-        global $cpref, $cnum;
+        global $cpref_file, $cnum;
 
-        if (!$cpref->retal) {
+        if (!$cpref_file->retal) {
             log_country_message($cnum, "Retals Due: None!");
             return;
         }
 
         log_country_message($cnum, "Retals Due:");
 
-        $retals = (array)$cpref->retal;
+        $retals = (array)$cpref_file->retal;
 
         usort(
             $retals,

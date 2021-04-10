@@ -4,16 +4,16 @@ namespace EENPC;
 
 
 
-function is_country_allowed_to_mass_explore($c, $cpref, $server) {    
+function is_country_allowed_to_mass_explore($c, $cpref) {    
     if($c->explore_rate == $c->explore_min) {
         log_country_message($c->cnum, "Country is not allowed to mass explore because explore rate is the minimum $c->explore_min");
         return false;
     }
-    elseif(!$server->is_clan_server and $c->govt == "R" and $c->land > 10000) {
+    elseif($c->govt == "R" and $c->land > $cpref->mass_explore_stop_acreage_rep) {
         log_country_message($c->cnum, "Country is not allowed to mass explore because it is a rep with more than 10000 acres on a non-clan server");
         return false;
     }
-    elseif(!$server->is_clan_server and $c->govt <> "R" and $c->land > 8200) {
+    elseif($c->govt <> "R" and $c->land > $cpref->mass_explore_stop_acreage_non_rep) {
         log_country_message($c->cnum, "Country is not allowed to mass explore because it is a non-rep with more than 8200 acres on a non-clan server");
         return false;
     }

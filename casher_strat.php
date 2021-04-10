@@ -10,7 +10,7 @@ function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     //out_data($main);          //output the main data
     $c = get_advisor();     //c as in country! (get the advisor)
     //out_data($c) && exit;             //ouput the advisor data
-    $is_allowed_to_mass_explore = is_country_allowed_to_mass_explore($c, $cpref, $server);
+    $is_allowed_to_mass_explore = is_country_allowed_to_mass_explore($c, $cpref);
     log_country_message($cnum, "Bus: {$c->pt_bus}%; Res: {$c->pt_res}%; Mil: {$c->pt_mil}%; Weap: {$c->pt_weap}%");
 
     $c->setIndy('pro_spy');
@@ -22,14 +22,14 @@ function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     casher_switch_government_if_needed($c);
 
     // setup for spending extra money (not on food or building costs)
-    $buying_schedule = casher_get_buying_schedule($cnum, $cpref);
+    $buying_schedule = $cpref->purchase_schedule_number;
     $buying_priorities = casher_get_buying_priorities ($cnum, $buying_schedule);
-    $tech_inherent_value = get_inherent_value_for_tech($c, $rules);
+    $tech_inherent_value = get_inherent_value_for_tech($c, $rules, $cpref);
     $eligible_techs = ['t_bus', 't_res', 't_mil', 't_weap'];
-    $optimal_tech_buying_array = get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, 9999, $tech_inherent_value);
+    $optimal_tech_buying_array = get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, $cpref->tech_max_purchase_price, $tech_inherent_value);
     $cost_for_military_point_guess = get_cost_per_military_points_for_caching($c);
     $dpnw_guess = get_dpnw_for_caching($c);
-    $money_to_keep_after_stockpiling = 1500000000;
+    $money_to_keep_after_stockpiling = $cpref->target_cash_after_stockpiling;
     get_stockpiling_weights_and_adjustments ($stockpiling_weights, $stockpiling_adjustments, $c, $server, $rules, $cpref, $money_to_keep_after_stockpiling, true, true, true);
 
     // log useful information about country state
@@ -78,7 +78,7 @@ function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition)
             && $c->money > 3500 * 500
             && ($c->money > $c->fullBuildCost())
         ) { // 40 turns of food
-            if ($c->turns_played >= $turns_played_for_last_spend_money_attempt + 5) { // wait at least 5 turns before trying again - lower for casher because it tech more than other strats
+            if ($c->turns_played >= $turns_played_for_last_spend_money_attempt + $cpref->spend_extra_money_cooldown_turns) { // wait some number of turns before trying again
                 spend_extra_money($c, $buying_priorities, $cpref, $c->fullBuildCost(), true, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array, $buying_schedule);
                 $turns_played_for_last_spend_money_attempt = $c->turns_played;
             }
@@ -133,14 +133,6 @@ function play_casher_turn(&$c, $is_allowed_to_mass_explore)
         return cash($c);
     }
 }//end play_casher_turn()
-
-
-function casher_get_buying_schedule($cnum, $cpref) {
-    $country_fixed_random_number = decode_bot_secret($cpref->bot_secret, 2);
-    $buying_schedule = $country_fixed_random_number % 4;
-    log_country_message($cnum, "Buying schedule number is: $buying_schedule");
-    return $buying_schedule;
-} // casher_get_buying_schedule
 
 
 function casher_get_buying_priorities ($cnum, $buying_schedule) {

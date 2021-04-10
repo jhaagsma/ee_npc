@@ -188,14 +188,6 @@ function buy_defense_from_markets(&$c, $cpref, $defense_unit_points_needed, $max
     return spend_money_on_markets($c, $cpref, $defense_unit_points_needed, $max_spend, $unit_weights, $unit_points, "dpdef"); 
 }
 
-/* // currently unused
-function buy_military_points_from_markets(&$c, $cpref, $military_unit_points_needed, $max_spend) {
-    // FUTURE: use country preferences
-    $unit_weights = ['m_tr'=>0.7, 'm_j' => 0.9, 'm_tu' => 1.0, 'm_ta' => 2.9];
-    $unit_points = ['m_tr'=>2, 'm_tu' => 2, 'm_ta' => 2, 'm_ta' => 4];
-    return spend_money_on_markets($c, $cpref, $military_unit_points_needed, $max_spend, $unit_weights, $unit_points, "dpmil");   
-}
-*/
 
 function buy_military_networth_from_markets(&$c, $cpref, $nw_needed, $max_spend, $delay_military_purchases, $dpnw_guess = null) {
     if($delay_military_purchases) {

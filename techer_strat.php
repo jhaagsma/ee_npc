@@ -11,7 +11,7 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     //$main = get_main();     //get the basic stats
     //out_data($main);          //output the main data
     $c = get_advisor();     //c as in country! (get the advisor)
-    $is_allowed_to_mass_explore = is_country_allowed_to_mass_explore($c, $cpref, $server);
+    $is_allowed_to_mass_explore = is_country_allowed_to_mass_explore($c, $cpref);
 
     $c->setIndy('pro_spy');
 
@@ -29,7 +29,7 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
         ['type'=>'DPA','goal'=>100],
         ['type'=>'NWPA','goal'=>100]
     ];
-    $money_to_keep_after_stockpiling = 1800000000;
+    $money_to_keep_after_stockpiling = $cpref->target_cash_after_stockpiling;
     get_stockpiling_weights_and_adjustments ($stockpiling_weights, $stockpiling_adjustments, $c, $server, $rules, $cpref, $money_to_keep_after_stockpiling, true, false, true);
     $tech_price_min_sell_price = get_techer_min_sell_price($c, $cpref, $rules);
 

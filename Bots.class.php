@@ -66,11 +66,11 @@ class Bots
         return max(self::getNextPlays($countries));
     }//end getFurthestNext()
 
-    public static function furthest_play($cpref)
+    public static function furthest_play($cpref_file)
     {
         global $server, $rules;
         $max   = $rules->maxturns + $rules->maxstore;
-        $held  = $cpref->lastTurns + $cpref->turnsStored;
+        $held  = $cpref_file->lastTurns + $cpref_file->turnsStored;
         $diff  = $max - $held;
         $maxin = floor($diff * $server->turn_rate);
         log_main_message('Country is holding '.$held.'. Turns will max in '.$maxin);
