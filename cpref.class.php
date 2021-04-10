@@ -40,6 +40,7 @@ class cpref
         $this->mass_explore_stop_acreage_rep = ($this->is_clan_server ? 99999 : 10000);
         $this->mass_explore_stop_acreage_non_rep = ($this->is_clan_server ? 99999 : 8200);        
         $this->base_inherent_value_for_tech = 700;
+        // TODO: max bushel buy price
         $this->tech_max_purchase_price = 9999;        
         $this->purchase_schedule_number = $this->get_purchase_schedule_number();
         $this->target_cash_after_stockpiling = ($this->strat == "C" ? 1500000000 : 1800000000);
