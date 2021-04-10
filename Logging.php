@@ -76,11 +76,43 @@ function log_get_name_of_error_type($error_type) {
         return 'COUNTRY BAD FOOD PURCHASE ON PUBLIC';           
     if($error_type == 1004)
         return 'COUNTRY PRIVATE MARKET FOOD PURCHASE';           
-    if($error_type == 1004)
-        return 'COUNTRY PRIVATE MARKET FOOD PURCHASE';       
+     
 
     // 2000+ are PHP errors or warnings
-
+    if($error_type == 2000)
+        return 'PHP Error';
+    if($error_type == 2001)
+        return 'PHP Warning';
+    if($error_type == 2002)
+        return 'PHP Parsing Error';     
+    if($error_type == 2003)
+        return 'PHP Notice';           
+    if($error_type == 2004)
+        return 'PHP Core Error';           
+    if($error_type == 2005)
+        return 'PHP Core Warning';       
+    if($error_type == 2006)
+        return 'PHP Compile Error';     
+    if($error_type == 2007)
+        return 'PHP Compile Warning';     
+    if($error_type == 2008)
+        return 'PHP User Error';
+    if($error_type == 2009)
+        return 'PHP User Warning';
+    if($error_type == 2010)
+        return 'PHP User Notice';     
+    if($error_type == 2011)
+        return 'PHP Strict';           
+    if($error_type == 2012)
+        return 'PHP Recoverable Error';           
+    if($error_type == 2013)
+        return 'PHP Deprecated';       
+    if($error_type == 2014)
+        return 'PHP User Deprecated';     
+    if($error_type == 2015)
+        return 'PHP E_ALL';
+    if($error_type == 2999)
+        return 'PHP SHUTDOWN';
 
        
     // ERROR: log_get_name_of_error_type() called with unmapped $error_type
@@ -193,7 +225,7 @@ function log_to_targets($log_to_screen, $log_to_local, $local_file_path_and_name
             $file_message = $timestamp_for_file.($line_break_count > 0 ? "\n" : "").preg_replace('/\e[[][A-Za-z0-9];?[0-9]*m?/', '', $message)."\n";
         }
         if($local_file_path_and_name) {
-            file_put_contents ($local_file_path_and_name, $file_message, FILE_APPEND);    
+            file_put_contents ($local_file_path_and_name, $file_message, FILE_APPEND); // FUTURE: what if this doesn't work? like if we have a read only file?
         }  
     }
 
@@ -572,3 +604,87 @@ function log_translate_boolean_to_YN($boolean_value) {
 function log_translate_instant_to_human_readable($instant) {
     return date('m/d/Y H:i:s', $instant);
 }
+
+
+
+// copied from /earthempires/blob/master/www/include/errorlog.php
+function userErrorHandler($errno, $errmsg, $filename, $linenum) {
+    global $cnum;
+
+    $errmsg = preg_replace("/^(.*)\[<(.*)>\](.*)$/", "\\1\\3", $errmsg);
+
+    $backoutput = "";
+
+    if(false && function_exists('debug_backtrace')){
+        $backtrace = debug_backtrace();
+
+        //ignore $backtrace[0] as that is this function, the errorlogger
+        
+        for($i = 1; $i < 99 && $i < count($backtrace); $i++){ //only show 10 levels deep
+            $errfile = (isset($backtrace[$i]['file']) ? $backtrace[$i]['file'] : '');
+            
+            if(strpos($errfile, $sitebasedir) === 0)
+                $errfile = substr($errfile, strlen($sitebasedir));
+            
+            $line = (isset($backtrace[$i]['line']) ? $backtrace[$i]['line'] : '');
+            $function = (isset($backtrace[$i]['function']) ? $backtrace[$i]['function'] : '');
+            $args = (isset($backtrace[$i]['args']) ? count($backtrace[$i]['args']) : '');
+            
+            $backoutput .= "$errfile:$line:$function($args)";
+            
+            if($i+1 < count($backtrace)) //show if there are more levels that were cut off
+                $backoutput .= "<-";
+        }
+    }
+
+    $error_code = get_log_error_type_from_PHP_errno($errno);
+    $error_message = "\"$filename: $linenum\",\"$errmsg\",\"$backoutput\"\r\n";
+    log_error_message($error_code, $cnum, $error_message);
+    
+    //Terminate script if fatal error
+    if($errno != 2 && $errno != 8 && $errno != 512 && $errno != 1024 && $errno != 2048){
+        if($errorlogging >= 2 || $user && $debug)
+            die("A fatal error has occured. Script execution has been aborted:<br />\n$str");
+        else
+            die("A fatal error has occured. Script execution has been aborted");
+    }
+}
+
+set_error_handler("EENPC\userErrorHandler"); 
+
+function get_log_error_type_from_PHP_errno($errno) {
+    /*
+    static $errortype = array ( 1   => "Error",
+                                2   => "Warning",
+                                4   => "Parsing Error",
+                                8   => "Notice",
+                                16  => "Core Error",
+                                32  => "Core Warning",
+                                64  => "Compile Error",
+                                128 => "Compile Warning",
+                                256 => "User Error",
+                                512 => "User Warning",
+                                1024=> "User Notice",
+                                2048=> "PHP Strict",
+                                4096=> "Recoverable Error",
+                                8192=> "Deprecated",
+                                16384=> "User Deprecated",
+                                32767=> "E_ALL"
+                            );
+    */
+    //out($errno);
+    return 2000 + ceil(log($errno, 2));
+}
+
+
+
+function handleShutdown(){
+    $error = error_get_last();
+    if($error !== NULL){
+        global $cnum;
+        $error_message = "[SHUTDOWN] Parse Error: ".$error['message'] . ' in ' . $error['file'] . ' on line ' . $error['line'] . PHP_EOL;
+        log_error_message(2999, $cnum, $error_message);
+    }
+}
+
+register_shutdown_function('EENPC\handleShutdown');

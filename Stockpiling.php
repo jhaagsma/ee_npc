@@ -79,6 +79,8 @@ function get_stockpiling_weights_and_adjustments (&$stockpiling_weights, &$stock
 
     log_country_message($c->cnum, "Calculating stockpiling weights. (Price + adjustment) / weight = 1000 for expected 60% loss of value");    
 
+    // TODO: pass in max loss, use that for the score. if limit is 50%, then 500 should be 50% and that should be the max for purchasing
+
     /*
     weight = $max_loss * sell_value / (1000 * (100 - $max_loss))
 

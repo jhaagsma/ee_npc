@@ -345,6 +345,7 @@ function dump_tech(&$c, $strategy, $market_autobuy_tech_price, $server_max_possi
 
 	// demos should keep 42 mil tech per acre for bushel recycle reasons
 	$mil_tech_to_keep = ($c->govt == 'D' ? min($c->t_mil, 42 * $c->land) : 0);
+	// TODO: other strats keep 10 per acre for PM price lowering?
 
 	$reason_for_not_selling_tech = null;
 	if ($strategy <> 'T')

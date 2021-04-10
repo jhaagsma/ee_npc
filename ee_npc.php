@@ -901,9 +901,7 @@ function update_c(&$c, $result)
         if (isset($turn->event)) {
             if ($turn->event == 'earthquake') {   //if an earthquake happens...
                 log_country_message($c->cnum, "Earthquake destroyed {$turn->earthquake} Buildings! Update Advisor");
-
-                //update the advisor, because we no longer know what information is valid
-                $advisor_update = true;
+                $advisor_update = true; //update the advisor, because we no longer know what information is valid
             } elseif ($turn->event == 'pciboom') {
                 //in the event of a pci boom, recalculate income so we don't react based on an event
                 $latest_taxrevenue = floor(($turn->taxrevenue ?? 0) / 3);
