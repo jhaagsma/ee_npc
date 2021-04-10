@@ -451,7 +451,7 @@ function get_single_income_per_acre($c, $tech_handle) {
         case 't_agri':
             return round((36 * $c->foodpro / (0.01 * $c->pt_agri)) / $c->land, 0);
         case 't_weap':
-            return round(($c->expenses_mil / (0.01 * $c->pt_weap)) / $c->land, 0); // could be kind of weird late game, but whatever
+            return min(50, round(($c->expenses_mil / (0.01 * $c->pt_weap)) / $c->land, 0)); // cap at 50 to prevent too much late game tech buying
         case 't_indy':
             return round(140 * 1.86 * ($c->govt == 'C' ? 1.35 : 1.0), 0); // FUTURE: from game code
         default:

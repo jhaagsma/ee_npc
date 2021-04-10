@@ -841,26 +841,6 @@ function update_c(&$c, $result)
     $c->money += $netmoney;
     $c->food  += $netfood;
 
-    /* -- I think it's fine to move this lower - Slagpit 20210330
-    if ($advisor_update == true) {
-        $c = get_advisor();
-    }
-    */
-
-    //Text formatting (adding a + if it is positive; - will be there if it's negative already)
-    $netfood  = str_pad('('.($netfood > 0 ? '+' : null).engnot($netfood).')', 11, ' ', STR_PAD_LEFT);
-    $netmoney = str_pad('($'.($netmoney > 0 ? '+' : null).engnot($netmoney).')', 14, ' ', STR_PAD_LEFT);
-
-    $str  = str_pad($str, 26 + $extrapad).str_pad($explain, 12).str_pad('$'.engnot($c->money), 16, ' ', STR_PAD_LEFT);
-    $str .= $netmoney.str_pad(engnot($c->food).' Bu', 14, ' ', STR_PAD_LEFT).engnot($netfood);
-
-    global $APICalls;
-    $str = str_pad($c->turns, 3).' Turns - '.$str.' '.str_pad($event, 8).' API: '.$APICalls;
-    if ($OOF || $OOM) {
-        $str = Colors::getColoredString($str, "red");
-    }
-
-    log_country_message($c->cnum, $str);
 
     // check that there aren't other reasons to update the advisor
     // current example is recall goods and recall tech don't tell us what was sent back
@@ -882,11 +862,26 @@ function update_c(&$c, $result)
         $OOM_error_message = "Before playing $numT turns, money was $money_before_turns. Before advisor update, money was $c->money, taxes were $c->taxes, and exp were $c->expenses. ";
         $OOF_error_message = "Before playing $numT turns, food was $food_before_turns. Before advisor update, food was $c->food, pro was $c->foodpro, and con was $c->foodnet. ";
     }
-       
+
     // update advisor if we got an earthquake, ran out of food, or ran out of money
     if ($advisor_update == true) {
         $c = get_advisor();
     }
+
+    //Text formatting (adding a + if it is positive; - will be there if it's negative already)
+    $netfood  = str_pad('('.($netfood > 0 ? '+' : null).engnot($netfood).')', 11, ' ', STR_PAD_LEFT);
+    $netmoney = str_pad('($'.($netmoney > 0 ? '+' : null).engnot($netmoney).')', 14, ' ', STR_PAD_LEFT);
+
+    $str  = str_pad($str, 26 + $extrapad).str_pad($explain, 12).str_pad('$'.engnot($c->money), 16, ' ', STR_PAD_LEFT);
+    $str .= $netmoney.str_pad(engnot($c->food).' Bu', 14, ' ', STR_PAD_LEFT).engnot($netfood);
+
+    global $APICalls;
+    $str = str_pad($c->turns, 3).' Turns - '.$str.' '.str_pad($event, 8).' API: '.$APICalls;
+    if ($OOF || $OOM) {
+        $str = Colors::getColoredString($str, "red");
+    }
+
+    log_country_message($c->cnum, $str);
 
     if($OOM) {
         $OOM_error_message .= "After advisor update, money was $c->money, taxes were $c->taxes, and exp were $c->expenses";
