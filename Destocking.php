@@ -90,7 +90,7 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 	}
 	if($strategy == 'T') // one turn to sell tech
 		$turns_to_keep += 1;
-	if($strategy == 'T' and $expensive_tech_on_market and !is_there_time_for_selling_tech_at_market_prices($reset_seconds_remaining, $max_market_package_time_in_seconds, $market_autobuy_tech_price, $is_final_destocking_attempt, $cpref)) {
+	if($strategy == 'T' and $market_autobuy_tech_price > $cpref->base_inherent_value_for_tech and $expensive_tech_on_market and !is_there_time_for_selling_tech_at_market_prices($reset_seconds_remaining, $max_market_package_time_in_seconds, $market_autobuy_tech_price, $is_final_destocking_attempt, $cpref)) {
 		$turns_to_keep += 3; // probably need to recall tech, so save 3 more turns for that
 		log_country_message($cnum, "Country plans to recall tech because there's expensive tech on the market and not enough time to sell at market prices");
 		$tech_recall_needed = true;
