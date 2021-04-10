@@ -68,25 +68,21 @@ function get_techer_min_sell_price($c, $cpref, $rules, $min_cash_to_calc = 20000
 
 
 function get_stockpiling_weights_and_adjustments (&$stockpiling_weights, &$stockpiling_adjustments, $c, $server, $rules, $cpref, $min_cash_to_calc, $allow_bushels, $allow_tech, $allow_military) {
-    // the stockpiling weight should give the max price we're willing to buy a score of 1000 (score is price / weight)
-    
-    $max_loss = $cpref->max_stockpiling_loss_percent; // right now our max loss is 60% of value, so use that TODO: cpref
+    $max_loss = $cpref->max_stockpiling_loss_percent;
     $stockpiling_weights = [];
     $stockpiling_adjustments = [];
 
     if($c->money + $c->turns * max(0, $c->income)  < $min_cash_to_calc)
         return false;
 
-    log_country_message($c->cnum, "Calculating stockpiling weights. (Price + adjustment) / weight = 1000 for expected 60% loss of value");    
+    log_country_message($c->cnum, "Calculating stockpiling weights: (Price + adjustment) / weight = 600 for expected 60% loss of value");    
 
-    // TODO: pass in max loss, use that for the score. if limit is 50%, then 500 should be 50% and that should be the max for purchasing
-
-    /*
-    weight = $max_loss * sell_value / (1000 * (100 - $max_loss))
+    /* in this example 60% is the max loss so the max score is 600
+    weight = $max_loss * sell_value / (600 * (100 - $max_loss))
 
     sell_value is what we expect it to be worth end of set    
 
-    the point of all of this is to end up with a score of 0 for break even and a score of 1000 for the max_loss, with it linearly increasing as price goes up
+    the point of all of this is to end up with a score of 0 for break even and a score of 600 for the max_loss, with it linearly increasing as price goes up
       
     the adjustment for non-mil units is the sell_value
     for military units, the adjustment is end of set buying plice + expenses- they make the paid price higher, but don't change the weight calculation
