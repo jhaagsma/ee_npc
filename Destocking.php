@@ -404,12 +404,12 @@ function resell_military_on_public (&$c, $server_max_possible_market_sell, $targ
 	$market_quantities = [];
 	$market_prices = [];
 
-	$unit_types = array('m_tu', 'm_j', 'm_ta', 'm_tr');
-	foreach($unit_types as $unit_type) {
+	$unit_types = array('m_tu' => 1.0, 'm_j' => 1.0, 'm_ta' => 1.06, 'm_tr' => 1.09); // based on dpnw compared to 2025/6.5
+	foreach($unit_types as $unit_type =>$min_price_jump) {
 		$pm_price = $pm_info->buy_price->$unit_type;
 		// FUTURE: prices could be smarter, especially for techers with long destock periods
 		// we're basically just throwing military up at a somewhat expensive price
-		$price_increase = 1 + 0.01 * mt_rand(10, 25);
+		$price_increase = $min_price_jump * $c->tax() + 0.01 * mt_rand(5, 25); // still basic, but a bit better than before
 		$public_price = Math::half_bell_truncate_left_side(floor($price_increase * $pm_price), 3 * $pm_price, $pm_price);
 		$max_sell_amount = can_sell_mil($c, $unit_type, $server_max_possible_market_sell);
 		log_country_message($c->cnum, "Calc sale of $unit_type: PM price is $pm_price, our sell price is $public_price, and max sell is $max_sell_amount units");
