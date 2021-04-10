@@ -49,6 +49,8 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     $optimal_tech_buying_array = get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, $cpref->tech_max_purchase_price, $tech_inherent_value);
     $cost_for_military_point_guess = get_cost_per_military_points_for_caching($c);
     $dpnw_guess = get_dpnw_for_caching($c);
+    $money_to_keep_after_stockpiling = $cpref->target_cash_after_stockpiling;
+    get_stockpiling_weights_and_adjustments ($stockpiling_weights, $stockpiling_adjustments, $c, $server, $rules, $cpref, $money_to_keep_after_stockpiling, false, true, true);
 
     // log useful information about country state
     log_country_message($cnum, $c->turns.' turns left');
@@ -60,6 +62,15 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
 
     $owned_on_market_info = get_owned_on_market_info();     //find out what we have on the market
     //out_data($owned_on_market_info);  //output the Owned on Public Market info
+
+    if($c->money > 2000000000) { // try to stockpile to avoid corruption and to limit bot abuse
+        // first spend extra money normally so we can buy needed military or income techs if they are worthwhile
+        spend_extra_money($c, $buying_priorities, $cpref, $money_to_keep_after_stockpiling, false, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array, $buying_schedule);
+        spend_extra_money_on_stockpiling($c, $cpref, $money_to_keep_after_stockpiling, $stockpiling_weights, $stockpiling_adjustments);
+    }
+
+    // TODO: set floor for food selling price as needed
+
 
     $turns_played_for_last_spend_money_attempt = 0;
     while ($c->turns > 0) {
@@ -114,6 +125,11 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
             && ($c->money > floor(0.9*$c->fullBuildCost()))
         ) {
         spend_extra_money($c, $buying_priorities, $cpref, floor(0.9*$c->fullBuildCost()), false, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array, $buying_schedule);
+    }
+
+    if($c->money > 2000000000) { // try to stockpile to avoid corruption and to limit bot abuse
+        spend_extra_money_on_stockpiling($c, $cpref, $money_to_keep_after_stockpiling, $stockpiling_weights, $stockpiling_adjustments);
+        // don't see a strong reason to sell excess bushels at this step
     }
 
     $c->countryStats(FARMER); // , farmerGoals($c) FUTURE: implement?
