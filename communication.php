@@ -129,6 +129,8 @@ function getRules()
 function handle_output($serverOutput, $function, $cnum) // $cnum may not be set
 {
     $response = json_decode($serverOutput);
+    if($function == 'OPTIMAL_TECH')
+        log_country_data($cnum, $response, "Response json decode:"); // TODO: debug
     if (!$response) {
         log_error_message(100, $cnum, 'Not acceptable response: '. $function .' - '. $serverOutput);
         return false;
