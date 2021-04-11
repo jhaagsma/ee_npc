@@ -147,7 +147,7 @@ function log_country_data($cnum_input, $data, $intro_message) {
 }
 
 // examples of things to log: what decisions were made (and why), how turns are spent
-function log_country_message($cnum_input, $message) {
+function log_country_message($cnum_input, $message, $color = null) {
     global $log_country_to_screen, $log_to_local, $local_file_path;
 
     if(!$cnum_input) {
@@ -162,7 +162,7 @@ function log_country_message($cnum_input, $message) {
     }
 
     $full_local_file_path_and_name = ($log_to_local ? get_full_country_file_path_and_name($local_file_path, $cnum_input, false) : null);
-    return log_to_targets($log_country_to_screen, $log_to_local, $full_local_file_path_and_name, $message, $cnum_input, null);
+    return log_to_targets($log_country_to_screen, $log_to_local, $full_local_file_path_and_name, $message, $cnum_input, $color);
 }
 
 

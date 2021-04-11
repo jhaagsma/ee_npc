@@ -288,9 +288,8 @@ function dump_tech(&$c, $strategy, $market_autobuy_tech_price, $server_max_possi
 	// I don't care if a country could sell a tech but not recall tech - ok to not do anything and try again later
 	$food_needed = max(0, get_food_needs_for_turns($turns_needed, $c->foodpro, $c->foodcon, true) - $c->food);
 
-	// demos should keep 42 mil tech per acre for bushel recycle reasons
-	$mil_tech_to_keep = ($c->govt == 'D' ? min($c->t_mil, 42 * $c->land) : 0);
-	// TODO: other strats keep 10 per acre for PM price lowering?
+	// demos should keep 42 mil tech per acre for bushel recycle reasons, others keep 10 for buying PM
+	$mil_tech_to_keep = min($c->t_mil, ($c->govt == 'D' ? 42 : 10) * $c->land);
 
 	$reason_for_not_selling_tech = null;
 	if ($strategy <> 'T')
@@ -589,7 +588,7 @@ PARAMETERS:
 	$public_market_tax_rate - public market tax rate as a decimal: 6% would be 1.06 for example
 */
 function calculate_maximum_dpnw_for_public_market_purchase ($reset_seconds_remaining, $server_seconds_per_turn, $private_market_turret_price, $public_market_tax_rate) {
-	$min_dpnw = floor(($private_market_turret_price / 0.6) / $public_market_tax_rate); // always buy better than private turret price	
+	$min_dpnw = 3 + floor(($private_market_turret_price / 0.6)); // always buy better than private turret price	
 	$max_dpnw = max($min_dpnw + 10, 500 - 2 * floor($reset_seconds_remaining / $server_seconds_per_turn)); // FUTURE: this is stupid and players who read code can take advantage of it
 	$std_dev = ($max_dpnw - $min_dpnw) / 2;
 

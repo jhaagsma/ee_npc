@@ -29,6 +29,8 @@ function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     $eligible_techs = ['t_bus', 't_res', 't_indy', 't_mil']; // don't buy t_weap for now - indies would over-prioritize it
     $optimal_tech_buying_array = get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, $cpref->tech_max_purchase_price, $tech_inherent_value);
 
+    // TODO: some form of stockpiling?
+
     // log useful information about country state
     log_country_message($cnum, $c->turns.' turns left');
     //log_country_message($cnum, 'Explore Rate: '.$c->explore_rate.'; Min Rate: '.$c->explore_min);

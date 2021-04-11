@@ -48,7 +48,7 @@ function spend_extra_money(&$c, $buying_priorities, $cpref, $money_to_reserve, $
     $target_dpa = $c->defPerAcreTarget();
     $target_dpnw = $c->nlgTarget(); 
 
-    log_country_message($c->cnum, "Using schedule $buying_schedule, spend money with ".($delay_military_purchases ? "delayed mil purchases, " : "")."money: $c->money, max to spend: $max_spend, total reserved: $money_to_reserve");
+    log_country_message($c->cnum, "Using schedule $buying_schedule, spend money with ".($delay_military_purchases ? "delayed mil purchases, " : "")."money: $c->money, max to spend: $max_spend, total reserved: $money_to_reserve", 'green');
 
     foreach($buying_priorities as $priority_item) {
         if($max_spend < 10000) {
@@ -243,7 +243,7 @@ function get_country_owned_resolve_market_name_mismatches($c, $good_name) {
 // $point_name is for message logging only
 function spend_money_on_markets(&$c, $cpref, $points_needed, $max_spend, $unit_weights, $unit_points, $point_name, $max_dollars_per_point = 100000, $public_only = false, $unit_price_adjustments = [], $total_spent = 0, $total_points_gained = 0, $recursion_level = 1) {
     if($max_spend < 10000) {
-        log_country_message($c->cnum, "Spenting for $point_name not attempted because max spent is $max_spend which is less than $10000");
+        log_country_message($c->cnum, "Spending for $point_name not attempted because max spent is $max_spend which is less than $10000");
         return 0;
     }
 
@@ -493,7 +493,7 @@ function get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, 
 
     $tech_type_to_ipa = get_ipas_for_tech_purchasing($c, $eligible_techs);
 
-    log_country_message($c->cnum, "Creating optimal tech buying array");
+    log_country_message($c->cnum, "Creating optimal tech buying array", 'green');
 
     $optimal_tech_buying_array = [];
 

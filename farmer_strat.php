@@ -51,6 +51,7 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     $dpnw_guess = get_dpnw_for_caching($c);
     $money_to_keep_after_stockpiling = $cpref->target_cash_after_stockpiling;
     get_stockpiling_weights_and_adjustments ($stockpiling_weights, $stockpiling_adjustments, $c, $server, $rules, $cpref, $money_to_keep_after_stockpiling, false, true, true);
+    $bushel_min_sell_price = get_farmer_min_sell_price($c, $cpref, $rules, $server);
 
     // log useful information about country state
     log_country_message($cnum, $c->turns.' turns left');
@@ -69,14 +70,11 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
         spend_extra_money_on_stockpiling($c, $cpref, $money_to_keep_after_stockpiling, $stockpiling_weights, $stockpiling_adjustments);
     }
 
-    // TODO: set floor for food selling price as needed
-
-
     $turns_played_for_last_spend_money_attempt = 0;
     while ($c->turns > 0) {
         //$result = PublicMarket::buy($c,array('m_bu'=>100),array('m_bu'=>400));
 
-        $result = play_farmer_turn($c, $rules->base_pm_food_sell_price, $is_allowed_to_mass_explore);
+        $result = play_farmer_turn($c, $rules->base_pm_food_sell_price, $is_allowed_to_mass_explore, $bushel_min_sell_price);
         if ($result === false) {  //UNEXPECTED RETURN VALUE
             $c = get_advisor();     //UPDATE EVERYTHING
             continue;
@@ -136,7 +134,7 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     return $c;
 }//end play_farmer_strat()
 
-function play_farmer_turn(&$c, $server_base_pm_bushel_sell_price = 29, $is_allowed_to_mass_explore)
+function play_farmer_turn(&$c, $server_base_pm_bushel_sell_price, $is_allowed_to_mass_explore, $bushel_min_sell_price)
 {
  //c as in country!
     $target_bpt = 65;
@@ -153,7 +151,7 @@ function play_farmer_turn(&$c, $server_base_pm_bushel_sell_price = 29, $is_allow
             || $c->turns == 1
         )
     ) { //Don't sell less than 30 turns of food unless you're on your last turn (and desperate?)
-        return sellextrafood_farmer($c, $server_base_pm_bushel_sell_price);
+        return sellextrafood_farmer($c, $server_base_pm_bushel_sell_price, $bushel_min_sell_price);
     } elseif ($c->shouldBuildSpyIndies($target_bpt)) {
         //build a full BPT of indies if we have less than that, and we're out of protection
         return Build::indy($c);
@@ -172,7 +170,7 @@ function play_farmer_turn(&$c, $server_base_pm_bushel_sell_price = 29, $is_allow
 }//end play_farmer_turn()
 
 
-function sellextrafood_farmer(&$c, $server_base_pm_bushel_sell_price = 29)
+function sellextrafood_farmer(&$c, $server_base_pm_bushel_sell_price = 29, $bushel_min_sell_price)
 {
     //log_country_message($c->cnum, "Lots of food, let's sell some!");
     //$pm_info = get_pm_info();
@@ -189,18 +187,14 @@ function sellextrafood_farmer(&$c, $server_base_pm_bushel_sell_price = 29)
     $rmin    = 0.95; //percent
     $rstep   = 0.01;
     $rstddev = 0.10;
-    $max     = $c->goodsStuck('m_bu') ? 0.99 : $rmax;
+    $max     = $c->goodsStuck('m_bu') ? 0.99 : $rmax;    
+    $food_public_price = PublicMarket::price('m_bu');
     // don't dump food at +1 when the market is empty... can end up in a state where demo recyclers keep clearing it
-    $food_public_price = min($server_base_pm_bushel_sell_price + 7, PublicMarket::price('m_bu'));
-    $price   = round(
-        max(
-            $pm_info->sell_price->m_bu + 3, // +3 instead of +1 to avoid losses from taxes
-            $food_public_price * Math::purebell($rmin, $max, $rstddev, $rstep)
-        )
-    );
+    $food_public_price = $food_public_price ? $food_public_price : $server_base_pm_bushel_sell_price + 7;
+    $price   = max($bushel_min_sell_price, round($food_public_price * Math::purebell($rmin, $max, $rstddev, $rstep)));
     $price   = ['m_bu' => $price];
 
-    if ($price <= max($server_base_pm_bushel_sell_price, $pm_info->sell_price->m_bu / $c->tax())) {
+    if ($price <= $pm_info->sell_price->m_bu / (2 - $c->tax())) {
         return PrivateMarket::sell($c, ['m_bu' => $quantity]);
         ///      PrivateMarket::sell($c,array('m_bu' => $c->food));   //Sell 'em
     }
