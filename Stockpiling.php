@@ -42,7 +42,7 @@ function get_inherent_value_for_tech ($c, $rules, $cpref, $min_cash_to_calc = 20
         // no taxes in below code because buying functions handle that
         $tech_value = max(
             $cpref->base_inherent_value_for_tech
-            , round($cpref->base_inherent_value_for_tech / max($value_kept_decimal, ((100 - $this->max_stockpiling_loss_percent) / 100)))
+            , round($cpref->base_inherent_value_for_tech / max($value_kept_decimal, ((100 - $cpref->max_stockpiling_loss_percent) / 100)))
         );
     }
 
@@ -65,7 +65,7 @@ function get_techer_min_sell_price($c, $cpref, $rules, $min_cash_to_calc = 20000
         $value_kept_decimal = $bushel_sell_price / ((2 + $current_bushel_market_price) * $c->tax());
         $tech_min_price = max(
             $rules->market_autobuy_tech_price
-        , round((2 - $c->tax()) * $cpref->base_inherent_value_for_tech / max($value_kept_decimal, ((100 - $this->max_stockpiling_loss_percent) / 100)))
+        , round((2 - $c->tax()) * $cpref->base_inherent_value_for_tech / max($value_kept_decimal, ((100 - $cpref->max_stockpiling_loss_percent) / 100)))
         );
         log_country_message($c->cnum, "Tech minimum sell price calculated as $tech_min_price based on bushel prices");
     
