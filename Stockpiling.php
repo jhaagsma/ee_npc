@@ -15,7 +15,8 @@ function stash_excess_bushels_on_public_if_needed(&$c, $rules, $max_sell_price =
             log_country_message($c->cnum, "Selling excess $excess_bushels bushels at $max_sell_price price");
         }
         else {
-            $min_sell_price = PublicMarket::price('m_bu') + mt_rand(20, 40); // FUTURE: pref?
+            $current_bushel_market_price  = PublicMarket::price('m_bu');
+            $min_sell_price = ($current_bushel_market_price ? $current_bushel_market_price : $rules->base_pm_food_sell_price + 10) + mt_rand(20, 40); // FUTURE: pref?
             $max_sell_price = 200;
             $std_dev = ($max_sell_price - $min_sell_price) / 2;   
             $sell_price = floor(Math::half_bell_truncate_left_side($min_sell_price, $max_sell_price, $std_dev));

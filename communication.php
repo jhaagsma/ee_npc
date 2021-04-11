@@ -224,6 +224,7 @@ function expected_result($input)
         'tech' => 'TECH',
         'market' => 'MARKET',
         'onmarket' => 'ONMARKET',
+        'market_search' => 'MARKET_SEARCH',
         'buy' => 'BUY',
         'sell' => 'SELL',
         'market_recall' => 'MARKET_RECALL',
