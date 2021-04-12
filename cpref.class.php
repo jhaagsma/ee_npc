@@ -48,8 +48,6 @@ class cpref
         $this->spend_extra_money_cooldown_turns = ($this->strat == "C" ? 5 : 7);
         $this->max_stockpiling_loss_percent = 60; // must be > 0
 
-        // TODO: calc net factor for mil expenses
-
         $this->earliest_destocking_start_time = $this->get_earliest_destocking_start_time();
 
     }//end __construct()

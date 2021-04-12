@@ -235,14 +235,15 @@ function get_stockpiling_weights_and_adjustments (&$stockpiling_weights, &$stock
     if($allow_military){
         $server_new_turns_remaining = floor(($server->reset_end - time()) / $server->turn_rate); // FUTURE: function?
         $military_end_dpnw = 2025 * 0.01 * ($c->govt == "H" ? 0.8 : 1.0) * $c->pt_mil / 6.5; // use what we can get on PM
-        $unit_exp = ['m_tr' => 0.11 + 40 * 0.001,'m_j' => 0.14 + 40 * 0.001,'m_tu' => 0.18 + 40 * 0.001,'m_ta' => 0.57 + 40 * 0.003]; // TODO: add NW modifier
+        $unit_exp = ['m_tr' => 0.11 + 40 * 0.001,'m_j' => 0.14 + 40 * 0.001,'m_tu' => 0.18 + 40 * 0.001,'m_ta' => 0.57 + 40 * 0.003];
+        $exp_cost_mod = ($c->govt == "T" ? 0.9 : 1) * (1 + $c->networth / 200000000); // this applies to food but shouldn't, but I can live with that
         // TODO: add tyranny bonus?
         $unit_nw = ['m_tr'=>0.5, 'm_j' => 0.6, 'm_tu' => 0.6, 'm_ta' => 2.0];
         foreach($unit_nw as $unit => $unit_nw) {
             $military_unit_sell_price = round($unit_nw * $military_end_dpnw, 2);
             $military_unit_weight = round($max_loss * $military_unit_sell_price / (10 * $max_loss * (100 - $max_loss)), 4);
             // expenses make the unit "cost" more
-            $exp = round(0.01 * $c->pt_mil * $unit_exp[$unit] * ($c->turns_stored + $server_new_turns_remaining), 2);
+            $exp = round(0.01 * $c->pt_mil * $exp_cost_mod * $unit_exp[$unit] * ($c->turns_stored + $server_new_turns_remaining), 2); // assumes no MBs
             $military_unit_adjustment = $exp - $military_unit_sell_price;
 
             $stockpiling_weights[$unit] = $military_unit_weight;
