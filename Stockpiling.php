@@ -166,7 +166,7 @@ function get_farmer_min_sell_price($c, $cpref, $rules, $server, $min_cash_to_cal
 
 
 function is_country_expected_to_exceed_target_cash_during_turns($c, $target_cash){
-    return $c->money + $c->turns * max(0, $c->income) >= $target_cash ? true : false;
+    return $c->money + $c->turns * max(0, $c->income) + $c->turns * 39 * max(0, $c->foodnet) >= $target_cash ? true : false;
 }
 
 
@@ -177,7 +177,7 @@ function get_stockpiling_weights_and_adjustments (&$stockpiling_weights, &$stock
     $stockpiling_weights = [];
     $stockpiling_adjustments = [];
 
-    if($c->money + $c->turns * max(0, $c->income)  < $min_cash_to_calc)
+    if(!is_country_expected_to_exceed_target_cash_during_turns($c, $min_cash_to_calc))
         return false;
 
     log_country_message($c->cnum, "Calculating stockpiling weights: (Price + adjustment) / weight = 600 for expected 60% loss of value", 'green');    
@@ -187,7 +187,7 @@ function get_stockpiling_weights_and_adjustments (&$stockpiling_weights, &$stock
 
     sell_value is what we expect it to be worth end of set    
 
-    the point of all of this is to end up with a score of 0 for break even and a score of 600 for the max_loss, with it linearly increasing as price goes up
+    the point of all of this is to end up with a score of 0 for break even and a score of 600 for the max_loss, with it non-linearly increasing as price goes up
       
     the adjustment for non-mil units is the sell_value
     for military units, the adjustment is end of set buying plice + expenses- they make the paid price higher, but don't change the weight calculation
@@ -237,7 +237,7 @@ function get_stockpiling_weights_and_adjustments (&$stockpiling_weights, &$stock
         $military_end_dpnw = 2025 * 0.01 * ($c->govt == "H" ? 0.8 : 1.0) * $c->pt_mil / 6.5; // use what we can get on PM
         $unit_exp = ['m_tr' => 0.11 + 40 * 0.001,'m_j' => 0.14 + 40 * 0.001,'m_tu' => 0.18 + 40 * 0.001,'m_ta' => 0.57 + 40 * 0.003];
         $exp_cost_mod = ($c->govt == "T" ? 0.9 : 1) * (1 + $c->networth / 200000000); // this applies to food but shouldn't, but I can live with that
-        // TODO: add tyranny bonus?
+        // TODO: could a country buy so much mil that it ends up not making money per turn?
         $unit_nw = ['m_tr'=>0.5, 'm_j' => 0.6, 'm_tu' => 0.6, 'm_ta' => 2.0];
         foreach($unit_nw as $unit => $unit_nw) {
             $military_unit_sell_price = round($unit_nw * $military_end_dpnw, 2);

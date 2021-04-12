@@ -450,8 +450,9 @@ function sell_max_military(&$c, $server_max_possible_market_sell)
             );
         }
 
+        // FUTURE: better to hold military?
         if ($price[$key] > 0 && $price[$key] * $c->tax() <= $pm_info->sell_price->$key) {
-            //log_country_message($c->cnum, "Public is too cheap for $key, sell on PM");
+            log_country_message($c->cnum, "Public is too cheap for $key, sell on PM");
             sell_cheap_units($c, $key, 0.5);
             $price[$key]    = 0;
             $quantity[$key] = 0;

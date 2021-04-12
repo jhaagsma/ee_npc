@@ -194,7 +194,7 @@ function sellextrafood_farmer(&$c, $server_base_pm_bushel_sell_price = 29, $bush
     $food_public_price = $food_public_price ? $food_public_price : $server_base_pm_bushel_sell_price + 8;
     $price   = max($bushel_min_sell_price, round($food_public_price * Math::purebell($rmin, $max, $rstddev, $rstep)));
 
-    if ($price <= 1 + $pm_info->sell_price->m_bu / (2 - $c->tax())) {
+    if ($price <= $pm_info->sell_price->m_bu / (2 - $c->tax())) {
         return PrivateMarket::sell_single_good($c, 'm_bu', $c->food);
     }
 

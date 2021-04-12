@@ -42,7 +42,8 @@ class cpref
         $this->mass_explore_stop_acreage_non_rep = ($this->is_clan_server ? 99999 : 8200);        
         $this->base_inherent_value_for_tech = 700;
         // TODO: max bushel buy price
-        $this->tech_max_purchase_price = 9999;        
+        $this->tech_max_purchase_price = 9999;     
+        $this->production_algorithm = $this->get_production_algorithm();  
         $this->purchase_schedule_number = $this->get_purchase_schedule_number();
         $this->target_cash_after_stockpiling = ($this->strat == "C" ? 1500000000 : 1800000000);
         $this->spend_extra_money_cooldown_turns = ($this->strat == "C" ? 5 : 7);
@@ -51,6 +52,17 @@ class cpref
         $this->earliest_destocking_start_time = $this->get_earliest_destocking_start_time();
 
     }//end __construct()
+
+    private function get_production_algorithm() {
+        
+        // TODO: implement
+        return "RANDOM";
+        return "SALES";
+        return "HIGH_PRICE";
+        return "AVG_PRICE";       
+        return "CURRENT_PRICE";       
+    }
+
 
 
     private function get_purchase_schedule_number() {
