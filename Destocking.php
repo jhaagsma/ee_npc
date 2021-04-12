@@ -52,7 +52,10 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 
 	// reasonable to assume that a greedy demo country will resell bushels for $2 less than max PM sell price on all servers
 	// FUTURE: use 1 dollar less than max on clan servers?
-	$estimated_public_market_bushel_sell_price = get_max_demo_bushel_recycle_price($rules) - 2;
+
+	$bushel_market_history_info = get_market_history('food', $cpref->market_search_look_back_hours);
+	log_country_message($cnum, "The average public bushel sell price is $bushel_market_history_info->avg_price over the past $cpref->market_search_look_back_hours hours");
+	$estimated_public_market_bushel_sell_price = max(get_max_demo_bushel_recycle_price($rules) - 2, $bushel_market_history_info->avg_price - mt_rand(0, 3));
 	log_country_message($cnum, "Estimated public bushel sell price is $estimated_public_market_bushel_sell_price");
 
 	// get what's on the market so we can recall goods or tech as needed depending on time left in reset
