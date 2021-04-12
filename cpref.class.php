@@ -37,7 +37,7 @@ class cpref
         $this->gdi = $cpref_file->gdi;
         // end personality file issue
 
-        $this->market_search_look_back_hours = 1; // TODO: random, vary by server length
+        $this->market_search_look_back_hours = 2; // TODO: random, vary by server length
         $this->mass_explore_stop_acreage_rep = ($this->is_clan_server ? 99999 : 10000);
         $this->mass_explore_stop_acreage_non_rep = ($this->is_clan_server ? 99999 : 8200);        
         $this->base_inherent_value_for_tech = 700;
