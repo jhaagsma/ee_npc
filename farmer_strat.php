@@ -182,8 +182,6 @@ function sellextrafood_farmer(&$c, $server_base_pm_bushel_sell_price = 29, $bush
 
     $c = get_advisor();     //UPDATE EVERYTHING
 
-    $quantity = ['m_bu' => $c->food]; //sell it all! :)
-
     $pm_info = PrivateMarket::getRecent();
 
     $rmax    = 1.10; //percent
@@ -197,12 +195,11 @@ function sellextrafood_farmer(&$c, $server_base_pm_bushel_sell_price = 29, $bush
     $price   = max($bushel_min_sell_price, round($food_public_price * Math::purebell($rmin, $max, $rstddev, $rstep)));
 
     if ($price <= 1 + $pm_info->sell_price->m_bu / (2 - $c->tax())) {
-        return PrivateMarket::sell($c, ['m_bu' => $quantity]);
-        ///      PrivateMarket::sell($c,array('m_bu' => $c->food));   //Sell 'em
+        return PrivateMarket::sell_single_good($c, 'm_bu', $c->food);
     }
 
+    $quantity = ['m_bu' => $c->food]; //sell it all! :)
     $price_array   = ['m_bu' => $price];
-
     return PublicMarket::sell($c, $quantity, $price_array);    //Sell food!
 }//end sellextrafood_farmer()
 
