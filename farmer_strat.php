@@ -70,7 +70,6 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
         spend_extra_money_on_stockpiling($c, $cpref, $money_to_keep_after_stockpiling, $stockpiling_weights, $stockpiling_adjustments);
     }
 
-    // TODO: a farmer probably won't be able to stock bushels? at some point bushels will get recalled, and then all will be sold because money happens to be below 2 B?
     if($c->money > 1000000000) // only called here to keep returned bushels on the market at high prices if we have a lot of cash
         stash_excess_bushels_on_public_if_needed($c, $rules);
 

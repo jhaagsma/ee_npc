@@ -50,12 +50,12 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 	$calc_final_attempt = is_final_destock_attempt($reset_seconds_remaining, $server_seconds_per_turn);
 	$is_final_destocking_attempt = (($debug_force_final_attempt or $calc_final_attempt) ? true : false);
 
-	// reasonable to assume that a greedy demo country will resell bushels for $2 less than max PM sell price on all servers
-	// FUTURE: use 1 dollar less than max on clan servers?
-
+	
 	$bushel_market_history_info = get_market_history('food', $cpref->market_search_look_back_hours);
 	log_country_message($cnum, "The average public bushel sell price is $bushel_market_history_info->avg_price over the past $cpref->market_search_look_back_hours hours");
-	$estimated_public_market_bushel_sell_price = max(get_max_demo_bushel_recycle_price($rules) - 2, floor($bushel_market_history_info->avg_price) - 1); // undercut because we're dumping
+	// reasonable to assume that a demo country will resell bushels for $1 less than max PM sell price on all servers
+	// undercut by $1 because we're dumping
+	$estimated_public_market_bushel_sell_price = max(get_max_demo_bushel_recycle_price($rules), floor($bushel_market_history_info->avg_price)) - 1;
 	log_country_message($cnum, "Estimated public bushel sell price is $estimated_public_market_bushel_sell_price");
 
 	// get what's on the market so we can recall goods or tech as needed depending on time left in reset
@@ -68,7 +68,7 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 		// $market_package_piece structure: [{"type":"t_mil","price":6277,"quantity":103068,"time":1617827768,"on_market":true,"seconds_until_on_market":-2362}]
 		if($market_package_piece->type == 'food') {
 			$bushels_on_market = true;
-			if ($market_package_piece->price > $estimated_public_market_bushel_sell_price) {
+			if ($market_package_piece->price > 2 + $estimated_public_market_bushel_sell_price) {
 				$expensive_bushels_on_market = true;				
 			}
 		}
@@ -83,14 +83,14 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 	//log_country_message($cnum, "Country has expensive tech on market");
 
 
-	// note that we stay logged out for at least 6 turns
-	$turns_to_keep = 2; // 1 to sell bushels and 1 to sell military
 	$bushel_recall_needed = false;
-	$tech_recall_needed = false;
 	if($expensive_bushels_on_market or ($is_final_destocking_attempt and $bushels_on_market)) {
-		$turns_to_keep += 3; // we probably are going to recall bushels, so save 3 more turns for that
 		$bushel_recall_needed = true;
 	}
+
+	// note that we stay logged out for at least 6 turns
+	$turns_to_keep = 6; // 1 to sell bushels and 1 to sell military, along with 3 to possibly recall bushels and sell again in the future
+	$tech_recall_needed = false;
 	if($strategy == 'T') // one turn to sell tech
 		$turns_to_keep += 1;
 	if($strategy == 'T' and $market_autobuy_tech_price > $cpref->base_inherent_value_for_tech and $expensive_tech_on_market and !is_there_time_for_selling_tech_at_market_prices($reset_seconds_remaining, $max_market_package_time_in_seconds, $market_autobuy_tech_price, $is_final_destocking_attempt, $cpref)) {
@@ -128,7 +128,7 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 			log_error_message(120, $cnum, "Could not recall bushels on final destock attempt because turn count is $c->turns");
 		else { // have enough turns		
 			if(food_and_money_for_turns($c, 3, $money_to_reserve, false)) { // now has get money and food for 3 turns
-				log_country_message($cnum, "Recalling bushels because we think the price is too high"); // TODO: what about alliance where bushel prices might still be high?
+				log_country_message($cnum, "Recalling bushels because we think the price is too high");
 				$turn_result = recall_goods();
 				update_c($c, $turn_result);		
 			}
@@ -193,6 +193,7 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 		$future_pm_capacity_for_unit = ($is_final_destocking_attempt ? 0: estimate_future_private_market_capacity_for_military_unit($pm_info->buy_price->$military_unit, $c->land, $replenishment_rate, $reset_seconds_remaining, $server_seconds_per_turn));
 		log_country_message($cnum, "Adjusting budget down by $future_pm_capacity_for_unit which is future PM capacity for $military_unit");
 		$total_cost_to_buyout_future_private_market += $future_pm_capacity_for_unit;
+		// TODO: should max spend be adjusted if there's lots of food on the market?
 		$max_spend = max($c->money - $total_cost_to_buyout_future_private_market - $money_to_reserve, 0);
 	}
 
@@ -653,8 +654,7 @@ function dump_bushel_stock(&$c, $turns_to_keep, $reset_seconds_remaining, $serve
 		$bushels_to_sell = max(0, $c->food - get_food_needs_for_turns($turns_to_keep, $c->foodpro, $c->foodcon, false));
 		while ($bushels_to_sell > 0) { // while loop because bushel decay is factored into consumption now
 			PrivateMarket::sell_single_good($c, 'm_bu', $bushels_to_sell);
-			//$c->updateMain(); // foodcon won't get updated by a pm sale -- TODO: this didn't work? http://bots.haagsma.ca/logging/ai/886/country/COUNTRY_4.txt
-			$c = get_advisor(); // trying this...
+			$c = get_advisor(); // can't use UpdateMain() here because it doesn't update $c->foodcon
 			$bushels_to_sell = max(0, $c->food - get_food_needs_for_turns($turns_to_keep, $c->foodpro, $c->foodcon, false));
 			if($bushels_to_sell < 3000000)
 				break;

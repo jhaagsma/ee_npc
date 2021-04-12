@@ -269,8 +269,6 @@ while (1) {
         }
 
         $cpref_file->retal = json_decode(json_encode($cpref_file->retal), true);
-// TODO: remove ALL references to $cpref_file if it should be a $cpref reference instead
-
 
         $mktinfo = null;
 

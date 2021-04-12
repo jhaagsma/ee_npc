@@ -40,7 +40,7 @@ class Country
     }//end __construct()
 
 
-    public function updateMain()
+    public function updateMain() // WARNING: this does not update bushel consumption!
     {
         $main           = get_main();                 //Grab a fresh copy of the main stats
         $this->money    = $main->money;       //might as well use the newest numbers?
