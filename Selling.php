@@ -30,7 +30,7 @@ function emergency_sell_mil_on_pm (&$c, $money_needed) {
 
 // $market_good_name accepts m_tr, food, m_bu, oil, m_oil, bus, t_bus as examples
 function get_market_history($market_good_name, $look_back_hours) {
-    $result = ee('get_optimal_tech_buying_info', [
+    $result = ee('market_search', [
         'good' => $market_good_name,
         'look_back_hours' => $look_back_hours
     ]);
