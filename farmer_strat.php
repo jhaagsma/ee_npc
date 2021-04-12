@@ -194,7 +194,7 @@ function sellextrafood_farmer(&$c, $server_base_pm_bushel_sell_price = 29, $bush
     $max     = $c->goodsStuck('m_bu') ? 0.99 : $rmax;    
     $food_public_price = PublicMarket::price('m_bu');
     // don't dump food at +1 when the market is empty... can end up in a state where demo recyclers keep clearing it
-    $food_public_price = $food_public_price ? $food_public_price : $server_base_pm_bushel_sell_price + 7;
+    $food_public_price = $food_public_price ? $food_public_price : $server_base_pm_bushel_sell_price + 8;
     $price   = max($bushel_min_sell_price, round($food_public_price * Math::purebell($rmin, $max, $rstddev, $rstep)));
     $price   = ['m_bu' => $price];
 
