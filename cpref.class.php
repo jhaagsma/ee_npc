@@ -13,6 +13,8 @@
 
 namespace EENPC;
 
+// TODO: stop using and or
+
 class cpref
 {
 
@@ -45,13 +47,14 @@ class cpref
 
 
         // buying
-        $this->purchase_schedule_number = $this->get_purchase_schedule_number($cnum);
+        $this->purchase_schedule_number = $this->get_purchase_schedule_number();
         $this->target_cash_after_stockpiling = ($this->strat == "C" ? 1500000000 : 1800000000);
         $this->spend_extra_money_cooldown_turns = ($this->strat == "C" ? 5 : 7);
         $this->max_stockpiling_loss_percent = 60; // must be > 0
         // TODO: max bushel buy price
         $this->tech_max_purchase_price = 9999;     
-
+        // techers probably need to buy everything off PM, but other strats can likely skip turrets
+        $this->final_dpnw_for_stocking_calcs = ($this->strat == "T" ? (2025 / 6.5) : (3*144+588+2.5*192)/(1.5+2+0.6*2.5));
 
         // selling
         $this->production_algorithm = $this->get_production_algorithm();  
@@ -85,9 +88,8 @@ class cpref
     }
 
 
-    private function get_purchase_schedule_number($cnum) {
+    private function get_purchase_schedule_number() {
         $unique_schedule_count = ($this->strat == "C" || $this->strat == "F" ? 4 : 1);
-        //log_country_message($cnum, "strat is $this->strat");
         // indies and techers only have a single purchase schedule because they either buy mil or tech
         // rainbow doesn't use purchase schedules as of 20210409
         return $this->decode_bot_secret(2) % $unique_schedule_count;
