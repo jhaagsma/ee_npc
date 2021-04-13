@@ -14,7 +14,8 @@ function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     $is_allowed_to_mass_explore = is_country_allowed_to_mass_explore($c, $cpref);
     log_country_message($cnum, "Indy: {$c->pt_indy}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%; Mil: {$c->pt_mil}%; Weap: {$c->pt_weap}%");
 
-    $c->setIndyFromMarket(false); // changing to not check DPA - Slagpit 20210321
+    $military_unit_price_history = get_market_history_all_military_units($cnum, $cpref);
+    set_indy_from_production_algorithm($c, $military_unit_price_history, $cpref, false); // changing to not check DPA - Slagpit 20210321
 
     if ($c->m_spy > 10000) {
         Allies::fill('spy');
@@ -28,9 +29,6 @@ function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     $tech_inherent_value = get_inherent_value_for_tech($c, $rules, $cpref);
     $eligible_techs = ['t_bus', 't_res', 't_indy', 't_mil']; // don't buy t_weap for now - indies would over-prioritize it
     $optimal_tech_buying_array = get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, $cpref->tech_max_purchase_price, $tech_inherent_value);
-    $military_unit_price_history = get_market_history_all_military_units($cpref);
-    // TODO: set indy production using $cpref->production_algorithm
-
 
     // TODO: some form of stockpiling?
 

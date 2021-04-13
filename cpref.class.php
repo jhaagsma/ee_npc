@@ -69,15 +69,20 @@ class cpref
     }//end __construct()
 
     private function get_production_algorithm() {
+        $schedule_rand = $this->decode_bot_secret(2) % 100;
 
-        // TODO: implement
-        return "RANDOM";
-        return "SALES";
-        return "HIGH_PRICE";
-        return "AVG_PRICE";       
-        return "CURRENT_PRICE";       
+        // TODO: these should not be equal chance as most are terrible by design
+        if($schedule_rand <= 19)
+            return "SALES";
+        elseif($schedule_rand <= 39)
+            return "CURRENT_PRICE";
+        elseif($schedule_rand <= 59)
+            return "AVG_PRICE";
+        elseif($schedule_rand <= 79)
+            return "HIGH_PRICE";
+        else
+            return "RANDOM";
     }
-
 
 
     private function get_purchase_schedule_number() {

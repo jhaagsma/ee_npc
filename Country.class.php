@@ -184,7 +184,7 @@ class Country
         }
     }//end setIndy()
 
-
+/*
     public function setIndyFromMarket($checkDPA = false)
     {
         // produce 100% turrets if checked in the first 150 turns because there's very little demand for anything else
@@ -197,22 +197,6 @@ class Country
             // 200 was too low - maybe because of OOF and OOM events?
             $spy = max(1, min(5, round(400 / ($this->b_indy + 1))));
 
-            // commented out by Slagpit 20210323 - not clear why indies want so many spies
-            /*
-            if ($this->m_spy < 10000) {
-                $spy = 10;
-            } elseif ($this->m_spy / $this->land < 25) {
-                $spy = 5;
-            } elseif ($this->m_spy / $this->land < 30) {
-                $spy = 4;
-            } elseif ($this->m_spy / $this->land < 35) {
-                $spy = 3;
-            } elseif ($this->m_spy / $this->land < 40) {
-                $spy = 2;
-            } else {
-                $spy = 1;
-            }
-            */
             $therest = 100 - $spy;
 
             $new = ['pro_spy' => $spy];
@@ -251,7 +235,7 @@ class Country
 
         $this->setIndy($new);
     }//end setIndyFromMarket()
-
+*/
 
     /**
      * How much money it will cost to run turns

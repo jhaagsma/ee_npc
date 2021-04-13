@@ -153,7 +153,7 @@ function play_farmer_turn(&$c, $rules, $is_allowed_to_mass_explore, $bushel_min_
             || $c->turns == 1
         )
     ) { //Don't sell less than 30 turns of food unless you're on your last turn (and desperate?)
-        return sellextrafood_farmer($c, $rules, $bushel_min_sell_price, $cpref);
+        return sellextrafood_farmer($c, $rules, $bushel_min_sell_price, $cpref, false);
     } elseif ($c->shouldBuildSpyIndies($target_bpt)) {
         //build a full BPT of indies if we have less than that, and we're out of protection
         return Build::indy($c);
@@ -166,13 +166,16 @@ function play_farmer_turn(&$c, $rules, $is_allowed_to_mass_explore, $bushel_min_
     } elseif ($c->built() > 50) {  //otherwise... explore if we can
         $explore_turn_limit = $is_allowed_to_mass_explore ? 999 : 7; // match spend_money call
         return explore($c, max(1,min($explore_turn_limit, $c->turns - 1, turns_of_money($c) - 4)));
-    } else { //otherwise...  cash
-        return cash($c);
+    } elseif($c->food > 0) { // better to sell on PM than cash
+        log_country_message($c->cnum, "Selling food on PM in an attempt to avoid cashing turns");
+        return sellextrafood_farmer($c, $rules, $bushel_min_sell_price, $cpref, true);
+    } else { //otherwise...  cash :(
+        return cash($c); // TODO - hold turns instead if food is on market?
     }
 }//end play_farmer_turn()
 
 
-function sellextrafood_farmer(&$c, $rules, $bushel_min_sell_price, $cpref)
+function sellextrafood_farmer(&$c, $rules, $bushel_min_sell_price, $cpref, $force_private_sale = false)
 {
     //log_country_message($c->cnum, "Lots of food, let's sell some!");
     //$pm_info = get_pm_info();
@@ -195,12 +198,12 @@ function sellextrafood_farmer(&$c, $rules, $bushel_min_sell_price, $cpref)
     $food_public_price = $food_public_price ? $food_public_price : $server_base_pm_bushel_sell_price + 8;
     $price   = max($bushel_min_sell_price, round($food_public_price * Math::purebell($rmin, $max, $rstddev, $rstep)));
 
-    if ($price <= $pm_info->sell_price->m_bu / (2 - $c->tax())) {
-        if($c->money < $cpref->target_cash_after_stockpiling)
+    if ($force_private_sale or $price <= $pm_info->sell_price->m_bu / (2 - $c->tax())) {
+        if($force_private_sale or $c->money < $cpref->target_cash_after_stockpiling)
             return PrivateMarket::sell_single_good($c, 'm_bu', $c->food);
         else { // stockpile bushel instead if we have a lot of money
             stash_excess_bushels_on_public_if_needed($c, $rules);    
-            // TODO: get rid of this hack because stash_excess_bushels_on_public_if_needed doesn't return a turn result?
+            // TODO: get rid of the hack below because stash_excess_bushels_on_public_if_needed doesn't return a turn result?
             return PrivateMarket::sell_single_good($c, 'm_bu', $c->food);
         }   
     }

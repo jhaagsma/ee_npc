@@ -491,9 +491,9 @@ function get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, 
         return $turn_buckets;
     }
 
-    $tech_type_to_ipa = get_ipas_for_tech_purchasing($c, $eligible_techs);
-
     log_country_message($c->cnum, "Creating optimal tech buying array", 'green');
+
+    $tech_type_to_ipa = get_ipas_for_tech_purchasing($c, $eligible_techs);
 
     $optimal_tech_buying_array = [];
 

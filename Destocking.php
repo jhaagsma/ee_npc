@@ -211,7 +211,7 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 
 		if($c->money > 10000000) {
 			log_country_message($cnum, "Buying anything available off public market...");
-			buyout_up_to_market_dpnw($c, $cpref, 5000, $c->money, false, false); // buy anything ($10000 tech is 5000 dpnw)
+			buyout_up_to_market_dpnw($c, $cpref, 5500, $c->money, false, false); // buy anything ($10000 tech is 5500 dpnw with 10% tax)
 			log_country_message($cnum, "Done with public market purchases. Money is $c->money");
 		}
 		else
