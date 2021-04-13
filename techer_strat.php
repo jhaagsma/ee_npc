@@ -129,7 +129,7 @@ function play_techer_turn(&$c, $tech_price_min_sell_price, $server_max_possible_
     } elseif ($c->shouldBuildFourCS($target_bpt)) {
         //build 4CS if we can afford it and are below our target BPT (80)
         return Build::cs(4); //build 4 CS
-    } elseif ($c->tpt > $c->land * 0.17 * 1.3 && $c->tpt > 100 && rand(0, 100) > 2) {
+    } elseif ($c->tpt > $c->land * 0.17 * 1.3 && $c->tpt > 100 && rand(1, 100) > 5) {
         //tech per turn is greater than land*0.17 -- just kindof a rough "don't tech below this" rule...
         //so, 10 if they can... cap at turns - 1
         return tech_techer($c, max(1, min(turns_of_money($c), turns_of_food($c), 13, $c->turns + 2) - 3), $tpt_split);
