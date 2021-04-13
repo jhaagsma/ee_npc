@@ -80,7 +80,7 @@ class cpref
 
 
     private function get_min_perc_teching_turns() {
-        return 10 + round($this->decode_bot_secret(3) / 25); // between 10% and 50%, fine if not completely even probabilities on edges
+        return 20 + round($this->decode_bot_secret(3) / 33); // between 20% and 50%, fine if not completely even probabilities on edges
     }
 
 
