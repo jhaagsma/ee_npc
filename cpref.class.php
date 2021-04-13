@@ -86,8 +86,8 @@ class cpref
 
 
     private function get_purchase_schedule_number($cnum) {
-        $unique_schedule_count = ($this->strat == "C" or $this->strat == "F" ? 4 : 1);
-        log_country_data($cnum, "strat is $this->strat");
+        $unique_schedule_count = ($this->strat == "C" || $this->strat == "F" ? 4 : 1);
+        //log_country_message($cnum, "strat is $this->strat");
         // indies and techers only have a single purchase schedule because they either buy mil or tech
         // rainbow doesn't use purchase schedules as of 20210409
         return $this->decode_bot_secret(2) % $unique_schedule_count;
