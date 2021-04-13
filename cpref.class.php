@@ -45,7 +45,7 @@ class cpref
 
 
         // buying
-        $this->purchase_schedule_number = $this->get_purchase_schedule_number();
+        $this->purchase_schedule_number = $this->get_purchase_schedule_number($cnum);
         $this->target_cash_after_stockpiling = ($this->strat == "C" ? 1500000000 : 1800000000);
         $this->spend_extra_money_cooldown_turns = ($this->strat == "C" ? 5 : 7);
         $this->max_stockpiling_loss_percent = 60; // must be > 0
@@ -85,8 +85,9 @@ class cpref
     }
 
 
-    private function get_purchase_schedule_number() {
+    private function get_purchase_schedule_number($cnum) {
         $unique_schedule_count = ($this->strat == "C" or $this->strat == "F" ? 4 : 1);
+        log_country_data($cnum, "strat is $this->strat");
         // indies and techers only have a single purchase schedule because they either buy mil or tech
         // rainbow doesn't use purchase schedules as of 20210409
         return $this->decode_bot_secret(2) % $unique_schedule_count;
