@@ -63,7 +63,7 @@ function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition)
             $c->updateMain(); //we probably don't need to do this *EVERY* turn
         }
 
-        $hold = money_management($c, $rules->max_possible_market_sell);
+        $hold = money_management($c, $rules->max_possible_market_sell, $cpref);
         if ($hold) {
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
         }

@@ -28,6 +28,23 @@ function emergency_sell_mil_on_pm (&$c, $money_needed) {
 }
 
 
+
+function get_market_history_all_military_units($cpref){
+    $market_history = [];
+
+    $military_units = ['m_tr', 'm_j', 'm_tu', 'm_ta'];
+    $search_result_fields = ['low_price', 'high_price', 'total_units_sold', 'total_sales', 'avg_price', 'no_results'];
+    foreach($military_units as $unit){
+        $market_history_for_unit = get_market_history($unit, $cpref->market_search_look_back_hours);
+        foreach($search_result_fields as $field){
+            $market_history[$unit][$field] = $market_history_for_unit->$field;
+        }
+    }
+
+    return $market_history;
+}
+
+
 // $market_good_name accepts m_tr, food, m_bu, oil, m_oil, bus, t_bus as examples
 function get_market_history($market_good_name, $look_back_hours) {
     $result = ee('market_search', [

@@ -318,7 +318,7 @@ function dump_tech(&$c, $strategy, $market_autobuy_tech_price, $server_max_possi
 		}
 
 		if ($mil_tech_to_keep) {
-			log_country_message($c->cnum, "With $c->land acres and $c->t_mil mil tech points, a demo should keep $mil_tech_to_keep mil tech");
+			log_country_message($c->cnum, "With $c->land acres and $c->t_mil mil tech points, a ".($c->govt == 'D' ? 'demo' : 'non-demo')." should keep $mil_tech_to_keep mil tech");
 		}
 
 		// if there's time in the set or if auto buy prices are bad, do a normal tech sale

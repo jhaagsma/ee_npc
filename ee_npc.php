@@ -375,7 +375,7 @@ while (1) {
                             $c = play_indy_strat($server, $cnum, $rules, $cpref, $exit_condition);
                             break;
                         default:
-                            $c = play_rainbow_strat($server, $cnum, $rules, $exit_condition);
+                            $c = play_rainbow_strat($server, $cnum, $rules, $cpref, $exit_condition);
                     }
 
                     if ($cpref_file->gdi && !$c->gdi) {

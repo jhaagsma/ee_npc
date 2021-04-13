@@ -28,6 +28,9 @@ function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     $tech_inherent_value = get_inherent_value_for_tech($c, $rules, $cpref);
     $eligible_techs = ['t_bus', 't_res', 't_indy', 't_mil']; // don't buy t_weap for now - indies would over-prioritize it
     $optimal_tech_buying_array = get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, $cpref->tech_max_purchase_price, $tech_inherent_value);
+    $military_unit_price_history = get_market_history_all_military_units($cpref);
+    // TODO: set indy production using $cpref->production_algorithm
+
 
     // TODO: some form of stockpiling?
 
@@ -54,7 +57,7 @@ function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     while ($c->turns > 0) {
         //$result = PublicMarket::buy($c,array('m_bu'=>100),array('m_bu'=>400));
                 
-        $result = play_indy_turn($c, $rules->max_possible_market_sell, $is_allowed_to_mass_explore);
+        $result = play_indy_turn($c, $rules->max_possible_market_sell, $is_allowed_to_mass_explore, $cpref);
         if ($result === false) {  //UNEXPECTED RETURN VALUE
             $c = get_advisor();     //UPDATE EVERYTHING
             continue;
@@ -65,7 +68,7 @@ function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition)
         }
 
         // money and food management should be here because otherwise indies might not sell goods
-        $hold = money_management($c, $rules->max_possible_market_sell);
+        $hold = money_management($c, $rules->max_possible_market_sell, $cpref);
         if ($hold) {
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
         }
@@ -95,7 +98,7 @@ function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition)
 }//end play_indy_strat()
 
 
-function play_indy_turn(&$c, $server_max_possible_market_sell, $is_allowed_to_mass_explore)
+function play_indy_turn(&$c, $server_max_possible_market_sell, $is_allowed_to_mass_explore, $cpref)
 {
  //c as in country!
     $target_bpt = 65;
@@ -109,7 +112,7 @@ function play_indy_turn(&$c, $server_max_possible_market_sell, $is_allowed_to_ma
     } elseif ($c->protection == 0 && total_cansell_military($c, $server_max_possible_market_sell) > 7500 && sellmilitarytime($c)
         || $c->turns == 1 && total_cansell_military($c, $server_max_possible_market_sell) > 7500
     ) {
-        return sell_max_military($c, $server_max_possible_market_sell);
+        return sell_max_military($c, $server_max_possible_market_sell, $cpref);
     } elseif ($c->shouldBuildFullBPT($target_bpt)) {
         //build a full BPT if we can afford it
         return Build::indy($c);

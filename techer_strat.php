@@ -69,7 +69,7 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
         }
 
         // management is here to make sure that tech is sold
-        $hold = money_management($c, $rules->max_possible_market_sell);
+        $hold = money_management($c, $rules->max_possible_market_sell, $cpref);
         if ($hold) {
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
         }

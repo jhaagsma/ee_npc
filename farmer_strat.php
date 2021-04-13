@@ -77,7 +77,7 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     while ($c->turns > 0) {
         //$result = PublicMarket::buy($c,array('m_bu'=>100),array('m_bu'=>400));
 
-        $result = play_farmer_turn($c, $rules->base_pm_food_sell_price, $is_allowed_to_mass_explore, $bushel_min_sell_price);
+        $result = play_farmer_turn($c, $rules, $is_allowed_to_mass_explore, $bushel_min_sell_price, $cpref);
         if ($result === false) {  //UNEXPECTED RETURN VALUE
             $c = get_advisor();     //UPDATE EVERYTHING
             continue;
@@ -98,7 +98,7 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
         }
         
         // management is here to make sure that food is sold
-        $hold = money_management($c, $rules->max_possible_market_sell);
+        $hold = money_management($c, $rules->max_possible_market_sell, $cpref);
         if ($hold) {
               break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!            
         }
@@ -137,9 +137,8 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     return $c;
 }//end play_farmer_strat()
 
-function play_farmer_turn(&$c, $server_base_pm_bushel_sell_price, $is_allowed_to_mass_explore, $bushel_min_sell_price)
+function play_farmer_turn(&$c, $rules, $is_allowed_to_mass_explore, $bushel_min_sell_price, $cpref)
 {
- //c as in country!
     $target_bpt = 65;
     global $turnsleep;
     usleep($turnsleep);
@@ -154,7 +153,7 @@ function play_farmer_turn(&$c, $server_base_pm_bushel_sell_price, $is_allowed_to
             || $c->turns == 1
         )
     ) { //Don't sell less than 30 turns of food unless you're on your last turn (and desperate?)
-        return sellextrafood_farmer($c, $server_base_pm_bushel_sell_price, $bushel_min_sell_price);
+        return sellextrafood_farmer($c, $rules, $bushel_min_sell_price, $cpref);
     } elseif ($c->shouldBuildSpyIndies($target_bpt)) {
         //build a full BPT of indies if we have less than that, and we're out of protection
         return Build::indy($c);
@@ -173,12 +172,14 @@ function play_farmer_turn(&$c, $server_base_pm_bushel_sell_price, $is_allowed_to
 }//end play_farmer_turn()
 
 
-function sellextrafood_farmer(&$c, $server_base_pm_bushel_sell_price = 29, $bushel_min_sell_price)
+function sellextrafood_farmer(&$c, $rules, $bushel_min_sell_price, $cpref)
 {
     //log_country_message($c->cnum, "Lots of food, let's sell some!");
     //$pm_info = get_pm_info();
     //$market_info = get_market_info(); //get the Public Market info
     //global $market;
+
+    $server_base_pm_bushel_sell_price = $rules->base_pm_food_sell_price;
 
     $c = get_advisor();     //UPDATE EVERYTHING
 
@@ -195,7 +196,13 @@ function sellextrafood_farmer(&$c, $server_base_pm_bushel_sell_price = 29, $bush
     $price   = max($bushel_min_sell_price, round($food_public_price * Math::purebell($rmin, $max, $rstddev, $rstep)));
 
     if ($price <= $pm_info->sell_price->m_bu / (2 - $c->tax())) {
-        return PrivateMarket::sell_single_good($c, 'm_bu', $c->food);
+        if($c->money < $cpref->target_cash_after_stockpiling)
+            return PrivateMarket::sell_single_good($c, 'm_bu', $c->food);
+        else { // stockpile bushel instead if we have a lot of money
+            stash_excess_bushels_on_public_if_needed($c, $rules);    
+            // TODO: get rid of this hack because stash_excess_bushels_on_public_if_needed doesn't return a turn result?
+            return PrivateMarket::sell_single_good($c, 'm_bu', $c->food);
+        }   
     }
 
     $quantity = ['m_bu' => $c->food]; //sell it all! :)

@@ -2,7 +2,7 @@
 
 namespace EENPC;
 
-function play_rainbow_strat($server, $cnum, $rules, &$exit_condition)
+function play_rainbow_strat($server, $cnum, $rules, $cpref, &$exit_condition)
 {
     $exit_condition = 'NORMAL';
     //global $cnum;
@@ -84,7 +84,7 @@ function play_rainbow_strat($server, $cnum, $rules, &$exit_condition)
         }
 
         // management is here to make sure that goods can be sold
-        $hold = money_management($c, $rules->max_possible_market_sell);
+        $hold = money_management($c, $rules->max_possible_market_sell, $cpref);
         if ($hold) {
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
         }

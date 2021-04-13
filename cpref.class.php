@@ -37,24 +37,39 @@ class cpref
         $this->gdi = $cpref_file->gdi;
         // end personality file issue
 
-        $this->market_search_look_back_hours = 2; // TODO: random, vary by server length
+
+        // general        
         $this->mass_explore_stop_acreage_rep = ($this->is_clan_server ? 99999 : 10000);
         $this->mass_explore_stop_acreage_non_rep = ($this->is_clan_server ? 99999 : 8200);        
         $this->base_inherent_value_for_tech = 700;
-        // TODO: max bushel buy price
-        $this->tech_max_purchase_price = 9999;     
-        $this->production_algorithm = $this->get_production_algorithm();  
+
+
+        // buying
         $this->purchase_schedule_number = $this->get_purchase_schedule_number();
         $this->target_cash_after_stockpiling = ($this->strat == "C" ? 1500000000 : 1800000000);
         $this->spend_extra_money_cooldown_turns = ($this->strat == "C" ? 5 : 7);
         $this->max_stockpiling_loss_percent = 60; // must be > 0
+        // TODO: max bushel buy price
+        $this->tech_max_purchase_price = 9999;     
 
+
+        // selling
+        $this->production_algorithm = $this->get_production_algorithm();  
+        $this->market_search_look_back_hours = 2; // TODO: random, vary by server length
+        $this->chance_to_sell_based_on_avg_price = 50;
+        $this->chance_to_sell_based_on_current_price = 100 - $this->chance_to_sell_based_on_avg_price;
+        $this->selling_price_max_distance = 15; // 15 means a country may sell up to 15% over or under market prices
+        $this->selling_price_std_dev = 5;
+
+
+        // destocking
         $this->earliest_destocking_start_time = $this->get_earliest_destocking_start_time();
+
 
     }//end __construct()
 
     private function get_production_algorithm() {
-        
+
         // TODO: implement
         return "RANDOM";
         return "SALES";
