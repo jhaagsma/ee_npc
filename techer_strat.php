@@ -136,7 +136,7 @@ function play_techer_turn(&$c, $tech_price_min_sell_price, $server_max_possible_
     } elseif ($c->tpt > $c->land * 0.17 * 1.3 && $c->tpt > 100 && $teching_turns_remaining_before_explore > 0) {
         //tech per turn is greater than land*0.17 -- just kindof a rough "don't tech below this" rule...
         //so, 10 if they can... cap at turns - 1
-        $turns_to_tech = max($teching_turns_remaining_before_explore, min(turns_of_money($c), turns_of_food($c), 13, $c->turns + 2) - 3);
+        $turns_to_tech = min($teching_turns_remaining_before_explore, min(turns_of_money($c), turns_of_food($c), 13, $c->turns + 2) - 3);
         $teching_turns_remaining_before_explore -= $turns_to_tech;
         return tech_techer($c, $turns_to_tech, $tpt_split);
     } elseif ($c->built() > 50 && $c->land < 10000 &&
