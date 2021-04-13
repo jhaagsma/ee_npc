@@ -420,8 +420,10 @@ function defend_self(&$c, $reserve_cash = 50000, $dpnwMax = 380)
 
 function sell_max_military(&$c, $server_max_possible_market_sell, $cpref, $allow_average_prices = false, $avg_market_prices = [])
 {
-    if($allow_average_prices and $avg_market_prices === [])
+    if($allow_average_prices and $avg_market_prices === []) {
         log_error_message(999, $c->cnum, 'sell_max_military() allowed average price selling but $avg_market_prices was empty');
+        $allow_average_prices = false;
+    }
     // it's okay if $avg_market_prices is empty if $allow_average_prices == false
 
     $c = get_advisor();     //UPDATE EVERYTHING
@@ -436,8 +438,6 @@ function sell_max_military(&$c, $server_max_possible_market_sell, $cpref, $allow
         $quantity[$unit] = can_sell_mil($c, $unit, $server_max_possible_market_sell);
     }
 
-    $allow_setting_price_based_on_average_prices = !empty($avg_market_prices);
-
     $rmax    = 1 + 0.01 * $cpref->selling_price_max_distance;
     $rmin    = 1 - 0.01 * $cpref->selling_price_max_distance;
     $rstep   = 0.01;
@@ -449,6 +449,7 @@ function sell_max_military(&$c, $server_max_possible_market_sell, $cpref, $allow
         if ($q == 0) {
             $price[$key] = 0;
         } else {
+            $max         = $c->goodsStuck($key) ? 0.99 : $rmax; //undercut if we have goods stuck
             // there's a random chance to sell based on market average prices instead of current prices
             $use_avg_price = ($allow_average_prices and mt_rand(1, 100) <= $cpref->chance_to_sell_based_on_avg_price) ? true : false;
             
@@ -459,7 +460,6 @@ function sell_max_military(&$c, $server_max_possible_market_sell, $cpref, $allow
                  // FUTURE: exclude our own mil tech?
                 $price[$key] = floor(0.93 * $pm_info->buy_price->$key * Math::half_bell_truncate_right_side(1.0, $rmin, $rstddev, 0.01));
             } else {
-                $max         = $c->goodsStuck($key) ? 0.99 : $rmax; //undercut if we have goods stuck
                 $price[$key] = min(
                     floor(0.93 * $pm_info->buy_price->$key),
                     floor(PublicMarket::price($key) * Math::purebell($rmin, $max, $rstddev, $rstep))

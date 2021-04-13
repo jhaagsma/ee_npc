@@ -39,11 +39,44 @@ function get_market_history_all_military_units($cnum, $cpref){
         foreach($search_result_fields as $field){
             $market_history[$unit][$field] = $market_history_for_unit->$field;
         }
-        log_country_data($cnum, $market_history[$unit], "Market history for $unit:");
+        log_country_market_history_for_single_unit($cnum, $unit, $market_history[$unit]);
     }
 
     return $market_history;
 }
+
+
+
+function get_market_history_all_tech($cnum, $cpref){
+    $market_history = [];
+
+    $tech_list = ['t_mil','t_med','t_bus','t_res','t_agri','t_war','t_ms','t_weap','t_indy','t_spy','t_sdi'];
+    $search_result_fields = ['low_price', 'high_price', 'total_units_sold', 'total_sales', 'avg_price', 'no_results'];
+    foreach($tech_list as $unit){
+        $market_history_for_unit = get_market_history($unit, $cpref->market_search_look_back_hours);
+        foreach($search_result_fields as $field){
+            $market_history[$unit][$field] = $market_history_for_unit->$field;
+        }
+        log_country_market_history_for_single_unit($cnum, $unit, $market_history[$unit]);
+    }
+
+    return $market_history;
+}
+
+
+
+function get_market_history_food($cnum, $cpref){
+    $market_history = [];
+    $search_result_fields = ['low_price', 'high_price', 'total_units_sold', 'total_sales', 'avg_price', 'no_results'];
+    $market_history_for_unit = get_market_history('food', $cpref->market_search_look_back_hours);
+    foreach($search_result_fields as $field){
+         $market_history[$field] = $market_history_for_unit->$field;
+    }
+    log_country_market_history_for_single_unit($cnum, 'food', $market_history);
+
+    return $market_history;
+}
+
 
 
 // $market_good_name accepts m_tr, food, m_bu, oil, m_oil, bus, t_bus as examples
@@ -81,8 +114,109 @@ function normalize_array_for_selling($cnum, &$score_array, $target_sum, $preferr
 }
 
 
-// TODO: add get_market_history_all_tech
-// TODO: add get_tech_from_production_algorithm
+function create_production_scores_based_on_preferences($cnum, $cpref, $unit_price_history, $price_reduction, $production_factor_per_unit,
+$high_price_score_array, $no_market_history_score_array, $current_price_score_array, $default_current_prices, $default_historical_prices) {
+    // $unit_price_history[$unit] elements can be null if there were no recent sales
+
+    //global $market; // this was in the old code near PublicMarket::price... not sure why
+
+    $price_array = [];
+    $production_score = [];    
+
+    if($cpref->production_algorithm == "HIGH_PRICE") {
+        log_country_message($cnum, "Unit shares in order of price ascending: ".json_encode($high_price_score_array));
+        foreach($production_factor_per_unit as $unit => $units_produced) {
+            $unit_price = isset($unit_price_history[$unit]['high_price']) ? $unit_price_history[$unit]['high_price'] : 0;
+            $initial_unit_score = round($units_produced * $unit_price);
+            $price_array[$unit] = $initial_unit_score;
+            log_country_message($cnum, "Initial unit score for $unit is $initial_unit_score with price $unit_price and production $units_produced");
+        }
+
+        if(max($price_array) == min($price_array) and max($price_array) == 0) { // no market data
+            log_country_message($cnum, "Detected no market data so using default values");
+            $price_array = $no_market_history_score_array;
+        }
+
+        arsort($price_array);
+        reset($price_array);
+        foreach(array_keys($price_array) as $unit) {
+            $unit_score = array_pop($high_price_score_array);
+            $production_score[$unit] = $unit_score;
+            log_country_message($cnum, "New score for $unit is $unit_score");
+        }
+    } // end HIGH_PRICE
+    elseif($cpref->production_algorithm == "CURRENT_PRICE") {   
+        log_country_message($cnum, "Unit shares in order of price ascending: ".json_encode($current_price_score_array));
+        foreach($production_factor_per_unit as $unit => $units_produced) {
+            $market_price = PublicMarket::price($unit);
+            $unit_price = $market_price ? $market_price : $default_current_prices[$unit];
+            $initial_unit_score = round($units_produced * $unit_price);
+            $price_array[$unit] = $initial_unit_score;
+            log_country_message($cnum, "Initial unit score for $unit is $initial_unit_score with price $unit_price and production $units_produced");
+        }
+
+        arsort($price_array);
+        reset($price_array);        
+        foreach(array_keys($price_array) as $unit) {
+            $unit_score = array_pop($current_price_score_array);
+            $production_score[$unit] = $unit_score;
+            log_country_message($cnum, "New score for $unit is $unit_score");
+        }
+    } // end CURRENT_PRICE
+    elseif($cpref->production_algorithm == "SALES") {
+        $number_of_units_with_no_data = 0;
+        foreach($production_factor_per_unit as $unit => $units_produced) {
+            $default_value = $default_historical_prices[$unit];
+            $unit_value = max(0,isset($unit_price_history[$unit]['total_sales']) ?
+                $unit_price_history[$unit]['total_sales'] - $price_reduction * $unit_price_history[$unit]['total_units_sold'] : $default_value);
+            $unit_score = round($units_produced * $unit_value);
+            $production_score[$unit] = $unit_score;
+            log_country_message($cnum, "Unit score for $unit is $unit_score with value $unit_value, production $units_produced, and default $default_value");
+
+            if($default_value == $unit_value) // false positives are possible, but extremely unlikely
+                $number_of_units_with_no_data++;
+        }
+
+        if($number_of_units_with_no_data == 4) { // we will rarely get false positives with this approach, but whatever
+            log_country_message($cnum, "Detected no market data so using default values");
+            $production_score = $no_market_history_score_array;
+        }
+    } // end SALES
+    elseif($cpref->production_algorithm == "AVG_PRICE") {   
+        $number_of_units_with_no_data = 0;
+        foreach($production_factor_per_unit as $unit => $units_produced) {
+            $default_price = $default_historical_prices[$unit];
+            $unit_price = max(0, isset($unit_price_history[$unit]['avg_price']) ?
+                $unit_price_history[$unit]['avg_price'] - $price_reduction : $default_price - $price_reduction);
+            $unit_score = round($units_produced * $unit_price);
+            $production_score[$unit] = $unit_score;
+            log_country_message($cnum, "Unit score for $unit is $unit_score with price $unit_price, production $units_produced, and default $default_price");
+
+            if($default_price == $unit_price) // false positives are possible, but extremely unlikely
+                $number_of_units_with_no_data++;
+        }
+
+        if($number_of_units_with_no_data == 4) { // we will rarely get false positives with this approach, but whatever
+            log_country_message($cnum, "Detected no market data so using default values");
+            $production_score = $no_market_history_score_array;
+        }
+    } // end AVG_PRICE
+    else {
+        if($cpref->production_algorithm <> "RANDOM")
+            log_error_message(999, $cnum, "create_production_scores_based_on_preferences(): invalid value for production algorithm: $cpref->production_algorithm");
+
+        foreach($production_factor_per_unit as $unit => $units_produced) {
+            $rand = mt_rand(1, 1000);
+            $production_score[$unit] = $rand;
+            log_country_message($cnum, "Unit score for $unit is random number $rand (possible range was 1 to 1000)");
+        }
+    } // end RANDOM
+
+    return $production_score;
+}
+
+
+
 
 function set_indy_from_production_algorithm(&$c, $military_unit_price_history, $cpref, $checkDPA = false)
 {
@@ -93,144 +227,50 @@ function set_indy_from_production_algorithm(&$c, $military_unit_price_history, $
         $new_indy_production['pro_tu'] = 100;
     }
     else { // not the first 150 turns
+        
+        log_country_message($c->cnum, "Setting indy production using algorithm $cpref->production_algorithm", 'green');  
+        
         // for now, 400 indy's worth of production with 1% min and 5% max
         // 200 was too low - maybe because of OOF and OOM events?
         $spy = max(1, min(5, round(400 / ($c->b_indy + 1))));
 
-        $production_score = [];
+        // create_production_scores_based_on_preferences requires lots of array parameters...
+
+        // base production per unit
         $production_factor_per_unit = [
             'm_tr'  => 1.86,
             'm_j'   => 1.86,
             'm_tu'  => 1.86,
             'm_ta'  => 0.4
         ];
-
-        // for CURRENT_PRICE
+        // scores used for HIGH_PRICE in order of price ascending
+        $high_price_score_array = [0, 1, 3, 9];
+        // default values used for HIGH_PRICE, AVG_PRICE, and SALES when there's no market history for ANY unit (beginning of the set)
+        $no_market_history_score_array  = [
+            'm_tr'  => 2,
+            'm_j'   => 13,
+            'm_tu'  => 82,
+            'm_ta'  => 3
+        ];
+        // scores used for CURRENT_PRICE in order of price ascending
+        $current_price_score_array = [1, 1, 1, 27];
+        // default values used for CURRENT_PRICE when market is empty
         $default_current_prices = [
             'm_tr'  => 9997,
             'm_j'   => 9998,
             'm_tu'  => 9999,
             'm_ta'  => 9996
         ];
-
-        // for AVG_PRICE and SALES
+        // default values used for AVG_PRICE and SALES when there's no market history for a unit
         $default_historical_prices = [
             'm_tr'  => 10,
             'm_j'   => 60,
             'm_tu'  => 200,
             'm_ta'  => 40
         ];
-       
-        //global $market; // why?
 
-        log_country_message($c->cnum, "Setting indy production using algorithm $cpref->production_algorithm", 'green');       
-
-        //out_data($military_unit_price_history);
-
-        // $military_unit_price_history[$unit] elements can be null if there were no recent sales
-
-
-        $price_array = [];
-        $production_score = [];
-
-        if($cpref->production_algorithm == "HIGH_PRICE") {   
-            $score_array = [0, 1, 3, 9]; // most expensive unit gets weight 9, second most gets weight 3, and so on...
-            log_country_message($c->cnum, "In order of price descending, unit shares are 9:3:1:0");
-            foreach($production_factor_per_unit as $unit => $units_produced) {
-                $unit_price = isset($military_unit_price_history[$unit]['high_price']) ? $military_unit_price_history[$unit]['high_price'] : 0;
-                $initial_unit_score = round($units_produced * $unit_price);
-                $price_array[$unit] = $initial_unit_score;
-                log_country_message($c->cnum, "Initial unit score for $unit is $initial_unit_score with price $unit_price and production $units_produced");
-            }
-
-            if(max($price_array) == min($price_array) and max($price_array) == 0) { // no market data
-                log_country_message($c->cnum, "Detected no market data so using default values that favor turret production");
-                $price_array['m_tr'] = 1;
-                $price_array['m_j'] = 3;           
-                $price_array['m_tu'] = 4;
-                $price_array['m_ta'] = 2;
-            }
-
-            arsort($price_array);
-            reset($price_array);
-            foreach(array_keys($price_array) as $unit) {
-                $unit_score = array_pop($score_array);
-                $production_score[$unit] = $unit_score;
-                log_country_message($c->cnum, "New score for $unit is $unit_score");
-            }
-        } // end HIGH_PRICE
-        elseif($cpref->production_algorithm == "CURRENT_PRICE") {   
-            $score_array = [1, 1, 1, 27]; // most expensive unit gets weight 27, second most gets weight 1, and so on...
-            log_country_message($c->cnum, "In order of price descending, unit shares are 27:1:1:1");
-            foreach($production_factor_per_unit as $unit => $units_produced) {
-                $market_price = PublicMarket::price($unit);
-                $unit_price = $market_price ? $market_price : $default_current_prices[$unit];
-                $initial_unit_score = round($units_produced * $unit_price);
-                $price_array[$unit] = $initial_unit_score;
-                log_country_message($c->cnum, "Initial unit score for $unit is $initial_unit_score with price $unit_price and production $units_produced");
-            }
-
-            arsort($price_array);
-            reset($price_array);
-            
-            foreach(array_keys($price_array) as $unit) {
-                $unit_score = array_pop($score_array);
-                $production_score[$unit] = $unit_score;
-                log_country_message($c->cnum, "New score for $unit is $unit_score");
-            }
-        } // end CURRENT_PRICE
-        elseif($cpref->production_algorithm == "SALES") {
-            $number_of_units_with_no_data = 0;
-            foreach($production_factor_per_unit as $unit => $units_produced) {
-                $default_value = $default_historical_prices[$unit];
-                $unit_value = isset($military_unit_price_history[$unit]['total_sales']) ? $military_unit_price_history[$unit]['total_sales'] : $default_value;
-                $unit_score = round($units_produced * $unit_value);
-                $production_score[$unit] = $unit_score;
-                log_country_message($c->cnum, "Unit score for $unit is $unit_score with value $unit_value, production $units_produced, and default $default_value");
-
-                if($default_value == $unit_value) // false positives are possible, but extremely unlikely
-                    $number_of_units_with_no_data++;
-            }
-
-            if($number_of_units_with_no_data == 4) { // we will rarely get false positives with this approach, but whatever
-                log_country_message($c->cnum, "Detected no market data so using default values that favor turret production");
-                $production_score['m_tr'] = 2;
-                $production_score['m_j'] = 13;           
-                $production_score['m_tu'] = 83;
-                $production_score['m_ta'] = 2;
-            }
-        } // end SALES
-        elseif($cpref->production_algorithm == "AVG_PRICE") {   
-            $number_of_units_with_no_data = 0;
-            foreach($production_factor_per_unit as $unit => $units_produced) {
-                $default_price = $default_historical_prices[$unit];
-                $unit_price = isset($military_unit_price_history[$unit]['total_sales']) ? $military_unit_price_history[$unit]['avg_price'] : $default_price;
-                $unit_score = round($units_produced * $unit_price);
-                $production_score[$unit] = $unit_score;
-                log_country_message($c->cnum, "Unit score for $unit is $unit_score with price $unit_price, production $units_produced, and default $default_price");
-
-                if($default_price == $unit_price) // false positives are possible, but extremely unlikely
-                    $number_of_units_with_no_data++;
-            }
-
-            if($number_of_units_with_no_data == 4) { // we will rarely get false positives with this approach, but whatever
-                log_country_message($c->cnum, "Detected no market data so using default values that favor turret production");
-                $production_score['m_tr'] = 2;
-                $production_score['m_j'] = 13;           
-                $production_score['m_tu'] = 83;
-                $production_score['m_ta'] = 2;
-            }
-        } // end AVG_PRICE
-        else {
-            if($cpref->production_algorithm <> "RANDOM")
-                log_error_message(999, $c->cnum, "set_indy_from_production_algorithm(): invalid value for production algorithm: $cpref->production_algorithm");
-
-            foreach($production_factor_per_unit as $unit => $units_produced) {
-                $rand = mt_rand(1, 1000);
-                $production_score[$unit] = $rand;
-                log_country_message($c->cnum, "Unit score for $unit is random number $rand (possible range was 1 to 1000)");
-            }
-        } // end RANDOM
+        $production_score = create_production_scores_based_on_preferences($c->cnum, $cpref, $military_unit_price_history, 0, $production_factor_per_unit,
+        $high_price_score_array, $no_market_history_score_array, $current_price_score_array, $default_current_prices, $default_historical_prices);
        
         // remove jets if we're checking DPA and it's too low
         if ($checkDPA) {
@@ -264,3 +304,102 @@ function set_indy_from_production_algorithm(&$c, $military_unit_price_history, $
 
     $c->setIndy($new_indy_production);
 }//end set_indy_from_production_algorithm()
+
+
+
+function get_tpt_split_from_production_algorithm(&$c, $tech_price_history, $cpref)
+{
+    // produce bus/res in first 150 turns because there's very little demand for anything else and we're probably poor
+    // FUTURE: 150 is a made up number that could be changed to something better
+    if ($c->turns_played < 150) { 
+        $production_score = [
+            't_mil' => 0,
+            't_med' => 0,
+            't_bus' => 50,
+            't_res' => 50,
+            't_agri' => 0,
+            't_war' => 0,
+            't_ms' => 0,
+            't_weap' => 0,
+            't_indy' => 0,
+            't_spy' => 0,
+            't_sdi' => 0
+        ];
+        log_country_message($c->cnum, "Setting tech production to 50% bus/res because we haven't played 150 turns yet");
+    }
+    else { // not the first 150 turns        
+        log_country_message($c->cnum, "Setting tech production using algorithm $cpref->production_algorithm", 'green');  
+        
+        // create_production_scores_based_on_preferences requires lots of array parameters...
+
+        // base production per unit (not useful for tech)
+        $production_factor_per_unit = [
+            't_mil' => 1,
+            't_med' => 1,
+            't_bus' => 1,
+            't_res' => 1,
+            't_agri' => 1,
+            't_war' => 1,
+            't_ms' => 1,
+            't_weap' => 1,
+            't_indy' => 1,
+            't_spy' => 1,
+            't_sdi' => 1
+        ];
+        // scores used for HIGH_PRICE in order of price ascending
+        $high_price_score_array = [2, 2, 2, 2, 4, 4, 4, 15, 15, 25, 25];
+        // default values used for HIGH_PRICE, AVG_PRICE, and SALES when there's no market history for ANY unit (beginning of the set)
+        $no_market_history_score_array  = [
+            't_mil' => 0,
+            't_med' => 0,
+            't_bus' => 9000,
+            't_res' => 9000,
+            't_agri' => 4000,
+            't_war' => 0,
+            't_ms' => 0,
+            't_weap' => 0,
+            't_indy' => 4000,
+            't_spy' => 0,
+            't_sdi' => 0
+        ];
+        // scores used for CURRENT_PRICE in order of price ascending
+        $current_price_score_array = [0, 0, 0, 0, 0, 0, 10, 10, 10, 35, 35];
+        // default values used for CURRENT_PRICE when market is empty
+        $default_current_prices = [
+            't_mil' => 4000,
+            't_med' => 1000,
+            't_bus' => 7000,
+            't_res' => 7000,
+            't_agri' => 6000,
+            't_war' => 1500,
+            't_ms' => 3000,
+            't_weap' => 3000,
+            't_indy' => 6000,
+            't_spy' => 1000,
+            't_sdi' => 8000
+        ];
+        // default values used for AVG_PRICE and SALES when there's no market history for a single unit
+        $default_historical_prices = [
+            't_mil' => 1500,
+            't_med' => 1000,
+            't_bus' => 2000,
+            't_res' => 2000,
+            't_agri' => 1500,
+            't_war' => 1000,
+            't_ms' => 1000,
+            't_weap' => 1000,
+            't_indy' => 1500,
+            't_spy' => 1000,
+            't_sdi' => 1000
+        ];
+
+        $production_score = create_production_scores_based_on_preferences($c->cnum, $cpref, $tech_price_history, $cpref->base_inherent_value_for_tech, $production_factor_per_unit,
+        $high_price_score_array, $no_market_history_score_array, $current_price_score_array, $default_current_prices, $default_historical_prices);
+    }
+
+    log_country_message($c->cnum, "Normalizing production scores to sum to 10000 for easier reading");
+    normalize_array_for_selling($c->cnum, $production_score, 10000, 't_bus');
+    log_country_data($c->cnum, $production_score, "Tech production scores: ");    
+    // no need for proper normalization here. it will have to keep getting normalized because tpt can change as the country plays turns
+    return $production_score;
+}//end get_tpt_split_from_production_algorithm()

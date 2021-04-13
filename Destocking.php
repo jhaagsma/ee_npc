@@ -323,7 +323,17 @@ function dump_tech(&$c, $strategy, $market_autobuy_tech_price, $server_max_possi
 
 		// if there's time in the set or if auto buy prices are bad, do a normal tech sale
 		$dump_at_min_sell_price = ($can_sell_at_market_prices or $market_autobuy_tech_price <= $cpref->base_inherent_value_for_tech) ? false : true;
-		$turn_result = sell_max_tech($c, $market_autobuy_tech_price, $server_max_possible_market_sell, $mil_tech_to_keep, $dump_at_min_sell_price);
+		$allow_average_prices = false;
+		$tech_price_history = [];
+		// if not dumping tech at min prices, we have the option to sell by average price
+		if(!$dump_at_min_sell_price) {
+			$allow_average_prices = true;
+			$tech_price_history = get_market_history_all_tech($c->cnum, $cpref);
+		}
+
+		$turn_result = sell_max_tech($c, $cpref, $market_autobuy_tech_price, $server_max_possible_market_sell, $mil_tech_to_keep, $dump_at_min_sell_price, $allow_average_prices, $tech_price_history);
+
+		sell_max_tech($c, $cpref, $tech_price_min_sell_price, $server_max_possible_market_sell, 0, false, true, $tech_price_history);
 		update_c($c, $turn_result);
 	}
 

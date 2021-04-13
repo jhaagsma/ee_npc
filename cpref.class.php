@@ -44,7 +44,9 @@ class cpref
         $this->mass_explore_stop_acreage_rep = ($this->is_clan_server ? 99999 : 10000);
         $this->mass_explore_stop_acreage_non_rep = ($this->is_clan_server ? 99999 : 8200);        
         $this->base_inherent_value_for_tech = 700;
-
+        // TODO: spal
+        // TODO: bpt (temporary?)
+        // TODO: landgoal
 
         // buying
         $this->purchase_schedule_number = $this->get_purchase_schedule_number();
@@ -58,8 +60,8 @@ class cpref
 
         // selling
         $this->production_algorithm = $this->get_production_algorithm();  
-        $this->market_search_look_back_hours = 2; // TODO: random, vary by server length
-        $this->chance_to_sell_based_on_avg_price = 50;
+        $this->market_search_look_back_hours = mt_rand(2, 8); //mt_rand(1, 8); // TODO: random, vary by server length
+        $this->chance_to_sell_based_on_avg_price = 50; 
         $this->chance_to_sell_based_on_current_price = 100 - $this->chance_to_sell_based_on_avg_price;
         $this->selling_price_max_distance = 15; // 15 means a country may sell up to 15% over or under market prices
         $this->selling_price_std_dev = 5;

@@ -14,6 +14,7 @@ function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     $is_allowed_to_mass_explore = is_country_allowed_to_mass_explore($c, $cpref);
     log_country_message($cnum, "Indy: {$c->pt_indy}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%; Mil: {$c->pt_mil}%; Weap: {$c->pt_weap}%");
 
+    log_country_message($cnum, "Getting military prices using market search", 'green');
     $military_unit_price_history = get_market_history_all_military_units($cnum, $cpref);
     set_indy_from_production_algorithm($c, $military_unit_price_history, $cpref, false); // changing to not check DPA - Slagpit 20210321
 

@@ -146,6 +146,13 @@ function log_country_data($cnum_input, $data, $intro_message) {
     log_country_message($cnum_input, $message);
 }
 
+
+function log_country_market_history_for_single_unit($cnum_input, $unit_name, $unit_market_history) {    
+    $message = "Market history for $unit_name: ".($unit_market_history['no_results'] ? "no data" : json_encode($unit_market_history));
+    log_country_message($cnum_input, $message);
+}
+
+
 // examples of things to log: what decisions were made (and why), how turns are spent
 function log_country_message($cnum_input, $message, $color = null) {
     global $log_country_to_screen, $log_to_local, $local_file_path;

@@ -13,6 +13,10 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     $c = get_advisor();     //c as in country! (get the advisor)
     $is_allowed_to_mass_explore = is_country_allowed_to_mass_explore($c, $cpref);
 
+    log_country_message($cnum, "Getting tech prices using market search", 'green');
+    $tech_price_history = get_market_history_all_tech($cnum, $cpref);
+    $tpt_split = get_tpt_split_from_production_algorithm($c, $tech_price_history, $cpref);
+
     $c->setIndy('pro_spy');
 
     if ($c->m_spy > 10000) {
@@ -58,7 +62,7 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     while ($c->turns > 0) {
         //$result = PublicMarket::buy($c,array('m_bu'=>100),array('m_bu'=>400));
                 
-        $result = play_techer_turn($c, $tech_price_min_sell_price, $rules->max_possible_market_sell, $is_allowed_to_mass_explore);
+        $result = play_techer_turn($c, $tech_price_min_sell_price, $rules->max_possible_market_sell, $is_allowed_to_mass_explore, $cpref, $tech_price_history, $tpt_split);
         if ($result === false) {  //UNEXPECTED RETURN VALUE
             $c = get_advisor();     //UPDATE EVERYTHING
             continue;
@@ -96,7 +100,7 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
 }//end play_techer_strat()
 
 
-function play_techer_turn(&$c, $tech_price_min_sell_price, $server_max_possible_market_sell, $is_allowed_to_mass_explore)
+function play_techer_turn(&$c, $tech_price_min_sell_price, $server_max_possible_market_sell, $is_allowed_to_mass_explore, $cpref, $tech_price_history, $tpt_split)
 {
  //c as in country!
     $target_bpt = 65;
@@ -115,7 +119,7 @@ function play_techer_turn(&$c, $tech_price_min_sell_price, $server_max_possible_
     ) {
         //never sell less than 20 turns worth of tech
         //always sell if we can????
-        return sell_max_tech($c, $tech_price_min_sell_price, $server_max_possible_market_sell);
+        return sell_max_tech($c, $cpref, $tech_price_min_sell_price, $server_max_possible_market_sell, 0, false, true, $tech_price_history);
     } elseif ($c->shouldBuildSpyIndies($target_bpt)) {
         //build a full BPT of indies if we have less than that, and we're out of protection
         return Build::indy($c);
@@ -128,7 +132,7 @@ function play_techer_turn(&$c, $tech_price_min_sell_price, $server_max_possible_
     } elseif ($c->tpt > $c->land * 0.17 * 1.3 && $c->tpt > 100 && rand(0, 100) > 2) {
         //tech per turn is greater than land*0.17 -- just kindof a rough "don't tech below this" rule...
         //so, 10 if they can... cap at turns - 1
-        return tech_techer($c, max(1, min(turns_of_money($c), turns_of_food($c), 13, $c->turns + 2) - 3));
+        return tech_techer($c, max(1, min(turns_of_money($c), turns_of_food($c), 13, $c->turns + 2) - 3), $tpt_split);
     } elseif ($c->built() > 50 and $c->land < 10000 and ($c->land < 5000 or $c->built() >= 97)
         //&& ($c->land < 5000 || rand(0, 100) > 95 && $c->land < $server_avg_land)
         // 5k land is too low, techer bots are always below bot avg land, and the 5% chance is here is after the 3% chance from the prev line
@@ -137,7 +141,7 @@ function play_techer_turn(&$c, $tech_price_min_sell_price, $server_max_possible_
         return explore($c, max(1, min($explore_turn_limit, $c->turns - 1, turns_of_money($c) - 4, turns_of_food($c) - 4)));
     } else { //otherwise, tech, obviously
         //so, 10 if they can... cap at turns - 1
-        return tech_techer($c, max(1, min(turns_of_money($c), turns_of_food($c), 13, $c->turns + 2) - 3));
+        return tech_techer($c, max(1, min(turns_of_money($c), turns_of_food($c), 13, $c->turns + 2) - 3), $tpt_split);
     }
 }//end play_techer_turn()
 
@@ -160,8 +164,15 @@ function selltechtime(&$c)
 
 
 // future: $mil_tech_to_keep should be an array of all techs? new function or change the name?
-function sell_max_tech(&$c, $tech_price_min_sell_price, $server_max_possible_market_sell, $mil_tech_to_keep = 0, $dump_at_min_sell_price = false)
+function sell_max_tech(&$c, $cpref, $tech_price_min_sell_price, $server_max_possible_market_sell, $mil_tech_to_keep = 0,
+    $dump_at_min_sell_price = false, $allow_average_prices = false, $tech_price_history = [])
 {
+    if($allow_average_prices and $tech_price_history === []) {
+        log_error_message(999, $c->cnum, 'sell_max_tech() allowed average price selling but $tech_price_history was empty');
+        $allow_average_prices = false;
+    }
+    // it's okay if $tech_price_history is empty if $allow_average_prices == false
+
     $c = get_advisor();     //UPDATE EVERYTHING
     $c->updateOnMarket();
 
@@ -194,42 +205,65 @@ function sell_max_tech(&$c, $tech_price_min_sell_price, $server_max_possible_mar
         return;
     }
 
+    // mil, bus, res, agri, indy, SDI
+    $good_tech_nogoods_high   = 8800;
+    $good_tech_nogoods_low    = 4000;
+    $good_tech_nogoods_stddev = 1200;
+    $good_tech_nogoods_step   = 1;
 
-    $nogoods_high   = 9000;
-    $nogoods_low    = 2000;
-    $nogoods_stddev = 1500;
-    $nogoods_step   = 1;
-    $rmax           = 1.30; //percent
-    $rmin           = 0.80; //percent
-    $rstep          = 0.01;
-    $rstddev        = 0.10;
+    // med, mil strat, warfare, weapons, spy
+    $garbage_tech_nogoods_high   = 4500;
+    $garbage_tech_nogoods_low    = 1500;
+    $garbage_tech_nogoods_stddev = 750;
+    $garbage_tech_nogoods_step   = 1;    
+
+    $rmax    = 1 + 0.01 * $cpref->selling_price_max_distance;
+    $rmin    = 1 - 0.01 * $cpref->selling_price_max_distance;
+    $rstep   = 0.01;
+    $rstddev = 0.01 * $cpref->selling_price_std_dev;
     $price          = [];
+
+
+    // TODO: test selling by average...
+
     foreach ($quantity as $key => $q) {
+        $t__key = "t_$key"; // :(
+        $avg_price = ($allow_average_prices and isset($tech_price_history[$t__key]['avg_price'])) ? $tech_price_history[$t__key]['avg_price'] : null;
+
         if ($q == 0) {
             $price[$key] = 0;
-        } elseif (PublicMarket::price($key) != null) {
-            // additional check to make sure we aren't repeatedly undercutting with minimal goods
-            if ($q < 100 && PublicMarket::available($key) < 1000) {
-                $price[$key] = PublicMarket::price($key);
-            } else {
-                Debug::msg("sell_max_tech:A:$key");
-                $max = $c->goodsStuck($key) ? 0.98 : $rmax; //undercut if we have goods stuck
-                Debug::msg("sell_max_tech:B:$key");
+        } else {
+            $max = $c->goodsStuck($key) ? 0.98 : $rmax; //undercut if we have goods stuck
+            // there's a random chance to sell based on market average prices instead of current prices
+            $use_avg_price = ($allow_average_prices and mt_rand(1, 100) <= $cpref->chance_to_sell_based_on_avg_price) ? true : false;
 
-                if($dump_at_min_sell_price)
-                    $price[$key] = $tech_price_min_sell_price;
-                else {
+            if($dump_at_min_sell_price)
+                $price[$key] = $tech_price_min_sell_price;
+            elseif ($use_avg_price and $avg_price) { // use average price and average price exists
+                $price[$key] = max($tech_price_min_sell_price, floor($avg_price * Math::purebell($rmin, $max, $rstddev, $rstep)));
+            }
+            elseif (PublicMarket::price($key) != null) {
+                // additional check to make sure we aren't repeatedly undercutting with minimal goods
+                if ($q < 100 && PublicMarket::available($key) < 1000) {
+                    $price[$key] = PublicMarket::price($key);
+                } else {
+                    Debug::msg("sell_max_tech:A:$key");                    
+                    Debug::msg("sell_max_tech:B:$key");
+
                     $price[$key] = max($tech_price_min_sell_price, 
                         min(9999,
                             floor(PublicMarket::price($key) * Math::purebell($rmin, $max, $rstddev, $rstep))
                         )
                     );
-                }
 
-                Debug::msg("sell_max_tech:C:$key");
+                    Debug::msg("sell_max_tech:C:$key");
+                }
+            } else {
+                if($key == 'med' || $key == 'war' || $key == 'weap' || $key == 'ms' || $key == 'spy')
+                    $price[$key] = floor(Math::purebell($garbage_tech_nogoods_low, $garbage_tech_nogoods_high, $garbage_tech_nogoods_stddev, $garbage_tech_nogoods_step));
+                else
+                    $price[$key] = floor(Math::purebell($good_tech_nogoods_low, $good_tech_nogoods_high, $good_tech_nogoods_stddev, $good_tech_nogoods_step));
             }
-        } else {
-            $price[$key] = floor(Math::purebell($nogoods_low, $nogoods_high, $nogoods_stddev, $nogoods_step));
         }
     }
 
@@ -251,42 +285,30 @@ function sell_max_tech(&$c, $tech_price_min_sell_price, $server_max_possible_mar
  *
  * @return EEResult       Teching
  */
-function tech_techer(&$c, $turns = 1)
+function tech_techer(&$c, $turns = 1, $tpt_split)
 {
     //lets do random weighting... to some degree
     //$market_info = get_market_info();   //get the Public Market info
     //global $market;
 
-    $techfloor = 600;
-
-    $mil  = max(pow(PublicMarket::price('mil') - $techfloor, 2), rand(0, 30000));
-    $med  = max(pow(PublicMarket::price('med') - $techfloor, 2), rand(0, 500));
-    $bus  = max(pow(PublicMarket::price('bus') - $techfloor, 2), rand(10, 40000));
-    $res  = max(pow(PublicMarket::price('res') - $techfloor, 2), rand(10, 40000));
-    $agri = max(pow(PublicMarket::price('agri') - $techfloor, 2), rand(10, 30000));
-    $war  = max(pow(PublicMarket::price('war') - $techfloor, 2), rand(0, 1000));
-    $ms   = max(pow(PublicMarket::price('ms') - $techfloor, 2), rand(0, 2000));
-    $weap = max(pow(PublicMarket::price('weap') - $techfloor, 2), rand(0, 2000));
-    $indy = max(pow(PublicMarket::price('indy') - $techfloor, 2), rand(5, 30000));
-    $spy  = max(pow(PublicMarket::price('spy') - $techfloor, 2), rand(0, 1000));
-    $sdi  = max(pow(PublicMarket::price('sdi') - $techfloor, 2), rand(2, 15000));
-    $tot  = $mil + $med + $bus + $res + $agri + $war + $ms + $weap + $indy + $spy + $sdi;
+    // normalize array to current tpt
+    normalize_array_for_selling($c->cnum, $tpt_split, $c->tpt, 't_bus');
 
     $turns = max(1, min($turns, $c->turns));
     $left  = $c->tpt * $turns;
-    $left -= $mil = min($left, floor($c->tpt * $turns * ($mil / $tot)));
-    $left -= $med = min($left, floor($c->tpt * $turns * ($med / $tot)));
-    $left -= $bus = min($left, floor($c->tpt * $turns * ($bus / $tot)));
-    $left -= $res = min($left, floor($c->tpt * $turns * ($res / $tot)));
-    $left -= $agri = min($left, floor($c->tpt * $turns * ($agri / $tot)));
-    $left -= $war = min($left, floor($c->tpt * $turns * ($war / $tot)));
-    $left -= $ms = min($left, floor($c->tpt * $turns * ($ms / $tot)));
-    $left -= $weap = min($left, floor($c->tpt * $turns * ($weap / $tot)));
-    $left -= $indy = min($left, floor($c->tpt * $turns * ($indy / $tot)));
-    $left -= $spy = min($left, floor($c->tpt * $turns * ($spy / $tot)));
-    $left -= $sdi = max($left, min($left, floor($c->tpt * $turns * ($sdi / $tot))));
+    $left -= $mil = $tpt_split['t_mil'] * $turns;
+    $left -= $med = $tpt_split['t_med'] * $turns;
+    $left -= $bus = $tpt_split['t_bus'] * $turns;
+    $left -= $res = $tpt_split['t_res'] * $turns;
+    $left -= $agri = $tpt_split['t_agri'] * $turns;
+    $left -= $war = $tpt_split['t_war'] * $turns;
+    $left -= $ms = $tpt_split['t_ms'] * $turns;
+    $left -= $weap = $tpt_split['t_weap'] * $turns;
+    $left -= $indy = $tpt_split['t_indy'] * $turns;
+    $left -= $spy = $tpt_split['t_spy'] * $turns;
+    $left -= $sdi = $tpt_split['t_sdi'] * $turns;
     if ($left != 0) {
-        die("What the hell?");
+        die("What the hell? tech_techer()");
     }
 
     return tech(
