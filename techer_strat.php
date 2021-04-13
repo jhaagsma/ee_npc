@@ -59,10 +59,13 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
 
     stash_excess_bushels_on_public_if_needed($c, $rules); // TODO: money check (should be inside function)
 
+    $teching_turns_remaining_before_explore = floor(0.01 * $cpref->min_perc_teching_turns * $c->turns);
+    log_country_message($cnum, "Min teching turns before exploring is $teching_turns_remaining_before_explore based on preference $cpref->min_perc_teching_turns%");
+
     while ($c->turns > 0) {
         //$result = PublicMarket::buy($c,array('m_bu'=>100),array('m_bu'=>400));
                 
-        $result = play_techer_turn($c, $tech_price_min_sell_price, $rules->max_possible_market_sell, $is_allowed_to_mass_explore, $cpref, $tech_price_history, $tpt_split);
+        $result = play_techer_turn($c, $tech_price_min_sell_price, $rules->max_possible_market_sell, $is_allowed_to_mass_explore, $cpref, $tech_price_history, $tpt_split, $teching_turns_remaining_before_explore);
         if ($result === false) {  //UNEXPECTED RETURN VALUE
             $c = get_advisor();     //UPDATE EVERYTHING
             continue;
@@ -100,15 +103,16 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
 }//end play_techer_strat()
 
 
-function play_techer_turn(&$c, $tech_price_min_sell_price, $server_max_possible_market_sell, $is_allowed_to_mass_explore, $cpref, $tech_price_history, $tpt_split)
+function play_techer_turn(&$c, $tech_price_min_sell_price, $server_max_possible_market_sell, $is_allowed_to_mass_explore, $cpref, $tech_price_history, $tpt_split, &$teching_turns_remaining_before_explore)
 {
+    // note: $teching_turns_remaining is 
+
  //c as in country!
     $target_bpt = 65;
     global $turnsleep, $mktinfo, $server_avg_land;
     $mktinfo = null;
     usleep($turnsleep);
     //log_country_message($cnum, $main->turns . ' turns left');
-
 
     if ($c->shouldBuildSingleCS($target_bpt)) {
         //LOW BPT & CAN AFFORD TO BUILD
@@ -129,19 +133,23 @@ function play_techer_turn(&$c, $tech_price_min_sell_price, $server_max_possible_
     } elseif ($c->shouldBuildFourCS($target_bpt)) {
         //build 4CS if we can afford it and are below our target BPT (80)
         return Build::cs(4); //build 4 CS
-    } elseif ($c->tpt > $c->land * 0.17 * 1.3 && $c->tpt > 100 && rand(1, 100) > 5) {
+    } elseif ($c->tpt > $c->land * 0.17 * 1.3 && $c->tpt > 100 && $teching_turns_remaining_before_explore > 0) {
         //tech per turn is greater than land*0.17 -- just kindof a rough "don't tech below this" rule...
         //so, 10 if they can... cap at turns - 1
-        return tech_techer($c, max(1, min(turns_of_money($c), turns_of_food($c), 13, $c->turns + 2) - 3), $tpt_split);
-    } elseif ($c->built() > 50 && $c->land < 10000 && ($c->land < 5000 || $c->built() >= 97)
-        //&& ($c->land < 5000 || rand(0, 100) > 95 && $c->land < $server_avg_land)
-        // 5k land is too low, techer bots are always below bot avg land, and the 5% chance is here is after the 3% chance from the prev line
+        $turns_to_tech = max($teching_turns_remaining_before_explore, min(turns_of_money($c), turns_of_food($c), 13, $c->turns + 2) - 3);
+        $teching_turns_remaining_before_explore -= $turns_to_tech;
+        return tech_techer($c, $turns_to_tech, $tpt_split);
+    } elseif ($c->built() > 50 && $c->land < 10000 &&
+            ($c->money + $c->turns * $c->income) > ($c->turns * $c->explore_rate) * (1500 + 3 * ($c->land + $c->turns * $c->explore_rate))
+        // explore if land is less than 10k, we can explore, and we expect to have enough money to build labs on the new land
     ) {
         $explore_turn_limit = $is_allowed_to_mass_explore ? 999 : 5;
         return explore($c, max(1, min($explore_turn_limit, $c->turns - 1, turns_of_money($c) - 4, turns_of_food($c) - 4)));
     } else { //otherwise, tech, obviously
         //so, 10 if they can... cap at turns - 1
-        return tech_techer($c, max(1, min(turns_of_money($c), turns_of_food($c), 13, $c->turns + 2) - 3), $tpt_split);
+        $turns_to_tech = max(1, min(turns_of_money($c), turns_of_food($c), 13, $c->turns + 2) - 3);
+        $teching_turns_remaining_before_explore -= $turns_to_tech;
+        return tech_techer($c, $turns_to_tech, $tpt_split);
     }
 }//end play_techer_turn()
 

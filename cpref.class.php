@@ -44,6 +44,9 @@ class cpref
         $this->mass_explore_stop_acreage_rep = ($this->is_clan_server ? 99999 : 10000);
         $this->mass_explore_stop_acreage_non_rep = ($this->is_clan_server ? 99999 : 8200);        
         $this->base_inherent_value_for_tech = 700;
+        // if tpt is high enough, spend this percentage of turns teching before considering exploring
+        $this->min_perc_teching_turns = $this->get_min_perc_teching_turns();
+
         // TODO: spal
         // TODO: bpt (temporary?)
         // TODO: landgoal
@@ -72,6 +75,14 @@ class cpref
 
 
     }//end __construct()
+
+
+
+
+    private function get_min_perc_teching_turns() {
+        return 10 + round($this->decode_bot_secret(3) / 25); // between 10% and 50%, fine if not completely even probabilities on edges
+    }
+
 
     private function get_production_algorithm() {
         $schedule_rand = $this->decode_bot_secret(2) % 100;
