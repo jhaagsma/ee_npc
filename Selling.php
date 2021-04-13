@@ -142,7 +142,7 @@ $high_price_score_array, $no_market_history_score_array, $current_price_score_ar
         foreach(array_keys($price_array) as $unit) {
             $unit_score = array_pop($high_price_score_array);
             $production_score[$unit] = $unit_score;
-            log_country_message($cnum, "New score for $unit is $unit_score");
+            //log_country_message($cnum, "New score for $unit is $unit_score");
         }
     } // end HIGH_PRICE
     elseif($cpref->production_algorithm == "CURRENT_PRICE") {   
@@ -160,7 +160,7 @@ $high_price_score_array, $no_market_history_score_array, $current_price_score_ar
         foreach(array_keys($price_array) as $unit) {
             $unit_score = array_pop($current_price_score_array);
             $production_score[$unit] = $unit_score;
-            log_country_message($cnum, "New score for $unit is $unit_score");
+            //log_country_message($cnum, "New score for $unit is $unit_score");
         }
     } // end CURRENT_PRICE
     elseif($cpref->production_algorithm == "SALES") {
