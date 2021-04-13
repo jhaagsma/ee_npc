@@ -71,7 +71,7 @@ class cpref
     private function get_production_algorithm() {
         $schedule_rand = $this->decode_bot_secret(2) % 100;
 
-        // TODO: these should not be equal chance as most are terrible by design
+        // TODO: these should not be equal chance as some are terrible by design
         if($schedule_rand <= 19)
             return "SALES";
         elseif($schedule_rand <= 39)

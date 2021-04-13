@@ -89,6 +89,7 @@ function set_indy_from_production_algorithm(&$c, $military_unit_price_history, $
     // produce 100% turrets if checked in the first 150 turns because there's very little demand for anything else
     // FUTURE: 150 is a made up number that could be changed to something better
     if ($c->turns_played < 150) { 
+        log_country_message($c->cnum, "Setting indy production to 100% turrets because the country hasn't played 150 turns yet");
         $new_indy_production['pro_tu'] = 100;
     }
     else { // not the first 150 turns
@@ -106,13 +107,13 @@ function set_indy_from_production_algorithm(&$c, $military_unit_price_history, $
 
         // for CURRENT_PRICE
         $default_current_prices = [
-            'm_tr'  => 120,
-            'm_j'   => 160,
-            'm_tu'  => 200,
-            'm_ta'  => 480
+            'm_tr'  => 9997,
+            'm_j'   => 9998,
+            'm_tu'  => 9999,
+            'm_ta'  => 9996
         ];
 
-        // for HIGH_PRICE, AVG_PRICE, and SALES
+        // for AVG_PRICE and SALES
         $default_historical_prices = [
             'm_tr'  => 10,
             'm_j'   => 60,
@@ -120,54 +121,116 @@ function set_indy_from_production_algorithm(&$c, $military_unit_price_history, $
             'm_ta'  => 40
         ];
        
-
-        // global $market; // why?
+        //global $market; // why?
 
         log_country_message($c->cnum, "Setting indy production using algorithm $cpref->production_algorithm", 'green');       
 
         //out_data($military_unit_price_history);
 
         // $military_unit_price_history[$unit] elements can be null if there were no recent sales
-        $number_of_units_with_no_data = 0;
-        foreach($production_factor_per_unit as $unit => $units_produced) {
-            if($cpref->production_algorithm == "SALES") {
-                $default_price = $default_historical_prices[$unit];
-                $price = isset($military_unit_price_history[$unit]['total_sales']) ? $military_unit_price_history[$unit]['total_sales'] : $default_price;
+
+
+        $price_array = [];
+        $production_score = [];
+
+        if($cpref->production_algorithm == "HIGH_PRICE") {   
+            $score_array = [0, 1, 3, 9]; // most expensive unit gets weight 9, second most gets weight 3, and so on...
+            log_country_message($c->cnum, "In order of price descending, unit shares are 9:3:1:0");
+            foreach($production_factor_per_unit as $unit => $units_produced) {
+                $unit_price = isset($military_unit_price_history[$unit]['high_price']) ? $military_unit_price_history[$unit]['high_price'] : 0;
+                $initial_unit_score = round($units_produced * $unit_price);
+                $price_array[$unit] = $initial_unit_score;
+                log_country_message($c->cnum, "Initial unit score for $unit is $initial_unit_score with price $unit_price and production $units_produced");
             }
-            elseif($cpref->production_algorithm == "HIGH_PRICE") {   
-                $default_price = $default_historical_prices[$unit];
-                $price = isset($military_unit_price_history[$unit]['high_price']) ? $military_unit_price_history[$unit]['high_price'] : $default_price;
+
+            if(max($price_array) == min($price_array) and max($price_array) == 0) { // no market data
+                log_country_message($c->cnum, "Detected no market data so using default values that favor turret production");
+                $price_array['m_tr'] = 1;
+                $price_array['m_j'] = 3;           
+                $price_array['m_tu'] = 4;
+                $price_array['m_ta'] = 2;
             }
-            elseif($cpref->production_algorithm == "AVG_PRICE") {  
-                $default_price = $default_historical_prices[$unit]; 
-                $price = isset($military_unit_price_history[$unit]['avg_price']) ? $military_unit_price_history[$unit]['avg_price'] : $default_price;
+
+            arsort($price_array);
+            reset($price_array);
+            foreach(array_keys($price_array) as $unit) {
+                $unit_score = array_pop($score_array);
+                $production_score[$unit] = $unit_score;
+                log_country_message($c->cnum, "New score for $unit is $unit_score");
             }
-            elseif($cpref->production_algorithm == "CURRENT_PRICE") {   
-                $default_price = $default_current_prices[$unit];
+        } // end HIGH_PRICE
+        elseif($cpref->production_algorithm == "CURRENT_PRICE") {   
+            $score_array = [1, 1, 1, 27]; // most expensive unit gets weight 27, second most gets weight 1, and so on...
+            log_country_message($c->cnum, "In order of price descending, unit shares are 27:1:1:1");
+            foreach($production_factor_per_unit as $unit => $units_produced) {
                 $market_price = PublicMarket::price($unit);
-                $price = $market_price ? $market_price : $default_price;
+                $unit_price = $market_price ? $market_price : $default_current_prices[$unit];
+                $initial_unit_score = round($units_produced * $unit_price);
+                $price_array[$unit] = $initial_unit_score;
+                log_country_message($c->cnum, "Initial unit score for $unit is $initial_unit_score with price $unit_price and production $units_produced");
             }
-            else { // RANDOM or invalid value
-                $price = mt_rand(1, 1000) / $units_produced;
 
-                if($cpref->production_algorithm <> "RANDOM") // doesn't matter if this gets shown 4 times
-                    log_error_message(999, $c->cnum, "set_indy_from_production_algorithm(): invalid value for production algorithm: $cpref->production_algorithm");
+            arsort($price_array);
+            reset($price_array);
+            
+            foreach(array_keys($price_array) as $unit) {
+                $unit_score = array_pop($score_array);
+                $production_score[$unit] = $unit_score;
+                log_country_message($c->cnum, "New score for $unit is $unit_score");
             }
-            $unit_score = $units_produced * $price;
-            $production_score[$unit] = $unit_score;
-            log_country_message($c->cnum, "Score for unit $unit is $unit_score before normalization");
+        } // end CURRENT_PRICE
+        elseif($cpref->production_algorithm == "SALES") {
+            $number_of_units_with_no_data = 0;
+            foreach($production_factor_per_unit as $unit => $units_produced) {
+                $default_value = $default_historical_prices[$unit];
+                $unit_value = isset($military_unit_price_history[$unit]['total_sales']) ? $military_unit_price_history[$unit]['total_sales'] : $default_value;
+                $unit_score = round($units_produced * $unit_value);
+                $production_score[$unit] = $unit_score;
+                log_country_message($c->cnum, "Unit score for $unit is $unit_score with value $unit_value, production $units_produced, and default $default_value");
 
-            if($default_price == $price)
-                $number_of_units_with_no_data++;
-        }
+                if($default_value == $unit_value) // false positives are possible, but extremely unlikely
+                    $number_of_units_with_no_data++;
+            }
 
-        if($number_of_units_with_no_data == 4) { // we will rarely get false positives with this approach, but whatever
-            log_country_message($c->cnum, "Detected no market data so using default values that favor turret production");
-            $production_score['m_tr'] = 1;
-            $production_score['m_j'] = 13;           
-            $production_score['m_tu'] = 85;
-            $production_score['m_ta'] = 1;
-        }
+            if($number_of_units_with_no_data == 4) { // we will rarely get false positives with this approach, but whatever
+                log_country_message($c->cnum, "Detected no market data so using default values that favor turret production");
+                $production_score['m_tr'] = 2;
+                $production_score['m_j'] = 13;           
+                $production_score['m_tu'] = 83;
+                $production_score['m_ta'] = 2;
+            }
+        } // end SALES
+        elseif($cpref->production_algorithm == "AVG_PRICE") {   
+            $number_of_units_with_no_data = 0;
+            foreach($production_factor_per_unit as $unit => $units_produced) {
+                $default_price = $default_historical_prices[$unit];
+                $unit_price = isset($military_unit_price_history[$unit]['total_sales']) ? $military_unit_price_history[$unit]['avg_price'] : $default_price;
+                $unit_score = round($units_produced * $unit_price);
+                $production_score[$unit] = $unit_score;
+                log_country_message($c->cnum, "Unit score for $unit is $unit_score with price $unit_price, production $units_produced, and default $default_price");
+
+                if($default_price == $unit_price) // false positives are possible, but extremely unlikely
+                    $number_of_units_with_no_data++;
+            }
+
+            if($number_of_units_with_no_data == 4) { // we will rarely get false positives with this approach, but whatever
+                log_country_message($c->cnum, "Detected no market data so using default values that favor turret production");
+                $production_score['m_tr'] = 2;
+                $production_score['m_j'] = 13;           
+                $production_score['m_tu'] = 83;
+                $production_score['m_ta'] = 2;
+            }
+        } // end AVG_PRICE
+        else {
+            if($cpref->production_algorithm <> "RANDOM")
+                log_error_message(999, $c->cnum, "set_indy_from_production_algorithm(): invalid value for production algorithm: $cpref->production_algorithm");
+
+            foreach($production_factor_per_unit as $unit => $units_produced) {
+                $rand = mt_rand(1, 1000);
+                $production_score[$unit] = $rand;
+                log_country_message($c->cnum, "Unit score for $unit is random number $rand (possible range was 1 to 1000)");
+            }
+        } // end RANDOM
        
         // remove jets if we're checking DPA and it's too low
         if ($checkDPA) {
