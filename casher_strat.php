@@ -51,6 +51,8 @@ function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition)
 
     stash_excess_bushels_on_public_if_needed($c, $rules);
 
+    attempt_to_recycle_bushels_but_avoid_buyout($c, $cpref, $food_price_history);
+
     $turns_played_for_last_spend_money_attempt = 0;
     while ($c->turns > 0) {
         $result = play_casher_turn($c, $is_allowed_to_mass_explore);

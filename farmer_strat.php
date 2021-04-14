@@ -66,6 +66,8 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     $owned_on_market_info = get_owned_on_market_info();     //find out what we have on the market
     //out_data($owned_on_market_info);  //output the Owned on Public Market info
 
+    attempt_to_recycle_bushels_but_avoid_buyout($c, $cpref, $food_price_history);
+
     if($c->money > 2000000000) { // try to stockpile to avoid corruption and to limit bot abuse
         // first spend extra money normally so we can buy needed military or income techs if they are worthwhile
         spend_extra_money($c, $buying_priorities, $cpref, $money_to_keep_after_stockpiling, false, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array, $buying_schedule);
@@ -191,10 +193,10 @@ function sellextrafood_farmer(&$c, $rules, $bushel_min_sell_price, $cpref, $food
     $pm_info = PrivateMarket::getRecent();
 
     // TODO: cpref
-    $rmax    = 1.10; //percent
+    $rmax    = 1.05; //percent
     $rmin    = 0.95; //percent
-    $rstep   = 0.01;
-    $rstddev = 0.10;
+    $rstep   = 0.001;
+    $rstddev = 0.025;
     $max     = $c->goodsStuck('m_bu') ? 0.99 : $rmax;  
     
     if (mt_rand(1, 100) <= $cpref->chance_to_sell_based_on_avg_price) {

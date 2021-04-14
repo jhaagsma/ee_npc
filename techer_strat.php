@@ -59,6 +59,8 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
 
     stash_excess_bushels_on_public_if_needed($c, $rules); // TODO: money check (should be inside function)
 
+    attempt_to_recycle_bushels_but_avoid_buyout($c, $cpref, $food_price_history);
+
     $teching_turns_remaining_before_explore = floor(0.01 * $cpref->min_perc_teching_turns * $c->turns);
     log_country_message($cnum, "Min teching turns before exploring is $teching_turns_remaining_before_explore based on preference $cpref->min_perc_teching_turns%");
 
@@ -88,6 +90,9 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
         }
     }
 
+    // mil tech might have gone up
+    attempt_to_recycle_bushels_but_avoid_buyout($c, $cpref, $food_price_history);
+
     if (turns_of_food($c) > 50 && turns_of_money($c) > 50 && $c->money > 3500 * 500 && ($c->money > $c->fullBuildCost() - $c->runCash()) && $c->tpt > 200) { // 40 turns of food
         spend_extra_money($c, $buying_priorities, $cpref, $c->fullBuildCost() - $c->runCash(), false);//keep enough money to build out everything
     }
@@ -113,17 +118,18 @@ function play_techer_turn(&$c, $tech_price_min_sell_price, $server_max_possible_
     $mktinfo = null;
     usleep($turnsleep);
     //log_country_message($cnum, $main->turns . ' turns left');
+    $mil_tech_to_keep = min($c->t_mil, ($c->govt == 'D' ? 42 : 0) * $c->land); // for demo recycling
 
     if ($c->shouldBuildSingleCS($target_bpt)) {
         //LOW BPT & CAN AFFORD TO BUILD
         //build one CS if we can afford it and are below our target BPT
         return Build::cs(); //build 1 CS
-    } elseif ($c->protection == 0 && total_cansell_tech($c, $server_max_possible_market_sell) > 20 * $c->tpt && selltechtime($c)
-        || $c->turns == 1 && total_cansell_tech($c, $server_max_possible_market_sell) > 20
+    } elseif ($c->protection == 0 && total_cansell_tech($c, $server_max_possible_market_sell, $mil_tech_to_keep) > 20 * $c->tpt && selltechtime($c)
+        || $c->turns == 1 && total_cansell_tech($c, $server_max_possible_market_sell, $mil_tech_to_keep) > 20
     ) {
         //never sell less than 20 turns worth of tech
         //always sell if we can????
-        return sell_max_tech($c, $cpref, $tech_price_min_sell_price, $server_max_possible_market_sell, 0, false, true, $tech_price_history);
+        return sell_max_tech($c, $cpref, $tech_price_min_sell_price, $server_max_possible_market_sell, $mil_tech_to_keep, false, true, $tech_price_history);
     } elseif ($c->shouldBuildSpyIndies($target_bpt)) {
         //build a full BPT of indies if we have less than that, and we're out of protection
         return Build::indy($c);

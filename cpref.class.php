@@ -60,6 +60,7 @@ class cpref
         $this->tech_max_purchase_price = 9999;     
         // techers probably need to buy everything off PM, but other strats can likely skip turrets
         $this->final_dpnw_for_stocking_calcs = ($this->strat == "T" ? (2025 / 6.5) : (3*144+588+2.5*192)/(1.5+2+0.6*2.5));
+        $this->should_demo_attempt_bushel_recycle = true;
 
         // selling
         $this->production_algorithm = $this->get_production_algorithm();  
