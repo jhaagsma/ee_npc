@@ -62,7 +62,7 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     attempt_to_recycle_bushels_but_avoid_buyout($c, $cpref, $food_price_history);
 
     $teching_turns_remaining_before_explore = floor(0.01 * $cpref->min_perc_teching_turns * $c->turns);
-    log_country_message($cnum, "Min teching turns before exploring is $teching_turns_remaining_before_explore based on preference $cpref->min_perc_teching_turns%");
+    log_country_message($cnum, "Min teching turns before exploring is $teching_turns_remaining_before_explore based on preference rate of $cpref->min_perc_teching_turns%");
 
     while ($c->turns > 0) {
         //$result = PublicMarket::buy($c,array('m_bu'=>100),array('m_bu'=>400));
