@@ -20,11 +20,11 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
     $c->setIndy('pro_spy');
 
     if ($c->m_spy > 10000) {
-        Allies::fill('spy');
+        Allies::fill($cpref, 'spy');
     }
 
     if ($c->b_lab > 2000) {
-        Allies::fill('res');
+        Allies::fill($cpref, 'res');
     }
 
     techer_switch_government_if_needed($c);
@@ -57,7 +57,7 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
         spend_extra_money_on_stockpiling($c, $cpref, $money_to_keep_after_stockpiling, $stockpiling_weights, $stockpiling_adjustments);
     }
 
-    stash_excess_bushels_on_public_if_needed($c, $rules); // TODO: money check (should be inside function)
+    stash_excess_bushels_on_public_if_needed($c, $rules);
 
     attempt_to_recycle_bushels_but_avoid_buyout($c, $cpref, $food_price_history);
 
@@ -87,7 +87,7 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
         }
 
-        $hold = food_management($c);
+        $hold = food_management($c, $cpref);
         if ($hold) {
             $exit_condition = 'WAIT_FOR_PUBLIC_MARKET_FOOD'; 
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
@@ -240,9 +240,6 @@ function sell_max_tech(&$c, $cpref, $tech_price_min_sell_price, $server_max_poss
     $rstep   = 0.01;
     $rstddev = 0.01 * $cpref->selling_price_std_dev;
     $price          = [];
-
-
-    // TODO: test selling by average...
 
     foreach ($quantity as $key => $q) {
         $t__key = "t_$key"; // :(

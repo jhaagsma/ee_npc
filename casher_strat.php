@@ -17,7 +17,7 @@ function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
     $c->setIndy('pro_spy');
 
     if ($c->m_spy > 10000) {
-        Allies::fill('spy');
+        Allies::fill($cpref, 'spy');
     }
 
     casher_switch_government_if_needed($c);
@@ -75,7 +75,7 @@ function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
         }
 
-        $hold = food_management($c);
+        $hold = food_management($c, $cpref);
         if ($hold) {
             $exit_condition = 'WAIT_FOR_PUBLIC_MARKET_FOOD';
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!

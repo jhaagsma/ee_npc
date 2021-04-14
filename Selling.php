@@ -29,6 +29,20 @@ function emergency_sell_mil_on_pm (&$c, $money_needed) {
 
 
 
+function get_farmer_max_sell_price($c, $cpref, $rules, $server) {
+    // this is a bit simple and can lead to a big jump, but 360 turns feels like enough time for prices to stablize
+    // if demand for food truly is high then human players can react as needed
+    if($c->turns_played <= 360)
+        $max_sell_price = $cpref->farmer_max_early_sell_price;
+    else
+        $max_sell_price = $cpref->farmer_max_late_sell_price;  
+
+    log_country_message($c->cnum, "Bushel maximum sell price calculated as $max_sell_price based on preference and turns played");
+    return $max_sell_price;           
+}
+
+
+
 function get_market_history_all_military_units($cnum, $cpref){
     $market_history = [];
 

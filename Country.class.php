@@ -577,10 +577,11 @@ class Country
      * Check to see if we should build a single CS
      *
      * @param  int $target_bpt The target bpt
-     *
+     * @param  int $low_bpt The bpt considered to be "low" in the code
+     * 
      * @return bool            Build or not
      */
-    public function shouldBuildSingleCS($target_bpt = 80)
+    public function shouldBuildSingleCS($target_bpt = 80, $low_bpt = 30)
     {
         if (!$this->empty) {
             //no empty land
@@ -597,7 +598,7 @@ class Country
             return false;
         }
 
-        if ($this->bpt < 30 && $this->built() <= 50) {
+        if ($this->bpt < $low_bpt && $this->built() <= 50) {
             //you have low BPT and low Builtings
             return true;
         } elseif ($this->bpt < $target_bpt && $this->b_cs % 4 != 0) {

@@ -38,7 +38,7 @@ class Allies
      */
     public static function getCandidates($type = 'def')
     {
-        log_country_message(null, "Request Ally Candidates: $type", true, 'cyan');
+        log_country_message(null, "Request Ally Candidates: $type", 'cyan');
         $result = ee('ally/candidates', ['type' => $type]);
         return $result;
     }//end getCandidates()
@@ -53,10 +53,10 @@ class Allies
      */
     public static function offer($target, $type = 'def')
     {
-        log_country_message(null, "Ally Offer of $type to $target", true, 'cyan');
+        log_country_message(null, "Ally Offer of $type to $target", 'cyan');
         $result = ee('ally/offer', ['target' => $target, 'type' => $type]);
         if ($result == "disallowed_by_server") {
-            log_country_message(null, "ALLIES ARE NOT ALLOWED ON THIS SERVER!");
+            log_country_message(null, "ALLIES ARE NOT ALLOWED ON THIS SERVER!"); // FUTURE: error
             self::$allowed = false;
             return;
         }
@@ -74,7 +74,7 @@ class Allies
      */
     public static function accept($target, $type = 'def')
     {
-        log_country_message(null, "Ally Accept $type from $target", true, 'green');
+        log_country_message(null, "Ally Accept $type from $target", 'green');
         $result = ee('ally/accept', ['target' => $target, 'type' => $type]);
         return $result;
     }//end accept()
@@ -89,7 +89,7 @@ class Allies
      */
     public static function cancel($target, $type = 'def')
     {
-        log_country_message(null, "CANCEL ALLIANCE $type from $target", true, 'yellow');
+        log_country_message(null, "CANCEL ALLIANCE $type from $target", 'yellow');
         $result = ee('ally/cancel', ['target' => $target, 'type' => $type]);
         return $result;
     }//end cancel()
@@ -101,9 +101,9 @@ class Allies
      *
      * @return null
      */
-    public static function fill($type = 'def')
+    public static function fill($cpref, $type = 'def')
     {
-        if (!self::$allowed) {
+        if (!self::$allowed || !$cpref->acquire_ingame_allies) {
             return false;
         }
 
@@ -120,13 +120,13 @@ class Allies
                 self::accept($list->$name->cnum, $type);
             } elseif ($list->$name->detail == 'cancel' && rand(0, 5) == 0) {
                 //put this in in case we send to a human by accident who doesn't accept
-                log_country_message(null, "Withdraw offer randomly!", true, 'dark_gray');
+                log_country_message(null, "Withdraw offer randomly!", 'dark_gray');
                 self::cancel($list->$name->cnum, $type);
             }
         }
 
         if ($require == 0) {
-            log_country_message(null, "Allies for $type full!", true, 'dark_gray');
+            log_country_message(null, "Allies for $type full!", 'dark_gray');
             return;
         }
 
@@ -136,11 +136,41 @@ class Allies
 
         for ($i = 0; $i < $require; $i++) {
             if (empty($candidates)) {
-                log_country_message(null, "No ally candiates!", true, 'yellow');
+                log_country_message(null, "No ally candiates!", 'yellow');
                 return;
             }
             $candidate = array_shift($candidates);
             self::offer($candidate->cnum, $type);
         }
     }//end fill()
+
+    public static function decline_all_allies_if_needed ($cpref) {
+        if ($cpref->acquire_ingame_allies) {
+            return false;
+        }
+
+        $list = self::getList();
+        $list = $list->list;
+        // FUTURE: use server info to limit ally types here and elsewhere
+        $max  = ['def' => 2, 'off' => 3, 'res' => 3, 'spy' => 2, 'trade' => 2];
+
+        // reject any offers to us and don't send offers
+        foreach($max as $type => $max) {
+            for ($i = 1; $i <= $max; $i++) {
+                $name = $type . '_' . $i;
+                if (isset($list->$name)) {
+                    log_country_message(null, "Decline offer because we don't want any allies", 'dark_gray');
+                    self::cancel($list->$name->cnum, $type);
+                }
+            }
+        }
+
+        return true;
+    } // decline_all_allies_if_needed
+
+
+
+
+
+
 }//end class

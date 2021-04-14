@@ -356,8 +356,10 @@ while (1) {
                 else { // not destocking
                     log_country_message($cnum, 'Not doing destocking actions');    
 
+                    Allies::decline_all_allies_if_needed($cpref);
+
                     if ($cpref_file->allyup) {
-                        Allies::fill('def');
+                        Allies::fill($cpref, 'def');
                     }
 
                     Events::new();
@@ -746,6 +748,9 @@ function update_c(&$c, $result)
     $c->money += $netmoney;
     $c->food  += $netfood;
 
+    // update if we left protection
+    if($c->turns_played >= 100 and $c->protection == 1)
+        $c->protection = 0;
 
     // check that there aren't other reasons to update the advisor
     // current example is recall goods and recall tech don't tell us what was sent back
@@ -803,7 +808,10 @@ function update_c(&$c, $result)
     $APICalls = 0;
 
     // returning the number of turns played is useful for logging purposes
-    return [$turn_action => $c->turns_played - $turns_played_before_turns];
+    $action_and_turns_used = [];
+    if($turn_action)
+        $action_and_turns_used = [$turn_action => $c->turns_played - $turns_played_before_turns];
+    return $action_and_turns_used;
 }//end update_c()
 
 

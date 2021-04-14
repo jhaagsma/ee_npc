@@ -123,11 +123,13 @@ function log_get_name_of_error_type($error_type) {
 
 
 function update_intended_action_array(&$turn_action_counts, $action_and_turns_used) {
-    foreach($action_and_turns_used as $action => $turns_used) {
-        if(isset($turn_action_counts[$action]))
-            $turn_action_counts[$action] += $turns_used;
-        else
-            $turn_action_counts[$action] = $turns_used;
+    if(!empty($action_and_turns_used)) {
+        foreach($action_and_turns_used as $action => $turns_used) {
+            if(isset($turn_action_counts[$action]))
+                $turn_action_counts[$action] += $turns_used;
+            else
+                $turn_action_counts[$action] = $turns_used;
+        }
     }
     return;
 }

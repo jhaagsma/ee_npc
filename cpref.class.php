@@ -35,7 +35,7 @@ class cpref
         $this->bot_secret_number = $cpref_file->bot_secret;
         $this->playrand = $cpref_file->playrand;
         $this->price_tolerance = $cpref_file->price_tolerance;
-        $this->acquire_ingame_allies = $cpref_file->allyup;
+        $this->acquire_ingame_allies = ($this->is_clan_server ? $cpref_file->allyup : false); // no allies on non-clan servers for now
         $this->gdi = $cpref_file->gdi;
         // end personality file issue
 
@@ -47,16 +47,16 @@ class cpref
         // if tpt is high enough, spend this percentage of turns teching before considering exploring
         $this->min_perc_teching_turns = $this->get_min_perc_teching_turns();
 
-        // TODO: spal
-        // TODO: bpt (temporary?)
-        // TODO: landgoal
+        // FUTURE: spal
+        // FUTURE: bpt (temporary?)
+        // FUTURE: landgoal
 
         // buying
         $this->purchase_schedule_number = $this->get_purchase_schedule_number();
-        $this->target_cash_after_stockpiling = ($this->strat == "C" ? 1500000000 : 1800000000);
+        $this->target_cash_after_stockpiling = ($this->strat == "C" || $this->strat == "I" ? 1500000000 : 1800000000);
         $this->spend_extra_money_cooldown_turns = ($this->strat == "C" ? 5 : 7);
         $this->max_stockpiling_loss_percent = 60; // must be > 0
-        // TODO: max bushel buy price
+        $this->max_bushel_buy_price_with_low_stored_turns = 99;
         $this->tech_max_purchase_price = 9999;     
         // techers probably need to buy everything off PM, but other strats can likely skip turrets
         $this->final_dpnw_for_stocking_calcs = ($this->strat == "T" ? (2025 / 6.5) : (3*144+588+2.5*192)/(1.5+2+0.6*2.5));
@@ -69,7 +69,8 @@ class cpref
         $this->chance_to_sell_based_on_current_price = 100 - $this->chance_to_sell_based_on_avg_price;
         $this->selling_price_max_distance = 15; // 15 means a country may sell up to 15% over or under market prices
         $this->selling_price_std_dev = 5;
-
+        $this->farmer_max_early_sell_price = 49;
+        $this->farmer_max_late_sell_price = 99;
 
         // destocking
         $this->earliest_destocking_start_time = $this->get_earliest_destocking_start_time();

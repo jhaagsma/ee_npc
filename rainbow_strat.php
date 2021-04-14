@@ -43,21 +43,22 @@ function play_rainbow_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     }
 
     if ($c->m_spy > 10000) {
-        Allies::fill('spy');
+        Allies::fill($cpref, 'spy');
     }
 
     if ($c->b_lab > 2000) {
-        Allies::fill('res');
+        Allies::fill($cpref, 'res');
     }
 
     if ($c->m_j > 1000000) {
-        Allies::fill('off');
+        Allies::fill($cpref, 'off');
     }
 
-    //because why n
-    if ($c->govt == 'M') {
-        Allies::fill('trade');
-    }
+    //because why not?
+    // it's confusing for players, especially new ones - Slagpit
+    //if ($c->govt == 'M') {
+    //    Allies::fill($cpref, 'trade');
+    //}
 
     //get the PM info
     //$pm_info = get_pm_info();
@@ -89,7 +90,7 @@ function play_rainbow_strat($server, $cnum, $rules, $cpref, &$exit_condition)
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
         }
 
-        $hold = food_management($c);
+        $hold = food_management($c, $cpref);
         if ($hold) {
             $exit_condition = 'WAIT_FOR_PUBLIC_MARKET_FOOD'; 
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!

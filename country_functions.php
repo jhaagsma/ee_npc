@@ -10,11 +10,11 @@ function is_country_allowed_to_mass_explore($c, $cpref) {
         return false;
     }
     elseif($c->govt == "R" and $c->land > $cpref->mass_explore_stop_acreage_rep) {
-        log_country_message($c->cnum, "Country is not allowed to mass explore because it is a rep with more than 10000 acres on a non-clan server");
+        log_country_message($c->cnum, "Country is not allowed to mass explore because it is a rep with more than $cpref->mass_explore_stop_acreage_rep acres on a non-clan server");
         return false;
     }
     elseif($c->govt <> "R" and $c->land > $cpref->mass_explore_stop_acreage_non_rep) {
-        log_country_message($c->cnum, "Country is not allowed to mass explore because it is a non-rep with more than 8200 acres on a non-clan server");
+        log_country_message($c->cnum, "Country is not allowed to mass explore because it is a non-rep with more than $cpref->mass_explore_stop_acreage_non_rep acres on a non-clan server");
         return false;
     }
     else {
@@ -224,7 +224,7 @@ function money_management(&$c, $server_max_possible_market_sell, $cpref)
 }//end money_management()
 
 
-function food_management(&$c)
+function food_management(&$c, $cpref)
 {
     //RETURNS WHETHER TO HOLD TURNS OR NOT
     $reserve = max(130, $c->turns);
@@ -246,13 +246,15 @@ function food_management(&$c)
         $turns_of_food = $foodloss * $turns_buy;
         $market_price  = PublicMarket::price('m_bu');
 
-        if($market_price >= 100 && $c->turns_stored < 30) { // FUTURE: this isn't really any good, but it's better than nothing
+        // FUTURE: 30 should be a cpref? or just redesign entirely?
+        if($market_price > $cpref->max_bushel_buy_price_with_low_stored_turns && $c->turns_stored < 30) { // FUTURE: this isn't really any good, but it's better than nothing
             log_country_message($c->cnum, "Public market food is too expensive at $market_price; hold turns for now, and wait for food on MKT.");
             return true;
         }
 
         //log_country_message($c->cnum, "Market Price: " . $market_price);
-        if ($c->food < $turns_of_food && $c->money > $turns_of_food * $market_price * $c->tax() && $c->money - $turns_of_food * $market_price * $c->tax() + $c->income * $turns_buy > 0) { //losing food, less than turns_buy turns left, AND have the money to buy it
+        //losing food, less than turns_buy turns left, AND have the money to buy it
+        if ($c->food < $turns_of_food && $c->money > $turns_of_food * $market_price * $c->tax() && $c->money - $turns_of_food * $market_price * $c->tax() + $c->income * $turns_buy > 0) {
             $quantity = min($foodloss * $turns_buy, PublicMarket::available('m_bu'));
             // log_country_message($c->cnum, 
             //     "--- FOOD:  - Buy Public ".str_pad('('.$turns_buy, 17, ' ', STR_PAD_LEFT).

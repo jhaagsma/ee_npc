@@ -19,7 +19,7 @@ function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$tur
     set_indy_from_production_algorithm($c, $military_unit_price_history, $cpref, false); // changing to not check DPA - Slagpit 20210321
 
     if ($c->m_spy > 10000) {
-        Allies::fill('spy');
+        Allies::fill($cpref, 'spy');
     }
 
     indy_switch_government_if_needed($c);
@@ -30,8 +30,6 @@ function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$tur
     $tech_inherent_value = get_inherent_value_for_tech($c, $rules, $cpref);
     $eligible_techs = ['t_bus', 't_res', 't_indy', 't_mil']; // don't buy t_weap for now - indies would over-prioritize it
     $optimal_tech_buying_array = get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, $cpref->tech_max_purchase_price, $tech_inherent_value);
-
-    // TODO: some form of stockpiling?
 
     // log useful information about country state
     log_country_message($cnum, $c->turns.' turns left');
@@ -75,7 +73,7 @@ function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$tur
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
         }
 
-        $hold = food_management($c);
+        $hold = food_management($c, $cpref);
         if ($hold) {
             $exit_condition = 'WAIT_FOR_PUBLIC_MARKET_FOOD'; 
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
@@ -111,8 +109,10 @@ function play_indy_turn(&$c, $server_max_possible_market_sell, $is_allowed_to_ma
         //LOW BPT & CAN AFFORD TO BUILD
         //build one CS if we can afford it and are below our target BPT
         return Build::cs(); //build 1 CS
-    } elseif ($c->protection == 0 && total_cansell_military($c, $server_max_possible_market_sell) > 7500 && sellmilitarytime($c)
-        || $c->turns == 1 && total_cansell_military($c, $server_max_possible_market_sell) > 7500
+    } elseif ($c->money > $cpref->target_cash_after_stockpiling && ( // FUTURE: this is a rather weak form of stockpiling
+            $c->protection == 0 && total_cansell_military($c, $server_max_possible_market_sell) > 7500 && sellmilitarytime($c)
+            || $c->turns == 1 && total_cansell_military($c, $server_max_possible_market_sell) > 7500
+        )
     ) {
         return sell_max_military($c, $server_max_possible_market_sell, $cpref);
     } elseif ($c->shouldBuildFullBPT($target_bpt)) {

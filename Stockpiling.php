@@ -92,7 +92,8 @@ function get_farmer_min_sell_price($c, $cpref, $rules, $server, $min_cash_to_cal
 
         // public market military
         $military_end_dpnw = 2025 * 0.01 * ($c->govt == "H" ? 0.8 : 1.0) * $c->pt_mil / 6.5; // use what we can get on PM
-        $unit_exp = ['m_tr' => 0.11 + 40 * 0.001,'m_j' => 0.14 + 40 * 0.001,'m_tu' => 0.18 + 40 * 0.001,'m_ta' => 0.57 + 40 * 0.003]; // TODO: add NW modifier
+        $unit_exp = ['m_tr' => 0.11 + 40 * 0.001,'m_j' => 0.14 + 40 * 0.001,'m_tu' => 0.18 + 40 * 0.001,'m_ta' => 0.57 + 40 * 0.003];
+        // TODO: add NW modifier - should just call function
         $unit_nw = ['m_tr'=>0.5, 'm_j' => 0.6, 'm_tu' => 0.6, 'm_ta' => 2.0];
         foreach($unit_nw as $unit => $unit_nw) {     
             $military_unit_price = PublicMarket::price($unit);
@@ -237,7 +238,7 @@ function get_stockpiling_weights_and_adjustments (&$stockpiling_weights, &$stock
         $military_end_dpnw = $cpref->final_dpnw_for_stocking_calcs * 0.01 * $c->pt_mil * ($c->govt == "H" ? 0.8 : 1.0);
         $unit_exp = ['m_tr' => 0.11 + 40 * 0.001,'m_j' => 0.14 + 40 * 0.001,'m_tu' => 0.18 + 40 * 0.001,'m_ta' => 0.57 + 40 * 0.003];
         $exp_cost_mod = ($c->govt == "T" ? 0.9 : 1) * (1 + $c->networth / 200000000); // this applies to food but shouldn't, but I can live with that
-        // TODO: could a country buy so much mil that it ends up not making money per turn?
+        // FUTURE: could a country buy so much mil that it ends up not making money per turn?
         $unit_nw = ['m_tr'=>0.5, 'm_j' => 0.6, 'm_tu' => 0.6, 'm_ta' => 2.0];
         foreach($unit_nw as $unit => $unit_nw) {
             $military_unit_sell_price = round($unit_nw * $military_end_dpnw, 2);

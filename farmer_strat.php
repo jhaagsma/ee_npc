@@ -39,7 +39,7 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
     $c->setIndy('pro_spy');
 
     if ($c->m_spy > 10000) {
-        Allies::fill('spy');
+        Allies::fill($cpref, 'spy');
     }
 
     farmer_switch_government_if_needed($c);
@@ -54,6 +54,7 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
     $money_to_keep_after_stockpiling = $cpref->target_cash_after_stockpiling;
     get_stockpiling_weights_and_adjustments ($stockpiling_weights, $stockpiling_adjustments, $c, $server, $rules, $cpref, $money_to_keep_after_stockpiling, false, true, true);
     $bushel_min_sell_price = get_farmer_min_sell_price($c, $cpref, $rules, $server);
+    $bushel_max_sell_price = get_farmer_max_sell_price($c, $cpref, $rules, $server);
 
     // log useful information about country state
     log_country_message($cnum, $c->turns.' turns left');
@@ -81,7 +82,7 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
     $turns_played_for_last_spend_money_attempt = 0;
     while ($c->turns > 0) {
         //$result = PublicMarket::buy($c,array('m_bu'=>100),array('m_bu'=>400));
-        $result = play_farmer_turn($c, $rules, $is_allowed_to_mass_explore, $bushel_min_sell_price, $cpref, $food_price_history);
+        $result = play_farmer_turn($c, $cpref, $rules, $is_allowed_to_mass_explore, $bushel_min_sell_price, $bushel_max_sell_price, $food_price_history);
         if ($result === false) {  //UNEXPECTED RETURN VALUE
             $c = get_advisor();     //UPDATE EVERYTHING
             continue;
@@ -109,7 +110,7 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
               break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!            
         }
 
-        $hold = food_management($c);
+        $hold = food_management($c, $cpref);
         if ($hold) {
             $exit_condition = 'WAIT_FOR_PUBLIC_MARKET_FOOD'; // ???
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!            
@@ -143,23 +144,29 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
     return $c;
 }//end play_farmer_strat()
 
-function play_farmer_turn(&$c, $rules, $is_allowed_to_mass_explore, $bushel_min_sell_price, $cpref, $food_price_history)
+
+function play_farmer_turn(&$c, $cpref, $rules, $is_allowed_to_mass_explore, $bushel_min_sell_price, $bushel_max_sell_price, $food_price_history)
 {
     $target_bpt = 65;
     global $turnsleep;
     usleep($turnsleep);
     //log_country_message($c->cnum, $main->turns . ' turns left');
-    if ($c->shouldBuildSingleCS($target_bpt)) {
+    if ($c->shouldBuildSingleCS($target_bpt, 20)) {
         //LOW BPT & CAN AFFORD TO BUILD
         //build one CS if we can afford it and are below our target BPT
         return Build::cs(); //build 1 CS
-    } elseif ($c->protection == 0 && $c->food > 7000
-        && (
-            $c->foodnet > 0 && $c->foodnet > 3 * $c->foodcon && $c->food > 30 * $c->foodnet
-            || $c->turns == 1
+    } elseif (
+        ($c->protection == 1 && $c->food > 100 && $c->b_farm > 0)
+        || (        
+            $c->protection == 0 && $c->food > 7000
+            && (
+                $c->foodnet > 0 && $c->foodnet > 3 * $c->foodcon && $c->food > 30 * $c->foodnet
+                || $c->turns == 1
+            )
         )
-    ) { //Don't sell less than 30 turns of food unless you're on your last turn (and desperate?)
-        return sellextrafood_farmer($c, $rules, $bushel_min_sell_price, $cpref, $food_price_history);
+    ) { // sell on private in protection if food > 100 and we have at least one farm
+        //Don't sell less than 30 turns of food unless you're on your last turn (and desperate?)
+        return sellextrafood_farmer($c, $rules, $bushel_min_sell_price, $bushel_max_sell_price, $cpref, $food_price_history);
     } elseif ($c->shouldBuildSpyIndies($target_bpt)) {
         //build a full BPT of indies if we have less than that, and we're out of protection
         return Build::indy($c);
@@ -176,12 +183,12 @@ function play_farmer_turn(&$c, $rules, $is_allowed_to_mass_explore, $bushel_min_
         log_country_message($c->cnum, "Selling food on PM in an attempt to avoid cashing turns");
         return PrivateMarket::sell_single_good($c, 'm_bu', $c->food);
     } else { //otherwise...  cash :(
-        return cash($c); // TODO - hold turns instead if food is on market?
+        return cash($c); // FUTURE - hold turns instead if food is on market?
     }
 }//end play_farmer_turn()
 
 
-function sellextrafood_farmer(&$c, $rules, $bushel_min_sell_price, $cpref, $food_price_history)
+function sellextrafood_farmer(&$c, $rules, $bushel_min_sell_price, $bushel_max_sell_price, $cpref, $food_price_history)
 {
     //log_country_message($c->cnum, "Lots of food, let's sell some!");
     //$pm_info = get_pm_info();
@@ -194,28 +201,31 @@ function sellextrafood_farmer(&$c, $rules, $bushel_min_sell_price, $cpref, $food
 
     $pm_info = PrivateMarket::getRecent();
 
-    // TODO: cpref
+    // FUTURE: cpref
     $rmax    = 1.05; //percent
     $rmin    = 0.95; //percent
     $rstep   = 0.001;
     $rstddev = 0.025;
     $max     = $c->goodsStuck('m_bu') ? 0.99 : $rmax;  
     
-    if (mt_rand(1, 100) <= $cpref->chance_to_sell_based_on_avg_price) {
-        $food_public_price = $food_price_history['avg_price'];
-        log_country_message($c->cnum, "Picking sell food price based on average price of ".($food_public_price ? $food_public_price : '?'). " and min price of $bushel_min_sell_price");
-    }
-    else {
-        $food_public_price = PublicMarket::price('m_bu');
-        log_country_message($c->cnum, "Picking sell food price based on current price of ".($food_public_price ? $food_public_price : '?'). " and min price of $bushel_min_sell_price");
+    $food_public_price = 0;
+    if($c->protection == 0){ // don't log this during protection
+        if (mt_rand(1, 100) <= $cpref->chance_to_sell_based_on_avg_price) {
+            $food_public_price = $food_price_history['avg_price'];
+            log_country_message($c->cnum, "Picking sell food price based on avg ".($food_public_price ? $food_public_price : '?'). ", min $bushel_min_sell_price, max $bushel_max_sell_price");
+        }
+        else {
+            $food_public_price = PublicMarket::price('m_bu');
+            log_country_message($c->cnum, "Picking sell food price based on current ".($food_public_price ? $food_public_price : '?'). ", min $bushel_min_sell_price, max $bushel_max_sell_price");
+        }
     }
 
     // don't dump food at +1 when the market is empty... can end up in a state where demo recyclers keep clearing it
     $food_public_price = $food_public_price ? $food_public_price : $server_base_pm_bushel_sell_price + 8;
-    $price   = max($bushel_min_sell_price, round($food_public_price * Math::purebell($rmin, $max, $rstddev, $rstep)));
+    $price   = min($bushel_max_sell_price, max($bushel_min_sell_price, round($food_public_price * Math::purebell($rmin, $max, $rstddev, $rstep))));
 
-    if ($price <= $pm_info->sell_price->m_bu / (2 - $c->tax())) {
-        if($c->money < $cpref->target_cash_after_stockpiling)
+    if ($c->protection == 1 || $price <= $pm_info->sell_price->m_bu / (2 - $c->tax())) {
+        if($c->protection == 1 || $c->money < $cpref->target_cash_after_stockpiling)
             return PrivateMarket::sell_single_good($c, 'm_bu', $c->food);
         else { // stockpile bushel instead if we have a lot of money
             stash_excess_bushels_on_public_if_needed($c, $rules);    
@@ -224,9 +234,9 @@ function sellextrafood_farmer(&$c, $rules, $bushel_min_sell_price, $cpref, $food
         }   
     }
 
-    $quantity = ['m_bu' => $c->food]; //sell it all! :)
+    $quantity = ['m_bu' => $c->food];
     $price_array   = ['m_bu' => $price];
-    return PublicMarket::sell($c, $quantity, $price_array);    //Sell food!
+    return PublicMarket::sell($c, $quantity, $price_array);
 }//end sellextrafood_farmer()
 
 
