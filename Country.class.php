@@ -184,58 +184,6 @@ class Country
         }
     }//end setIndy()
 
-/*
-    public function setIndyFromMarket($checkDPA = false)
-    {
-        // produce 100% turrets if checked in the first 150 turns because there's very little demand for anything else
-        // FUTURE: 150 is a made up number that could be changed to something better
-        if ($this->turns_played < 150) { 
-            $new['pro_tu'] = 100;
-        }
-        else { // not the first 150 turns
-            // for now, 400 indy's worth of production with 1% min and 5% max
-            // 200 was too low - maybe because of OOF and OOM events?
-            $spy = max(1, min(5, round(400 / ($this->b_indy + 1))));
-
-            $therest = 100 - $spy;
-
-            $new = ['pro_spy' => $spy];
-            global $market;
-
-            $p_tr = PublicMarket::price('m_tr');
-            $p_j  = PublicMarket::price('m_j');
-            $p_tu = PublicMarket::price('m_tu');
-            $p_ta = PublicMarket::price('m_ta');
-
-            $score = [
-                'pro_tr'  => 1.86 * ($p_tr == 0 ? 144 : $p_tr),
-                'pro_j'   => 1.86 * ($p_j == 0 ? 192 : $p_j),
-                'pro_tu'  => 1.86 * ($p_tu == 0 ? 210 : $p_tu),
-                'pro_ta'  => 0.4 * ($p_ta == 0 ? 588 : $p_ta),
-            ];
-
-            $protext = null;
-            foreach ($score as $k => $s) {
-                $protext .= $s.' '.$k.' ';
-            }
-            log_country_message($this->cnum, "--- Indy Scoring: ".$protext);
-
-            if ($checkDPA) {
-                $target = $this->dpat ?? $this->defPerAcreTarget();
-                if ($this->defPerAcre() < $target) {
-                    //below def target, don't make jets
-                    unset($score['pro_j']);
-                }
-            }
-
-            arsort($score);
-            $which       = key($score);
-            $new[$which] = $therest; //set to do the most expensive of whatever other good
-        }
-
-        $this->setIndy($new);
-    }//end setIndyFromMarket()
-*/
 
     /**
      * How much money it will cost to run turns

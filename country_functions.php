@@ -106,7 +106,6 @@ function has_money_for_turns($number_of_turns_to_play, $money, $incoming_money_p
 // tries to buy the requested food within the budget
 // stops buying food if it detects that prices are too high
 function buy_full_food_quantity_if_possible(&$c, $food_needed, $max_food_price_to_buy, $money_to_reserve, $purchase_attempt_number = 1) {
-    // FUTURE: consider private market as well (express might have cheaper food than public)
     if ($food_needed <= 0) {// quit because we bought all of the food we needed
         return true;
     }
@@ -206,6 +205,12 @@ function money_management(&$c, $server_max_possible_market_sell, $cpref)
 {
     while (turns_of_money($c) < 4) {
         //$foodloss = -1 * $c->foodnet;
+
+        // TODO:
+        /*
+                $action_and_turns_used = update_c($c, $result);
+        update_turn_action_array($turn_action_counts, $action_and_turns_used);
+        */
 
         if ($c->turns_stored <= 30 && total_cansell_military($c, $server_max_possible_market_sell) > 7500) {
             log_country_message($c->cnum, "Selling max military, and holding turns.");

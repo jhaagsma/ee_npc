@@ -89,7 +89,7 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
         }
 
         $action_and_turns_used = update_c($c, $result);
-        update_intended_action_array($turn_action_counts, $action_and_turns_used);
+        update_turn_action_array($turn_action_counts, $action_and_turns_used);
 
         if (!$c->turns % 5) {                   //Grab new copy every 5 turns
             $c->updateMain(); //we probably don't need to do this *EVERY* turn
@@ -140,7 +140,7 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
         // don't see a strong reason to sell excess bushels at this step
     }
 
-    $c->countryStats(FARMER); // , farmerGoals($c) FUTURE: implement?
+    $c->countryStats(FARMER);
     return $c;
 }//end play_farmer_strat()
 

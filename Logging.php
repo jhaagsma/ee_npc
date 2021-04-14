@@ -2,8 +2,6 @@
 
 namespace EENPC;
 
-// FUTURE: windows support for local logging?
-
 // new error types must be added to this function
 function log_get_name_of_error_type($error_type) {
     // 40 character limit on name
@@ -122,7 +120,7 @@ function log_get_name_of_error_type($error_type) {
 
 
 
-function update_intended_action_array(&$turn_action_counts, $action_and_turns_used) {
+function update_turn_action_array(&$turn_action_counts, $action_and_turns_used) {
     if(!empty($action_and_turns_used)) {
         foreach($action_and_turns_used as $action => $turns_used) {
             if(isset($turn_action_counts[$action]))
@@ -148,7 +146,14 @@ function log_turn_action_counts($c, $server, $cpref, $turn_action_counts) {
             log_error_message(1005, $c->cnum, "Cashed ".$turn_action_counts['cash']." turns too early in the set");
     }
 
-    // FUTURE: more errors?
+    /* FUTURE: log these
+	logged out with money < -income
+	logged out with no food
+	hit 25% of max stored turns
+	hit 100% of max stored turns
+	farmer didn't sell
+	indy didn't sell
+    */
 
     return;                      
 }
@@ -266,7 +271,7 @@ function log_to_targets($log_to_screen, $log_to_local, $local_file_path_and_name
             $file_message = $timestamp_for_file.($line_break_count > 0 ? "\n" : "").preg_replace('/\e[[][A-Za-z0-9];?[0-9]*m?/', '', $message)."\n";
         }
         if($local_file_path_and_name) {
-            file_put_contents ($local_file_path_and_name, $file_message, FILE_APPEND); // FUTURE: what if this doesn't work? like if we have a read only file?
+            file_put_contents ($local_file_path_and_name, $file_message, FILE_APPEND);
         }  
     }
 

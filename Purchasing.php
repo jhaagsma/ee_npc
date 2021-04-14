@@ -691,7 +691,6 @@ function do_public_market_bushel_resell_loop (&$c, $max_public_market_bushel_pur
 
 		$previous_food = $c->food;
 		$result = PublicMarket::buy($c, ['m_bu' => $max_quantity_to_buy_at_once], ['m_bu' => $current_public_market_bushel_price]);
-		// FUTURE: sometimes see an error here with an unexpected price (1 below last) - expected? taxes?
 		$bushels_purchased_quantity = $c->food - $previous_food;
 		if ($bushels_purchased_quantity == 0) {
 			 // most likely explanation is price changed, so update it

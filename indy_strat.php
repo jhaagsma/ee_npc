@@ -14,6 +14,9 @@ function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$tur
     $is_allowed_to_mass_explore = is_country_allowed_to_mass_explore($c, $cpref);
     log_country_message($cnum, "Indy: {$c->pt_indy}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%; Mil: {$c->pt_mil}%; Weap: {$c->pt_weap}%");
 
+    // TODO: for techer, farmer, and indy: FAST NEXT LOGIN if we can't play more than a few turns
+
+
     log_country_message($cnum, "Getting military prices using market search looking back $cpref->market_search_look_back_hours hours", 'green');
     $military_unit_price_history = get_market_history_all_military_units($cnum, $cpref);
     set_indy_from_production_algorithm($c, $military_unit_price_history, $cpref, false); // changing to not check DPA - Slagpit 20210321
@@ -61,7 +64,7 @@ function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$tur
         }
 
         $action_and_turns_used = update_c($c, $result);
-        update_intended_action_array($turn_action_counts, $action_and_turns_used);
+        update_turn_action_array($turn_action_counts, $action_and_turns_used);
 
         if (!$c->turns % 5) {                   //Grab new copy every 5 turns
             $c->updateMain(); //we probably don't need to do this *EVERY* turn
@@ -92,7 +95,7 @@ function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$tur
     // total_cansell_military > 20000?
 
 
-    $c->countryStats(INDY); // indyGoals($c) // FUTURE: implement?
+    $c->countryStats(INDY);
 
     return $c;
 }//end play_indy_strat()

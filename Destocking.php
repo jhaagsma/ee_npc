@@ -89,7 +89,7 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 	}
 
 	// note that we stay logged out for at least 6 turns
-	$turns_to_keep = 6; // 1 to sell bushels and 1 to sell military, along with 3 to possibly recall bushels and sell again in the future
+	$turns_to_keep = 6; // 1 to sell bushels and 1 to sell military, along with 3 to possibly recall bushels and sell again in later logins
 	$tech_recall_needed = false;
 	if($strategy == 'T') // one turn to sell tech
 		$turns_to_keep += 1;
@@ -104,7 +104,7 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 	// stash bushels away on public market if needed
 	$expect_to_play_turns_for_income = temporary_cash_or_tech_at_end_of_set ($c, $strategy, $turns_to_keep, $money_to_reserve_temp, true);
 	if($expect_to_play_turns_for_income and $c->turns >= 20 + $turns_to_keep) {
-		if(stash_excess_bushels_on_public_if_needed($c, $rules, $estimated_public_market_bushel_sell_price)) { // sold bushels
+		if(stash_excess_bushels_on_public_if_needed($c, $rules, $estimated_public_market_bushel_sell_price)) { // sold bushels FUTURE: WATCH RETURN VALUE
 			if(!$bushel_recall_needed and !is_there_time_to_sell_on_public($reset_seconds_remaining, $max_market_package_time_in_seconds, $is_final_destocking_attempt, 1800)) {
 				$turns_to_keep += 3; // we are going to recall bushels, so save 3 more turns for that
 				$bushel_recall_needed = true;
@@ -120,7 +120,7 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 	$was_playing_turns_profitable = temporary_cash_or_tech_at_end_of_set ($c, $strategy, $turns_to_keep, $money_to_reserve);
 	log_country_message($cnum, "Finished cashing or teching");
 
-	// FUTURE: switch governments if that would help
+	// FUTURE: switch governments if that would help???
 	
 	// recall bushels if needed - TODO: function
 	if($bushel_recall_needed) {
