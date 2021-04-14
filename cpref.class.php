@@ -82,32 +82,40 @@ class cpref
 
 
     private function get_min_perc_teching_turns() {
-        return 20 + round($this->decode_bot_secret(3) / 33); // between 20% and 50%, fine if not completely even probabilities on edges
+         // between 20% and 50%, fine if not completely even probabilities on edges
+        return 20 + round($this->decode_bot_secret(3) / 33);
     }
 
 
     private function get_production_algorithm() {
-        $schedule_rand = $this->decode_bot_secret(2) % 100;
+        $schedule_rand = $this->decode_bot_secret(2);
 
-        // TODO: these should not be equal chance as some are terrible by design
-        if($schedule_rand <= 19)
+        if($schedule_rand <= 39)
             return "SALES";
-        elseif($schedule_rand <= 39)
-            return "CURRENT_PRICE";
         elseif($schedule_rand <= 59)
             return "AVG_PRICE";
-        elseif($schedule_rand <= 79)
+        elseif($schedule_rand <= 74)
             return "HIGH_PRICE";
+        elseif($schedule_rand <= 89)
+            return "CURRENT_PRICE";
         else
             return "RANDOM";
     }
 
-
     private function get_purchase_schedule_number() {
-        $unique_schedule_count = ($this->strat == "C" || $this->strat == "F" ? 4 : 1);
-        // indies and techers only have a single purchase schedule because they either buy mil or tech
-        // rainbow doesn't use purchase schedules as of 20210409
-        return $this->decode_bot_secret(2) % $unique_schedule_count;
+        if($this->strat == "I" || $this->strat == "T" || $this->strat == "R")
+            return 0;
+        $schedule_rand = $this->decode_bot_secret(1);
+
+        // FUTURE: use names
+        if($schedule_rand <= 1)
+            return 0; // heavy military
+        elseif($schedule_rand <= 3)
+            return 1; // heavy tech
+        elseif($schedule_rand <= 6)
+            return 2;// favor military
+        else
+            return 3;// favor tech
     }
 
 

@@ -151,7 +151,7 @@ function casher_get_buying_priorities ($cnum, $buying_schedule) {
             ['type'=>'NWPA','goal'=>100]
         ];
     }
-    elseif($buying_schedule == 1) { // heavy teach
+    elseif($buying_schedule == 1) { // heavy tech
         $buying_priorities = [
             ['type'=>'DPA','goal'=>1],
             ['type'=>'INCOME_TECHS','goal'=>100],

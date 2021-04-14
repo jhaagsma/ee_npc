@@ -274,6 +274,7 @@ class Country
             default:
                 $govt = 1.0;
         }
+        // FUTURE: this is wrong - reps have a higher calculated NW/acre as a result
 
         return floor($this->networth / ($this->land * $govt));
     }//end nlg()
