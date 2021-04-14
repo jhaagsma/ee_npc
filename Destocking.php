@@ -240,7 +240,7 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 		log_country_message($cnum, "Considering military reselling...", 'green');
 		$did_resell_military = consider_and_do_military_reselling($c, $value_of_public_market_goods, $total_cost_to_buyout_future_private_market, $rules->max_possible_market_sell, $reset_seconds_remaining, $max_market_package_time_in_seconds, $is_final_destocking_attempt);
 
-		log_country_message($cnum, "Considering tech sale...");
+		log_country_message($cnum, "Considering tech sale...", 'green');
 		dump_tech($c, $strategy, $market_autobuy_tech_price, $rules->max_possible_market_sell, $reset_seconds_remaining, $max_market_package_time_in_seconds, $tech_recall_needed, $is_final_destocking_attempt, $cpref);
 	}
 	
