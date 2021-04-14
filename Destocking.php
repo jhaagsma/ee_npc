@@ -332,8 +332,6 @@ function dump_tech(&$c, $strategy, $market_autobuy_tech_price, $server_max_possi
 		}
 
 		$turn_result = sell_max_tech($c, $cpref, $market_autobuy_tech_price, $server_max_possible_market_sell, $mil_tech_to_keep, $dump_at_min_sell_price, $allow_average_prices, $tech_price_history);
-
-		sell_max_tech($c, $cpref, $tech_price_min_sell_price, $server_max_possible_market_sell, 0, false, true, $tech_price_history);
 		update_c($c, $turn_result);
 	}
 
