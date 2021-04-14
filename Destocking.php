@@ -116,7 +116,7 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 	// FUTURE: indies (and maybe other strats) should reserve money to play the rest of the turns they'll get in the set. see $turns_to_keep_for_bushel_calculation
 	log_country_message($cnum, "Money is $c->money and calculated money to reserve is $money_to_reserve");
 	log_country_message($cnum, "Turns left: $c->turns and turns to keep is $turns_to_keep");
-	log_country_message($cnum, "Starting cashing or teching...");	
+	log_country_message($cnum, "Starting cashing or teching...", 'green');	
 	$was_playing_turns_profitable = temporary_cash_or_tech_at_end_of_set ($c, $strategy, $turns_to_keep, $money_to_reserve);
 	log_country_message($cnum, "Finished cashing or teching");
 
@@ -153,7 +153,7 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 	$pm_info = PrivateMarket::getInfo();
 	$private_market_bushel_price = $pm_info->sell_price->m_bu;	
 
-	log_country_message($cnum, "Attempting to dump bushel stock...");
+	log_country_message($cnum, "Attempting to dump bushel stock...", 'green');
 	// keep bushels to keep running future turns if it's profitable to do so
 	$turns_to_keep_for_bushel_calculation = ($was_playing_turns_profitable ? min($rules->maxturns, $turns_left_in_set) : $turns_to_keep);
 	log_country_message($cnum, "Turns of bushels to keep is: $turns_to_keep_for_bushel_calculation");
@@ -165,7 +165,7 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 
 	// resell bushels if profitable
 	$should_attempt_bushel_reselling = can_resell_bushels_from_public_market ($private_market_bushel_price, $c->tax(), $current_public_market_bushel_price, $max_profitable_public_market_bushel_price);
-	log_country_message($cnum, "Decision on attempting public market bushel reselling: ".log_translate_boolean_to_YN($should_attempt_bushel_reselling));
+	log_country_message($cnum, "Decision on attempting public market bushel reselling: ".log_translate_boolean_to_YN($should_attempt_bushel_reselling), 'green');
 	if ($should_attempt_bushel_reselling) {
 		do_public_market_bushel_resell_loop ($c, $max_profitable_public_market_bushel_price);
 		log_country_message($cnum, "Done with bushel reselling");
@@ -184,7 +184,7 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 		log_country_message($cnum, "For $military_unit market buying loop, total money is $c->money and budget is $max_spend");
 
 		if ($max_spend > 0) {
-			log_country_message($cnum, "Attempting to spend money on private and public markets on units better or equal to PM $military_unit...");
+			log_country_message($cnum, "Attempting to spend money on private and public markets on units better or equal to PM $military_unit...", 'green');
 			buyout_up_to_private_market_unit_dpnw ($c, $cpref, $pm_info->buy_price->$military_unit, $military_unit, $max_spend);
 		}
 
@@ -205,7 +205,7 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 	if($is_final_destocking_attempt) {		
 		// note: a human would recall all military goods here, but I don't care if bots lose NW at the end if it allows a human to buy something
 		
-		log_country_message($cnum, "This is the FINAL destock attempt for this country". log_translate_forced_debug($debug_force_final_attempt));
+		log_country_message($cnum, "This is the FINAL destock attempt for this country". log_translate_forced_debug($debug_force_final_attempt), 'green');
 		log_country_message($cnum, "Selling all food and oil (if possible) on private market for any price...");
 		final_dump_all_resources($c, $is_oil_on_pm);
 
@@ -219,7 +219,7 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 
 	}
 	else { // not final attempt
-		log_country_message($cnum, "This is NOT the final destock attempt for this country");
+		log_country_message($cnum, "This is NOT the final destock attempt for this country", 'green');
 
 		// FUTURE: use SOs and recent market data to avoid getting ripped off
 		$max_dpnw = calculate_maximum_dpnw_for_public_market_purchase ($reset_seconds_remaining, $server_seconds_per_turn, $pm_info->buy_price->m_tu, $c->tax());
@@ -237,7 +237,7 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 		// consider putting up military for sale if we have money to play a turn and we expect to have at least 100 M in unspent PM capacity
 		// note: no need to reserve money in previous has_money_for_turns call - we reserved money earlier so we could spend turns like this
 		$value_of_public_market_goods = floor(get_total_value_of_on_market_goods($c));
-		log_country_message($cnum, "Considering military reselling...");
+		log_country_message($cnum, "Considering military reselling...", 'green');
 		$did_resell_military = consider_and_do_military_reselling($c, $value_of_public_market_goods, $total_cost_to_buyout_future_private_market, $rules->max_possible_market_sell, $reset_seconds_remaining, $max_market_package_time_in_seconds, $is_final_destocking_attempt);
 
 		log_country_message($cnum, "Considering tech sale...");
