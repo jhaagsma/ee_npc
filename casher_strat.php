@@ -2,7 +2,7 @@
 
 namespace EENPC;
 
-function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition)
+function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$turn_action_counts)
 {
     $exit_condition = 'NORMAL';
     //global $cnum;
@@ -10,6 +10,7 @@ function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     //out_data($main);          //output the main data
     $c = get_advisor();     //c as in country! (get the advisor)
     //out_data($c) && exit;             //ouput the advisor data
+
     $is_allowed_to_mass_explore = is_country_allowed_to_mass_explore($c, $cpref);
     log_country_message($cnum, "Bus: {$c->pt_bus}%; Res: {$c->pt_res}%; Mil: {$c->pt_mil}%; Weap: {$c->pt_weap}%");
 
@@ -53,6 +54,7 @@ function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition)
 
     attempt_to_recycle_bushels_but_avoid_buyout($c, $cpref, $food_price_history);
 
+    $turn_action_counts = [];
     $turns_played_for_last_spend_money_attempt = 0;
     while ($c->turns > 0) {
         $result = play_casher_turn($c, $is_allowed_to_mass_explore);
@@ -60,7 +62,10 @@ function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition)
             $c = get_advisor();     //UPDATE EVERYTHING
             continue;
         }
-        update_c($c, $result);
+
+        $action_and_turns_used = update_c($c, $result);
+        update_intended_action_array($turn_action_counts, $action_and_turns_used);
+
         if (!$c->turns % 5) {                   //Grab new copy every 5 turns
             $c->updateMain(); //we probably don't need to do this *EVERY* turn
         }
@@ -108,7 +113,6 @@ function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition)
 
 function play_casher_turn(&$c, $is_allowed_to_mass_explore)
 {
- //c as in country!
     $target_bpt = 65;
     global $turnsleep;
     usleep($turnsleep);
@@ -124,7 +128,7 @@ function play_casher_turn(&$c, $is_allowed_to_mass_explore)
         //build a full BPT if we can afford it
         return Build::casher($c);
     } elseif ($c->shouldBuildFourCS($target_bpt)) {
-        //build 4CS if we can afford it and are below our target BPT (80)
+        //build 4CS if we can afford it and are below our target BPT (65)
         return Build::cs(4); //build 4 CS
     } elseif ($c->built() > 50) {
         //otherwise... explore if we can

@@ -403,3 +403,16 @@ function get_tpt_split_from_production_algorithm(&$c, $tech_price_history, $cpre
     // no need for proper normalization here. it will have to keep getting normalized because tpt can change as the country plays turns
     return $production_score;
 }//end get_tpt_split_from_production_algorithm()
+
+
+
+function recall_goods()
+{
+    return ee('market_recall', ['type' => 'GOODS']);
+}//end recall_goods()
+
+
+function recall_tech()
+{
+    return ee('market_recall', ['type' => 'TECH']);
+}//end recall_tech()

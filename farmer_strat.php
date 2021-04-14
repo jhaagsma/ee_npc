@@ -24,7 +24,7 @@ namespace EENPC;
  *
  * @return null
  */
-function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
+function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$turn_action_counts)
 {
     $exit_condition = 'NORMAL';
     //global $cnum;
@@ -77,17 +77,19 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     if($c->money > 1000000000) // only called here to keep returned bushels on the market at high prices if we have a lot of cash
         stash_excess_bushels_on_public_if_needed($c, $rules);
 
+    $turn_action_counts = [];    
     $turns_played_for_last_spend_money_attempt = 0;
     while ($c->turns > 0) {
         //$result = PublicMarket::buy($c,array('m_bu'=>100),array('m_bu'=>400));
-
         $result = play_farmer_turn($c, $rules, $is_allowed_to_mass_explore, $bushel_min_sell_price, $cpref, $food_price_history);
         if ($result === false) {  //UNEXPECTED RETURN VALUE
             $c = get_advisor();     //UPDATE EVERYTHING
             continue;
         }
 
-        update_c($c, $result);
+        $action_and_turns_used = update_c($c, $result);
+        update_intended_action_array($turn_action_counts, $action_and_turns_used);
+
         if (!$c->turns % 5) {                   //Grab new copy every 5 turns
             $c->updateMain(); //we probably don't need to do this *EVERY* turn
         }
@@ -165,7 +167,7 @@ function play_farmer_turn(&$c, $rules, $is_allowed_to_mass_explore, $bushel_min_
         //build a full BPT if we can afford it
         return Build::farmer($c);
     } elseif ($c->shouldBuildFourCS($target_bpt)) {
-        //build 4CS if we can afford it and are below our target BPT (80)
+        //build 4CS if we can afford it and are below our target BPT (65)
         return Build::cs(4); //build 4 CS
     } elseif ($c->built() > 50) {  //otherwise... explore if we can
         $explore_turn_limit = $is_allowed_to_mass_explore ? 999 : 7; // match spend_money call
@@ -201,11 +203,11 @@ function sellextrafood_farmer(&$c, $rules, $bushel_min_sell_price, $cpref, $food
     
     if (mt_rand(1, 100) <= $cpref->chance_to_sell_based_on_avg_price) {
         $food_public_price = $food_price_history['avg_price'];
-        log_country_message($c->cnum, "Picking sell food price based on average price of $food_public_price");
+        log_country_message($c->cnum, "Picking sell food price based on average price of ".($food_public_price ? $food_public_price : '?'). " and min price of $bushel_min_sell_price");
     }
     else {
         $food_public_price = PublicMarket::price('m_bu');
-        log_country_message($c->cnum, "Picking sell food price based on current price of $food_public_price");
+        log_country_message($c->cnum, "Picking sell food price based on current price of ".($food_public_price ? $food_public_price : '?'). " and min price of $bushel_min_sell_price");
     }
 
     // don't dump food at +1 when the market is empty... can end up in a state where demo recyclers keep clearing it

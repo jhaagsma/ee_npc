@@ -4,7 +4,7 @@ namespace EENPC;
 
 $techlist = ['t_mil','t_med','t_bus','t_res','t_agri','t_war','t_ms','t_weap','t_indy','t_spy','t_sdi'];
 
-function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
+function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$turn_action_counts)
 {
     $exit_condition = 'NORMAL';
     //global $cnum;
@@ -64,6 +64,7 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     $teching_turns_remaining_before_explore = floor(0.01 * $cpref->min_perc_teching_turns * $c->turns);
     log_country_message($cnum, "Min teching turns before exploring is $teching_turns_remaining_before_explore based on preference rate of $cpref->min_perc_teching_turns%");
 
+    $turn_action_counts = [];
     while ($c->turns > 0) {
         //$result = PublicMarket::buy($c,array('m_bu'=>100),array('m_bu'=>400));
                 
@@ -72,7 +73,10 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
             $c = get_advisor();     //UPDATE EVERYTHING
             continue;
         }
-        update_c($c, $result);
+
+        $action_and_turns_used = update_c($c, $result);
+        update_intended_action_array($turn_action_counts, $action_and_turns_used);
+
         if (!$c->turns % 5) {                   //Grab new copy every 5 turns
             $c->updateMain(); //we probably don't need to do this *EVERY* turn
         }
@@ -347,10 +351,10 @@ function techer_switch_government_if_needed($c) {
     if ($c->govt == 'M') {
         $rand = rand(0, 100);
         switch ($rand) {
-            case $rand < 40:
+            case $rand < 35:
                 Government::change($c, 'H');
                 break;
-            case $rand < 80:
+            case $rand < 85:
                 Government::change($c, 'D');
                 break;
             default:

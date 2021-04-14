@@ -26,6 +26,15 @@ spl_autoload_register(
 require_once 'Terminal.class.php';
 require_once 'communication.php';
 
+// don't allow the process to be kicked off concurrently by accident
+// this seemingly cannot be in a function because a return releases the lock?
+$fp0 = fopen('zz_lock.txt', 'c');
+if (flock($fp0, LOCK_EX | LOCK_NB)) // LOCK_NB makes it fail right away instead of waiting
+    out("Lock acquired on zz_lock.txt, script will proceed"); 
+else
+    die("Lock could not be acquired on zz_lock.txt - is the process already running?");
+
+
 out(Colors::getColoredString("STARTING UP BOT", "purple"));
 
 date_default_timezone_set('GMT'); //SET THE TIMEZONE FIRST
@@ -360,23 +369,26 @@ while (1) {
                     log_main_message("Playing Standard ".Bots::txtStrat($cnum)." Turns for #$cnum ".siteURL($cnum));
                     log_country_message($cnum, "Begin playing standard ".Bots::txtStrat($cnum)." turns");
 
+                    $turn_action_counts = [];
                     // FUTURE: careful with the $cnum global removal, maybe this breaks things? seems fine so far - 20210323
                     switch ($cpref_file->strat) {
                         case 'F':
-                            $c = play_farmer_strat($server, $cnum, $rules, $cpref, $exit_condition); 
+                            $c = play_farmer_strat($server, $cnum, $rules, $cpref, $exit_condition, $turn_action_counts); 
                             break;
                         case 'T':
-                            $c = play_techer_strat($server, $cnum, $rules, $cpref, $exit_condition);
+                            $c = play_techer_strat($server, $cnum, $rules, $cpref, $exit_condition, $turn_action_counts);
                             break;
                         case 'C':
-                            $c = play_casher_strat($server, $cnum, $rules, $cpref, $exit_condition);
+                            $c = play_casher_strat($server, $cnum, $rules, $cpref, $exit_condition, $turn_action_counts);
                             break;
                         case 'I':
-                            $c = play_indy_strat($server, $cnum, $rules, $cpref, $exit_condition);
+                            $c = play_indy_strat($server, $cnum, $rules, $cpref, $exit_condition, $turn_action_counts);
                             break;
                         default:
                             $c = play_rainbow_strat($server, $cnum, $rules, $cpref, $exit_condition);
                     }
+
+                    log_turn_action_counts($c, $server, $cpref, $turn_action_counts);                    
 
                     if ($cpref_file->gdi && !$c->gdi) {
                         GDI::join();
@@ -487,9 +499,6 @@ while (1) {
 done(); //done() is defined below
 
 
-            
-
-
 
 function govtStats($countries)
 {
@@ -550,122 +559,7 @@ function govtStats($countries)
 }//end govtStats()
 
 
-
-
-
-
-
-//COUNTRY PLAYING STUFF
-function onmarket($good = 'food', &$c = null)
-{
-    if ($c == null) {
-        return out_data(debug_backtrace());
-    }
-
-    return $c->onMarket($good);
-}//end onmarket()
-
-
-// FUTURE: both this and get_total_value_of_on_market_goods() shouldn't exist
-function onmarket_value($good = null, &$c = null)
-{
-    global $mktinfo;
-    if (!$mktinfo) {
-        $mktinfo = get_owned_on_market_info();  //find out what we have on the market
-    }
-
-    //out_data($mktinfo);
-    //exit;
-    $value = 0;
-    foreach ($mktinfo as $key => $goods) {
-        //out_data($goods);
-        if ($good != null && $goods->type == $good) {
-            $value += $goods->quantity * $goods->price;
-        } elseif ($good == null) {
-            $value += $goods->quantity;
-        }
-
-        if ($c != null) {
-            $c->onMarket($goods);
-        }
-    }
-
-    return $value;
-}//end onmarket_value()
-
-
-
-
-
-function totaltech($c)
-{
-    return $c->t_mil + $c->t_med + $c->t_bus + $c->t_res + $c->t_agri + $c->t_war + $c->t_ms + $c->t_weap + $c->t_indy + $c->t_spy + $c->t_sdi;
-}//end totaltech()
-
-
-function total_military($c)
-{
-    return $c->m_spy + $c->m_tr + $c->m_j + $c->m_tu + $c->m_ta;    //total_military
-}//end total_military()
-
-
-function total_cansell_tech($c, $server_max_possible_market_sell, $mil_tech_to_keep = 0)
-{
-    if ($c->turns_played < 100) {
-        return 0;
-    }
-
-    $cansell = 0;
-    global $techlist;
-    foreach ($techlist as $tech) {
-        $tech_to_not_sell = ($tech == 't_mil' ? $mil_tech_to_keep : 0);
-        $cansell += can_sell_tech($c, $tech, $server_max_possible_market_sell, $tech_to_not_sell);
-    }
-
-    Debug::msg("CANSELL TECH: $cansell");
-    return $cansell;
-}//end total_cansell_tech()
-
-
-function total_cansell_military($c, $server_max_possible_market_sell)
-{
-    $cansell = 0;
-    global $military_list;
-    foreach ($military_list as $mil) {
-        $cansell += can_sell_mil($c, $mil, $server_max_possible_market_sell);
-    }
-
-    //log_country_message($c->cnum, "CANSELL TECH: $cansell");
-    return $cansell;
-}//end total_cansell_military()
-
-
-
-function can_sell_tech(&$c, $tech = 't_bus', $server_max_possible_market_sell = 25, $tech_to_not_sell = 0)
-{
-    $onmarket = $c->onMarket($tech);
-    $tot      = $c->$tech + $onmarket;
-    $sell     = floor($tot * 0.01 * $server_max_possible_market_sell) - $onmarket; // FUTURE: make work for commie
-    //Debug::msg("Can Sell $tech: $sell; (At Home: {$c->$tech}; OnMarket: $onmarket)");
-
-    if($c->$tech - $sell < $tech_to_not_sell)
-        $sell = $c->$tech - $tech_to_not_sell;
-
-    return $sell > 10 ? $sell : 0;
-}//end can_sell_tech()
-
-
-function can_sell_mil(&$c, $mil = 'm_tr', $server_max_possible_market_sell = 25)
-{
-    $onmarket = $c->onMarket($mil);
-    $tot      = $c->$mil + $onmarket;
-    $sell     = floor($tot * ($c->govt == 'C' ? 0.01 * $server_max_possible_market_sell * 1.35 : 0.01 * $server_max_possible_market_sell)) - $onmarket;
-
-    return $sell > 5000 ? $sell : 0;
-}//end can_sell_mil()
-
-
-
+// FUTURE: move the update_c stuff to a new file
 //Interaction with API
 function update_c(&$c, $result)
 {
@@ -677,6 +571,8 @@ function update_c(&$c, $result)
     foreach ($result->turns as $z) {
         $numT++; //this is dumb, but count wasn't working????
     }
+
+    $turn_action = null; // approximate turn action... won't handle weird stuff like building cs and other buildings at the same time
 
     global $lastFunction;
     //out_data($result);                //output data for testing
@@ -697,9 +593,14 @@ function update_c(&$c, $result)
             $str       .= $num.' '.$type;     //Text for screen
             if ($type == 'cs' && $num > 0) {
                 $bpt = true;
+                $turn_action = 'cs';
             } elseif ($type == 'lab' && $num > 0) {
                 $tpt = true;
+                $turn_action = 'buildings';
+            } elseif ($num > 0) {
+                $turn_action = 'buildings';
             }
+
         }
 
         $explain = '('.$c->built().'%)';
@@ -718,6 +619,7 @@ function update_c(&$c, $result)
         $c->tpt    = $result->tpt;
         $c->money -= $result->cost;
     } elseif (isset($result->new_land)) {
+        $turn_action = 'explore';
         $c->empty       += $result->new_land;             //update empty land
         $c->land        += $result->new_land;              //update land
         $c->build_cost   = $result->build_cost;       //update Build Cost
@@ -727,6 +629,7 @@ function update_c(&$c, $result)
         $explain         = '('.$c->land.' A)';          //Text for screen
         $extrapad        = 8;
     } elseif (isset($result->teched)) {
+        $turn_action = 'tech';
         $str = 'Tech: ';
         $tot = 0;
         foreach ($result->teched as $type => $num) {    //for each type of tech that we teched....
@@ -739,10 +642,13 @@ function update_c(&$c, $result)
         $str    .= $tot.' '.actual_count($result->turns).' turns';
         $explain = '('.$c->tpt.' tpt)';     //Text for screen
     } elseif ($lastFunction == 'cash') {
+        $turn_action = 'cash';
         $str = "Cashed ".actual_count($result->turns)." turns";     //Text for screen
     } elseif (isset($result->sell)) {
+        $turn_action = 'sell';
         $str = "Put goods on Public Market";
     } elseif (isset($result->market_recalled_type)) {
+        $turn_action = 'recall';
         $str = ($result->market_recalled_type == 'GOODS' ? 'Recalled goods' : 'Recalled tech');        
     }
 
@@ -752,6 +658,7 @@ function update_c(&$c, $result)
     $advisor_update = $OOF = $OOM = false;
     $money_before_turns = $c->money; // for debugging
     $food_before_turns = $c->food; // for debugging
+    $turns_played_before_turns = $c->turns_played;
 
     foreach ($result->turns as $num => $turn) {
         //update stuff based on what happened this turn
@@ -894,29 +801,10 @@ function update_c(&$c, $result)
     }
 
     $APICalls = 0;
+
+    // returning the number of turns played is useful for logging purposes
+    return [$turn_action => $c->turns_played - $turns_played_before_turns];
 }//end update_c()
-
-
-/**
- * Return engineering notation
- *
- * @param  number $number The number to round
- *
- * @return string         The rounded number with B/M/k
- */
-function engnot($number)
-{
-    if (abs($number) > 1000000000) {
-        return round($number / 1000000000, $number / 1000000000 > 100 ? 0 : 1).'B';
-    } elseif (abs($number) > 1000000) {
-        return round($number / 1000000, $number / 1000000 > 100 ? 0 : 1).'M';
-    } elseif (abs($number) > 10000) {
-        return round($number / 1000, $number / 1000 > 100 ? 0 : 1).'k';
-    }
-
-    return $number;
-}//end engnot()
-
 
 
 function event_text($event)
@@ -946,41 +834,6 @@ function event_text($event)
 }//end event_text()
 
 
-
-
-function cash(&$c, $turns = 1)
-{
-                          //this means 1 is the default number of turns if not provided
-    return ee('cash', ['turns' => $turns]);             //cash a certain number of turns
-}//end cash()
-
-
-function explore(&$c, $turns = 1)
-{
-    if ($c->empty > $c->land / 2) {
-        $b = $c->built();
-        log_country_message($c->cnum, "We can't explore (Built: {$b}%), what are we doing?");
-        return;
-    }
-
-    //this means 1 is the default number of turns if not provided
-    $result = ee('explore', ['turns' => $turns]);      //cash a certain number of turns
-    if ($result === null) {
-        log_country_message($c->cnum, 'Explore Fail? Update Advisor');
-        $c = get_advisor();
-    }
-
-    return $result;
-}//end explore()
-
-
-function tech($tech = [])
-{
-                     //default is an empty array
-    return ee('tech', ['tech' => $tech]);   //research a particular set of techs
-}//end tech()
-
-
 function get_main()
 {
     $main = ee('main');      //get and return the MAIN information
@@ -997,22 +850,6 @@ function get_rules()
 {
     return ee('rules');      //get and return the RULES information
 }//end get_rules()
-
-
-function set_indy(&$c)
-{
-    return ee(
-        'indy',
-        ['pro' => [
-                'pro_spy' => $c->pro_spy,
-                'pro_tr' => $c->pro_tr,
-                'pro_j' => $c->pro_j,
-                'pro_tu' => $c->pro_tu,
-                'pro_ta' => $c->pro_ta,
-            ]
-        ]
-    );      //set industrial production
-}//end set_indy()
 
 
 function update_stats($number)
@@ -1039,31 +876,6 @@ function get_advisor()
     return new Country($advisor);
 }//end get_advisor()
 
-
-
-function get_market_info()
-{
-    return ee('market');    //get and return the PUBLIC MARKET information
-}//end get_market_info()
-
-
-function get_owned_on_market_info()
-{
-    $goods = ee('onmarket');    //get and return the GOODS OWNED ON PUBLIC MARKET information
-    return $goods->goods;
-}//end get_owned_on_market_info()
-
-
-function recall_goods()
-{
-    return ee('market_recall', ['type' => 'GOODS']);
-}//end recall_goods()
-
-
-function recall_tech()
-{
-    return ee('market_recall', ['type' => 'TECH']);
-}//end recall_tech()
 
 
 /**

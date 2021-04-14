@@ -24,7 +24,7 @@ function stash_excess_bushels_on_public_if_needed(&$c, $rules, $max_sell_price =
             log_country_message($c->cnum, "Selling excess $excess_bushels bushels at high prices to stash them away");
         }
         $res = PublicMarket::sell($c, $quantity, $price); 
-        update_c($c, $res);
+        update_c($c, $res); // TODO: return the result and don't do update_c? can't log to turn actions with this method
         return true; // FUTURE: catch fails?
     }
     return false;

@@ -2,7 +2,7 @@
 
 namespace EENPC;
 
-
+// FUTURE: this file is too big and should be split up
 
 function is_country_allowed_to_mass_explore($c, $cpref) {    
     if($c->explore_rate == $c->explore_min) {
@@ -682,3 +682,179 @@ function buy_private_below_dpnw(&$c, $dpnw, $money = 0, $shuffle = false, $defOn
 
     }
 }//end buy_private_below_dpnw()
+
+
+
+
+function totaltech($c)
+{
+    return $c->t_mil + $c->t_med + $c->t_bus + $c->t_res + $c->t_agri + $c->t_war + $c->t_ms + $c->t_weap + $c->t_indy + $c->t_spy + $c->t_sdi;
+}//end totaltech()
+
+
+function total_military($c)
+{
+    return $c->m_spy + $c->m_tr + $c->m_j + $c->m_tu + $c->m_ta;    //total_military
+}//end total_military()
+
+
+function total_cansell_tech($c, $server_max_possible_market_sell, $mil_tech_to_keep = 0)
+{
+    if ($c->turns_played < 100) {
+        return 0;
+    }
+
+    $cansell = 0;
+    global $techlist;
+    foreach ($techlist as $tech) {
+        $tech_to_not_sell = ($tech == 't_mil' ? $mil_tech_to_keep : 0);
+        $cansell += can_sell_tech($c, $tech, $server_max_possible_market_sell, $tech_to_not_sell);
+    }
+
+    Debug::msg("CANSELL TECH: $cansell");
+    return $cansell;
+}//end total_cansell_tech()
+
+
+function total_cansell_military($c, $server_max_possible_market_sell)
+{
+    $cansell = 0;
+    global $military_list;
+    foreach ($military_list as $mil) {
+        $cansell += can_sell_mil($c, $mil, $server_max_possible_market_sell);
+    }
+
+    //log_country_message($c->cnum, "CANSELL TECH: $cansell");
+    return $cansell;
+}//end total_cansell_military()
+
+
+
+function can_sell_tech(&$c, $tech = 't_bus', $server_max_possible_market_sell = 25, $tech_to_not_sell = 0)
+{
+    $onmarket = $c->onMarket($tech);
+    $tot      = $c->$tech + $onmarket;
+    $sell     = floor($tot * 0.01 * $server_max_possible_market_sell) - $onmarket; // FUTURE: make work for commie
+    //Debug::msg("Can Sell $tech: $sell; (At Home: {$c->$tech}; OnMarket: $onmarket)");
+
+    if($c->$tech - $sell < $tech_to_not_sell)
+        $sell = $c->$tech - $tech_to_not_sell;
+
+    return $sell > 10 ? $sell : 0;
+}//end can_sell_tech()
+
+
+function can_sell_mil(&$c, $mil = 'm_tr', $server_max_possible_market_sell = 25)
+{
+    $onmarket = $c->onMarket($mil);
+    $tot      = $c->$mil + $onmarket;
+    $sell     = floor($tot * ($c->govt == 'C' ? 0.01 * $server_max_possible_market_sell * 1.35 : 0.01 * $server_max_possible_market_sell)) - $onmarket;
+
+    return $sell > 5000 ? $sell : 0;
+}//end can_sell_mil()
+
+
+function cash(&$c, $turns = 1)
+{
+                          //this means 1 is the default number of turns if not provided
+    return ee('cash', ['turns' => $turns]);             //cash a certain number of turns
+}//end cash()
+
+
+function explore(&$c, $turns = 1)
+{
+    if ($c->empty > $c->land / 2) {
+        $b = $c->built();
+        log_country_message($c->cnum, "We can't explore (Built: {$b}%), what are we doing?");
+        return;
+    }
+
+    //this means 1 is the default number of turns if not provided
+    $result = ee('explore', ['turns' => $turns]);      //cash a certain number of turns
+    if ($result === null) {
+        log_country_message($c->cnum, 'Explore Fail? Update Advisor');
+        $c = get_advisor();
+    }
+
+    return $result;
+}//end explore()
+
+
+function tech($tech = [])
+{
+                     //default is an empty array
+    return ee('tech', ['tech' => $tech]);   //research a particular set of techs
+}//end tech()
+
+
+
+
+function set_indy(&$c)
+{
+    return ee(
+        'indy',
+        ['pro' => [
+                'pro_spy' => $c->pro_spy,
+                'pro_tr' => $c->pro_tr,
+                'pro_j' => $c->pro_j,
+                'pro_tu' => $c->pro_tu,
+                'pro_ta' => $c->pro_ta,
+            ]
+        ]
+    );      //set industrial production
+}//end set_indy()
+
+
+
+function get_market_info()
+{
+    return ee('market');    //get and return the PUBLIC MARKET information
+}//end get_market_info()
+
+
+function get_owned_on_market_info()
+{
+    $goods = ee('onmarket');    //get and return the GOODS OWNED ON PUBLIC MARKET information
+    return $goods->goods;
+}//end get_owned_on_market_info()
+
+
+
+//COUNTRY PLAYING STUFF
+function onmarket($good = 'food', &$c = null)
+{
+    if ($c == null) {
+        return out_data(debug_backtrace());
+    }
+
+    return $c->onMarket($good);
+}//end onmarket()
+
+
+// FUTURE: both this and get_total_value_of_on_market_goods() shouldn't exist
+function onmarket_value($good = null, &$c = null)
+{
+    global $mktinfo;
+    if (!$mktinfo) {
+        $mktinfo = get_owned_on_market_info();  //find out what we have on the market
+    }
+
+    //out_data($mktinfo);
+    //exit;
+    $value = 0;
+    foreach ($mktinfo as $key => $goods) {
+        //out_data($goods);
+        if ($good != null && $goods->type == $good) {
+            $value += $goods->quantity * $goods->price;
+        } elseif ($good == null) {
+            $value += $goods->quantity;
+        }
+
+        if ($c != null) {
+            $c->onMarket($goods);
+        }
+    }
+
+    return $value;
+}//end onmarket_value()
+

@@ -4,7 +4,7 @@ namespace EENPC;
 
 $military_list = ['m_tr','m_j','m_tu','m_ta'];
 
-function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition)
+function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$turn_action_counts)
 {
     $exit_condition = 'NORMAL';
     //global $cnum;
@@ -52,16 +52,19 @@ function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition)
         spend_extra_money_no_military($c, $buying_priorities, $cpref, floor(0.8 * $c->fullBuildCost()) - $c->runCash(), $optimal_tech_buying_array);
     }
 
+    $turn_action_counts = [];
     $turns_played_for_last_spend_money_attempt = $c->turns_played;
     while ($c->turns > 0) {
         //$result = PublicMarket::buy($c,array('m_bu'=>100),array('m_bu'=>400));
-                
         $result = play_indy_turn($c, $rules->max_possible_market_sell, $is_allowed_to_mass_explore, $cpref);
         if ($result === false) {  //UNEXPECTED RETURN VALUE
             $c = get_advisor();     //UPDATE EVERYTHING
             continue;
         }
-        update_c($c, $result);
+
+        $action_and_turns_used = update_c($c, $result);
+        update_intended_action_array($turn_action_counts, $action_and_turns_used);
+
         if (!$c->turns % 5) {                   //Grab new copy every 5 turns
             $c->updateMain(); //we probably don't need to do this *EVERY* turn
         }

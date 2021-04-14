@@ -76,7 +76,8 @@ function log_get_name_of_error_type($error_type) {
         return 'COUNTRY BAD FOOD PURCHASE ON PUBLIC';           
     if($error_type == 1004)
         return 'COUNTRY PRIVATE MARKET FOOD PURCHASE';           
-     
+    if($error_type == 1005)
+        return 'CASHING TOO EARLY';        
 
     // 2000+ are PHP errors or warnings
     if($error_type == 2000)
@@ -117,6 +118,37 @@ function log_get_name_of_error_type($error_type) {
        
     // ERROR: log_get_name_of_error_type() called with unmapped $error_type
     return null;
+}
+
+
+
+function update_intended_action_array(&$turn_action_counts, $action_and_turns_used) {
+    foreach($action_and_turns_used as $action => $turns_used) {
+        if(isset($turn_action_counts[$action]))
+            $turn_action_counts[$action] += $turns_used;
+        else
+            $turn_action_counts[$action] = $turns_used;
+    }
+    return;
+}
+
+
+function log_turn_action_counts($c, $server, $cpref, $turn_action_counts) {
+    if(empty($turn_action_counts))
+        return;
+
+    log_country_message($c->cnum, "Approx turn action summary for login: ".json_encode($turn_action_counts), 'green');
+    // log_main_message("Approx turn action summary for login: ".json_encode($turn_action_counts), 'green');
+
+    if(isset($turn_action_counts['cash'])) {
+        $reset_seconds = $server->reset_end - $server->reset_start;
+        if (time() < floor($server->reset_start + 0.5 * $reset_seconds))
+            log_error_message(1005, $c->cnum, "Cashed ".$turn_action_counts['cash']." turns too early in the set");
+    }
+
+    // FUTURE: more errors?
+
+    return;                      
 }
 
 
@@ -576,6 +608,28 @@ function generate_compact_country_status_string($cnum, $header, $snapshot_type, 
         log_error_message(111, $cnum, ""); // FUTURE: add troubleshooting info to error message
     return $str;
 }
+
+
+
+/**
+ * Return engineering notation
+ *
+ * @param  number $number The number to round
+ *
+ * @return string         The rounded number with B/M/k
+ */
+function engnot($number)
+{
+    if (abs($number) > 1000000000) {
+        return round($number / 1000000000, $number / 1000000000 > 100 ? 0 : 1).'B';
+    } elseif (abs($number) > 1000000) {
+        return round($number / 1000000, $number / 1000000 > 100 ? 0 : 1).'M';
+    } elseif (abs($number) > 10000) {
+        return round($number / 1000, $number / 1000 > 100 ? 0 : 1).'k';
+    }
+
+    return $number;
+}//end engnot()
 
 
 function log_translate_simple_strat_name($strat) {
