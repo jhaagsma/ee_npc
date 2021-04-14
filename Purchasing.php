@@ -535,6 +535,7 @@ function get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, 
     ];
     */
 
+    ksort($optimal_tech_buying_array, SORT_NUMERIC ); // print in expected order
     if($was_server_queried_at_least_once) {
         if(empty($optimal_tech_buying_array))
             log_country_message($c->cnum, "Optimal tech buying array is empty because prices are too expensive");
