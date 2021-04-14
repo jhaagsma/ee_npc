@@ -181,7 +181,7 @@ function selltechtime(&$c)
 function sell_max_tech(&$c, $cpref, $tech_price_min_sell_price, $server_max_possible_market_sell, $mil_tech_to_keep = 0,
     $dump_at_min_sell_price = false, $allow_average_prices = false, $tech_price_history = [])
 {
-    if($allow_average_prices and $tech_price_history === []) {
+    if($allow_average_prices && empty($tech_price_history)) {
         log_error_message(999, $c->cnum, 'sell_max_tech() allowed average price selling but $tech_price_history was empty');
         $allow_average_prices = false;
     }

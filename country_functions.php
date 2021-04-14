@@ -420,7 +420,7 @@ function defend_self(&$c, $reserve_cash = 50000, $dpnwMax = 380)
 
 function sell_max_military(&$c, $server_max_possible_market_sell, $cpref, $allow_average_prices = false, $avg_market_prices = [])
 {
-    if($allow_average_prices and $avg_market_prices === []) {
+    if($allow_average_prices && empty($avg_market_prices)) {
         log_error_message(999, $c->cnum, 'sell_max_military() allowed average price selling but $avg_market_prices was empty');
         $allow_average_prices = false;
     }

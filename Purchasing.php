@@ -623,7 +623,7 @@ function estimate_future_private_market_capacity_for_military_unit($military_uni
 
 function attempt_to_recycle_bushels_but_avoid_buyout(&$c, $cpref, &$food_price_history) {
     if($cpref->should_demo_attempt_bushel_recycle && $c->govt == 'D' && $c->turns_played >= 300) {
-        if($food_price_history === []) // cache this for future calls
+        if(empty($food_price_history)) // cache this for future calls
             $food_price_history = get_market_history_food($c->cnum, $cpref);
 
         $avg_price = floor($food_price_history['avg_price']);
@@ -638,7 +638,7 @@ function attempt_to_recycle_bushels_but_avoid_buyout(&$c, $cpref, &$food_price_h
         $will_recycle_be_profitable = can_resell_bushels_from_public_market ($private_market_bushel_price, 1, $avg_price, $dummy);
 
         if($will_recycle_be_profitable) {
-            log_country_message($c->cnum, "Attempting to recycle bushels because it is expected to be profitable and $food_public_price is below average price of $avg_price");
+            log_country_message($c->cnum, "Attempting to recycle bushels because it is expected to be profitable and $food_public_price is below average price of $avg_price", 'green');
             do_public_market_bushel_resell_loop ($c, $avg_price); // don't allow buying above average to hopefully avoid food buyouts
             return true;
         }
