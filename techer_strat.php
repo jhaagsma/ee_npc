@@ -13,7 +13,7 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     $c = get_advisor();     //c as in country! (get the advisor)
     $is_allowed_to_mass_explore = is_country_allowed_to_mass_explore($c, $cpref);
 
-    log_country_message($cnum, "Getting tech prices using market search", 'green');
+    log_country_message($cnum, "Getting tech prices using market search looking back $cpref->market_search_look_back_hours hours", 'green');
     $tech_price_history = get_market_history_all_tech($cnum, $cpref);
     $tpt_split = get_tpt_split_from_production_algorithm($c, $tech_price_history, $cpref);
 
