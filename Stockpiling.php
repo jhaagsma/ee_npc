@@ -100,7 +100,7 @@ function get_farmer_min_sell_price($c, $cpref, $rules, $server, $min_cash_to_cal
 
             $military_unit_end_value = round($unit_nw * $military_end_dpnw, 2);
 
-            $military_unit_exp_per_turn = get_approx_expense_per_turn_for_mil_unit($unit, $unit_nw, 40, $c->govt, $c->networth, $c->pt_mil, $c->expenses_mil);
+            $military_unit_exp_per_turn = get_approx_expense_per_turn_for_mil_unit($unit, $unit_nw, $bushel_end_sell_price, $c->govt, $c->networth, $c->pt_mil, $c->expenses_mil);
             $military_unit_expenses = round($military_unit_exp_per_turn * ($c->turns_stored + $server_new_turns_remaining), 2);
            
             $sell_break_even_price = 1 + ceil($bushel_end_sell_price * ($c->tax() * $military_unit_price + $military_unit_expenses) / ((2 - $c->tax()) * $military_unit_end_value));
@@ -240,7 +240,8 @@ function get_stockpiling_weights_and_adjustments (&$stockpiling_weights, &$stock
             $military_unit_sell_price = round($unit_nw * $military_end_dpnw, 2);
             $military_unit_weight = round($max_loss * $military_unit_sell_price / (10 * $max_loss * (100 - $max_loss)), 4);
             // $c->expenses_mil only gets updated by the advisor, but should be fine because this code is called early on during turns
-            $military_unit_exp_per_turn = get_approx_expense_per_turn_for_mil_unit($unit, $unit_nw, 40, $c->govt, $c->networth, $c->pt_mil, $c->expenses_mil);
+            // 45 is just a guess... not clear what to do here
+            $military_unit_exp_per_turn = get_approx_expense_per_turn_for_mil_unit($unit, $unit_nw, 45, $c->govt, $c->networth, $c->pt_mil, $c->expenses_mil);
             $exp = round($military_unit_exp_per_turn * ($c->turns_stored + $server_new_turns_remaining), 2);
             $military_unit_adjustment = $exp - $military_unit_sell_price;
 
