@@ -199,7 +199,7 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 
 	log_country_message($cnum, "Completed all PM purchasing. Money is $c->money and budget is $max_spend");
 	log_country_message($cnum, "Estimated future PM gen capacity is $total_cost_to_buyout_future_private_market dollars");
-	
+
 	$did_resell_military = false;
 	// check if this is our last shot at destocking
 	if($is_final_destocking_attempt) {		
@@ -289,6 +289,10 @@ function dump_tech(&$c, $strategy, $market_autobuy_tech_price, $server_max_possi
 		$turns_needed += 3;
 	}
 
+	// we may have just bought a lot of military which means that expenses and food consumption will have gone up, but $c will be out of date
+	if ($strategy == 'T') // FUTURE: change when we add support for non-techers
+		$c = get_advisor();
+
 	// I don't care if a country could sell a tech but not recall tech - ok to not do anything and try again later
 	$food_needed = max(0, get_food_needs_for_turns($turns_needed, $c->foodpro, $c->foodcon, true) - $c->food);
 
@@ -367,6 +371,9 @@ function consider_and_do_military_reselling(&$c, $value_of_public_market_goods, 
 		$reason_for_not_reselling_military = "No turns";	
 
 	if($reason_for_not_reselling_military == null) {
+		// we may have just bought a lot of military which means that expenses and food consumption will have gone up, but $c will be out of date
+		$c = get_advisor();
+
 		// buy food to play a turn if needed up to $80 in price
 		// it's food for one turn so I don't care if players know about this behavior
 		$food_needed = max(0, get_food_needs_for_turns(1, $c->foodpro, $c->foodcon, true) - $c->food);
