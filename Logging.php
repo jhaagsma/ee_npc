@@ -2,6 +2,9 @@
 
 namespace EENPC;
 
+// TODO: have a separate error file for PHP warnings and errors
+
+
 // new error types must be added to this function
 function log_get_name_of_error_type($error_type) {
     // 40 character limit on name

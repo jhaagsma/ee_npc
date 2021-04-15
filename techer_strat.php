@@ -142,7 +142,7 @@ function play_techer_turn(&$c, $tech_price_min_sell_price, $server_max_possible_
         //never sell less than 20 turns worth of tech
         //always sell if we can????
         return sell_max_tech($c, $cpref, $tech_price_min_sell_price, $server_max_possible_market_sell, $mil_tech_to_keep, false, true, $tech_price_history);
-    } elseif ($c->shouldBuildSpyIndies($target_bpt)) {
+    } elseif ($c->land >= 1500 && $c->shouldBuildSpyIndies($target_bpt)) { // techer can have early income problems so don't build indies right away
         //build a full BPT of indies if we have less than that, and we're out of protection
         return Build::indy($c);
     } elseif ($c->shouldBuildFullBPT($target_bpt)) {
