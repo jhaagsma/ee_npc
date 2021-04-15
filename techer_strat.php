@@ -13,6 +13,8 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
     $c = get_advisor();     //c as in country! (get the advisor)
     $is_allowed_to_mass_explore = is_country_allowed_to_mass_explore($c, $cpref);
 
+    sell_initial_troops_on_turn_0($c);
+
     log_country_message($cnum, "Getting tech prices using market search looking back $cpref->market_search_look_back_hours hours", 'green');
     $tech_price_history = get_market_history_all_tech($cnum, $cpref);
     $tpt_split = get_tpt_split_from_production_algorithm($c, $tech_price_history, $cpref);
@@ -124,7 +126,13 @@ function play_techer_turn(&$c, $tech_price_min_sell_price, $server_max_possible_
     //log_country_message($cnum, $main->turns . ' turns left');
     $mil_tech_to_keep = min($c->t_mil, ($c->govt == 'D' ? 42 : 0) * $c->land); // for demo recycling
 
-    if ($c->shouldBuildSingleCS($target_bpt)) {
+    // TODO: why does building 4 cs become so slow? can_sell_tech? after protection? selltechtime ?
+    // FUTURE: maybe split logic for < target BPT, < 1800 A, and otherwise
+
+    if($c->land < 500 && $c->built() > 50) {
+        // always explore when possible early on to get more income
+        return explore($c, 1);
+    } elseif ($c->shouldBuildSingleCS($target_bpt)) {
         //LOW BPT & CAN AFFORD TO BUILD
         //build one CS if we can afford it and are below our target BPT
         return Build::cs(); //build 1 CS
@@ -141,7 +149,7 @@ function play_techer_turn(&$c, $tech_price_min_sell_price, $server_max_possible_
         //build a full BPT if we can afford it
         return Build::techer($c);
     } elseif ($c->shouldBuildFourCS($target_bpt)) {
-        //build 4CS if we can afford it and are below our target BPT (80)
+        //build 4CS if we can afford it and are below our target BPT (65)
         return Build::cs(4); //build 4 CS
     } elseif ($c->tpt > $c->land * 0.17 * 1.3 && $c->tpt > 100 && $teching_turns_remaining_before_explore > 0) {
         //tech per turn is greater than land*0.17 -- just kindof a rough "don't tech below this" rule...
@@ -149,15 +157,29 @@ function play_techer_turn(&$c, $tech_price_min_sell_price, $server_max_possible_
         $turns_to_tech = min($teching_turns_remaining_before_explore, min(turns_of_money($c), turns_of_food($c), 13, $c->turns + 2) - 3);
         $teching_turns_remaining_before_explore -= $turns_to_tech;
         return tech_techer($c, $turns_to_tech, $tpt_split);
-    } elseif ($c->built() > 50 && $c->land < 10000 &&
-            ($c->money + $c->turns * $c->income) > ($c->turns * $c->explore_rate) * (1500 + 3 * ($c->land + $c->turns * $c->explore_rate))
-        // explore if land is less than 10k, we can explore, and we expect to have enough money to build labs on the new land
-    ) {
-        $explore_turn_limit = $is_allowed_to_mass_explore ? 999 : 5;
+    } elseif (
+        $c->built() > 50 && $c->land < 10000 &&
+        (
+            ($c->empty < 4 && $c->land < 1800) // always allow for early exploring (cs)
+            ||
+            ($c->land < 1800 && $c->money > 2 * $c->explore_rate * (1500 + 3 * ($c->land + 2 * $c->explore_rate))) // at low acreage, enough money to build labs on 2 explore turns
+            ||
+            ($c->money + $c->turns * $c->income) > ( // turns is an over-estimate here, but probably ok
+                min($c->turns, ($c->built() * $c->land - $c->empty) / $c->explore_rate) * $c->explore_rate) * // explore turns
+                (1500 + 3 * ($c->land + min($c->turns, ($c->built() * $c->land - $c->empty) / $c->explore_rate) * $c->explore_rate) // building cost for new acres
+            )
+        ) 
+        // explore if land is less than 10k, we can explore, and we have less than 4 empty acres
+        // or we expect to have enough money to build labs on the new land
+    ) {        
+        $explore_turn_limit = $is_allowed_to_mass_explore ? ($c->land < 1800 ? 2 : 999) : 5;
         return explore($c, max(1, min($explore_turn_limit, $c->turns - 1, turns_of_money($c) - 4, turns_of_food($c) - 4)));
     } else { //otherwise, tech, obviously
         //so, 10 if they can... cap at turns - 1
-        $turns_to_tech = max(1, min(turns_of_money($c), turns_of_food($c), 13, $c->turns + 2) - 3);
+        if($c->bpt < $target_bpt)
+            $turns_to_tech = 1;   
+        else
+            $turns_to_tech = max(1, min(turns_of_money($c), turns_of_food($c), 13, $c->turns + 2) - 3);
         $teching_turns_remaining_before_explore -= $turns_to_tech;
         return tech_techer($c, $turns_to_tech, $tpt_split);
     }

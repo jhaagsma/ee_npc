@@ -26,6 +26,7 @@ spl_autoload_register(
 require_once 'Terminal.class.php';
 require_once 'communication.php';
 
+// TODO: test on server
 // don't allow the process to be kicked off concurrently by accident
 // this seemingly cannot be in a function because a return releases the lock?
 $fp0 = fopen('zz_lock.txt', 'c');

@@ -2,6 +2,15 @@
 
 namespace EENPC;
 
+
+
+
+function sell_initial_troops_on_turn_0(&$c) {
+    if($c->turns_played == 0 && $c->m_tr > 0)
+        privatemarket::sell_single_good($c, 'm_tr', $c->m_tr);
+}
+
+
 function get_max_demo_bushel_recycle_price($rules) {
     return round($rules->base_pm_food_sell_price / 0.81667); // FUTURE: get max mil tech from game
 }
