@@ -26,14 +26,13 @@ spl_autoload_register(
 require_once 'Terminal.class.php';
 require_once 'communication.php';
 
-// TODO: test on server
 // don't allow the process to be kicked off concurrently by accident
 // this seemingly cannot be in a function because a return releases the lock?
 $fp0 = fopen('zz_lock.txt', 'c');
 if (flock($fp0, LOCK_EX | LOCK_NB)) // LOCK_NB makes it fail right away instead of waiting
     out("Lock acquired on zz_lock.txt, script will proceed"); 
 else
-    die("Lock could not be acquired on zz_lock.txt - is the process already running?");
+    die("Lock could not be acquired on zz_lock.txt - is the process already running?\n");
 
 
 out(Colors::getColoredString("STARTING UP BOT", "purple"));

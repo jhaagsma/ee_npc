@@ -127,6 +127,7 @@ function play_techer_turn(&$c, $tech_price_min_sell_price, $server_max_possible_
     $mil_tech_to_keep = min($c->t_mil, ($c->govt == 'D' ? 42 : 0) * $c->land); // for demo recycling
 
     // TODO: why does building 4 cs become so slow? can_sell_tech? after protection? selltechtime ?
+    // TODO: 10k is probably too high for express given their play style
     // FUTURE: maybe split logic for < target BPT, < 1800 A, and otherwise
 
     if($c->land < 500 && $c->built() > 50) {
