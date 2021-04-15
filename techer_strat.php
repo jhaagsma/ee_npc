@@ -165,8 +165,8 @@ function play_techer_turn(&$c, $tech_price_min_sell_price, $server_max_possible_
             ($c->land < 1800 && $c->money > 2 * $c->explore_rate * (1500 + 3 * ($c->land + 2 * $c->explore_rate))) // at low acreage, enough money to build labs on 2 explore turns
             ||
             ($c->money + $c->turns * $c->income) > ( // turns is an over-estimate here, but probably ok
-                min($c->turns, ($c->built() * $c->land - $c->empty) / $c->explore_rate) * $c->explore_rate) * // explore turns
-                (1500 + 3 * ($c->land + min($c->turns, ($c->built() * $c->land - $c->empty) / $c->explore_rate) * $c->explore_rate) // building cost for new acres
+                min($c->turns, (0.01 * $c->built() * $c->land - $c->empty) / $c->explore_rate) * $c->explore_rate) * // explore turns
+                (1500 + 3 * ($c->land + min($c->turns, (0.01 * $c->built() * $c->land - $c->empty) / $c->explore_rate) * $c->explore_rate) // building cost for new acres
             )
         ) 
         // explore if land is less than 10k, we can explore, and we have less than 4 empty acres

@@ -321,7 +321,7 @@ function food_management(&$c, $cpref)
         log_error_message(1002, $c->cnum, "We're too poor to buy food! Sell 1/10 of our military");
         sell_all_military($c, 1 / 10);     //sell 1/4 of our military
         $c = get_advisor();     //UPDATE EVERYTHING
-        return food_management($c); //RECURSION!
+        return food_management($c, $cpref); //RECURSION!
     }
 
     log_country_message($c->cnum, 'We have exhausted all food options. Valar Morguhlis.');
