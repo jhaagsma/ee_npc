@@ -11,11 +11,10 @@ function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$tur
     //$main = get_main();     //get the basic stats
     //out_data($main);          //output the main data
     $c = get_advisor();     //c as in country! (get the advisor)
+    $starting_turns = $c->turns;
+
     $is_allowed_to_mass_explore = is_country_allowed_to_mass_explore($c, $cpref);
     log_country_message($cnum, "Indy: {$c->pt_indy}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%; Mil: {$c->pt_mil}%; Weap: {$c->pt_weap}%");
-
-    // TODO: for techer, farmer, and indy: FAST NEXT LOGIN if we can't play more than a few turns
-
 
     log_country_message($cnum, "Getting military prices using market search looking back $cpref->market_search_look_back_hours hours", 'green');
     $military_unit_price_history = get_market_history_all_military_units($cnum, $cpref);
@@ -32,7 +31,7 @@ function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$tur
     ];
     $tech_inherent_value = get_inherent_value_for_tech($c, $rules, $cpref);
     $eligible_techs = ['t_bus', 't_res', 't_indy', 't_mil']; // don't buy t_weap for now - indies would over-prioritize it
-    $optimal_tech_buying_array = get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, $cpref->tech_max_purchase_price, $tech_inherent_value);
+    $optimal_tech_buying_array = get_optimal_tech_buying_array($c, $rules, $eligible_techs, $buying_priorities, $cpref->tech_max_purchase_price, $tech_inherent_value);
 
     // log useful information about country state
     log_country_message($cnum, $c->turns.' turns left');
@@ -71,7 +70,7 @@ function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$tur
         }
 
         // money and food management should be here because otherwise indies might not sell goods
-        $hold = money_management($c, $rules->max_possible_market_sell, $cpref);
+        $hold = money_management($c, $rules->max_possible_market_sell, $cpref, $turn_action_counts);
         if ($hold) {
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
         }
@@ -94,6 +93,8 @@ function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$tur
     // FUTURE: always sell at end if possible - make sell_max_military get food/money to avoid OOF and OOM
     // total_cansell_military > 20000?
 
+    if($starting_turns > 30 && ($starting_turns - $c->turns) < 0.3 * $starting_turns)
+        $exit_condition = 'LOW_TURNS_PLAYED'; 
 
     $c->countryStats(INDY);
 

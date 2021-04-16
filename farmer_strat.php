@@ -31,6 +31,7 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
     //$main = get_main();     //get the basic stats
     //out_data($main);          //output the main data
     $c = get_advisor();     //c as in country! (get the advisor)
+    $starting_turns = $c->turns;
     $is_allowed_to_mass_explore = is_country_allowed_to_mass_explore($c, $cpref);
     log_country_message($cnum, "Agri: {$c->pt_agri}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%; Mil: {$c->pt_mil}%; Weap: {$c->pt_weap}%");
     
@@ -48,7 +49,7 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
     $buying_priorities = farmer_get_buying_priorities ($cnum, $buying_schedule);
     $tech_inherent_value = get_inherent_value_for_tech($c, $rules, $cpref);
     $eligible_techs = ['t_bus', 't_res', 't_agri', 't_mil', 't_weap'];
-    $optimal_tech_buying_array = get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, $cpref->tech_max_purchase_price, $tech_inherent_value);
+    $optimal_tech_buying_array = get_optimal_tech_buying_array($c, $rules, $eligible_techs, $buying_priorities, $cpref->tech_max_purchase_price, $tech_inherent_value);
     $cost_for_military_point_guess = get_cost_per_military_points_for_caching($c);
     $dpnw_guess = get_dpnw_for_caching($c);
     $money_to_keep_after_stockpiling = $cpref->target_cash_after_stockpiling;
@@ -75,10 +76,15 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
         spend_extra_money_on_stockpiling($c, $cpref, $money_to_keep_after_stockpiling, $stockpiling_weights, $stockpiling_adjustments);
     }
 
-    if($c->money > 1000000000) // only called here to keep returned bushels on the market at high prices if we have a lot of cash
-        stash_excess_bushels_on_public_if_needed($c, $rules);
-
-    $turn_action_counts = [];    
+    $turn_action_counts = [];
+    if($c->money > 1000000000) {// only called here to keep returned bushels on the market at high prices if we have a lot of cash
+        $possible_turn_result = stash_excess_bushels_on_public_if_needed($c, $rules);
+        if($possible_turn_result) {
+            $action_and_turns_used = update_c($c, $possible_turn_result);
+            update_turn_action_array($turn_action_counts, $action_and_turns_used);
+        }
+    }
+    
     $turns_played_for_last_spend_money_attempt = 0;
     while ($c->turns > 0) {
         //$result = PublicMarket::buy($c,array('m_bu'=>100),array('m_bu'=>400));
@@ -105,7 +111,7 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
         }
         
         // management is here to make sure that food is sold
-        $hold = money_management($c, $rules->max_possible_market_sell, $cpref);
+        $hold = money_management($c, $rules->max_possible_market_sell, $cpref, $turn_action_counts);
         if ($hold) {
               break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!            
         }
@@ -139,6 +145,9 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
         spend_extra_money_on_stockpiling($c, $cpref, $money_to_keep_after_stockpiling, $stockpiling_weights, $stockpiling_adjustments);
         // don't see a strong reason to sell excess bushels at this step
     }
+
+    if($starting_turns > 30 && ($starting_turns - $c->turns) < 0.3 * $starting_turns)
+        $exit_condition = 'LOW_TURNS_PLAYED'; 
 
     $c->countryStats(FARMER);
     return $c;
@@ -228,9 +237,14 @@ function sellextrafood_farmer(&$c, $rules, $bushel_min_sell_price, $bushel_max_s
         if($c->protection == 1 || $c->money < $cpref->target_cash_after_stockpiling)
             return PrivateMarket::sell_single_good($c, 'm_bu', $c->food);
         else { // stockpile bushel instead if we have a lot of money
-            stash_excess_bushels_on_public_if_needed($c, $rules);    
-            // TODO: get rid of the hack below because stash_excess_bushels_on_public_if_needed doesn't return a turn result?
-            return PrivateMarket::sell_single_good($c, 'm_bu', $c->food);
+            $possible_turn_result = stash_excess_bushels_on_public_if_needed($c, $rules);
+            if($possible_turn_result) {
+                return $possible_turn_result;
+            }
+            else { // not enough bushels to stockpile yet
+                log_country_message($c->cnum, "Selling a single bushel as a code workaround");
+                return PrivateMarket::sell_single_good($c, 'm_bu', 1); // FUTURE: this is an ugly hack to always return a turn result
+            }
         }   
     }
 

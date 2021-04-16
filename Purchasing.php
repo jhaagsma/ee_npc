@@ -461,18 +461,21 @@ function get_single_income_per_acre($c, $tech_handle) {
 }
 
 
-function get_extra_income_affected_by_tech ($c, $tech_type) {
+function get_extra_income_affected_by_tech ($c, $tech_type, $rules) {
     // don't want to prioritize mil tech for destocking that may never happen...
     // any money over 500 M feels somewhat reasonable?
-    $extra_income = ($tech_type == 't_mil' ? max(0, $c->money - 500000000) : 0); // TODO: account for bushels and OM bushels
+    $extra_income = ($tech_type == 't_mil' ? max(0, $c->money + floor(get_total_value_of_on_market_goods($c, $rules)) - 500000000) : 0);
     if($extra_income > 0)
         log_country_message($c->cnum, "Extra income for $tech_type tech computed as $extra_income");
     return $extra_income;
 }
 
 
-function get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, $max_tech_price, $base_tech_value, $force_all_turn_buckets = false) {
-    // FUTURE: support weapons tech
+function get_optimal_tech_buying_array($c, $rules, $eligible_techs, $buying_priorities, $max_tech_price, $base_tech_value, $force_all_turn_buckets = false) {
+    // TODO: fix tech buying price buckets
+    // find max price in gc code, start at max, substract rand(0, 500), then subtract 500 each time
+    // also tune the buckets a bit
+    // for bus and res, use the same starting point (min of both techs)
 
     $turn_buckets = [];
     if($force_all_turn_buckets) {
@@ -508,7 +511,7 @@ function get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, 
             log_country_message($c->cnum, "Initial market price for $tech_type tech is $current_tech_price. Querying server for optimal tech buying results...");
         }
 
-        $extra_money_for_tech_impact = get_extra_income_affected_by_tech($c, $tech_type);
+        $extra_money_for_tech_impact = get_extra_income_affected_by_tech($c, $tech_type, $rules);
 
         // dump results into the array, further process the array later
         $was_server_queried_at_least_once = true;
@@ -639,7 +642,7 @@ function attempt_to_recycle_bushels_but_avoid_buyout(&$c, $cpref, &$food_price_h
         $will_recycle_be_profitable = can_resell_bushels_from_public_market ($private_market_bushel_price, 1, $avg_price, $dummy);
 
         if($will_recycle_be_profitable) {
-            log_country_message($c->cnum, "Attempting to recycle bushels because it is expected to be profitable and $food_public_price is below average price of $avg_price", 'green');
+            log_country_message($c->cnum, "Attempting to recycle bushels because it is expected to be profitable and $food_public_price <= average price of $avg_price", 'green');
             do_public_market_bushel_resell_loop ($c, $avg_price); // don't allow buying above average to hopefully avoid food buyouts
             return true;
         }

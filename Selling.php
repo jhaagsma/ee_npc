@@ -28,11 +28,20 @@ function predict_destock_bushel_sell_price($c, $rules) {
 }
 
 function emergency_sell_mil_on_pm (&$c, $money_needed) {
+    // TODO: test
+    $pm_info = get_pm_info();
+    // prefer to sell jets, then tanks, then troops, than turrets
+    $mil_sell_order = ['m_j', 'm_ta', 'm_tr', 'm_tu'];
 
-    // TODO: implement emergency_sell_mil_on_pm()
-
-
-
+    foreach($mil_sell_order as $mil_unit){
+        $sell_price = $pm_info->sell_price->$mil_unit;
+        $amount_to_sell = min($c->$mil_unit, ceil($money_needed / $sell_price));
+        PrivateMarket::sell_single_good($c, $mil_unit, $amount_to_sell);
+        $money_needed -= $amount_to_sell * $sell_price;
+        if($money_needed < 0)
+            return true;
+    }
+    // couldn't sell enough mil for some reason
     return false;
 }
 
@@ -70,10 +79,22 @@ function get_market_history_all_military_units($cnum, $cpref){
 
 
 
-function get_market_history_all_tech($cnum, $cpref){
+
+// leave $tech_name as null to get all tech
+function get_market_history_tech($cnum, $cpref, $tech_name = null){
+    if(!$tech_name)
+        $tech_list = ['t_mil','t_med','t_bus','t_res','t_agri','t_war','t_ms','t_weap','t_indy','t_spy','t_sdi'];
+    else
+        $tech_list = [$tech_name];
+
+    return get_market_history_tech_internal($cnum, $cpref, $tech_list);
+}
+
+
+
+function get_market_history_tech_internal($cnum, $cpref, $tech_list){
     $market_history = [];
 
-    $tech_list = ['t_mil','t_med','t_bus','t_res','t_agri','t_war','t_ms','t_weap','t_indy','t_spy','t_sdi'];
     $search_result_fields = ['low_price', 'high_price', 'total_units_sold', 'total_sales', 'avg_price', 'no_results'];
     foreach($tech_list as $unit){
         $market_history_for_unit = get_market_history($unit, $cpref->market_search_look_back_hours);

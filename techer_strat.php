@@ -11,12 +11,13 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
     //$main = get_main();     //get the basic stats
     //out_data($main);          //output the main data
     $c = get_advisor();     //c as in country! (get the advisor)
+    $starting_turns = $c->turns;
     $is_allowed_to_mass_explore = is_country_allowed_to_mass_explore($c, $cpref);
 
     sell_initial_troops_on_turn_0($c);
 
     log_country_message($cnum, "Getting tech prices using market search looking back $cpref->market_search_look_back_hours hours", 'green');
-    $tech_price_history = get_market_history_all_tech($cnum, $cpref);
+    $tech_price_history = get_market_history_tech($cnum, $cpref);
     $tpt_split = get_tpt_split_from_production_algorithm($c, $tech_price_history, $cpref);
 
     $c->setIndy('pro_spy');
@@ -59,18 +60,22 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
         spend_extra_money_on_stockpiling($c, $cpref, $money_to_keep_after_stockpiling, $stockpiling_weights, $stockpiling_adjustments);
     }
 
-    stash_excess_bushels_on_public_if_needed($c, $rules);
+    $turn_action_counts = [];
+    $possible_turn_result = stash_excess_bushels_on_public_if_needed($c, $rules);
+    if($possible_turn_result) {
+        $action_and_turns_used = update_c($c, $possible_turn_result);
+        update_turn_action_array($turn_action_counts, $action_and_turns_used);
+    }
 
     attempt_to_recycle_bushels_but_avoid_buyout($c, $cpref, $food_price_history);
 
     $teching_turns_remaining_before_explore = floor(0.01 * $cpref->min_perc_teching_turns * $c->turns);
     log_country_message($cnum, "Min teching turns before exploring is $teching_turns_remaining_before_explore based on preference rate of $cpref->min_perc_teching_turns%");
 
-    $turn_action_counts = [];
     while ($c->turns > 0) {
         //$result = PublicMarket::buy($c,array('m_bu'=>100),array('m_bu'=>400));
                 
-        $result = play_techer_turn($c, $tech_price_min_sell_price, $rules->max_possible_market_sell, $is_allowed_to_mass_explore, $cpref, $tech_price_history, $tpt_split, $teching_turns_remaining_before_explore);
+        $result = play_techer_turn($c, $cpref, $rules, $tech_price_min_sell_price, $is_allowed_to_mass_explore, $tech_price_history, $tpt_split, $teching_turns_remaining_before_explore);
         if ($result === false) {  //UNEXPECTED RETURN VALUE
             $c = get_advisor();     //UPDATE EVERYTHING
             continue;
@@ -84,7 +89,7 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
         }
 
         // management is here to make sure that tech is sold
-        $hold = money_management($c, $rules->max_possible_market_sell, $cpref);
+        $hold = money_management($c, $rules->max_possible_market_sell, $cpref, $turn_action_counts);
         if ($hold) {
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
         }
@@ -108,26 +113,26 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
         // don't see a strong reason to sell excess bushels at this step
     }
 
+    if($starting_turns > 30 && ($starting_turns - $c->turns) < 0.3 * $starting_turns)
+        $exit_condition = 'LOW_TURNS_PLAYED'; 
+
     $c->countryStats(TECHER);
 
     return $c;
 }//end play_techer_strat()
 
 
-function play_techer_turn(&$c, $tech_price_min_sell_price, $server_max_possible_market_sell, $is_allowed_to_mass_explore, $cpref, $tech_price_history, $tpt_split, &$teching_turns_remaining_before_explore)
+function play_techer_turn(&$c, $cpref, $rules, $tech_price_min_sell_price, $is_allowed_to_mass_explore, $tech_price_history, $tpt_split, &$teching_turns_remaining_before_explore)
 {
-    // note: $teching_turns_remaining is 
-
- //c as in country!
+    $server_max_possible_market_sell = $rules->max_possible_market_sell;
     $target_bpt = 65;
-    global $turnsleep, $mktinfo, $server_avg_land;
+    global $turnsleep, $mktinfo; //, $server_avg_land;
     $mktinfo = null;
     usleep($turnsleep);
     //log_country_message($cnum, $main->turns . ' turns left');
     $mil_tech_to_keep = min($c->t_mil, ($c->govt == 'D' ? 42 : 0) * $c->land); // for demo recycling
 
-    // TODO: why does building 4 cs become so slow? can_sell_tech? after protection? selltechtime ?
-    // TODO: 10k is probably too high for express given their play style
+    // FUTURE: why does building 4 cs become so slow? can_sell_tech? after protection? selltechtime ?
     // FUTURE: maybe split logic for < target BPT, < 1800 A, and otherwise
 
     if($c->land < 500 && $c->built() > 50) {
@@ -159,7 +164,7 @@ function play_techer_turn(&$c, $tech_price_min_sell_price, $server_max_possible_
         $teching_turns_remaining_before_explore -= $turns_to_tech;
         return tech_techer($c, $turns_to_tech, $tpt_split);
     } elseif (
-        $c->built() > 50 && $c->land < 10000 &&
+        $c->built() > 50 && $c->land < $cpref->techer_land_goal &&
         (
             ($c->empty < 4 && $c->land < 1800) // always allow for early exploring (cs)
             ||

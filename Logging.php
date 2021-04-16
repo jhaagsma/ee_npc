@@ -2,7 +2,7 @@
 
 namespace EENPC;
 
-// TODO: have a separate error file for PHP warnings and errors
+// TODO: test having a separate error file for PHP warnings and errors
 
 
 // new error types must be added to this function
@@ -162,7 +162,7 @@ function log_turn_action_counts($c, $server, $cpref, $turn_action_counts) {
 }
 
 
-function log_snapshot_message($c, $snapshot_type, $strat, $is_destocking, &$output_c_values, $prev_c_values = []){
+function log_snapshot_message($c, $rules, $snapshot_type, $strat, $is_destocking, &$output_c_values, $prev_c_values = []){
     global $log_country_to_screen, $log_to_local, $local_file_path;
 
     if($snapshot_type <> 'BEGIN' and $snapshot_type <> 'DELTA' and $snapshot_type <> 'END') {
@@ -177,7 +177,7 @@ function log_snapshot_message($c, $snapshot_type, $strat, $is_destocking, &$outp
 
     $full_local_file_path_and_name = ($log_to_local ? get_full_country_file_path_and_name($local_file_path, $c->cnum, true) : null);
     if($log_country_to_screen or $log_to_local)
-        $message = generate_compact_country_status($c, $snapshot_type, $strat, $is_destocking, $output_c_values, $prev_c_values);
+        $message = generate_compact_country_status($c, $rules, $snapshot_type, $strat, $is_destocking, $output_c_values, $prev_c_values);
 
     return log_to_targets($log_country_to_screen, $log_to_local, $full_local_file_path_and_name, $message, $c->cnum, null);
 };
@@ -244,7 +244,8 @@ function log_error_message($error_type, $cnum, $message) {
     // for the error file, use unprintable characters to separate fields and line breaks to pack everything on a single line
     // the error reader on the server will split out things appropriately
     $error_message_for_error_file = $error_type.chr(9).$error_type_name.chr(9)."#$cnum".chr(9).str_replace(array("\r", "\n"), chr(17), $message);
-    $error_local_file_path_and_name = ($log_to_local ? get_full_error_file_path_and_name($local_file_path) : null);
+    $is_php_error = ($error_type >= 2000 ? true : false);
+    $error_local_file_path_and_name = ($log_to_local ? get_full_error_file_path_and_name($local_file_path, $is_php_error) : null);
     log_to_targets(false, $log_to_local, $error_local_file_path_and_name, $error_message_for_error_file, $cnum, null);  
     return true; 
 }
@@ -288,10 +289,13 @@ function get_full_country_file_path_and_name($local_file_path, $cnum, $is_snapsh
     return "$local_file_path/country/$file_name";
 }
 
-function get_full_error_file_path_and_name($local_file_path) {
+function get_full_error_file_path_and_name($local_file_path, $is_php_error) {
     global $username;
     $iso_date = date('Ymd');
-    return "$local_file_path/errors/ERRORS_$username"."_$iso_date.txt";
+    if($is_php_error)
+        return "$local_file_path/errors/PHP_ERRORS_$username"."_$iso_date.txt";
+    else
+        return "$local_file_path/errors/ERRORS_$username"."_$iso_date.txt";
 }
 
 function get_full_main_file_path_and_name($local_file_path) {
@@ -434,7 +438,7 @@ function create_local_directory_if_needed($path_name) {
 }
 
 
-function generate_compact_country_status($c, $snapshot_type, $strat, $is_destocking, &$output_c_values, $prev_c_values) {
+function generate_compact_country_status($c, $rules, $snapshot_type, $strat, $is_destocking, &$output_c_values, $prev_c_values) {
     // this code is a complete mess because I changed its purpose half way through and tried fixing with copy and replace
     $output_c_values = [];
     // turns and resources
@@ -496,7 +500,7 @@ function generate_compact_country_status($c, $snapshot_type, $strat, $is_destock
     $output_c_values['c_bpt']  = $c->bpt;
 
     // value of goods on market
-    $output_c_values['c_om_v'] = get_total_value_of_on_market_goods($c); // FUTURE: won't work with stocking
+    $output_c_values['c_om_v'] = get_total_value_of_on_market_goods($c, $rules);
 
     $on_market_military = 0;
     $military_list = ['m_tr','m_j','m_tu','m_ta'];

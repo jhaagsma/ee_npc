@@ -342,7 +342,7 @@ while (1) {
             // log snapshot of country status
             $prev_c_values = [];
             $init_c = get_advisor();
-            log_snapshot_message($init_c, "BEGIN", $cpref_file->strat, $is_destocking, $prev_c_values);
+            log_snapshot_message($init_c, $rules, "BEGIN", $cpref_file->strat, $is_destocking, $prev_c_values);
             unset($init_c);
 
             try {
@@ -401,20 +401,12 @@ while (1) {
                     if ($c->turns_played < 100 && $cpref_file->retal) {
                         $cpref_file->retal = []; //clear the damned retal thing
                     }
-
-                    if($exit_condition == 'WAIT_FOR_PUBLIC_MARKET_FOOD') {
-                        log_country_message($cnum, "Country is holding turns while waiting for cheaper public market food to appear");
-                        $nexttime = 4 * $server->turn_rate;
-                    }
-
-                    // $maxin           = Bots::furthest_play($cpref_file); // now handled in calculate_next_play_in_seconds
-                    // $nexttime        = round(min($maxin, $nexttime));
                 }
 
                 log_country_message($cnum, "End playing standard ".Bots::txtStrat($cnum)." turns with exit condition $exit_condition");
 
                 // $seconds_to_next_play = calculate_next_play_in_seconds($cnum, $nexttime, $cpref_file->strat, $rules->is_clan_server, $rules->max_time_to_market, $rules->max_possible_market_sell, $cpref_file->playrand, $server->reset_start, $server->reset_end, $server->turn_rate, $cpref_file->lastTurns, $rules->maxturns, $cpref_file->turnsStored, $rules->maxstore);
-                $seconds_to_next_play = $cpref->calculate_next_play_in_seconds($nexttime, $rules, $cpref_file);
+                $seconds_to_next_play = $cpref->calculate_next_play_in_seconds($nexttime, $exit_condition, $rules, $cpref_file);
                 
                 $cpref_file->lastplay = time();
                 $cpref_file->nextplay = $cpref_file->lastplay + $seconds_to_next_play;
@@ -435,8 +427,8 @@ while (1) {
                 // log snapshots of country status
                 // FUTURE: skip snapshot parameter for speed for remote play?
                 $c = get_advisor(); // this call probably can't be avoided - market info, events, and tax/expenses could be wrong without it
-                log_snapshot_message($c, "DELTA", $cpref_file->strat, $is_destocking, $dummy, $prev_c_values);
-                log_snapshot_message($c, "END", $cpref_file->strat, $is_destocking, $dummy); // FUTURE: why does this take six seconds remotely?
+                log_snapshot_message($c, $rules, "DELTA", $cpref_file->strat, $is_destocking, $dummy, $prev_c_values);
+                log_snapshot_message($c, $rules, "END", $cpref_file->strat, $is_destocking, $dummy); // FUTURE: why does this take six seconds remotely?
                 
 
             } catch (Exception $e) {

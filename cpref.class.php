@@ -13,7 +13,7 @@
 
 namespace EENPC;
 
-// TODO: stop using and or
+// FUTURE: remove and/or everywhere
 
 class cpref
 {
@@ -39,10 +39,12 @@ class cpref
         $this->gdi = $cpref_file->gdi;
         // end personality file issue
 
-
+        $turns_in_set = ($this->reset_end_time - $this->reset_start_time) / $this->server_turn_rate;
         // general        
         $this->mass_explore_stop_acreage_rep = ($this->is_clan_server ? 99999 : 10000);
-        $this->mass_explore_stop_acreage_non_rep = ($this->is_clan_server ? 99999 : 8200);        
+        $this->mass_explore_stop_acreage_non_rep = ($this->is_clan_server ? 99999 : 8200);  
+        $this->techer_land_goal = ($turns_in_set < 2200 ? 8000 : 10000); // FUTURE - this is very basic, also weird to only set for techer
+        
         $this->base_inherent_value_for_tech = 700;
         // if tpt is high enough, spend this percentage of turns teching before considering exploring
         $this->min_perc_teching_turns = $this->get_min_perc_teching_turns();
@@ -64,7 +66,12 @@ class cpref
 
         // selling
         $this->production_algorithm = $this->get_production_algorithm();  
-        $this->market_search_look_back_hours = mt_rand(2, 8); //mt_rand(1, 8); // TODO: random, vary by server length
+
+        $number_of_days_in_set = ($this->reset_end_time - $this->reset_start_time) / 86400;
+        $min_hours_to_look_back = min(72, max(1, $number_of_days_in_set * 1 / 5)); // express would be 1, 30 day reset is 6, 60 day is 12 hours
+        $max_hours_to_look_back = min(72, $number_of_days_in_set * 8 / 5); // express would be 8, 30 day reset is 48, 60 day is 72 hours
+        $this->market_search_look_back_hours = mt_rand($min_hours_to_look_back, $max_hours_to_look_back); 
+
         $this->chance_to_sell_based_on_avg_price = 50; 
         $this->chance_to_sell_based_on_current_price = 100 - $this->chance_to_sell_based_on_avg_price;
         $this->selling_price_max_distance = 15; // 15 means a country may sell up to 15% over or under market prices
@@ -179,16 +186,29 @@ class cpref
         return $this->reset_start_time + $window_start_time_factor * $number_of_seconds_in_set + $country_specific_interval_wait * $number_of_seconds_in_window;
     }
 
-    public function calculate_next_play_in_seconds($nexttime, $rules, $dynamic_country_settings) {
+    public function calculate_next_play_in_seconds($nexttime, $exit_condition, $rules, $dynamic_country_settings) {
         // split for unit testing purposes
         return $this->internal_calculate_next_play_in_seconds($this->cnum, $nexttime, $this->strat, $this->is_clan_server, $rules->max_time_to_market, $rules->max_possible_market_sell, $this->playrand, $this->reset_start_time, $this->reset_end_time, $this->server_turn_rate, $dynamic_country_settings->lastTurns, $rules->maxturns, $dynamic_country_settings->turnsStored, $rules->maxstore);
     }
 
 
-    private function internal_calculate_next_play_in_seconds($cnum, $nexttime, $strat, $is_clan_server, $max_time_to_market, $max_possible_market_sell, $country_play_rand_factor, $server_reset_start, $server_reset_end, $server_turn_rate, $country_turns_left, $server_max_turns, $country_stored_turns, $server_stored_turns) {
+    private function internal_calculate_next_play_in_seconds($cnum, $exit_condition, $nexttime, $strat, $is_clan_server, $max_time_to_market, $max_possible_market_sell, $country_play_rand_factor, $server_reset_start, $server_reset_end, $server_turn_rate, $country_turns_left, $server_max_turns, $country_stored_turns, $server_stored_turns) {
         if($nexttime <> null) {
             log_country_message($cnum, "Next play seconds was passed in as $nexttime");
             return $nexttime; // always return $nexttime if it's passed on
+        }
+
+        if($exit_condition <> null) {
+            if($exit_condition == 'WAIT_FOR_PUBLIC_MARKET_FOOD') {
+                log_country_message($cnum, "Country is while waiting for cheaper public market food to appear, so set login to 4 turns away");
+                return 4 * $server_turn_rate;
+            }
+            elseif($exit_condition == 'LOW_TURNS_PLAYED') {
+                log_country_message($cnum, "Country played a low number of turns, so set next login to 30 min + 50% of max time to market");
+                return ceil(1800 + 0.5 * $max_time_to_market);
+            }
+            else
+                log_error_message(999, $cnum, "internal_calculate_next_play_in_seconds(): invalid value for exit condition: $exit_condition");
         }
     
         /*

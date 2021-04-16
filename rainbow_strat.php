@@ -71,6 +71,7 @@ function play_rainbow_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     //out_data($market_info);   //output the Public Market info
     //var_export($owned_on_market_info);
 
+    $turn_action_counts = []; // NOTE: this isn't properly set up for rainbows, but money_management() needs it
     while ($c->turns > 0) {
         //$result = PublicMarket::buy($c,array('m_bu'=>100),array('m_bu'=>400));
                 
@@ -85,7 +86,7 @@ function play_rainbow_strat($server, $cnum, $rules, $cpref, &$exit_condition)
         }
 
         // management is here to make sure that goods can be sold
-        $hold = money_management($c, $rules->max_possible_market_sell, $cpref);
+        $hold = money_management($c, $rules->max_possible_market_sell, $cpref, $turn_action_counts);
         if ($hold) {
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
         }

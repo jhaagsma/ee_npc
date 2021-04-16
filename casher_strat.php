@@ -27,7 +27,7 @@ function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
     $buying_priorities = casher_get_buying_priorities ($cnum, $buying_schedule);
     $tech_inherent_value = get_inherent_value_for_tech($c, $rules, $cpref);
     $eligible_techs = ['t_bus', 't_res', 't_mil', 't_weap'];
-    $optimal_tech_buying_array = get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, $cpref->tech_max_purchase_price, $tech_inherent_value);
+    $optimal_tech_buying_array = get_optimal_tech_buying_array($c, $rules, $eligible_techs, $buying_priorities, $cpref->tech_max_purchase_price, $tech_inherent_value);
     $cost_for_military_point_guess = get_cost_per_military_points_for_caching($c);
     $dpnw_guess = get_dpnw_for_caching($c);
     $money_to_keep_after_stockpiling = $cpref->target_cash_after_stockpiling;
@@ -50,11 +50,15 @@ function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
         spend_extra_money_on_stockpiling($c, $cpref, $money_to_keep_after_stockpiling, $stockpiling_weights, $stockpiling_adjustments);
     }
 
-    stash_excess_bushels_on_public_if_needed($c, $rules);
-
-    attempt_to_recycle_bushels_but_avoid_buyout($c, $cpref, $food_price_history);
-
     $turn_action_counts = [];
+    $possible_turn_result = stash_excess_bushels_on_public_if_needed($c, $rules);
+    if($possible_turn_result) {
+        $action_and_turns_used = update_c($c, $possible_turn_result);
+        update_turn_action_array($turn_action_counts, $action_and_turns_used);
+    }
+    
+    attempt_to_recycle_bushels_but_avoid_buyout($c, $cpref, $food_price_history);
+    
     $turns_played_for_last_spend_money_attempt = 0;
     while ($c->turns > 0) {
         $result = play_casher_turn($c, $is_allowed_to_mass_explore);
@@ -70,7 +74,7 @@ function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
             $c->updateMain(); //we probably don't need to do this *EVERY* turn
         }
 
-        $hold = money_management($c, $rules->max_possible_market_sell, $cpref);
+        $hold = money_management($c, $rules->max_possible_market_sell, $cpref, $turn_action_counts);
         if ($hold) {
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
         }

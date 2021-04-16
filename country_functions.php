@@ -33,14 +33,15 @@ PARAMETERS:
 	$turns_to_play - number of turns we want to play
 	$money_to_reserve - money that we cannot spend and have to keep in reserve
 	$is_cashing - 1 if cashing, 0 if not	
+    $always_allow_bushel_pm_sales - 1 if a country can sell bushels on PM even if foodnet is negative
 */
-function food_and_money_for_turns(&$c, $turns_to_play, $money_to_reserve, $is_cashing) {
+function food_and_money_for_turns(&$c, $turns_to_play, $money_to_reserve, $is_cashing, $always_allow_bushel_pm_sales = false) {
 	$incoming_money_per_turn = ($is_cashing ? 1.0 : 1.2) * $c->taxes;
 	$additional_turns_for_expenses_growth = floor($turns_to_play / 5);
 	// check money
 	if(!has_money_for_turns($turns_to_play + $additional_turns_for_expenses_growth, $c->money, $incoming_money_per_turn, $c->expenses, $money_to_reserve)) {
 		// not enough money to play a turn - can we make up the difference by selling a turn's worth of food production?
-		if($c->food > 0 and $c->foodnet > 0) {
+		if($c->food > 0 && ($always_allow_bushel_pm_sales || $c->foodnet > 0)) {
 			// log_country_message($c->cnum, "TEMP DEBUG: Food is ".$c->food); // FUTURE: figure out why this errors sometimes? could be fixed now - Slagpit 20210329
 			PrivateMarket::sell_single_good($c, 'm_bu', min($c->food, ($turns_to_play + $additional_turns_for_expenses_growth) * $c->foodnet));
 		}
@@ -68,7 +69,7 @@ function food_and_money_for_turns(&$c, $turns_to_play, $money_to_reserve, $is_ca
 
 
 
-function get_total_value_of_on_market_goods($c, $max_price_bushels_to_include = 999) {
+function get_total_value_of_on_market_goods($c, $rules, $min_bushel_price_to_truncate = 70) {
     $owned_on_market_info = get_owned_on_market_info();
 
     $total_value = 0;
@@ -77,8 +78,10 @@ function get_total_value_of_on_market_goods($c, $max_price_bushels_to_include = 
         $price = $market_package->price;
         $quantity = $market_package->quantity;
 
-        if($type <> 'm_bu' or $price <= $max_price_bushels_to_include)
-            $total_value += $price * $quantity * (2 - $c->tax());
+        if($type == 'm_bu' && $price > $min_bushel_price_to_truncate) // override price for expensive bushels to base_sell + 6
+            $price = $rules->base_pm_food_sell_price + 6;
+
+        $total_value += $price * $quantity * (2 - $c->tax());
     }
 
     return $total_value;
@@ -201,20 +204,16 @@ function turns_of_money(&$c)
 }//end turns_of_money()
 
 
-function money_management(&$c, $server_max_possible_market_sell, $cpref)
+function money_management(&$c, $server_max_possible_market_sell, $cpref, &$turn_action_counts)
 {
     while (turns_of_money($c) < 4) {
         //$foodloss = -1 * $c->foodnet;
 
-        // TODO:
-        /*
-                $action_and_turns_used = update_c($c, $result);
-        update_turn_action_array($turn_action_counts, $action_and_turns_used);
-        */
-
         if ($c->turns_stored <= 30 && total_cansell_military($c, $server_max_possible_market_sell) > 7500) {
             log_country_message($c->cnum, "Selling max military, and holding turns.");
-            sell_max_military($c, $server_max_possible_market_sell, $cpref);
+            $possible_turn_result = sell_max_military($c, $server_max_possible_market_sell, $cpref);
+            if($possible_turn_result <> null)
+                update_turn_action_array($turn_action_counts, $possible_turn_result);
             return true;
         } elseif ($c->turns_stored > 30 && total_military($c) > 1000) {
             log_error_message(1002, $c->cnum, "We have stored turns or can't sell on public; sell 1/10 of military");

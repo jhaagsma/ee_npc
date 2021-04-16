@@ -4,11 +4,16 @@ namespace EENPC;
 
 
 function stash_excess_bushels_on_public_if_needed(&$c, $rules, $max_sell_price = null) {
-    $excess_bushels = $c->food - 50000 + ($c->turns + 20) * min(0, $c->foodnet);
-
-    // TODO: check that income is positive so we don't OOM
+    // 0.001 is for decay
+    $excess_bushels = $c->food - 50000 + ($c->foodnet > 0 ? 0 : ($c->turns + 20) * min(0, ($c->foodnet + 0.001 * $c->food)));
 
     if($excess_bushels > 3500000) {
+        if(!food_and_money_for_turns($c, 1, 0, false, true)) // if false then we can't run a turn without hitting OOF
+            return false; // FUTURE: it is unfortunate to return a turn result or false
+
+        // shouldn't be a big deal if we sell some bushels to fund running a turn, but just in case do the calc again:
+        $excess_bushels = $c->food - 50000 + ($c->foodnet > 0 ? 0 : ($c->turns + 20) * ($c->foodnet + 0.001 * $c->food));
+
         $quantity = ['m_bu' => $excess_bushels];
         if($max_sell_price) {
             $price   = ['m_bu' => $max_sell_price]; 
@@ -24,10 +29,9 @@ function stash_excess_bushels_on_public_if_needed(&$c, $rules, $max_sell_price =
             log_country_message($c->cnum, "Selling excess $excess_bushels bushels at high prices to stash them away");
         }
         $res = PublicMarket::sell($c, $quantity, $price); 
-        update_c($c, $res); // TODO: return the result and don't do update_c? can't log to turn actions with this method
-        return true; // FUTURE: catch fails?
+        return $res;
     }
-    return false;
+    return false; // FUTURE: it is unfortunate to return a turn result or false
 }
 
 function get_inherent_value_for_tech ($c, $rules, $cpref, $min_cash_to_calc = 2000000000) {

@@ -100,11 +100,15 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 	}
 		
 	// TODO: what if selling bushels on private is better and we wouldn't eat corruption? need to figure out how to organize this better...
-	$money_to_reserve_temp = $turns_to_keep * max(-1 * $c->income, 10000000); // TODO: this whole thing is gross with the true argument...
+	// TODO: this can be wrong... if many bushels on are hand then food consumption will be too high
+	$money_to_reserve_temp = $turns_to_keep * max(-1 * $c->income, 10000000);
 	// stash bushels away on public market if needed
-	$expect_to_play_turns_for_income = temporary_cash_or_tech_at_end_of_set ($c, $strategy, $turns_to_keep, $money_to_reserve_temp, true);
+	// TODO: this whole thing is gross with the true argument...
+	$expect_to_play_turns_for_income = temporary_cash_or_tech_at_end_of_set ($c, $cpref, $strategy, $turns_to_keep, $money_to_reserve_temp, true);
 	if($expect_to_play_turns_for_income and $c->turns >= 20 + $turns_to_keep) {
-		if(stash_excess_bushels_on_public_if_needed($c, $rules, $estimated_public_market_bushel_sell_price)) { // sold bushels FUTURE: WATCH RETURN VALUE
+		$possible_turn_result = stash_excess_bushels_on_public_if_needed($c, $rules, $estimated_public_market_bushel_sell_price);
+		if($possible_turn_result <> false) {
+			update_c($c, $possible_turn_result);
 			if(!$bushel_recall_needed and !is_there_time_to_sell_on_public($reset_seconds_remaining, $max_market_package_time_in_seconds, $is_final_destocking_attempt, 1800)) {
 				$turns_to_keep += 3; // we are going to recall bushels, so save 3 more turns for that
 				$bushel_recall_needed = true;
@@ -117,7 +121,7 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 	log_country_message($cnum, "Money is $c->money and calculated money to reserve is $money_to_reserve");
 	log_country_message($cnum, "Turns left: $c->turns and turns to keep is $turns_to_keep");
 	log_country_message($cnum, "Starting cashing or teching...", 'green');	
-	$was_playing_turns_profitable = temporary_cash_or_tech_at_end_of_set ($c, $strategy, $turns_to_keep, $money_to_reserve);
+	$was_playing_turns_profitable = temporary_cash_or_tech_at_end_of_set ($c, $cpref, $strategy, $turns_to_keep, $money_to_reserve);
 	log_country_message($cnum, "Finished cashing or teching");
 
 	// FUTURE: switch governments if that would help???
@@ -193,7 +197,7 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 		$future_pm_capacity_for_unit = ($is_final_destocking_attempt ? 0: estimate_future_private_market_capacity_for_military_unit($pm_info->buy_price->$military_unit, $c->land, $replenishment_rate, $reset_seconds_remaining, $server_seconds_per_turn));
 		log_country_message($cnum, "Adjusting budget down by $future_pm_capacity_for_unit which is future PM capacity for $military_unit");
 		$total_cost_to_buyout_future_private_market += $future_pm_capacity_for_unit;
-		// TODO: should max spend be adjusted if there's lots of food on the market?
+		// FUTURE: should max spend be adjusted if there's lots of food on the market?
 		$max_spend = max($c->money - $total_cost_to_buyout_future_private_market - $money_to_reserve, 0);
 	}
 
@@ -236,7 +240,7 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 
 		// consider putting up military for sale if we have money to play a turn and we expect to have at least 100 M in unspent PM capacity
 		// note: no need to reserve money in previous has_money_for_turns call - we reserved money earlier so we could spend turns like this
-		$value_of_public_market_goods = floor(get_total_value_of_on_market_goods($c));
+		$value_of_public_market_goods = floor(get_total_value_of_on_market_goods($c, $rules));
 		log_country_message($cnum, "Considering military reselling...", 'green');
 		$did_resell_military = consider_and_do_military_reselling($c, $value_of_public_market_goods, $total_cost_to_buyout_future_private_market, $rules->max_possible_market_sell, $reset_seconds_remaining, $max_market_package_time_in_seconds, $is_final_destocking_attempt);
 
@@ -332,7 +336,7 @@ function dump_tech(&$c, $strategy, $market_autobuy_tech_price, $server_max_possi
 		// if not dumping tech at min prices, we have the option to sell by average price
 		if(!$dump_at_min_sell_price) {
 			$allow_average_prices = true;
-			$tech_price_history = get_market_history_all_tech($c->cnum, $cpref);
+			$tech_price_history = get_market_history_tech($c->cnum, $cpref);
 		}
 
 		$turn_result = sell_max_tech($c, $cpref, $market_autobuy_tech_price, $server_max_possible_market_sell, $mil_tech_to_keep, $dump_at_min_sell_price, $allow_average_prices, $tech_price_history);
@@ -475,9 +479,9 @@ PARAMETERS:
 	$land - acres for the country
 	$mil_tech - points of mil tech for the country
 */
-function temporary_check_if_cash_or_tech_is_profitable ($cnum, $strategy, $incoming_money_per_turn, $tpt, $foodnet, $govt, $land, $mil_tech) {
+function temporary_check_if_cash_or_tech_is_profitable ($cnum, $cpref, $strategy, $incoming_money_per_turn, $tpt, $foodnet, $govt, $land, $mil_tech) {
 	// very rough calculations - don't care if this is inaccurate
-	// future - account for tech allies?
+	// FUTURE - account for tech allies?
 	if ($strategy == 'I') {
 		log_country_message($cnum, "Cashing turns because indies always play turns (this is a limitation)");
 		return true; // future: calc indy production to check something
@@ -487,8 +491,8 @@ function temporary_check_if_cash_or_tech_is_profitable ($cnum, $strategy, $incom
 		return true;
 	}
 	elseif ($strategy == 'T') {
-		//log_country_message($cnum, "Teching turns because income is positive with implied tech value of $1500 per point");
-		return ($incoming_money_per_turn + 1500 * $tpt + 34 * $foodnet > 0 ? true: false); // TODO: get a tech sell price somehow
+		$tech_history = get_market_history_tech($cnum, $cpref, 't_mil');
+		return ($incoming_money_per_turn + $tech_history['t_mil']['avg_price'] * $tpt + 34 * $foodnet > 0 ? true: false);
 	}
 	else
 		return ($incoming_money_per_turn + 34 * $foodnet > 0 ? true: false);
@@ -501,19 +505,20 @@ PURPOSE: cashes or techs turns for a destocking country - code should probably b
 RETURNS: true if running turns was profitable, false otherwise
 PARAMETERS:
 	$c - the country object
+	$cpref - country preference object
 	$strategy - single letter strategy name abbreviation
 	$turns_to_keep - keep at least these many turns
 	$money_to_reserve - stop running turns if we think we'll end up with less money than this
 	$should_play_turns - output parameter set to true if playing turns are profitable
 	$profit_check_only - pass this in if you just want to see if turns would be profitable without playing them
 */
-function temporary_cash_or_tech_at_end_of_set (&$c, $strategy, $turns_to_keep, $money_to_reserve, $profit_check_only = false) {
+function temporary_cash_or_tech_at_end_of_set (&$c, $cpref, $strategy, $turns_to_keep, $money_to_reserve, $profit_check_only = false) {
 	// FUTURE: this code is overly simple and shouldn't exist here - it should call standard code used for teching and cashing
 	// in this code rainbows cash because I expect rainbows to not be techers in the future - Slagpit 20210325
 	$is_cashing = ($strategy == 'T' ? false : true);
 	$incoming_money_per_turn = ($is_cashing ? 1.0 : 1.2) * $c->taxes - $c->expenses;
 
-	$should_play_turns = temporary_check_if_cash_or_tech_is_profitable($c->cnum, $strategy, $incoming_money_per_turn, $c->tpt, $c->foodnet, $c->govt, $c->land, $c->t_mil);
+	$should_play_turns = temporary_check_if_cash_or_tech_is_profitable($c->cnum, $cpref, $strategy, $incoming_money_per_turn, $c->tpt, $c->foodnet, $c->govt, $c->land, $c->t_mil);
 	if(!$should_play_turns and !$profit_check_only) {
 		log_country_message($c->cnum, "Not cashing or teching turns because playing turns is not expected to be profitable");
 		return false;
@@ -542,7 +547,7 @@ function temporary_cash_or_tech_at_end_of_set (&$c, $strategy, $turns_to_keep, $
 
 		// we should have enough food and money to play turns
 		if ($strategy == 'T') {
-			$turn_result = tech(['mil' => $turns_to_play_at_once * $c->tpt]); // TODO: is it really ok to just tech mil tech?
+			$turn_result = tech(['mil' => $turns_to_play_at_once * $c->tpt]); // FUTURE: is it really ok to just tech mil tech?
 		}
 		else {
 			$turn_result = cash($c, $turns_to_play_at_once);
