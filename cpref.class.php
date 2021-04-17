@@ -207,7 +207,7 @@ class cpref
                 log_country_message($cnum, "Country played a low number of turns, so set next login to 30 min + 50% of max time to market");
                 return ceil(1800 + 0.5 * $max_time_to_market);
             }
-            else
+            elseif($exit_condition <> 'NORMAL')
                 log_error_message(999, $cnum, "internal_calculate_next_play_in_seconds(): invalid value for exit condition: $exit_condition");
         }
     
