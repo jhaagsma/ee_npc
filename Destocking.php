@@ -51,11 +51,11 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 	$is_final_destocking_attempt = (($debug_force_final_attempt or $calc_final_attempt) ? true : false);
 
 	
-	$bushel_market_history_info = get_market_history('food', $cpref->market_search_look_back_hours);
+	$bushel_market_history_info = get_market_history('food', 2); // want to respond to the latest food prices so the stockpile sells
 	log_country_message($cnum, "The average public bushel sell price is $bushel_market_history_info->avg_price over the past $cpref->market_search_look_back_hours hours");
 	// reasonable to assume that a demo country will resell bushels for $1 less than max PM sell price on all servers
 	// undercut by $1 because we're dumping
-	$estimated_public_market_bushel_sell_price = max(get_max_demo_bushel_recycle_price($rules), floor($bushel_market_history_info->avg_price)) - 1;
+	$estimated_public_market_bushel_sell_price = max(get_max_demo_bushel_recycle_price($rules) - 1, floor($bushel_market_history_info->avg_price) - 3);
 	log_country_message($cnum, "Estimated public bushel sell price is $estimated_public_market_bushel_sell_price");
 
 	// get what's on the market so we can recall goods or tech as needed depending on time left in reset
