@@ -19,7 +19,7 @@ function get_max_demo_bushel_recycle_price($rules) {
 function predict_destock_bushel_sell_price($c, $rules) {
     $max_demo_recycle_price = get_max_demo_bushel_recycle_price($rules);
     if($c->govt == "H" or $c->govt == "D")
-        $sell_price = (2 - $c->tax()) * ($max_demo_recycle_price - 2);
+        $sell_price = (2 - $c->tax()) * ($max_demo_recycle_price - 1);
     else
         $sell_price = $max_demo_recycle_price - 3; // if we're stocking, we'll probably have decent mil tech to sell on private at the end
 
