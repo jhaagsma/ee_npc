@@ -188,7 +188,7 @@ class cpref
 
     public function calculate_next_play_in_seconds($nexttime, $exit_condition, $rules, $dynamic_country_settings) {
         // split for unit testing purposes
-        return $this->internal_calculate_next_play_in_seconds($this->cnum, $nexttime, $this->strat, $this->is_clan_server, $rules->max_time_to_market, $rules->max_possible_market_sell, $this->playrand, $this->reset_start_time, $this->reset_end_time, $this->server_turn_rate, $dynamic_country_settings->lastTurns, $rules->maxturns, $dynamic_country_settings->turnsStored, $rules->maxstore);
+        return $this->internal_calculate_next_play_in_seconds($this->cnum, $exit_condition, $nexttime, $this->strat, $this->is_clan_server, $rules->max_time_to_market, $rules->max_possible_market_sell, $this->playrand, $this->reset_start_time, $this->reset_end_time, $this->server_turn_rate, $dynamic_country_settings->lastTurns, $rules->maxturns, $dynamic_country_settings->turnsStored, $rules->maxstore);
     }
 
 
