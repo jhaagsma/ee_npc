@@ -119,7 +119,8 @@ function get_farmer_min_sell_price($c, $cpref, $rules, $server, $min_cash_to_cal
         $military_unit_end_value = round(0.5 * $military_end_dpnw, 2);
         $military_unit_price = $pm_info->buy_price->m_tr;
         // expenses make the unit "cost" more
-        $military_unit_expenses = round(0.01 * $c->pt_mil * $unit_exp['m_tr'] * $server_new_turns_remaining, 2);
+        $military_unit_exp_per_turn = get_approx_expense_per_turn_for_mil_unit('m_tr', 0.5, $bushel_end_sell_price, $c->govt, $c->networth, $c->pt_mil, $c->expenses_mil);
+        $military_unit_expenses = round($military_unit_exp_per_turn * ($c->turns_stored + $server_new_turns_remaining), 2);
        
         $sell_break_even_price = 1 + ceil($bushel_end_sell_price * ($military_unit_price + $military_unit_expenses) / ((2 - $c->tax()) * $military_unit_end_value));
         $bushel_break_even_sell_prices['pm_tr'] = $sell_break_even_price;

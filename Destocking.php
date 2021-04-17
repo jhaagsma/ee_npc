@@ -116,6 +116,7 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 		}
 	}
 
+	// TODO: techers can end up with empty acres here - don't explore in final 30% of set?
 	$money_to_reserve = $turns_to_keep * max(-1 * $c->income, 10000000); // mil expenses can rise rapidly during destocking, so use 10 M per turn as a guess
 	// FUTURE: indies (and maybe other strats) should reserve money to play the rest of the turns they'll get in the set. see $turns_to_keep_for_bushel_calculation
 	log_country_message($cnum, "Money is $c->money and calculated money to reserve is $money_to_reserve");
