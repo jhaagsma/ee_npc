@@ -554,7 +554,7 @@ function get_optimal_tech_buying_array($c, $rules, $eligible_techs, $buying_prio
             else
                 usort($optimal_tech_buying_array[$turn_bucket],
                 function ($a, $b) { // sort by quantity desc, not price asc - otherwise farmers are likely to buy bus/res before agri! still not perfect, but good enough?
-                    return -1 * ($a['q'] <=> $b['q']); // spaceship!
+                    return -100 * ($a['q'] <=> $b['q']) + ($a['q'] == $b['q'] ? rand(1, 99) : 0); // spaceship! the rand() is there to get a different order for bus/res
                 });
             log_country_data($c->cnum, $optimal_tech_buying_array[$turn_bucket], "Results for optimal tech array at $turn_bucket% turn goal:");
         }
