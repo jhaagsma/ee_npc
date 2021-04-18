@@ -642,6 +642,11 @@ function estimate_future_private_market_capacity_for_military_unit($military_uni
 function attempt_to_recycle_bushels_but_avoid_buyout(&$c, $cpref, &$food_price_history) {
     if($cpref->should_demo_attempt_bushel_recycle && $c->govt == 'D' && $c->turns_played >= 300) {
         $food_public_price = PublicMarket::price('m_bu');
+        if(!$food_public_price) {
+            log_country_message($c->cnum, "Did not attempt to recycle bushels because food market is empty!");
+            return false;
+        }
+
         $pm_info = PrivateMarket::getInfo();
         $private_market_bushel_price = $pm_info->sell_price->m_bu;        
         $will_recycle_be_profitable = can_resell_bushels_from_public_market ($private_market_bushel_price, 1, $food_public_price, $max_profitable_public_market_bushel_price);
