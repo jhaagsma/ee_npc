@@ -61,8 +61,6 @@ function play_rainbow_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     //}
 
     //get the PM info
-    //$pm_info = get_pm_info();
-    //out_data($pm_info);       //output the PM info
     //$market_info = get_market_info();   //get the Public Market info
     //out_data($market_info);       //output the PM info
 
@@ -259,7 +257,7 @@ function tech_rainbow(&$c, $turns = 1)
     $left -= $spy = min($left, floor($c->tpt * $turns * ($spy / $tot)));
     $left -= $sdi = max($left, min($left, floor($c->tpt * $turns * ($sdi / $tot))));
     if ($left != 0) {
-        die("What the hell?");
+        die("What the hell? rainbow");
     }
 
     return tech(

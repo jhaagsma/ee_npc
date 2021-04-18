@@ -81,7 +81,7 @@ class cpref
 
         // destocking uses shorter look backs
         $min_hours_to_look_back = floor(min(3, max(1, $number_of_days_in_set * 1 / 5))); // express would be 1, 30 day reset is 3, 60 day is 3 hours
-        $max_hours_to_look_back = floor(min(8, $number_of_days_in_set * 3 / 5)); // express would be 3, 30 day reset is 8, 60 day is 8 hours
+        $max_hours_to_look_back = floor(min(8, max(2, $number_of_days_in_set * 3 / 5))); // express would be 3, 30 day reset is 8, 60 day is 8 hours
         $this->market_search_look_back_hours_DESTOCK = mt_rand($min_hours_to_look_back, $max_hours_to_look_back); 
 
         $this->chance_to_sell_based_on_avg_price = 50; 

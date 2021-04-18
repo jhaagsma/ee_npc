@@ -9,8 +9,11 @@ function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
     //$main = get_main();     //get the basic stats
     //out_data($main);          //output the main data
     $c = get_advisor();     //c as in country! (get the advisor)
+
+    // FUTURE: cash when explore is no longer worth it
+
     //out_data($c) && exit;             //ouput the advisor data
-    log_static_cpref_on_turn_0 ($c, $cpref); // TODO: test
+    log_static_cpref_on_turn_0 ($c, $cpref);
 
     $is_allowed_to_mass_explore = is_country_allowed_to_mass_explore($c, $cpref);
     log_country_message($cnum, "Bus: {$c->pt_bus}%; Res: {$c->pt_res}%; Mil: {$c->pt_mil}%; Weap: {$c->pt_weap}%");
@@ -37,8 +40,7 @@ function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
     // log useful information about country state
     log_country_message($cnum, $c->turns.' turns left');
     //log_country_message($cnum, 'Explore Rate: '.$c->explore_rate.'; Min Rate: '.$c->explore_min);
-    //$pm_info = get_pm_info(); //get the PM info
-    //out_data($pm_info);       //output the PM info
+
     //$market_info = get_market_info(); //get the Public Market info
     //out_data($market_info);       //output the PM info
 

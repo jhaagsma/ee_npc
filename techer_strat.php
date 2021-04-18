@@ -46,8 +46,6 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
     //log_country_message($cnum, 'Explore Rate: '.$c->explore_rate.'; Min Rate: '.$c->explore_min);
 
     //out_data($c);             //ouput the advisor data
-    //$pm_info = get_pm_info();   //get the PM info
-    //out_data($pm_info);       //output the PM info
     //$market_info = get_market_info();   //get the Public Market info
     //out_data($market_info);       //output the PM info
 

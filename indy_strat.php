@@ -37,8 +37,6 @@ function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$tur
     // log useful information about country state
     log_country_message($cnum, $c->turns.' turns left');
     //log_country_message($cnum, 'Explore Rate: '.$c->explore_rate.'; Min Rate: '.$c->explore_min);
-    //$pm_info = get_pm_info();   //get the PM info
-    //out_data($pm_info);       //output the PM info
     //$market_info = get_market_info();   //get the Public Market info
     //out_data($market_info);       //output the PM info
 

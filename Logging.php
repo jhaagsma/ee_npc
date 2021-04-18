@@ -181,12 +181,12 @@ function log_snapshot_message($c, $rules, $snapshot_type, $strat, $is_destocking
     global $log_country_to_screen, $log_to_local, $local_file_path;
 
     if($snapshot_type <> 'BEGIN' and $snapshot_type <> 'DELTA' and $snapshot_type <> 'END') {
-        die('Called log_snapshot_message() with invalid parameter value '.$snapshot_type.' for $snapshot_type');
+        log_error_message(999, $c->cnum, 'log_snapshot_message(): called with invalid parameter value '.$snapshot_type.' for $snapshot_type');
         return false;
     }
 
     if($snapshot_type == 'DELTA' and empty($prev_c_values)) {
-        die('Called log_snapshot_message() in DELTA mode with empty previous country values array');
+        log_error_message(999, $c->cnum, 'log_snapshot_message(): called in DELTA mode with empty previous country values array');
         return false;
     }   
 
@@ -772,7 +772,7 @@ function get_log_error_type_from_PHP_errno($errno) {
 }
 
 
-// TODO: does this log die() commands?
+// note: this won't catch die()
 function handleShutdown(){
     $error = error_get_last();
     if($error !== NULL){
