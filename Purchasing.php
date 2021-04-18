@@ -90,6 +90,8 @@ function spend_extra_money(&$c, $buying_priorities, $cpref, $money_to_reserve, $
                     if($c->$tech_name >= $tech_point_limit) // already have enough tech at this price range
                         unset($optimal_tech_buying_array[$priority_goal][$key]);
                     elseif($max_spend > 10 * $max_tech_price) {
+                        // FUTURE: for bus/res, start by buying the one that the country has the least of?
+                        // TODO: cut down on API calls when tech market is empty or too highly priced?
                         $total_spent_on_single_tech = PublicMarket::buy_tech($c, $tech_name, $max_spend, $max_tech_price, $tech_point_limit);
                         $max_spend -= $total_spent_on_single_tech; // have to update here for buy_tech() to not overbuy
                         $total_spent_by_step += $total_spent_on_single_tech;
@@ -545,6 +547,7 @@ function get_optimal_tech_buying_array($c, $rules, $eligible_techs, $buying_prio
     */
 
     ksort($optimal_tech_buying_array, SORT_NUMERIC ); // print in expected order
+    $rand = mt_rand(0, 99);
     if($was_server_queried_at_least_once) {
         if(empty($optimal_tech_buying_array))
             log_country_message($c->cnum, "Optimal tech buying array is empty because prices are too expensive");
@@ -553,8 +556,13 @@ function get_optimal_tech_buying_array($c, $rules, $eligible_techs, $buying_prio
                 unset($optimal_tech_buying_array[$turn_bucket]);
             else
                 usort($optimal_tech_buying_array[$turn_bucket],
-                function ($a, $b) { // sort by quantity desc, not price asc - otherwise farmers are likely to buy bus/res before agri! still not perfect, but good enough?
-                    return -100 * ($a['q'] <=> $b['q']) + ($a['q'] == $b['q'] ? rand(1, 99) : 0); // spaceship! the rand() is there to get a different order for bus/res
+                function ($a, $b) use($rand) { // sort by quantity desc, not price asc - otherwise farmers are likely to buy bus/res before agri! still not perfect, but good enough?
+                    return -10 * ($a['q'] <=> $b['q']) // biggest weight by quantity
+                     + ($a['q'] == $b['q'] ? // if quantity is the same
+                        (($a['q'] + $rand) % 2 == 1 ? 1 : -1) // 50/50% chance of getting 1 or -1
+                        * ($a['t'] < $b['t'] ? 1 : -1) // we go through this trouble to get a somewhat random order for bus/res
+                        : 0 
+                     );
                 });
             log_country_data($c->cnum, $optimal_tech_buying_array[$turn_bucket], "Results for optimal tech array at $turn_bucket% turn goal:");
         }
