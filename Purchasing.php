@@ -563,8 +563,6 @@ function get_optimal_tech_buying_array($c, $rules, $eligible_techs, $buying_prio
                         * ($a['t'] <=> $b['t']) // we go through this trouble to get a somewhat random order for bus/res
                         : 0                         
                      );
-                     // NOTE: the ordering does not work out as expected with quantity ties, but seems to be random enough
-                     // personally I believe there's a bug in usort()
                 });
             log_country_data($c->cnum, $optimal_tech_buying_array[$turn_bucket], "Results for optimal tech array at $turn_bucket% turn goal:");
         }
