@@ -87,9 +87,9 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 
 	// figure out how many turns we should save for things like recalling goods and making sales
 	// note that we stay logged out for at least 6 turns
-	$turns_to_keep = 6; // 1 to sell bushels and 1 to sell military, along with 3 to possibly recall bushels and sell again in later logins
+	$turns_to_keep = $is_final_destocking_attempt ? 0 : 6; // 1 to sell bushels and 1 to sell military, along with 3 to possibly recall bushels and sell again in later logins
 	$tech_recall_needed = false;
-	if($strategy == 'T') // one turn to sell tech
+	if($strategy == 'T' && !$is_final_destocking_attempt) // one turn to sell tech
 		$turns_to_keep += 1;
 	if($strategy == 'T' && !$is_final_destocking_attempt && $market_autobuy_tech_price > $cpref->base_inherent_value_for_tech && $expensive_tech_on_market && !is_there_time_for_selling_tech_at_market_prices($reset_seconds_remaining, $max_market_package_time_in_seconds, $market_autobuy_tech_price, $is_final_destocking_attempt, $cpref)) {
 		$turns_to_keep += 3; // probably need to recall tech, so save 3 more turns for that
