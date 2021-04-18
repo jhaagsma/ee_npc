@@ -558,7 +558,9 @@ function get_optimal_tech_buying_array($c, $rules, $eligible_techs, $buying_prio
                 usort($optimal_tech_buying_array[$turn_bucket],
                 function ($a, $b) use($rand) { // sort by quantity desc, not price asc - otherwise farmers are likely to buy bus/res before agri! still not perfect, but good enough?
                     return -10 * ($a['q'] <=> $b['q']) // biggest weight by quantity
-                    + ($a['t'] <=> $b['t'])
+                    + ($a['q'] == $b['q'] ? // if quantity is the same
+                        ($a['t'] <=> $b['t'])
+                        : 0)
 /*
                      + ($a['q'] == $b['q'] ? // if quantity is the same
                         (($a['q'] + $rand) % 2 == 1 ? 1 : -1) // 50/50% chance of getting 1 or -1
