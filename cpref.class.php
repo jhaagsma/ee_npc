@@ -147,7 +147,7 @@ class cpref
             $static_prefs[] = "min_perc_teching_turns";
         }
 
-        if($$this->strat == 'F') {
+        if($this->strat == 'F') {
             $static_prefs[] = "farmer_max_early_sell_price";
             $static_prefs[] = "farmer_max_late_sell_price";        
         }

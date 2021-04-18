@@ -739,10 +739,7 @@ function userErrorHandler($errno, $errmsg, $filename, $linenum) {
     
     //Terminate script if fatal error
     if($errno != 2 && $errno != 8 && $errno != 512 && $errno != 1024 && $errno != 2048){
-        if($errorlogging >= 2 || $user && $debug)
-            die("A fatal error has occured. Script execution has been aborted:<br />\n$str");
-        else
-            die("A fatal error has occured. Script execution has been aborted");
+        die("A fatal error has occured. Script execution has been aborted");
     }
 }
 
