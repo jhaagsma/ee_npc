@@ -22,12 +22,15 @@ class cpref
     {
         $this->cnum = $cnum;
 
-        // useful stuff from $server
+        // useful stuff from $server - FUTURE: don't do this?
         $this->reset_start_time = $server->reset_start;
         $this->reset_end_time = $server->reset_end;
         $this->is_clan_server = $server->is_clan_server;
         $this->server_turn_rate = $server->turn_rate;      
 
+        // ******************************************************************
+        // REMINDER: add new things to get_static_prefs_to_print() as needed!
+        // ******************************************************************
 
         // FUTURE: load from personality file
         $this->strat = $cpref_file->strat;
@@ -42,15 +45,19 @@ class cpref
         $turns_in_set = ($this->reset_end_time - $this->reset_start_time) / $this->server_turn_rate;
         // general        
         $this->mass_explore_stop_acreage_rep = ($this->is_clan_server ? 99999 : 10000);
-        $this->mass_explore_stop_acreage_non_rep = ($this->is_clan_server ? 99999 : 8200);  
+        $this->mass_explore_stop_acreage_non_rep = ($this->is_clan_server ? 99999 : 8200);
+
+
+        $number_of_seconds_in_set = $this->reset_end_time - $this->reset_start_time;
+        $this->techer_allowed_to_grow = (time() < 0.65 * $number_of_seconds_in_set + $this->reset_start_time) ? true : false; // weird to set only for techer
         $this->techer_land_goal = ($turns_in_set < 2200 ? 8000 : 10000); // FUTURE - this is very basic, also weird to only set for techer
         
         $this->base_inherent_value_for_tech = 700;
         // if tpt is high enough, spend this percentage of turns teching before considering exploring
         $this->min_perc_teching_turns = $this->get_min_perc_teching_turns();
+        $this->initial_bpt_target = ($this->strat == "T" ? 60 : 65);
 
         // FUTURE: spal
-        // FUTURE: bpt (temporary?)
         // FUTURE: landgoal
 
         // buying
@@ -68,12 +75,22 @@ class cpref
         $this->production_algorithm = $this->get_production_algorithm();  
 
         $number_of_days_in_set = ($this->reset_end_time - $this->reset_start_time) / 86400;
-        $min_hours_to_look_back = min(72, max(1, $number_of_days_in_set * 1 / 5)); // express would be 1, 30 day reset is 6, 60 day is 12 hours
-        $max_hours_to_look_back = min(72, $number_of_days_in_set * 8 / 5); // express would be 8, 30 day reset is 48, 60 day is 72 hours
+        $min_hours_to_look_back = floor(min(72, max(1, $number_of_days_in_set * 1 / 5))); // express would be 1, 30 day reset is 6, 60 day is 12 hours
+        $max_hours_to_look_back = floor(min(72, $number_of_days_in_set * 8 / 5)); // express would be 8, 30 day reset is 48, 60 day is 72 hours
         $this->market_search_look_back_hours = mt_rand($min_hours_to_look_back, $max_hours_to_look_back); 
 
+        // destocking uses shorter look backs
+        $min_hours_to_look_back = floor(min(3, max(1, $number_of_days_in_set * 1 / 5))); // express would be 1, 30 day reset is 3, 60 day is 3 hours
+        $max_hours_to_look_back = floor(min(8, $number_of_days_in_set * 3 / 5)); // express would be 3, 30 day reset is 8, 60 day is 8 hours
+        $this->market_search_look_back_hours_DESTOCK = mt_rand($min_hours_to_look_back, $max_hours_to_look_back); 
+
         $this->chance_to_sell_based_on_avg_price = 50; 
-        $this->chance_to_sell_based_on_current_price = 100 - $this->chance_to_sell_based_on_avg_price;
+        $this->chance_to_sell_based_on_current_price = 50;
+        $this->chance_to_resell_military_based_on_avg_price_DESTOCK = 30; 
+        $this->chance_to_resell_military_based_on_current_price_DESTOCK = 30;
+        $this->chance_to_resell_military_based_on_high_price_DESTOCK = 30;
+        $this->chance_to_resell_military_based_on_price_limit_DESTOCK = 10;
+
         $this->selling_price_max_distance = 15; // 15 means a country may sell up to 15% over or under market prices
         $this->selling_price_std_dev = 5;
         $this->farmer_max_early_sell_price = 49;
@@ -82,10 +99,88 @@ class cpref
         // destocking
         $this->earliest_destocking_start_time = $this->get_earliest_destocking_start_time();
 
+        // VALIDATION
+        if($this->chance_to_sell_based_on_avg_price + $this->chance_to_sell_based_on_current_price <> 100)
+            log_error_message(123, $cnum, "chance_to_sell options must add to 100");
 
+        if($this->chance_to_resell_military_based_on_avg_price_DESTOCK + $this->chance_to_resell_military_based_on_current_price_DESTOCK + $this->chance_to_resell_military_based_on_high_price_DESTOCK + $this->chance_to_resell_military_based_on_price_limit_DESTOCK <> 100)
+            log_error_message(123, $cnum, "chance_to_sell_DESTOCK options must add to 100");           
     }//end __construct()
 
 
+    public function get_static_prefs_to_print() {
+        $static_prefs = [    
+              "strat"
+            , "initial_bpt_target"
+            , "bot_secret_number"
+            , "playrand"
+            , "acquire_ingame_allies"
+            , "gdi"
+            , "mass_explore_stop_acreage_rep"
+            , "mass_explore_stop_acreage_non_rep"
+            , "base_inherent_value_for_tech"
+            , "purchase_schedule_number"
+            , "target_cash_after_stockpiling"
+            , "spend_extra_money_cooldown_turns"
+            , "max_bushel_buy_price_with_low_stored_turns"
+            , "tech_max_purchase_price"
+            , "max_stockpiling_loss_percent"
+            , "final_dpnw_for_stocking_calcs"
+            , "should_demo_attempt_bushel_recycle"
+            , "chance_to_sell_based_on_avg_price"
+            , "chance_to_sell_based_on_current_price"
+            , "selling_price_max_distance"
+            , "selling_price_std_dev"
+            , "chance_to_resell_military_based_on_avg_price_DESTOCK"
+            , "chance_to_resell_military_based_on_current_price_DESTOCK"
+            , "chance_to_resell_military_based_on_high_price_DESTOCK"
+            , "chance_to_resell_military_based_on_price_limit_DESTOCK"
+            , "earliest_destocking_start_time"
+        ];
+
+        if($this->strat == 'T' || $this->strat == 'I') {
+            $static_prefs[] = "production_algorithm";
+        }
+
+        if($this->strat == 'T') {
+            $static_prefs[] = "techer_land_goal";
+            $static_prefs[] = "min_perc_teching_turns";
+        }
+
+        if($$this->strat == 'F') {
+            $static_prefs[] = "farmer_max_early_sell_price";
+            $static_prefs[] = "farmer_max_late_sell_price";        
+        }
+
+        return $static_prefs;
+    }
+
+
+    public function get_market_history_look_back_hours() {
+        return (time() < $this->earliest_destocking_start_time? $this->market_search_look_back_hours : $this->market_search_look_back_hours_DESTOCK);
+    }
+
+
+    public function get_sell_price_method($is_destocking = false) {
+        $rand = mt_rand(1, 100);
+
+        if($is_destocking) {
+            if($rand <= $this->chance_to_resell_military_based_on_avg_price_DESTOCK)
+                return "AVG";
+            elseif($rand <= $this->chance_to_resell_military_based_on_avg_price_DESTOCK + $this->chance_to_resell_military_based_on_current_price_DESTOCK)
+                return "CURRENT";   
+            elseif($rand <= $this->chance_to_resell_military_based_on_avg_price_DESTOCK + $this->chance_to_resell_military_based_on_current_price_DESTOCK + $this->chance_to_resell_military_based_on_high_price_DESTOCK)
+                return "HIGH";
+            else
+                return "LIMIT";
+        }
+        else {
+            if($rand <= $this->chance_to_sell_based_on_avg_price)
+                return "AVG";
+            else
+                return "CURRENT";     
+        }
+    }
 
 
     private function get_min_perc_teching_turns() {
@@ -97,11 +192,11 @@ class cpref
     private function get_production_algorithm() {
         $schedule_rand = $this->decode_bot_secret(2);
 
-        if($schedule_rand <= 39)
+        if($schedule_rand <= 19) // this sounds good in theory, but it's a positive feedback loop
             return "SALES";
         elseif($schedule_rand <= 59)
             return "AVG_PRICE";
-        elseif($schedule_rand <= 74)
+        elseif($schedule_rand <= 69)
             return "HIGH_PRICE";
         elseif($schedule_rand <= 89)
             return "CURRENT_PRICE";
@@ -207,7 +302,7 @@ class cpref
                 log_country_message($cnum, "Country played a low number of turns, so set next login to 30 min + 50% of max time to market");
                 return ceil(1800 + 0.5 * $max_time_to_market);
             }
-            elseif($exit_condition <> 'NORMAL')
+            elseif($exit_condition <> 'NORMAL' && $exit_condition <> 'ERROR')
                 log_error_message(999, $cnum, "internal_calculate_next_play_in_seconds(): invalid value for exit condition: $exit_condition");
         }
     

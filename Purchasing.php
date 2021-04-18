@@ -472,10 +472,7 @@ function get_extra_income_affected_by_tech ($c, $tech_type, $rules) {
 
 
 function get_optimal_tech_buying_array($c, $rules, $eligible_techs, $buying_priorities, $max_tech_price, $base_tech_value, $force_all_turn_buckets = false) {
-    // TODO: fix tech buying price buckets
-    // find max price in gc code, start at max, substract rand(0, 500), then subtract 500 each time
-    // also tune the buckets a bit
-    // for bus and res, use the same starting point (min of both techs)
+    // TODO: test changed ai_base calcs (will need to commit)
 
     $turn_buckets = [];
     if($force_all_turn_buckets) {
@@ -502,7 +499,11 @@ function get_optimal_tech_buying_array($c, $rules, $eligible_techs, $buying_prio
 
     $was_server_queried_at_least_once = false;
     foreach($tech_type_to_ipa as $tech_type => $ipa) {
-        $current_tech_price = PublicMarket::price($tech_type);
+        if($tech_type <> 't_bus' && $tech_type <> 't_res')
+            $current_tech_price = PublicMarket::price($tech_type);
+        else // force bus and res tech to have the same price buckets
+            $current_tech_price = min(PublicMarket::price('t_bus'), PublicMarket::price('t_res'));
+        
         if(!$current_tech_price) {
             log_country_message($c->cnum, "No $tech_type tech available on public market so skipping optimal tech calculations");
             continue;

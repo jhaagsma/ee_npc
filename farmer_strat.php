@@ -31,6 +31,8 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
     //$main = get_main();     //get the basic stats
     //out_data($main);          //output the main data
     $c = get_advisor();     //c as in country! (get the advisor)
+    log_static_cpref_on_turn_0 ($c, $cpref);
+
     $starting_turns = $c->turns;
     $is_allowed_to_mass_explore = is_country_allowed_to_mass_explore($c, $cpref);
     log_country_message($cnum, "Agri: {$c->pt_agri}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%; Mil: {$c->pt_mil}%; Weap: {$c->pt_weap}%");
@@ -156,7 +158,7 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
 
 function play_farmer_turn(&$c, $cpref, $rules, $is_allowed_to_mass_explore, $bushel_min_sell_price, $bushel_max_sell_price, $food_price_history)
 {
-    $target_bpt = 65;
+    $target_bpt = $cpref->initial_bpt_target;
     global $turnsleep;
     usleep($turnsleep);
     //log_country_message($c->cnum, $main->turns . ' turns left');
@@ -165,17 +167,24 @@ function play_farmer_turn(&$c, $cpref, $rules, $is_allowed_to_mass_explore, $bus
         //build one CS if we can afford it and are below our target BPT
         return Build::cs(); //build 1 CS
     } elseif (
-        ($c->protection == 1 && $c->food > 100 && $c->b_farm > 0)
+        ($c->protection == 1 && $c->food > 100 && $c->b_farm > 0) // sell on private in protection if food > 100 and we have at least one farm
         || (        
             $c->protection == 0 && $c->food > 7000
             && (
-                $c->foodnet > 0 && $c->foodnet > 3 * $c->foodcon && $c->food > 30 * $c->foodnet
+                $c->foodnet > 0 && $c->foodnet > 3 * $c->foodcon && $c->food > 30 * $c->foodnet //Don't sell less than 30 turns of food unless you're on your last turn (and desperate?)
                 || $c->turns == 1
             )
         )
-    ) { // sell on private in protection if food > 100 and we have at least one farm
-        //Don't sell less than 30 turns of food unless you're on your last turn (and desperate?)
-        return sellextrafood_farmer($c, $rules, $bushel_min_sell_price, $bushel_max_sell_price, $cpref, $food_price_history);
+    ) { 
+        // sell some food on PM if we have a lot of empty acres, still have turns, and can't afford to build at least 1k acres
+        if($c->turns > (1000 / $c->bpt) && $c->empty >= 1000 && $c->money < 1000 * (1500 + 3 * $c->land)) {        
+            log_country_message($c->cnum, "Selling food on PM because we have over 999 empty acres and not enough money to build them");    
+            $pm_info = PrivateMarket::getInfo();
+            $food_to_sell = ceil(min($c->food, 1000 * (1500 + 3 * $c->land) / $pm_info->sell_price->m_bu));
+            return PrivateMarket::sell_single_good($c, 'm_bu', $food_to_sell);
+        }
+        else
+            return sellextrafood_farmer($c, $rules, $bushel_min_sell_price, $bushel_max_sell_price, $cpref, $food_price_history);
     } elseif ($c->shouldBuildSpyIndies($target_bpt)) {
         //build a full BPT of indies if we have less than that, and we're out of protection
         return Build::indy($c);
@@ -219,7 +228,8 @@ function sellextrafood_farmer(&$c, $rules, $bushel_min_sell_price, $bushel_max_s
     
     $food_public_price = 0;
     if($c->protection == 0){ // don't log this during protection
-        if (mt_rand(1, 100) <= $cpref->chance_to_sell_based_on_avg_price) {
+
+        if($cpref->get_sell_price_method(false) == 'AVG') {
             $food_public_price = $food_price_history['avg_price'];
             log_country_message($c->cnum, "Picking sell food price based on avg ".($food_public_price ? $food_public_price : '?'). ", min $bushel_min_sell_price, max $bushel_max_sell_price");
         }

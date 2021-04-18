@@ -11,6 +11,7 @@ function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$tur
     //$main = get_main();     //get the basic stats
     //out_data($main);          //output the main data
     $c = get_advisor();     //c as in country! (get the advisor)
+    log_static_cpref_on_turn_0 ($c, $cpref);
     $starting_turns = $c->turns;
 
     $is_allowed_to_mass_explore = is_country_allowed_to_mass_explore($c, $cpref);
@@ -56,7 +57,7 @@ function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$tur
     $turns_played_for_last_spend_money_attempt = $c->turns_played;
     while ($c->turns > 0) {
         //$result = PublicMarket::buy($c,array('m_bu'=>100),array('m_bu'=>400));
-        $result = play_indy_turn($c, $rules->max_possible_market_sell, $is_allowed_to_mass_explore, $cpref);
+        $result = play_indy_turn($c, $cpref, $rules->max_possible_market_sell, $is_allowed_to_mass_explore);
         if ($result === false) {  //UNEXPECTED RETURN VALUE
             $c = get_advisor();     //UPDATE EVERYTHING
             continue;
@@ -102,10 +103,9 @@ function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$tur
 }//end play_indy_strat()
 
 
-function play_indy_turn(&$c, $server_max_possible_market_sell, $is_allowed_to_mass_explore, $cpref)
+function play_indy_turn(&$c, $cpref, $server_max_possible_market_sell, $is_allowed_to_mass_explore)
 {
- //c as in country!
-    $target_bpt = 65;
+    $target_bpt = $cpref->initial_bpt_target;
     global $turnsleep;
     usleep($turnsleep);
     //log_country_message($c->cnum, $main->turns . ' turns left');

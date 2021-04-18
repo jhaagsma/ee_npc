@@ -2,9 +2,6 @@
 
 namespace EENPC;
 
-// TODO: test having a separate error file for PHP warnings and errors
-
-
 // new error types must be added to this function
 function log_get_name_of_error_type($error_type) {
     // 40 character limit on name
@@ -61,6 +58,8 @@ function log_get_name_of_error_type($error_type) {
         return 'DESTOCKING CANNOT RECALL DUE TO OOF/OOM';
     if($error_type == 122)
         return 'TECHER COMPUTING ZERO SELL';
+    if($error_type == 123)
+        return 'INVALID CPREF VALUES';       
 
         
     if($error_type == 999) // use when functions are given stupid input and it isn't worth defining a new error
@@ -159,6 +158,20 @@ function log_turn_action_counts($c, $server, $cpref, $turn_action_counts) {
     */
 
     return;                      
+}
+
+
+function log_static_cpref_on_turn_0 ($c, $cpref) {
+    if($c->turns_played <> 0 || $c->govt <> 'M')
+        return false;
+
+    $static_prefs = $cpref->get_static_prefs_to_print();
+
+    $log_message = "Printing static country preferences:";
+    foreach($static_prefs as $pref_name)
+        $log_message .= "\n    $pref_name: $cpref->$pref_name";
+
+    return log_country_message($c->cnum, $log_message);
 }
 
 
@@ -430,6 +443,14 @@ function create_local_directory_if_needed($path_name) {
     if(!is_dir($path_name)) {
         out("Creating local directory $path_name"); // have to use out() here because folders don't exist yet
         $success = mkdir("$path_name", 0770, true);
+    }
+    if(!$success) {
+        sleep(5); // we might have had another process create the same folder, so wait 5 seconds and try again
+        $success = true;
+        if(!is_dir($path_name)) {
+            out("Creating local directory $path_name"); // have to use out() here because folders don't exist yet
+            $success = mkdir("$path_name", 0770, true);
+        }
     }
     if(!$success)
         die("Failed to create local directory $path_name");
@@ -752,7 +773,7 @@ function get_log_error_type_from_PHP_errno($errno) {
 }
 
 
-
+// TODO: does this log die() commands?
 function handleShutdown(){
     $error = error_get_last();
     if($error !== NULL){

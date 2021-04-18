@@ -33,6 +33,8 @@ function emergency_sell_mil_on_pm (&$c, $money_needed) {
     // prefer to sell jets, then tanks, then troops, than turrets
     $mil_sell_order = ['m_j', 'm_ta', 'm_tr', 'm_tu'];
 
+    log_country_message($c->cnum, "Conducting emergency sell of military on PM to get $money_needed money");
+
     foreach($mil_sell_order as $mil_unit){
         $sell_price = $pm_info->sell_price->$mil_unit;
         $amount_to_sell = min($c->$mil_unit, ceil($money_needed / $sell_price));
@@ -60,14 +62,13 @@ function get_farmer_max_sell_price($c, $cpref, $rules, $server) {
 }
 
 
-
 function get_market_history_all_military_units($cnum, $cpref){
     $market_history = [];
 
     $military_units = ['m_tr', 'm_j', 'm_tu', 'm_ta'];
     $search_result_fields = ['low_price', 'high_price', 'total_units_sold', 'total_sales', 'avg_price', 'no_results'];
     foreach($military_units as $unit){
-        $market_history_for_unit = get_market_history($unit, $cpref->market_search_look_back_hours);
+        $market_history_for_unit = get_market_history($unit, $cpref->get_market_history_look_back_hours());
         foreach($search_result_fields as $field){
             $market_history[$unit][$field] = $market_history_for_unit->$field;
         }
@@ -97,7 +98,7 @@ function get_market_history_tech_internal($cnum, $cpref, $tech_list){
 
     $search_result_fields = ['low_price', 'high_price', 'total_units_sold', 'total_sales', 'avg_price', 'no_results'];
     foreach($tech_list as $unit){
-        $market_history_for_unit = get_market_history($unit, $cpref->market_search_look_back_hours);
+        $market_history_for_unit = get_market_history($unit, $cpref->get_market_history_look_back_hours());
         foreach($search_result_fields as $field){
             $market_history[$unit][$field] = $market_history_for_unit->$field;
         }
@@ -112,7 +113,7 @@ function get_market_history_tech_internal($cnum, $cpref, $tech_list){
 function get_market_history_food($cnum, $cpref){
     $market_history = [];
     $search_result_fields = ['low_price', 'high_price', 'total_units_sold', 'total_sales', 'avg_price', 'no_results'];
-    $market_history_for_unit = get_market_history('food', $cpref->market_search_look_back_hours);
+    $market_history_for_unit = get_market_history('food', $cpref->get_market_history_look_back_hours());
     foreach($search_result_fields as $field){
          $market_history[$field] = $market_history_for_unit->$field;
     }

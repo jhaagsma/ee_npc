@@ -457,7 +457,7 @@ function sell_max_military(&$c, $server_max_possible_market_sell, $cpref, $allow
         } else {
             $max         = $c->goodsStuck($key) ? 0.99 : $rmax; //undercut if we have goods stuck
             // there's a random chance to sell based on market average prices instead of current prices
-            $use_avg_price = ($allow_average_prices and mt_rand(1, 100) <= $cpref->chance_to_sell_based_on_avg_price) ? true : false;
+            $use_avg_price = ($allow_average_prices && $cpref->get_sell_price_method(false) == 'AVG') ? true : false;
             
             if ($use_avg_price and $avg_price) { // use average price and average price exists
                 $price[$key] = floor($avg_price * Math::purebell($rmin, $max, $rstddev, $rstep));

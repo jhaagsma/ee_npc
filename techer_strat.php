@@ -11,6 +11,7 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
     //$main = get_main();     //get the basic stats
     //out_data($main);          //output the main data
     $c = get_advisor();     //c as in country! (get the advisor)
+    log_static_cpref_on_turn_0 ($c, $cpref);
     $starting_turns = $c->turns;
     $is_allowed_to_mass_explore = is_country_allowed_to_mass_explore($c, $cpref);
 
@@ -123,9 +124,9 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
 
 
 function play_techer_turn(&$c, $cpref, $rules, $tech_price_min_sell_price, $is_allowed_to_mass_explore, $tech_price_history, $tpt_split, &$teching_turns_remaining_before_explore)
-{
+{    
+    $target_bpt = $cpref->initial_bpt_target;
     $server_max_possible_market_sell = $rules->max_possible_market_sell;
-    $target_bpt = 65;
     global $turnsleep, $mktinfo; //, $server_avg_land;
     $mktinfo = null;
     usleep($turnsleep);
@@ -164,7 +165,7 @@ function play_techer_turn(&$c, $cpref, $rules, $tech_price_min_sell_price, $is_a
         $teching_turns_remaining_before_explore -= $turns_to_tech;
         return tech_techer($c, $turns_to_tech, $tpt_split);
     } elseif (
-        $c->built() > 50 && $c->land < $cpref->techer_land_goal &&
+        $cpref->techer_allowed_to_grow && $c->built() > 50 && $c->land < $cpref->techer_land_goal &&
         (
             ($c->empty < 4 && $c->land < 1800) // always allow for early exploring (cs)
             ||
@@ -278,7 +279,7 @@ function sell_max_tech(&$c, $cpref, $tech_price_min_sell_price, $server_max_poss
         } else {
             $max = $c->goodsStuck($key) ? 0.98 : $rmax; //undercut if we have goods stuck
             // there's a random chance to sell based on market average prices instead of current prices
-            $use_avg_price = ($allow_average_prices and mt_rand(1, 100) <= $cpref->chance_to_sell_based_on_avg_price) ? true : false;
+            $use_avg_price = ($allow_average_prices && $cpref->get_sell_price_method(false) == 'AVG') ? true : false;
 
             if($dump_at_min_sell_price)
                 $price[$key] = $tech_price_min_sell_price;

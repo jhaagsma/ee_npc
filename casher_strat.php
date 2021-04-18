@@ -10,6 +10,7 @@ function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
     //out_data($main);          //output the main data
     $c = get_advisor();     //c as in country! (get the advisor)
     //out_data($c) && exit;             //ouput the advisor data
+    log_static_cpref_on_turn_0 ($c, $cpref); // TODO: test
 
     $is_allowed_to_mass_explore = is_country_allowed_to_mass_explore($c, $cpref);
     log_country_message($cnum, "Bus: {$c->pt_bus}%; Res: {$c->pt_res}%; Mil: {$c->pt_mil}%; Weap: {$c->pt_weap}%");
@@ -61,7 +62,7 @@ function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
     
     $turns_played_for_last_spend_money_attempt = 0;
     while ($c->turns > 0) {
-        $result = play_casher_turn($c, $is_allowed_to_mass_explore);
+        $result = play_casher_turn($c, $cpref, $is_allowed_to_mass_explore);
         if ($result === false) {  //UNEXPECTED RETURN VALUE
             $c = get_advisor();     //UPDATE EVERYTHING
             continue;
@@ -115,9 +116,9 @@ function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
 }//end play_casher_strat()
 
 
-function play_casher_turn(&$c, $is_allowed_to_mass_explore)
+function play_casher_turn(&$c, $cpref, $is_allowed_to_mass_explore)
 {
-    $target_bpt = 65;
+    $target_bpt = $cpref->initial_bpt_target;
     global $turnsleep;
     usleep($turnsleep);
     //log_country_message($c->cnum, $main->turns . ' turns left');
