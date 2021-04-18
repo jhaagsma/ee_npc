@@ -148,7 +148,7 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
         // don't see a strong reason to sell excess bushels at this step
     }
 
-    if($starting_turns > 30 && ($starting_turns - $c->turns) < 0.3 * $starting_turns)
+    if($exit_condition = 'NORMAL' && $starting_turns > 30 && ($starting_turns - $c->turns) < 0.3 * $starting_turns)
         $exit_condition = 'LOW_TURNS_PLAYED'; 
 
     $c->countryStats(FARMER);
