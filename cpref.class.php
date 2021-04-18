@@ -397,15 +397,16 @@ class cpref
         if (time() + $seconds_until_next_play > $server_reset_start + 0.995 * $seconds_in_reset) {
             $target_play_time_range_start = $server_reset_start + 0.985 * $seconds_in_reset;
             $target_play_time_range_end = $server_reset_start + 0.995 * $seconds_in_reset;
+            $seconds_between_targets = $target_play_time_range_end - $target_play_time_range_start;
     
             log_country_message($cnum, "Previous calculated value of $seconds_until_next_play is too close to the end of the set");
      
             // random range between 98.5% and 99.5% of reset
-            $seconds_until_next_play = $server_reset_start + 0.01 * mt_rand(0, 100) * (0.995 - 0.985) * $seconds_in_reset - time();
+            $seconds_until_next_play = ($target_play_time_range_start + 0.01 * mt_rand(0, 100) * $seconds_between_targets) - time();
     
             if ($seconds_until_next_play <= 0) {
                 $seconds_until_next_play = 1800; // not sure how we could get here, but set it to half an hour
-                // FUTURE: log error
+                log_error_message(124, $cnum, '$seconds_until_next_play was calculated as below 0');
             }
             log_country_message($cnum, "Next play changed to $seconds_until_next_play to allow for destocking");
         }

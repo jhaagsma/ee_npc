@@ -59,7 +59,9 @@ function log_get_name_of_error_type($error_type) {
     if($error_type == 122)
         return 'TECHER COMPUTING ZERO SELL';
     if($error_type == 123)
-        return 'INVALID CPREF VALUES';       
+        return 'INVALID CPREF VALUES';
+    if($error_type == 124)
+        return 'INVALID NEXTPLAY VALUE';             
 
         
     if($error_type == 999) // use when functions are given stupid input and it isn't worth defining a new error
