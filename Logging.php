@@ -169,7 +169,7 @@ function log_static_cpref_on_turn_0 ($c, $cpref) {
 
     $log_message = "Printing static country preferences:";
     foreach($static_prefs as $pref_name)
-        $log_message .= "\n    $pref_name: $cpref->$pref_name";
+        $log_message .= "\n    $pref_name: ".$cpref->$pref_name;
 
     return log_country_message($c->cnum, $log_message);
 }
