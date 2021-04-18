@@ -474,6 +474,11 @@ function get_extra_income_affected_by_tech ($c, $tech_type, $rules) {
 function get_optimal_tech_buying_array($c, $rules, $eligible_techs, $buying_priorities, $max_tech_price, $base_tech_value, $force_all_turn_buckets = false) {
     // TODO: test changed ai_base calcs (will need to commit)
 
+    if($c->protection) {
+        log_country_message($c->cnum, 'Not creating optimal tech buying array because country is still under protection');
+        return [];
+    }
+
     $turn_buckets = [];
     if($force_all_turn_buckets) {
         for($turn_bucket_num = 10; $turn_bucket_num <= 100; $turn_bucket_num+=10){
