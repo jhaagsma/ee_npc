@@ -558,17 +558,13 @@ function get_optimal_tech_buying_array($c, $rules, $eligible_techs, $buying_prio
                 usort($optimal_tech_buying_array[$turn_bucket],
                 function ($a, $b) use($rand) { // sort by quantity desc, not price asc - otherwise farmers are likely to buy bus/res before agri! still not perfect, but good enough?
                     return -10 * ($a['q'] <=> $b['q']) // biggest weight by quantity
-                    + ($a['q'] == $b['q'] ? // if quantity is the same
-                        ($a['t'] <=> $b['t'])
-                        : 0)
-/*
                      + ($a['q'] == $b['q'] ? // if quantity is the same
                         (($a['q'] + $rand) % 2 == 1 ? 1 : -1) // 50/50% chance of getting 1 or -1
                         * ($a['t'] <=> $b['t']) // we go through this trouble to get a somewhat random order for bus/res
                         : 0                         
-                     )
-                     */
-                     ;
+                     );
+                     // NOTE: the ordering does not work out as expected with quantity ties, but seems to be random enough
+                     // personally I believe there's a bug in usort()
                 });
             log_country_data($c->cnum, $optimal_tech_buying_array[$turn_bucket], "Results for optimal tech array at $turn_bucket% turn goal:");
         }
