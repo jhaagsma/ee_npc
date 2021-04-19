@@ -12,8 +12,8 @@ function stash_excess_bushels_on_public_if_needed(&$c, $rules, $max_sell_price =
             return false; // FUTURE: it is unfortunate to return a turn result or false
 
         // shouldn't be a big deal if we sell some bushels to fund running a turn, but just in case do the calc again:
-        $excess_bushels = $c->food - 50000 + ($c->foodnet > 0 ? 0 : ($c->turns + 20) * floor(min(0, ($c->foodnet + 0.001 * $c->food))));
-
+        $excess_bushels = $c->food - 50000 + ($c->foodnet > 0 ? 0 : ($c->turns + 20) * floor(min(0, $c->get_foodnet_no_decay())));
+        
         $quantity = ['m_bu' => $excess_bushels];
         if($max_sell_price) {
             $price   = ['m_bu' => $max_sell_price]; 
@@ -171,7 +171,7 @@ function get_farmer_min_sell_price($c, $cpref, $rules, $server, $min_cash_to_cal
 
 
 function is_country_expected_to_exceed_target_cash_during_turns($c, $target_cash){
-    return $c->money + $c->turns * max(0, $c->income) + $c->turns * 39 * max(0, $c->foodnet) >= $target_cash ? true : false;
+    return $c->money + 39 * $c->food + $c->turns * max(0, $c->income) + $c->turns * 39 * max(0, $c->foodnet) >= $target_cash ? true : false;
 }
 
 
