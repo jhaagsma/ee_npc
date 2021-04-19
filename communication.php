@@ -129,6 +129,8 @@ function getRules()
 function handle_output($serverOutput, $function, $cnum) // $cnum may not be set
 {
     $response = json_decode($serverOutput);
+    //if($function == 'OPTIMAL_TECH')
+    //    log_country_data($cnum, $response, "Response json decode:");
     if (!$response) {
         log_error_message(100, $cnum, 'Not acceptable response: '. $function .' - '. $serverOutput);
         return false;
@@ -222,8 +224,10 @@ function expected_result($input)
         'tech' => 'TECH',
         'market' => 'MARKET',
         'onmarket' => 'ONMARKET',
+        'market_search' => 'MARKET_SEARCH',
         'buy' => 'BUY',
         'sell' => 'SELL',
+        'market_recall' => 'MARKET_RECALL',
         'govt' => 'GOVT',
         'rules' => 'RULES',
         'indy' => 'INDY',

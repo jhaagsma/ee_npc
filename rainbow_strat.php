@@ -2,7 +2,7 @@
 
 namespace EENPC;
 
-function play_rainbow_strat($server, $cnum, $rules, &$exit_condition)
+function play_rainbow_strat($server, $cnum, $rules, $cpref, &$exit_condition)
 {
     $exit_condition = 'NORMAL';
     //global $cnum;
@@ -43,25 +43,24 @@ function play_rainbow_strat($server, $cnum, $rules, &$exit_condition)
     }
 
     if ($c->m_spy > 10000) {
-        Allies::fill('spy');
+        Allies::fill($cpref, 'spy');
     }
 
     if ($c->b_lab > 2000) {
-        Allies::fill('res');
+        Allies::fill($cpref, 'res');
     }
 
     if ($c->m_j > 1000000) {
-        Allies::fill('off');
+        Allies::fill($cpref, 'off');
     }
 
-    //because why n
-    if ($c->govt == 'M') {
-        Allies::fill('trade');
-    }
+    //because why not?
+    // it's confusing for players, especially new ones - Slagpit
+    //if ($c->govt == 'M') {
+    //    Allies::fill($cpref, 'trade');
+    //}
 
     //get the PM info
-    //$pm_info = get_pm_info();
-    //out_data($pm_info);       //output the PM info
     //$market_info = get_market_info();   //get the Public Market info
     //out_data($market_info);       //output the PM info
 
@@ -70,6 +69,7 @@ function play_rainbow_strat($server, $cnum, $rules, &$exit_condition)
     //out_data($market_info);   //output the Public Market info
     //var_export($owned_on_market_info);
 
+    $turn_action_counts = []; // NOTE: this isn't properly set up for rainbows, but money_management() needs it
     while ($c->turns > 0) {
         //$result = PublicMarket::buy($c,array('m_bu'=>100),array('m_bu'=>400));
                 
@@ -84,12 +84,12 @@ function play_rainbow_strat($server, $cnum, $rules, &$exit_condition)
         }
 
         // management is here to make sure that goods can be sold
-        $hold = money_management($c, $rules->max_possible_market_sell);
+        $hold = money_management($c, $rules->max_possible_market_sell, $cpref, $turn_action_counts);
         if ($hold) {
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
         }
 
-        $hold = food_management($c);
+        $hold = food_management($c, $cpref);
         if ($hold) {
             $exit_condition = 'WAIT_FOR_PUBLIC_MARKET_FOOD'; 
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
@@ -144,8 +144,7 @@ function play_rainbow_turn(&$c, $market_autobuy_tech_price, $server_max_possible
         return Build::cs(4); //build 4 CS
     } elseif ($c->tpt > $c->land * 0.10 && rand(0, 10) > 5) {
         //tech per turn is greater than land*0.17 -- just kindof a rough "don't tech below this" rule... lower for rainbow
-        return tech_techer($c, max(1, min(turns_of_money($c), turns_of_food($c), 13, $c->turns + 2) - 3));
-        //return tech_rainbow($c);
+        return tech_rainbow($c, max(1, min(turns_of_money($c), turns_of_food($c), 13, $c->turns + 2) - 3));
     } elseif ($c->built() > 50) {  //otherwise... explore if we can
         if ($c->explore_rate == $c->explore_min) {
             return explore($c, min(5, max(1, $c->turns - 1), max(1, min(turns_of_money($c), turns_of_food($c)) - 3)));
@@ -158,7 +157,7 @@ function play_rainbow_turn(&$c, $market_autobuy_tech_price, $server_max_possible
         || $c->turns == 1 && total_cansell_tech($c, $server_max_possible_market_sell) > 20
     ) {
         //never sell less than 20 turns worth of tech
-        return sell_max_tech($c, $market_autobuy_tech_price, $server_max_possible_market_sell);
+        return sell_max_tech($c, $cpref, $market_autobuy_tech_price, $server_max_possible_market_sell);
     } else { //otherwise...  cash
         return cash($c);
     }
@@ -223,37 +222,42 @@ function build_rainbow(&$c)
 }//end build_rainbow()
 
 
-function tech_rainbow(&$c, $turns=1)
+function tech_rainbow(&$c, $turns = 1)
 {
     //lets do random weighting... to some degree
-    $mil  = rand(0, 25);
-    $med  = rand(0, 5);
-    $bus  = rand(10, 100);
-    $res  = rand(10, 100);
-    $agri = rand(10, 100);
-    $war  = rand(0, 10);
-    $ms   = rand(0, 20);
-    $weap = rand(0, 20);
-    $indy = rand(5, 40);
-    $spy  = rand(0, 10);
-    $sdi  = rand(2, 15);
+    //$market_info = get_market_info();   //get the Public Market info
+    //global $market;
+
+    $techfloor = 600;
+
+    $mil  = max(pow(PublicMarket::price('mil') - $techfloor, 2), rand(0, 30000));
+    $med  = max(pow(PublicMarket::price('med') - $techfloor, 2), rand(0, 500));
+    $bus  = max(pow(PublicMarket::price('bus') - $techfloor, 2), rand(10, 40000));
+    $res  = max(pow(PublicMarket::price('res') - $techfloor, 2), rand(10, 40000));
+    $agri = max(pow(PublicMarket::price('agri') - $techfloor, 2), rand(10, 30000));
+    $war  = max(pow(PublicMarket::price('war') - $techfloor, 2), rand(0, 1000));
+    $ms   = max(pow(PublicMarket::price('ms') - $techfloor, 2), rand(0, 2000));
+    $weap = max(pow(PublicMarket::price('weap') - $techfloor, 2), rand(0, 2000));
+    $indy = max(pow(PublicMarket::price('indy') - $techfloor, 2), rand(5, 30000));
+    $spy  = max(pow(PublicMarket::price('spy') - $techfloor, 2), rand(0, 1000));
+    $sdi  = max(pow(PublicMarket::price('sdi') - $techfloor, 2), rand(2, 15000));
     $tot  = $mil + $med + $bus + $res + $agri + $war + $ms + $weap + $indy + $spy + $sdi;
 
-    $left  = $c->tpt;
-    $left -= $mil  = min($left, floor($c->tpt * ($mil / $tot)));
-    $left -= $med  = min($left, floor($c->tpt * ($med / $tot)));
-    $left -= $bus  = min($left, floor($c->tpt * ($bus / $tot)));
-    $left -= $res  = min($left, floor($c->tpt * ($res / $tot)));
-    $left -= $agri = min($left, floor($c->tpt * ($agri / $tot)));
-    $left -= $war  = min($left, floor($c->tpt * ($war / $tot)));
-    $left -= $ms   = min($left, floor($c->tpt * ($ms / $tot)));
-    $left -= $weap = min($left, floor($c->tpt * ($weap / $tot)));
-    $left -= $indy = min($left, floor($c->tpt * ($indy / $tot)));
-    $left -= $spy  = min($left, floor($c->tpt * ($spy / $tot)));
-    $left -= $sdi = max($left, min($left, floor($c->tpt * ($spy / $tot))));
+    $turns = max(1, min($turns, $c->turns));
+    $left  = $c->tpt * $turns;
+    $left -= $mil = min($left, floor($c->tpt * $turns * ($mil / $tot)));
+    $left -= $med = min($left, floor($c->tpt * $turns * ($med / $tot)));
+    $left -= $bus = min($left, floor($c->tpt * $turns * ($bus / $tot)));
+    $left -= $res = min($left, floor($c->tpt * $turns * ($res / $tot)));
+    $left -= $agri = min($left, floor($c->tpt * $turns * ($agri / $tot)));
+    $left -= $war = min($left, floor($c->tpt * $turns * ($war / $tot)));
+    $left -= $ms = min($left, floor($c->tpt * $turns * ($ms / $tot)));
+    $left -= $weap = min($left, floor($c->tpt * $turns * ($weap / $tot)));
+    $left -= $indy = min($left, floor($c->tpt * $turns * ($indy / $tot)));
+    $left -= $spy = min($left, floor($c->tpt * $turns * ($spy / $tot)));
+    $left -= $sdi = max($left, min($left, floor($c->tpt * $turns * ($sdi / $tot))));
     if ($left != 0) {
-        log_country_message($c->cnum, "What the hell?");
-        return;
+        die("What the hell? rainbow");
     }
 
     return tech(
@@ -269,8 +273,7 @@ function tech_rainbow(&$c, $turns=1)
             'indy' => $indy,
             'spy' => $spy,
             'sdi' => $sdi
-        ],
-        $turns
+        ]
     );
 }//end tech_rainbow()
 

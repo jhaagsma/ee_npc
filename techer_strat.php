@@ -4,23 +4,31 @@ namespace EENPC;
 
 $techlist = ['t_mil','t_med','t_bus','t_res','t_agri','t_war','t_ms','t_weap','t_indy','t_spy','t_sdi'];
 
-function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
+function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$turn_action_counts)
 {
     $exit_condition = 'NORMAL';
     //global $cnum;
     //$main = get_main();     //get the basic stats
     //out_data($main);          //output the main data
     $c = get_advisor();     //c as in country! (get the advisor)
-    $is_allowed_to_mass_explore = is_country_allowed_to_mass_explore($c, $cpref, $server);
+    log_static_cpref_on_turn_0 ($c, $cpref);
+    $starting_turns = $c->turns;
+    $is_allowed_to_mass_explore = is_country_allowed_to_mass_explore($c, $cpref);
+
+    sell_initial_troops_on_turn_0($c);
+
+    log_country_message($cnum, "Getting tech prices using market search looking back $cpref->market_search_look_back_hours hours", 'green');
+    $tech_price_history = get_market_history_tech($cnum, $cpref);
+    $tpt_split = get_tpt_split_from_production_algorithm($c, $tech_price_history, $cpref);
 
     $c->setIndy('pro_spy');
 
     if ($c->m_spy > 10000) {
-        Allies::fill('spy');
+        Allies::fill($cpref, 'spy');
     }
 
     if ($c->b_lab > 2000) {
-        Allies::fill('res');
+        Allies::fill($cpref, 'res');
     }
 
     techer_switch_government_if_needed($c);
@@ -29,14 +37,15 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
         ['type'=>'DPA','goal'=>100],
         ['type'=>'NWPA','goal'=>100]
     ];
+    $money_to_keep_after_stockpiling = $cpref->target_cash_after_stockpiling;
+    get_stockpiling_weights_and_adjustments ($stockpiling_weights, $stockpiling_adjustments, $c, $server, $rules, $cpref, $money_to_keep_after_stockpiling, true, false, true);
+    $tech_price_min_sell_price = get_techer_min_sell_price($c, $cpref, $rules);
 
     // log useful information about country state
     log_country_message($cnum, $c->turns.' turns left');
     //log_country_message($cnum, 'Explore Rate: '.$c->explore_rate.'; Min Rate: '.$c->explore_min);
 
     //out_data($c);             //ouput the advisor data
-    //$pm_info = get_pm_info();   //get the PM info
-    //out_data($pm_info);       //output the PM info
     //$market_info = get_market_info();   //get the Public Market info
     //out_data($market_info);       //output the PM info
 
@@ -44,84 +53,140 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     //out_data($owned_on_market_info); //output the owned on market info
 
 
+    if($c->money > 2000000000) { // try to stockpile to avoid corruption and to limit bot abuse
+        // first spend extra money normally so we can buy needed military
+        spend_extra_money($c, $buying_priorities, $cpref, $money_to_keep_after_stockpiling, false);
+        spend_extra_money_on_stockpiling($c, $cpref, $money_to_keep_after_stockpiling, $stockpiling_weights, $stockpiling_adjustments);
+    }
+
+    $turn_action_counts = [];
+    $possible_turn_result = stash_excess_bushels_on_public_if_needed($c, $rules);
+    if($possible_turn_result) {
+        $action_and_turns_used = update_c($c, $possible_turn_result);
+        update_turn_action_array($turn_action_counts, $action_and_turns_used);
+    }
+
+    attempt_to_recycle_bushels_but_avoid_buyout($c, $cpref, $food_price_history);
+
+    $teching_turns_remaining_before_explore = floor(0.01 * $cpref->min_perc_teching_turns * $c->turns);
+    log_country_message($cnum, "Min teching turns before exploring is $teching_turns_remaining_before_explore based on preference rate of $cpref->min_perc_teching_turns%");
+
     while ($c->turns > 0) {
         //$result = PublicMarket::buy($c,array('m_bu'=>100),array('m_bu'=>400));
                 
-        $result = play_techer_turn($c, $rules->market_autobuy_tech_price, $rules->max_possible_market_sell, $is_allowed_to_mass_explore);
+        $result = play_techer_turn($c, $cpref, $rules, $tech_price_min_sell_price, $is_allowed_to_mass_explore, $tech_price_history, $tpt_split, $teching_turns_remaining_before_explore);
         if ($result === false) {  //UNEXPECTED RETURN VALUE
             $c = get_advisor();     //UPDATE EVERYTHING
             continue;
         }
-        update_c($c, $result);
+
+        $action_and_turns_used = update_c($c, $result);
+        update_turn_action_array($turn_action_counts, $action_and_turns_used);
+
         if (!$c->turns % 5) {                   //Grab new copy every 5 turns
             $c->updateMain(); //we probably don't need to do this *EVERY* turn
         }
 
         // management is here to make sure that tech is sold
-        $hold = money_management($c, $rules->max_possible_market_sell);
+        $hold = money_management($c, $rules->max_possible_market_sell, $cpref, $turn_action_counts);
         if ($hold) {
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
         }
 
-        $hold = food_management($c);
+        $hold = food_management($c, $cpref);
         if ($hold) {
             $exit_condition = 'WAIT_FOR_PUBLIC_MARKET_FOOD'; 
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
         }
     }
 
+    // mil tech might have gone up
+    attempt_to_recycle_bushels_but_avoid_buyout($c, $cpref, $food_price_history);
+
     if (turns_of_food($c) > 50 && turns_of_money($c) > 50 && $c->money > 3500 * 500 && ($c->money > $c->fullBuildCost() - $c->runCash()) && $c->tpt > 200) { // 40 turns of food
         spend_extra_money($c, $buying_priorities, $cpref, $c->fullBuildCost() - $c->runCash(), false);//keep enough money to build out everything
     }
 
-    $c->countryStats(TECHER); // , techerGoals($c) // FUTURE: implement?
+    if($c->money > 2000000000) { // try to stockpile to avoid corruption and to limit bot abuse
+        spend_extra_money_on_stockpiling($c, $cpref, $money_to_keep_after_stockpiling, $stockpiling_weights, $stockpiling_adjustments);
+        // don't see a strong reason to sell excess bushels at this step
+    }
+
+    if($exit_condition = 'NORMAL' && $starting_turns > 30 && ($starting_turns - $c->turns) < 0.3 * $starting_turns)
+        $exit_condition = 'LOW_TURNS_PLAYED'; 
+
+    $c->countryStats(TECHER);
 
     return $c;
 }//end play_techer_strat()
 
 
-function play_techer_turn(&$c, $market_autobuy_tech_price, $server_max_possible_market_sell, $is_allowed_to_mass_explore)
-{
- //c as in country!
-    $target_bpt = 65;
-    global $turnsleep, $mktinfo, $server_avg_land;
+function play_techer_turn(&$c, $cpref, $rules, $tech_price_min_sell_price, $is_allowed_to_mass_explore, $tech_price_history, $tpt_split, &$teching_turns_remaining_before_explore)
+{    
+    $target_bpt = $cpref->initial_bpt_target;
+    $server_max_possible_market_sell = $rules->max_possible_market_sell;
+    global $turnsleep, $mktinfo; //, $server_avg_land;
     $mktinfo = null;
     usleep($turnsleep);
     //log_country_message($cnum, $main->turns . ' turns left');
+    $mil_tech_to_keep = min($c->t_mil, ($c->govt == 'D' ? 42 : 0) * $c->land); // for demo recycling
 
+    // FUTURE: why does building 4 cs become so slow? can_sell_tech? after protection? selltechtime ?
+    // FUTURE: maybe split logic for < target BPT, < 1800 A, and otherwise
 
-    if ($c->shouldBuildSingleCS($target_bpt)) {
+    if($c->land < 500 && $c->built() > 50) {
+        // always explore when possible early on to get more income
+        return explore($c, 1);
+    } elseif ($c->shouldBuildSingleCS($target_bpt)) {
         //LOW BPT & CAN AFFORD TO BUILD
         //build one CS if we can afford it and are below our target BPT
         return Build::cs(); //build 1 CS
-    } elseif ($c->protection == 0 && total_cansell_tech($c, $server_max_possible_market_sell) > 20 * $c->tpt && selltechtime($c)
-        || $c->turns == 1 && total_cansell_tech($c, $server_max_possible_market_sell) > 20
+    } elseif ($c->protection == 0 && total_cansell_tech($c, $server_max_possible_market_sell, $mil_tech_to_keep) > 20 * $c->tpt && selltechtime($c)
+        || $c->turns == 1 && total_cansell_tech($c, $server_max_possible_market_sell, $mil_tech_to_keep) > 20
     ) {
         //never sell less than 20 turns worth of tech
         //always sell if we can????
-        return sell_max_tech($c, $market_autobuy_tech_price, $server_max_possible_market_sell);
-    } elseif ($c->shouldBuildSpyIndies()) {
+        return sell_max_tech($c, $cpref, $tech_price_min_sell_price, $server_max_possible_market_sell, $mil_tech_to_keep, false, true, $tech_price_history);
+    } elseif ($c->land >= 1500 && $c->shouldBuildSpyIndies($target_bpt)) { // techer can have early income problems so don't build indies right away
         //build a full BPT of indies if we have less than that, and we're out of protection
         return Build::indy($c);
     } elseif ($c->shouldBuildFullBPT($target_bpt)) {
         //build a full BPT if we can afford it
         return Build::techer($c);
     } elseif ($c->shouldBuildFourCS($target_bpt)) {
-        //build 4CS if we can afford it and are below our target BPT (80)
+        //build 4CS if we can afford it and are below our target BPT (65)
         return Build::cs(4); //build 4 CS
-    } elseif ($c->tpt > $c->land * 0.17 * 1.3 && $c->tpt > 100 && rand(0, 100) > 2) {
+    } elseif ($c->tpt > $c->land * 0.17 * 1.3 && $c->tpt > 100 && $teching_turns_remaining_before_explore > 0) {
         //tech per turn is greater than land*0.17 -- just kindof a rough "don't tech below this" rule...
         //so, 10 if they can... cap at turns - 1
-        return tech_techer($c, max(1, min(turns_of_money($c), turns_of_food($c), 13, $c->turns + 2) - 3));
-    } elseif ($c->built() > 50
-        && ($c->land < 5000 || rand(0, 100) > 95 && $c->land < $server_avg_land)
-    ) {
-        //otherwise... explore if we can, for the early bits of the set
-        $explore_turn_limit = $is_allowed_to_mass_explore ? 999 : 5;
+        $turns_to_tech = min($teching_turns_remaining_before_explore, min(turns_of_money($c), turns_of_food($c), 13, $c->turns + 2) - 3);
+        $teching_turns_remaining_before_explore -= $turns_to_tech;
+        return tech_techer($c, $turns_to_tech, $tpt_split);
+    } elseif (
+        $cpref->techer_allowed_to_grow && $c->built() > 50 && $c->land < $cpref->techer_land_goal &&
+        (
+            ($c->empty < 4 && $c->land < 1800) // always allow for early exploring (cs)
+            ||
+            ($c->land < 1800 && $c->money > 2 * $c->explore_rate * (1500 + 3 * ($c->land + 2 * $c->explore_rate))) // at low acreage, enough money to build labs on 2 explore turns
+            ||
+            ($c->money + $c->turns * $c->income) > ( // turns is an over-estimate here, but probably ok
+                min($c->turns, (0.01 * $c->built() * $c->land - $c->empty) / $c->explore_rate) * $c->explore_rate) * // explore turns
+                (1500 + 3 * ($c->land + min($c->turns, (0.01 * $c->built() * $c->land - $c->empty) / $c->explore_rate) * $c->explore_rate) // building cost for new acres
+            )
+        ) 
+        // explore if land is less than 10k, we can explore, and we have less than 4 empty acres
+        // or we expect to have enough money to build labs on the new land
+    ) {        
+        $explore_turn_limit = $is_allowed_to_mass_explore ? ($c->land < 1800 ? 2 : 999) : 5;
         return explore($c, max(1, min($explore_turn_limit, $c->turns - 1, turns_of_money($c) - 4, turns_of_food($c) - 4)));
     } else { //otherwise, tech, obviously
         //so, 10 if they can... cap at turns - 1
-        return tech_techer($c, max(1, min(turns_of_money($c), turns_of_food($c), 13, $c->turns + 2) - 3));
+        if($c->bpt < $target_bpt)
+            $turns_to_tech = 1;   
+        else
+            $turns_to_tech = max(1, min(turns_of_money($c), turns_of_food($c), 13, $c->turns + 2) - 3);
+        $teching_turns_remaining_before_explore -= $turns_to_tech;
+        return tech_techer($c, $turns_to_tech, $tpt_split);
     }
 }//end play_techer_turn()
 
@@ -143,8 +208,16 @@ function selltechtime(&$c)
 }//end selltechtime()
 
 
-function sell_max_tech(&$c, $market_autobuy_tech_price, $server_max_possible_market_sell)
+// future: $mil_tech_to_keep should be an array of all techs? new function or change the name?
+function sell_max_tech(&$c, $cpref, $tech_price_min_sell_price, $server_max_possible_market_sell, $mil_tech_to_keep = 0,
+    $dump_at_min_sell_price = false, $allow_average_prices = false, $tech_price_history = [])
 {
+    if($allow_average_prices && empty($tech_price_history)) {
+        log_error_message(999, $c->cnum, 'sell_max_tech() allowed average price selling but $tech_price_history was empty');
+        $allow_average_prices = false;
+    }
+    // it's okay if $tech_price_history is empty if $allow_average_prices == false
+
     $c = get_advisor();     //UPDATE EVERYTHING
     $c->updateOnMarket();
 
@@ -152,7 +225,7 @@ function sell_max_tech(&$c, $market_autobuy_tech_price, $server_max_possible_mar
     //global $market;
 
     $quantity = [
-        'mil' => can_sell_tech($c, 't_mil', $server_max_possible_market_sell),
+        'mil' => min($c->t_mil - $mil_tech_to_keep, can_sell_tech($c, 't_mil', $server_max_possible_market_sell)),
         'med' => can_sell_tech($c, 't_med', $server_max_possible_market_sell),
         'bus' => can_sell_tech($c, 't_bus', $server_max_possible_market_sell),
         'res' => can_sell_tech($c, 't_res', $server_max_possible_market_sell),
@@ -166,47 +239,73 @@ function sell_max_tech(&$c, $market_autobuy_tech_price, $server_max_possible_mar
     ];
 
     if (array_sum($quantity) == 0) {
-        log_country_message($c->cnum, 'Techer computing Zero Sell!');
-        $c = get_advisor();
-        $c->updateOnMarket();
+        if(!$mil_tech_to_keep) {
+            log_error_message(122, $c->cnum, 'Techer computing Zero Sell!');
+            $c = get_advisor();
+            $c->updateOnMarket();
 
-        Debug::on();
-        Debug::msg('This Quantity: '.array_sum($quantity).' TotalCanSellTech: '.total_cansell_tech($c, $server_max_possible_market_sell));
+            Debug::on();
+            Debug::msg('This Quantity: '.array_sum($quantity).' TotalCanSellTech: '.total_cansell_tech($c, $server_max_possible_market_sell));
+        }
         return;
     }
 
+    // mil, bus, res, agri, indy, SDI
+    $good_tech_nogoods_high   = 8800;
+    $good_tech_nogoods_low    = 4000;
+    $good_tech_nogoods_stddev = 1200;
+    $good_tech_nogoods_step   = 1;
 
-    $nogoods_high   = 9000;
-    $nogoods_low    = 2000;
-    $nogoods_stddev = 1500;
-    $nogoods_step   = 1;
-    $rmax           = 1.30; //percent
-    $rmin           = 0.80; //percent
-    $rstep          = 0.01;
-    $rstddev        = 0.10;
+    // med, mil strat, warfare, weapons, spy
+    $garbage_tech_nogoods_high   = 4500;
+    $garbage_tech_nogoods_low    = 1500;
+    $garbage_tech_nogoods_stddev = 750;
+    $garbage_tech_nogoods_step   = 1;    
+
+    $rmax    = 1 + 0.01 * $cpref->selling_price_max_distance;
+    $rmin    = 1 - 0.01 * $cpref->selling_price_max_distance;
+    $rstep   = 0.01;
+    $rstddev = 0.01 * $cpref->selling_price_std_dev;
     $price          = [];
+
     foreach ($quantity as $key => $q) {
+        $t__key = "t_$key"; // :(
+        $avg_price = ($allow_average_prices and isset($tech_price_history[$t__key]['avg_price'])) ? $tech_price_history[$t__key]['avg_price'] : null;
+
         if ($q == 0) {
             $price[$key] = 0;
-        } elseif (PublicMarket::price($key) != null) {
-            // additional check to make sure we aren't repeatedly undercutting with minimal goods
-            if ($q < 100 && PublicMarket::available($key) < 1000) {
-                $price[$key] = PublicMarket::price($key);
-            } else {
-                Debug::msg("sell_max_tech:A:$key");
-                $max = $c->goodsStuck($key) ? 0.98 : $rmax; //undercut if we have goods stuck
-                Debug::msg("sell_max_tech:B:$key");
-
-                $price[$key] = max($market_autobuy_tech_price, 
-                    min(9999,
-                        floor(PublicMarket::price($key) * Math::purebell($rmin, $max, $rstddev, $rstep))
-                    )
-                );
-
-                Debug::msg("sell_max_tech:C:$key");
-            }
         } else {
-            $price[$key] = floor(Math::purebell($nogoods_low, $nogoods_high, $nogoods_stddev, $nogoods_step));
+            $max = $c->goodsStuck($key) ? 0.98 : $rmax; //undercut if we have goods stuck
+            // there's a random chance to sell based on market average prices instead of current prices
+            $use_avg_price = ($allow_average_prices && $cpref->get_sell_price_method(false) == 'AVG') ? true : false;
+
+            if($dump_at_min_sell_price)
+                $price[$key] = $tech_price_min_sell_price;
+            elseif ($use_avg_price and $avg_price) { // use average price and average price exists
+                $price[$key] = max($tech_price_min_sell_price, floor($avg_price * Math::purebell($rmin, $max, $rstddev, $rstep)));
+            }
+            elseif (PublicMarket::price($key) != null) {
+                // additional check to make sure we aren't repeatedly undercutting with minimal goods
+                if ($q < 100 && PublicMarket::available($key) < 1000) {
+                    $price[$key] = PublicMarket::price($key);
+                } else {
+                    Debug::msg("sell_max_tech:A:$key");                    
+                    Debug::msg("sell_max_tech:B:$key");
+
+                    $price[$key] = max($tech_price_min_sell_price, 
+                        min(9999,
+                            floor(PublicMarket::price($key) * Math::purebell($rmin, $max, $rstddev, $rstep))
+                        )
+                    );
+
+                    Debug::msg("sell_max_tech:C:$key");
+                }
+            } else {
+                if($key == 'med' || $key == 'war' || $key == 'weap' || $key == 'ms' || $key == 'spy')
+                    $price[$key] = floor(Math::purebell($garbage_tech_nogoods_low, $garbage_tech_nogoods_high, $garbage_tech_nogoods_stddev, $garbage_tech_nogoods_step));
+                else
+                    $price[$key] = floor(Math::purebell($good_tech_nogoods_low, $good_tech_nogoods_high, $good_tech_nogoods_stddev, $good_tech_nogoods_step));
+            }
         }
     }
 
@@ -228,42 +327,30 @@ function sell_max_tech(&$c, $market_autobuy_tech_price, $server_max_possible_mar
  *
  * @return EEResult       Teching
  */
-function tech_techer(&$c, $turns = 1)
+function tech_techer(&$c, $turns = 1, $tpt_split)
 {
     //lets do random weighting... to some degree
     //$market_info = get_market_info();   //get the Public Market info
     //global $market;
 
-    $techfloor = 600;
-
-    $mil  = max(pow(PublicMarket::price('mil') - $techfloor, 2), rand(0, 30000));
-    $med  = max(pow(PublicMarket::price('med') - $techfloor, 2), rand(0, 500));
-    $bus  = max(pow(PublicMarket::price('bus') - $techfloor, 2), rand(10, 40000));
-    $res  = max(pow(PublicMarket::price('res') - $techfloor, 2), rand(10, 40000));
-    $agri = max(pow(PublicMarket::price('agri') - $techfloor, 2), rand(10, 30000));
-    $war  = max(pow(PublicMarket::price('war') - $techfloor, 2), rand(0, 1000));
-    $ms   = max(pow(PublicMarket::price('ms') - $techfloor, 2), rand(0, 2000));
-    $weap = max(pow(PublicMarket::price('weap') - $techfloor, 2), rand(0, 2000));
-    $indy = max(pow(PublicMarket::price('indy') - $techfloor, 2), rand(5, 30000));
-    $spy  = max(pow(PublicMarket::price('spy') - $techfloor, 2), rand(0, 1000));
-    $sdi  = max(pow(PublicMarket::price('sdi') - $techfloor, 2), rand(2, 15000));
-    $tot  = $mil + $med + $bus + $res + $agri + $war + $ms + $weap + $indy + $spy + $sdi;
+    // normalize array to current tpt
+    normalize_array_for_selling($c->cnum, $tpt_split, $c->tpt, 't_bus');
 
     $turns = max(1, min($turns, $c->turns));
     $left  = $c->tpt * $turns;
-    $left -= $mil = min($left, floor($c->tpt * $turns * ($mil / $tot)));
-    $left -= $med = min($left, floor($c->tpt * $turns * ($med / $tot)));
-    $left -= $bus = min($left, floor($c->tpt * $turns * ($bus / $tot)));
-    $left -= $res = min($left, floor($c->tpt * $turns * ($res / $tot)));
-    $left -= $agri = min($left, floor($c->tpt * $turns * ($agri / $tot)));
-    $left -= $war = min($left, floor($c->tpt * $turns * ($war / $tot)));
-    $left -= $ms = min($left, floor($c->tpt * $turns * ($ms / $tot)));
-    $left -= $weap = min($left, floor($c->tpt * $turns * ($weap / $tot)));
-    $left -= $indy = min($left, floor($c->tpt * $turns * ($indy / $tot)));
-    $left -= $spy = min($left, floor($c->tpt * $turns * ($spy / $tot)));
-    $left -= $sdi = max($left, min($left, floor($c->tpt * $turns * ($sdi / $tot))));
+    $left -= $mil = $tpt_split['t_mil'] * $turns;
+    $left -= $med = $tpt_split['t_med'] * $turns;
+    $left -= $bus = $tpt_split['t_bus'] * $turns;
+    $left -= $res = $tpt_split['t_res'] * $turns;
+    $left -= $agri = $tpt_split['t_agri'] * $turns;
+    $left -= $war = $tpt_split['t_war'] * $turns;
+    $left -= $ms = $tpt_split['t_ms'] * $turns;
+    $left -= $weap = $tpt_split['t_weap'] * $turns;
+    $left -= $indy = $tpt_split['t_indy'] * $turns;
+    $left -= $spy = $tpt_split['t_spy'] * $turns;
+    $left -= $sdi = $tpt_split['t_sdi'] * $turns;
     if ($left != 0) {
-        die("What the hell?");
+        die("What the hell? tech_techer()");
     }
 
     return tech(
@@ -288,10 +375,10 @@ function techer_switch_government_if_needed($c) {
     if ($c->govt == 'M') {
         $rand = rand(0, 100);
         switch ($rand) {
-            case $rand < 40:
+            case $rand < 35:
                 Government::change($c, 'H');
                 break;
-            case $rand < 80:
+            case $rand < 85:
                 Government::change($c, 'D');
                 break;
             default:

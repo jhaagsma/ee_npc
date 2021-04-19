@@ -4,7 +4,7 @@ namespace EENPC;
 
 // wrapper for spend_extra_money()
 function spend_extra_money_no_military(&$c, $buying_priorities, $cpref, $money_to_reserve, &$optimal_tech_buying_array, $buying_schedule = 0) {
-    return spend_extra_money ($c, $buying_priorities, $cpref, $money_to_reserve, false, 999, 999, $optimal_tech_buying_array, $buying_schedule);
+    return spend_extra_money ($c, $buying_priorities, $cpref, $money_to_reserve, true, 999, 999, $optimal_tech_buying_array, $buying_schedule); // delay mil purchases to avoid log spam
 } 
 
 // buy military or tech with money not needed for food, expenses, or buildings (future should include stocking bushels?)
@@ -48,7 +48,7 @@ function spend_extra_money(&$c, $buying_priorities, $cpref, $money_to_reserve, $
     $target_dpa = $c->defPerAcreTarget();
     $target_dpnw = $c->nlgTarget(); 
 
-    log_country_message($c->cnum, "Using schedule $buying_schedule, spend money with ".($delay_military_purchases ? "delayed mil purchases, " : "")."money: $c->money, max to spend: $max_spend, total reserved: $money_to_reserve");
+    log_country_message($c->cnum, "Using schedule $buying_schedule, spend money with ".($delay_military_purchases ? "delayed mil purchases, " : "")."money: $c->money, max to spend: $max_spend, total reserved: $money_to_reserve", 'green');
 
     foreach($buying_priorities as $priority_item) {
         if($max_spend < 10000) {
@@ -90,6 +90,9 @@ function spend_extra_money(&$c, $buying_priorities, $cpref, $money_to_reserve, $
                     if($c->$tech_name >= $tech_point_limit) // already have enough tech at this price range
                         unset($optimal_tech_buying_array[$priority_goal][$key]);
                     elseif($max_spend > 10 * $max_tech_price) {
+                        // FUTURE: for bus/res, start by buying the one that the country has the least of?
+                        // FUTURE: cut down on API calls when tech market is empty or too highly priced? might as well for log spam reasons
+                        // have a single prices skipped line with a comma delimited list
                         $total_spent_on_single_tech = PublicMarket::buy_tech($c, $tech_name, $max_spend, $max_tech_price, $tech_point_limit);
                         $max_spend -= $total_spent_on_single_tech; // have to update here for buy_tech() to not overbuy
                         $total_spent_by_step += $total_spent_on_single_tech;
@@ -188,14 +191,6 @@ function buy_defense_from_markets(&$c, $cpref, $defense_unit_points_needed, $max
     return spend_money_on_markets($c, $cpref, $defense_unit_points_needed, $max_spend, $unit_weights, $unit_points, "dpdef"); 
 }
 
-/* // currently unused
-function buy_military_points_from_markets(&$c, $cpref, $military_unit_points_needed, $max_spend) {
-    // FUTURE: use country preferences
-    $unit_weights = ['m_tr'=>0.7, 'm_j' => 0.9, 'm_tu' => 1.0, 'm_ta' => 2.9];
-    $unit_points = ['m_tr'=>2, 'm_tu' => 2, 'm_ta' => 2, 'm_ta' => 4];
-    return spend_money_on_markets($c, $cpref, $military_unit_points_needed, $max_spend, $unit_weights, $unit_points, "dpmil");   
-}
-*/
 
 function buy_military_networth_from_markets(&$c, $cpref, $nw_needed, $max_spend, $delay_military_purchases, $dpnw_guess = null) {
     if($delay_military_purchases) {
@@ -245,10 +240,18 @@ function get_country_owned_resolve_market_name_mismatches($c, $good_name) {
     return $c->$c_name;
 }
 
-
-
 // $point_name is for message logging only
-function spend_money_on_markets(&$c, $cpref, $points_needed, $max_spend, $unit_weights, $unit_points, $point_name, $max_dollars_per_point = 100000, $public_only = false, $total_spent = 0, $total_points_gained = 0, $recursion_level = 1) {
+function spend_money_on_markets(&$c, $cpref, $points_needed, $max_spend, $unit_weights, $unit_points, $point_name, $max_dollars_per_point = 100000, $public_only = false, $unit_price_adjustments = [], $total_spent = 0, $total_points_gained = 0, $recursion_level = 1) {
+    if($max_spend < 10000) {
+        log_country_message($c->cnum, "Spending for $point_name not attempted because max spent is $max_spend which is less than $10000");
+        return 0;
+    }
+
+    if(empty($unit_price_adjustments)) // most callers don't pass this in, so fill with 0s for that scenario
+        $unit_price_adjustments = array_combine(array_keys($unit_weights), array_fill(0, count($unit_weights), 0));
+    elseif($recursion_level == 1)
+        log_country_message($c->cnum, "NOTICE: unit price adjustments were passed in");
+
     log_country_message($c->cnum, "Iteration $recursion_level for public".($public_only ? "" : " and private")." market purchasing based on $point_name");
     log_country_message($c->cnum, "Budget is ".($max_spend - $total_spent).", purchase limit is ".($points_needed - $total_points_gained)." points, and score limit is $max_dollars_per_point ($point_name)");
 
@@ -261,9 +264,11 @@ function spend_money_on_markets(&$c, $cpref, $points_needed, $max_spend, $unit_w
         $pm_info = PrivateMarket::getInfo();
         $skipped_units_message = null;
         foreach($unit_weights as $unit_name => $weight_for_unit) {
+            if(!isset($pm_info->buy_price->$unit_name)) // not all units may be available on PM like tech
+                continue;
             $pm_price = $pm_info->buy_price->$unit_name;
             $pm_quantity = $pm_info->available->$unit_name;
-            $unit_score = floor($pm_price / $unit_weights[$unit_name]); // slightly favor over public that uses round()
+            $unit_score = floor(($pm_price + $unit_price_adjustments[$unit_name]) / $unit_weights[$unit_name]); // slightly favor over public that uses round()
             if ($pm_quantity > 0 and $unit_score <= $max_dollars_per_point) {
                 $pm_purchase_prices_by_unit[$unit_name] = $pm_price;
                 // log_country_message($c->cnum, "unit:$unit_name, price:$pm_price");                
@@ -287,7 +292,7 @@ function spend_money_on_markets(&$c, $cpref, $points_needed, $max_spend, $unit_w
 		if ($public_market_price <> null and $public_market_price <> 0) {
 			$public_purchase_prices_by_unit[$unit_name] = $public_market_price;
 			// log_country_message($c->cnum, "unit:$unit_name, price:$public_market_price");
-			$unit_score = round($public_market_tax_rate * $public_market_price / $unit_weights[$unit_name]);
+			$unit_score = round(($public_market_tax_rate * $public_market_price + $unit_price_adjustments[$unit_name]) / $unit_weights[$unit_name]);
 			$public_score_by_unit[$unit_name] = $unit_score;
 			log_country_message($c->cnum, "Iteration $recursion_level initial public market conditions for $unit_name are price $public_market_price and score $unit_score ($point_name)");
 		}
@@ -399,7 +404,7 @@ function spend_money_on_markets(&$c, $cpref, $points_needed, $max_spend, $unit_w
                 unset($public_score_by_unit[$best_public_unit]);
             else {			
                 $public_purchase_prices_by_unit[$best_public_unit] = $new_public_market_price;
-                $public_score_by_unit[$best_public_unit] = round($public_market_tax_rate * $new_public_market_price / $unit_weights[$best_public_unit]);			
+                $public_score_by_unit[$best_public_unit] = round(($public_market_tax_rate * $new_public_market_price + $unit_price_adjustments[$best_public_unit]) / $unit_weights[$best_public_unit]);			
             }
         } // end public
         else
@@ -410,7 +415,7 @@ function spend_money_on_markets(&$c, $cpref, $points_needed, $max_spend, $unit_w
 
 	// if we spent more than 2 seconds buying stuff, maybe something new showed up that's cheaper. call up to 2 more times recursively
 	if (time() > ($start_time + 2) and $recursion_level < 3 and $total_spent + 10000 < $max_spend and $total_points_gained < $points_needed)
-        spend_money_on_markets($c, $cpref, $points_needed, $max_spend, $unit_weights, $unit_points, $point_name, $max_dollars_per_point, $public_only, $total_spent, $total_points_gained, $recursion_level + 1);
+        spend_money_on_markets($c, $cpref, $points_needed, $max_spend, $unit_weights, $unit_points, $point_name, $max_dollars_per_point, $public_only, $unit_price_adjustments, $total_spent, $total_points_gained, $recursion_level + 1);
 
     return $total_spent;
 }
@@ -446,7 +451,7 @@ function get_single_income_per_acre($c, $tech_handle) {
         case 't_agri':
             return round((36 * $c->foodpro / (0.01 * $c->pt_agri)) / $c->land, 0);
         case 't_weap':
-            return round(($c->expenses_mil / (0.01 * $c->pt_weap)) / $c->land, 0); // could be kind of weird late game, but whatever
+            return min(50, round(($c->expenses_mil / (0.01 * $c->pt_weap)) / $c->land, 0)); // cap at 50 to prevent too much late game tech buying
         case 't_indy':
             return round(140 * 1.86 * ($c->govt == 'C' ? 1.35 : 1.0), 0); // FUTURE: from game code
         default:
@@ -456,18 +461,21 @@ function get_single_income_per_acre($c, $tech_handle) {
 }
 
 
-function get_extra_income_affected_by_tech ($c, $tech_type) {
+function get_extra_income_affected_by_tech ($c, $tech_type, $rules) {
     // don't want to prioritize mil tech for destocking that may never happen...
     // any money over 500 M feels somewhat reasonable?
-    $extra_income = ($tech_type == 't_mil' ? max(0, $c->money - 500000000) : 0); // FUTURE: when stocking is enabled, account for bushels and OM bushels
+    $extra_income = ($tech_type == 't_mil' ? max(0, $c->money + floor(get_total_value_of_on_market_goods($c, $rules)) - 500000000) : 0);
     if($extra_income > 0)
         log_country_message($c->cnum, "Extra income for $tech_type tech computed as $extra_income");
     return $extra_income;
 }
 
 
-function get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, $max_tech_price, $base_tech_value, $force_all_turn_buckets = false) {
-    // FUTURE: support weapons tech
+function get_optimal_tech_buying_array($c, $rules, $eligible_techs, $buying_priorities, $max_tech_price, $base_tech_value, $force_all_turn_buckets = false) {
+    if($c->protection) {
+        log_country_message($c->cnum, 'Not creating optimal tech buying array because country is still under protection');
+        return [];
+    }
 
     $turn_buckets = [];
     if($force_all_turn_buckets) {
@@ -486,15 +494,19 @@ function get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, 
         return $turn_buckets;
     }
 
-    $tech_type_to_ipa = get_ipas_for_tech_purchasing($c, $eligible_techs);
+    log_country_message($c->cnum, "Creating optimal tech buying array", 'green');
 
-    log_country_message($c->cnum, "Creating optimal tech buying array");
+    $tech_type_to_ipa = get_ipas_for_tech_purchasing($c, $eligible_techs);
 
     $optimal_tech_buying_array = [];
 
     $was_server_queried_at_least_once = false;
     foreach($tech_type_to_ipa as $tech_type => $ipa) {
-        $current_tech_price = PublicMarket::price($tech_type);
+        if($tech_type <> 't_bus' && $tech_type <> 't_res')
+            $current_tech_price = PublicMarket::price($tech_type);
+        else // force bus and res tech to have the same price buckets
+            $current_tech_price = min(PublicMarket::price('t_bus'), PublicMarket::price('t_res'));
+        
         if(!$current_tech_price) {
             log_country_message($c->cnum, "No $tech_type tech available on public market so skipping optimal tech calculations");
             continue;
@@ -503,7 +515,7 @@ function get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, 
             log_country_message($c->cnum, "Initial market price for $tech_type tech is $current_tech_price. Querying server for optimal tech buying results...");
         }
 
-        $extra_money_for_tech_impact = get_extra_income_affected_by_tech($c, $tech_type);
+        $extra_money_for_tech_impact = get_extra_income_affected_by_tech($c, $tech_type, $rules);
 
         // dump results into the array, further process the array later
         $was_server_queried_at_least_once = true;
@@ -530,6 +542,8 @@ function get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, 
     ];
     */
 
+    ksort($optimal_tech_buying_array, SORT_NUMERIC ); // print in expected order
+    $rand = mt_rand(0, 99);
     if($was_server_queried_at_least_once) {
         if(empty($optimal_tech_buying_array))
             log_country_message($c->cnum, "Optimal tech buying array is empty because prices are too expensive");
@@ -538,8 +552,13 @@ function get_optimal_tech_buying_array($c, $eligible_techs, $buying_priorities, 
                 unset($optimal_tech_buying_array[$turn_bucket]);
             else
                 usort($optimal_tech_buying_array[$turn_bucket],
-                function ($a, $b) { // sort by quantity desc, not price asc - otherwise farmers are likely to buy bus/res before agri! still not perfect, but good enough?
-                    return -1 * ($a['q'] <=> $b['q']); // spaceship!
+                function ($a, $b) use($rand) { // sort by quantity desc, not price asc - otherwise farmers are likely to buy bus/res before agri! still not perfect, but good enough?
+                    return -10 * ($a['q'] <=> $b['q']) // biggest weight by quantity
+                     + ($a['q'] == $b['q'] ? // if quantity is the same
+                        (($a['q'] + $rand) % 2 == 1 ? 1 : -1) // 50/50% chance of getting 1 or -1
+                        * ($a['t'] <=> $b['t']) // we go through this trouble to get a somewhat random order for bus/res
+                        : 0                         
+                     );
                 });
             log_country_data($c->cnum, $optimal_tech_buying_array[$turn_bucket], "Results for optimal tech array at $turn_bucket% turn goal:");
         }
@@ -616,6 +635,40 @@ function estimate_future_private_market_capacity_for_military_unit($military_uni
 }
 
 
+function attempt_to_recycle_bushels_but_avoid_buyout(&$c, $cpref, &$food_price_history) {
+    if($cpref->should_demo_attempt_bushel_recycle && $c->govt == 'D' && $c->turns_played >= 300) {
+        $food_public_price = PublicMarket::price('m_bu');
+        if(!$food_public_price) {
+            log_country_message($c->cnum, "Did not attempt to recycle bushels because food market is empty!");
+            return false;
+        }
+
+        $pm_info = PrivateMarket::getInfo();
+        $private_market_bushel_price = $pm_info->sell_price->m_bu;        
+        $will_recycle_be_profitable = can_resell_bushels_from_public_market ($private_market_bushel_price, 1, $food_public_price, $max_profitable_public_market_bushel_price);
+        if(!$will_recycle_be_profitable) {
+            log_country_message($c->cnum, "Did not attempt to recycle bushels because current food price $food_public_price >= private price $private_market_bushel_price");
+            return false;
+        }
+
+        if(empty($food_price_history)) // cache this for future calls
+            $food_price_history = get_market_history_food($c->cnum, $cpref);
+
+        $avg_price = floor($food_price_history['avg_price']);
+        
+        if($food_public_price > $avg_price) {
+            log_country_message($c->cnum, "Did not attempt to recycle bushels because current food price $food_public_price is above average price of $avg_price");
+            return false; // don't allow buying above average to hopefully avoid food buyouts
+        }
+
+        log_country_message($c->cnum, "Attempting to recycle bushels because it is expected to be profitable and $food_public_price <= average price of $avg_price", 'green');
+        do_public_market_bushel_resell_loop ($c, min($max_profitable_public_market_bushel_price, $avg_price)); // don't allow buying above average to hopefully avoid food buyouts
+        return true;      
+    }
+    return false;
+}
+
+
 /*
 NAME: can_resell_bushels_from_public_market
 PURPOSE: checks if current public market bushel price allows for profitable reselling on private market
@@ -655,7 +708,6 @@ function do_public_market_bushel_resell_loop (&$c, $max_public_market_bushel_pur
 
 		$previous_food = $c->food;
 		$result = PublicMarket::buy($c, ['m_bu' => $max_quantity_to_buy_at_once], ['m_bu' => $current_public_market_bushel_price]);
-		// FUTURE: sometimes see an error here with an unexpected price (1 below last) - expected? taxes?
 		$bushels_purchased_quantity = $c->food - $previous_food;
 		if ($bushels_purchased_quantity == 0) {
 			 // most likely explanation is price changed, so update it

@@ -34,13 +34,13 @@ class Country
             $this->$k = $var;
         }
 
-        global $cpref;
-        $cpref->networth = $this->networth;
-        $cpref->land     = $this->land;
+        global $cpref_file;
+        $cpref_file->networth = $this->networth;
+        $cpref_file->land     = $this->land;
     }//end __construct()
 
 
-    public function updateMain()
+    public function updateMain() // WARNING: this does not update bushel consumption!
     {
         $main           = get_main();                 //Grab a fresh copy of the main stats
         $this->money    = $main->money;       //might as well use the newest numbers?
@@ -185,74 +185,6 @@ class Country
     }//end setIndy()
 
 
-    public function setIndyFromMarket($checkDPA = false)
-    {
-        // produce 100% turrets if checked in the first 150 turns because there's very little demand for anything else
-        // FUTURE: 150 is a made up number that could be changed to something better
-        if ($this->turns_played < 150) { 
-            $new['pro_tu'] = 100;
-        }
-        else { // not the first 150 turns
-            // for now, 400 indy's worth of production with 1% min and 5% max
-            // 200 was too low - maybe because of OOF and OOM events?
-            $spy = max(1, min(5, round(400 / ($this->b_indy + 1))));
-
-            // commented out by Slagpit 20210323 - not clear why indies want so many spies
-            /*
-            if ($this->m_spy < 10000) {
-                $spy = 10;
-            } elseif ($this->m_spy / $this->land < 25) {
-                $spy = 5;
-            } elseif ($this->m_spy / $this->land < 30) {
-                $spy = 4;
-            } elseif ($this->m_spy / $this->land < 35) {
-                $spy = 3;
-            } elseif ($this->m_spy / $this->land < 40) {
-                $spy = 2;
-            } else {
-                $spy = 1;
-            }
-            */
-            $therest = 100 - $spy;
-
-            $new = ['pro_spy' => $spy];
-            global $market;
-
-            $p_tr = PublicMarket::price('m_tr');
-            $p_j  = PublicMarket::price('m_j');
-            $p_tu = PublicMarket::price('m_tu');
-            $p_ta = PublicMarket::price('m_ta');
-
-            $score = [
-                'pro_tr'  => 1.86 * ($p_tr == 0 ? 144 : $p_tr),
-                'pro_j'   => 1.86 * ($p_j == 0 ? 192 : $p_j),
-                'pro_tu'  => 1.86 * ($p_tu == 0 ? 210 : $p_tu),
-                'pro_ta'  => 0.4 * ($p_ta == 0 ? 588 : $p_ta),
-            ];
-
-            $protext = null;
-            foreach ($score as $k => $s) {
-                $protext .= $s.' '.$k.' ';
-            }
-            log_country_message($this->cnum, "--- Indy Scoring: ".$protext);
-
-            if ($checkDPA) {
-                $target = $this->dpat ?? $this->defPerAcreTarget();
-                if ($this->defPerAcre() < $target) {
-                    //below def target, don't make jets
-                    unset($score['pro_j']);
-                }
-            }
-
-            arsort($score);
-            $which       = key($score);
-            $new[$which] = $therest; //set to do the most expensive of whatever other good
-        }
-
-        $this->setIndy($new);
-    }//end setIndyFromMarket()
-
-
     /**
      * How much money it will cost to run turns
      * @param  int $turns turns we want to run (or all)
@@ -342,6 +274,7 @@ class Country
             default:
                 $govt = 1.0;
         }
+        // FUTURE: this is wrong - reps have a higher calculated NW/acre as a result
 
         return floor($this->networth / ($this->land * $govt));
     }//end nlg()
@@ -463,8 +396,8 @@ class Country
             return;
         }
 
-        global $cpref;
-        $tol = $cpref->price_tolerance; //should be between 0.5 and 1.5
+        global $cpref_file;
+        $tol = $cpref_file->price_tolerance; //should be between 0.5 and 1.5
 
         $what = $c->highestGoal($goals, $skip);
         //out("Highest Goal: ".$what.' Buy $'.$spend_partial);
@@ -593,10 +526,11 @@ class Country
      * Check to see if we should build a single CS
      *
      * @param  int $target_bpt The target bpt
-     *
+     * @param  int $low_bpt The bpt considered to be "low" in the code
+     * 
      * @return bool            Build or not
      */
-    public function shouldBuildSingleCS($target_bpt = 80)
+    public function shouldBuildSingleCS($target_bpt = 80, $low_bpt = 30)
     {
         if (!$this->empty) {
             //no empty land
@@ -613,7 +547,7 @@ class Country
             return false;
         }
 
-        if ($this->bpt < 30 && $this->built() <= 50) {
+        if ($this->bpt < $low_bpt && $this->built() <= 50) {
             //you have low BPT and low Builtings
             return true;
         } elseif ($this->bpt < $target_bpt && $this->b_cs % 4 != 0) {
@@ -631,10 +565,15 @@ class Country
      *
      * @return bool Yep or Nope
      */
-    public function shouldBuildSpyIndies()
+    public function shouldBuildSpyIndies($target_bpt)
     {
         if ($this->empty < $this->bpt) {
             //not enough land
+            return false;
+        }
+
+        if($this->bpt < $target_bpt) {
+            // don't build indies until we have full cs
             return false;
         }
 
@@ -643,8 +582,8 @@ class Country
             return false;
         }
 
-        if ($this->turns_played > 150 && $this->b_indy < $this->bpt) {
-            //We're out of protection and don't have a full BPT of indies
+        if ($this->turns_played > 300 && $this->b_indy < 2 * $this->bpt) {
+            //We're out of protection and don't have two full BPT of indies
             return true;
         }
 
@@ -741,28 +680,28 @@ class Country
      */
     public static function addRetalDue($cnum, $type, $land)
     {
-        global $cpref;
+        global $cpref_file;
 
-        if (!isset($cpref->retal[$cnum])) {
-            $cpref->retal[$cnum] = ['cnum' => $cnum, 'num' => 1, 'land' => $land];
+        if (!isset($cpref_file->retal[$cnum])) {
+            $cpref_file->retal[$cnum] = ['cnum' => $cnum, 'num' => 1, 'land' => $land];
         } else {
-             $cpref->retal[$cnum]['num']++;
-             $cpref->retal[$cnum]['land'] += $land;
+             $cpref_file->retal[$cnum]['num']++;
+             $cpref_file->retal[$cnum]['land'] += $land;
         }
     }//end addRetalDue()
 
     public static function listRetalsDue()
     {
-        global $cpref, $cnum;
+        global $cpref_file, $cnum;
 
-        if (!$cpref->retal) {
+        if (!$cpref_file->retal) {
             log_country_message($cnum, "Retals Due: None!");
             return;
         }
 
         log_country_message($cnum, "Retals Due:");
 
-        $retals = (array)$cpref->retal;
+        $retals = (array)$cpref_file->retal;
 
         usort(
             $retals,

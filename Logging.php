@@ -2,8 +2,6 @@
 
 namespace EENPC;
 
-// FUTURE: windows support for local logging?
-
 // new error types must be added to this function
 function log_get_name_of_error_type($error_type) {
     // 40 character limit on name
@@ -13,7 +11,7 @@ function log_get_name_of_error_type($error_type) {
     if($error_type == 1)
         return 'INVALID $cnum LOGGING CALL'; // for log_country_message()
 
-    // 100 - 999 are communication or PHP errors
+    // 100 - 999 are communication or programmer errors
     if($error_type == 100)
         return 'COMM NOT ACCEPTABLE RESPONSE';
     if($error_type == 101)
@@ -51,15 +49,25 @@ function log_get_name_of_error_type($error_type) {
     if($error_type == 117)
         return 'NO SETTINGS FILE FOUND'; 
     if($error_type == 118)
-        return 'COUNTRY ATTEMPTED DESTOCK IN PROTECTION'; 
-
-
+        return 'COUNTRY ATTEMPTED DESTOCK IN PROTECTION';
+    if($error_type == 119)
+        return 'FORCED ADVISOR UPDATE WITH NO REASON';
+    if($error_type == 120)
+        return 'DESTOCKING NOT ENOUGH TURNS TO RECALL';
+    if($error_type == 121)
+        return 'DESTOCKING CANNOT RECALL DUE TO OOF/OOM';
+    if($error_type == 122)
+        return 'TECHER COMPUTING ZERO SELL';
+    if($error_type == 123)
+        return 'INVALID CPREF VALUES';
+    if($error_type == 124)
+        return 'INVALID NEXTPLAY VALUE';             
 
         
     if($error_type == 999) // use when functions are given stupid input and it isn't worth defining a new error
         return 'GENERIC EE_NPC CODE BAD INPUT'; 
 
-    // 1000+ are country playing mistakes 
+    // 1000-1999 are country playing mistakes 
     if($error_type == 1000)
         return 'COUNTRY PLAYED TURN WITHOUT FOOD';
     if($error_type == 1001)
@@ -70,7 +78,44 @@ function log_get_name_of_error_type($error_type) {
         return 'COUNTRY BAD FOOD PURCHASE ON PUBLIC';           
     if($error_type == 1004)
         return 'COUNTRY PRIVATE MARKET FOOD PURCHASE';           
+    if($error_type == 1005)
+        return 'CASHING TOO EARLY';        
 
+    // 2000+ are PHP errors or warnings
+    if($error_type == 2000)
+        return 'PHP Error';
+    if($error_type == 2001)
+        return 'PHP Warning';
+    if($error_type == 2002)
+        return 'PHP Parsing Error';     
+    if($error_type == 2003)
+        return 'PHP Notice';           
+    if($error_type == 2004)
+        return 'PHP Core Error';           
+    if($error_type == 2005)
+        return 'PHP Core Warning';       
+    if($error_type == 2006)
+        return 'PHP Compile Error';     
+    if($error_type == 2007)
+        return 'PHP Compile Warning';     
+    if($error_type == 2008)
+        return 'PHP User Error';
+    if($error_type == 2009)
+        return 'PHP User Warning';
+    if($error_type == 2010)
+        return 'PHP User Notice';     
+    if($error_type == 2011)
+        return 'PHP Strict';           
+    if($error_type == 2012)
+        return 'PHP Recoverable Error';           
+    if($error_type == 2013)
+        return 'PHP Deprecated';       
+    if($error_type == 2014)
+        return 'PHP User Deprecated';     
+    if($error_type == 2015)
+        return 'PHP E_ALL';
+    if($error_type == 2999)
+        return 'PHP SHUTDOWN';
 
        
     // ERROR: log_get_name_of_error_type() called with unmapped $error_type
@@ -78,22 +123,76 @@ function log_get_name_of_error_type($error_type) {
 }
 
 
-function log_snapshot_message($c, $snapshot_type, $strat, $is_destocking, &$output_c_values, $prev_c_values = []){
+
+function update_turn_action_array(&$turn_action_counts, $action_and_turns_used) {
+    if(!empty($action_and_turns_used)) {
+        foreach($action_and_turns_used as $action => $turns_used) {
+            if(isset($turn_action_counts[$action]))
+                $turn_action_counts[$action] += $turns_used;
+            else
+                $turn_action_counts[$action] = $turns_used;
+        }
+    }
+    return;
+}
+
+
+function log_turn_action_counts($c, $server, $cpref, $turn_action_counts) {
+    if(empty($turn_action_counts))
+        return;
+
+    log_country_message($c->cnum, "Approx turn action summary for login: ".json_encode($turn_action_counts), 'green');
+    // log_main_message("Approx turn action summary for login: ".json_encode($turn_action_counts), 'green');
+
+    if(isset($turn_action_counts['cash'])) {
+        $reset_seconds = $server->reset_end - $server->reset_start;
+        if (time() < floor($server->reset_start + 0.5 * $reset_seconds))
+            log_error_message(1005, $c->cnum, "Cashed ".$turn_action_counts['cash']." turns too early in the set");
+    }
+
+    /* FUTURE: log these
+	logged out with money < -income
+	logged out with no food
+	hit 25% of max stored turns
+	hit 100% of max stored turns
+	farmer didn't sell
+	indy didn't sell
+    */
+
+    return;                      
+}
+
+
+function log_static_cpref_on_turn_0 ($c, $cpref) {
+    if($c->turns_played <> 0 || $c->govt <> 'M')
+        return false;
+
+    $static_prefs = $cpref->get_static_prefs_to_print();
+
+    $log_message = "Printing static country preferences:";
+    foreach($static_prefs as $pref_name)
+        $log_message .= "\n    $pref_name: ".$cpref->$pref_name;
+
+    return log_country_message($c->cnum, $log_message);
+}
+
+
+function log_snapshot_message($c, $rules, $snapshot_type, $strat, $is_destocking, &$output_c_values, $prev_c_values = []){
     global $log_country_to_screen, $log_to_local, $local_file_path;
 
     if($snapshot_type <> 'BEGIN' and $snapshot_type <> 'DELTA' and $snapshot_type <> 'END') {
-        die('Called log_snapshot_message() with invalid parameter value '.$snapshot_type.' for $snapshot_type');
+        log_error_message(999, $c->cnum, 'log_snapshot_message(): called with invalid parameter value '.$snapshot_type.' for $snapshot_type');
         return false;
     }
 
     if($snapshot_type == 'DELTA' and empty($prev_c_values)) {
-        die('Called log_snapshot_message() in DELTA mode with empty previous country values array');
+        log_error_message(999, $c->cnum, 'log_snapshot_message(): called in DELTA mode with empty previous country values array');
         return false;
     }   
 
     $full_local_file_path_and_name = ($log_to_local ? get_full_country_file_path_and_name($local_file_path, $c->cnum, true) : null);
     if($log_country_to_screen or $log_to_local)
-        $message = generate_compact_country_status($c, $snapshot_type, $strat, $is_destocking, $output_c_values, $prev_c_values);
+        $message = generate_compact_country_status($c, $rules, $snapshot_type, $strat, $is_destocking, $output_c_values, $prev_c_values);
 
     return log_to_targets($log_country_to_screen, $log_to_local, $full_local_file_path_and_name, $message, $c->cnum, null);
 };
@@ -104,8 +203,15 @@ function log_country_data($cnum_input, $data, $intro_message) {
     log_country_message($cnum_input, $message);
 }
 
+
+function log_country_market_history_for_single_unit($cnum_input, $unit_name, $unit_market_history) {    
+    $message = "Market history for $unit_name: ".($unit_market_history['no_results'] ? "no data" : json_encode($unit_market_history));
+    log_country_message($cnum_input, $message);
+}
+
+
 // examples of things to log: what decisions were made (and why), how turns are spent
-function log_country_message($cnum_input, $message) {
+function log_country_message($cnum_input, $message, $color = null) {
     global $log_country_to_screen, $log_to_local, $local_file_path;
 
     if(!$cnum_input) {
@@ -120,7 +226,7 @@ function log_country_message($cnum_input, $message) {
     }
 
     $full_local_file_path_and_name = ($log_to_local ? get_full_country_file_path_and_name($local_file_path, $cnum_input, false) : null);
-    return log_to_targets($log_country_to_screen, $log_to_local, $full_local_file_path_and_name, $message, $cnum_input, null);
+    return log_to_targets($log_country_to_screen, $log_to_local, $full_local_file_path_and_name, $message, $cnum_input, $color);
 }
 
 
@@ -152,8 +258,9 @@ function log_error_message($error_type, $cnum, $message) {
     // always log to the error file
     // for the error file, use unprintable characters to separate fields and line breaks to pack everything on a single line
     // the error reader on the server will split out things appropriately
-    $error_message_for_error_file = $error_type.chr(9).$error_type_name.chr(9).$cnum.chr(9).str_replace(array("\r", "\n"), chr(17), $message);
-    $error_local_file_path_and_name = ($log_to_local ? get_full_error_file_path_and_name($local_file_path) : null);
+    $error_message_for_error_file = $error_type.chr(9).$error_type_name.chr(9)."#$cnum".chr(9).str_replace(array("\r", "\n"), chr(17), $message);
+    $is_php_error = ($error_type >= 2000 ? true : false);
+    $error_local_file_path_and_name = ($log_to_local ? get_full_error_file_path_and_name($local_file_path, $is_php_error) : null);
     log_to_targets(false, $log_to_local, $error_local_file_path_and_name, $error_message_for_error_file, $cnum, null);  
     return true; 
 }
@@ -183,7 +290,7 @@ function log_to_targets($log_to_screen, $log_to_local, $local_file_path_and_name
             $file_message = $timestamp_for_file.($line_break_count > 0 ? "\n" : "").preg_replace('/\e[[][A-Za-z0-9];?[0-9]*m?/', '', $message)."\n";
         }
         if($local_file_path_and_name) {
-            file_put_contents ($local_file_path_and_name, $file_message, FILE_APPEND);    
+            file_put_contents ($local_file_path_and_name, $file_message, FILE_APPEND);
         }  
     }
 
@@ -197,10 +304,13 @@ function get_full_country_file_path_and_name($local_file_path, $cnum, $is_snapsh
     return "$local_file_path/country/$file_name";
 }
 
-function get_full_error_file_path_and_name($local_file_path) {
+function get_full_error_file_path_and_name($local_file_path, $is_php_error) {
     global $username;
     $iso_date = date('Ymd');
-    return "$local_file_path/errors/ERRORS_$username"."_$iso_date.txt";
+    if($is_php_error)
+        return "$local_file_path/errors/PHP_ERRORS_$username"."_$iso_date.txt";
+    else
+        return "$local_file_path/errors/ERRORS_$username"."_$iso_date.txt";
 }
 
 function get_full_main_file_path_and_name($local_file_path) {
@@ -336,6 +446,14 @@ function create_local_directory_if_needed($path_name) {
         out("Creating local directory $path_name"); // have to use out() here because folders don't exist yet
         $success = mkdir("$path_name", 0770, true);
     }
+    if(!$success) {
+        sleep(5); // we might have had another process create the same folder, so wait 5 seconds and try again
+        $success = true;
+        if(!is_dir($path_name)) {
+            out("Creating local directory $path_name"); // have to use out() here because folders don't exist yet
+            $success = mkdir("$path_name", 0770, true);
+        }
+    }
     if(!$success)
         die("Failed to create local directory $path_name");
 
@@ -343,7 +461,7 @@ function create_local_directory_if_needed($path_name) {
 }
 
 
-function generate_compact_country_status($c, $snapshot_type, $strat, $is_destocking, &$output_c_values, $prev_c_values) {
+function generate_compact_country_status($c, $rules, $snapshot_type, $strat, $is_destocking, &$output_c_values, $prev_c_values) {
     // this code is a complete mess because I changed its purpose half way through and tried fixing with copy and replace
     $output_c_values = [];
     // turns and resources
@@ -405,7 +523,7 @@ function generate_compact_country_status($c, $snapshot_type, $strat, $is_destock
     $output_c_values['c_bpt']  = $c->bpt;
 
     // value of goods on market
-    $output_c_values['c_om_v'] = get_total_value_of_on_market_goods($c); // FUTURE: won't work with stocking
+    $output_c_values['c_om_v'] = get_total_value_of_on_market_goods($c, $rules);
 
     $on_market_military = 0;
     $military_list = ['m_tr','m_j','m_tu','m_ta'];
@@ -529,6 +647,28 @@ function generate_compact_country_status_string($cnum, $header, $snapshot_type, 
 }
 
 
+
+/**
+ * Return engineering notation
+ *
+ * @param  number $number The number to round
+ *
+ * @return string         The rounded number with B/M/k
+ */
+function engnot($number)
+{
+    if (abs($number) > 1000000000) {
+        return round($number / 1000000000, $number / 1000000000 > 100 ? 0 : 1).'B';
+    } elseif (abs($number) > 1000000) {
+        return round($number / 1000000, $number / 1000000 > 100 ? 0 : 1).'M';
+    } elseif (abs($number) > 10000) {
+        return round($number / 1000, $number / 1000 > 100 ? 0 : 1).'k';
+    }
+
+    return $number;
+}//end engnot()
+
+
 function log_translate_simple_strat_name($strat) {
     switch ($strat) {
         case 'C':
@@ -562,3 +702,84 @@ function log_translate_boolean_to_YN($boolean_value) {
 function log_translate_instant_to_human_readable($instant) {
     return date('m/d/Y H:i:s', $instant);
 }
+
+
+
+// copied from /earthempires/blob/master/www/include/errorlog.php
+function userErrorHandler($errno, $errmsg, $filename, $linenum) {
+    global $cnum;
+
+    $errmsg = preg_replace("/^(.*)\[<(.*)>\](.*)$/", "\\1\\3", $errmsg);
+
+    $backoutput = "";
+
+    if(false && function_exists('debug_backtrace')){
+        $backtrace = debug_backtrace();
+
+        //ignore $backtrace[0] as that is this function, the errorlogger
+        
+        for($i = 1; $i < 99 && $i < count($backtrace); $i++){ //only show 10 levels deep
+            $errfile = (isset($backtrace[$i]['file']) ? $backtrace[$i]['file'] : '');
+            
+            if(strpos($errfile, $sitebasedir) === 0)
+                $errfile = substr($errfile, strlen($sitebasedir));
+            
+            $line = (isset($backtrace[$i]['line']) ? $backtrace[$i]['line'] : '');
+            $function = (isset($backtrace[$i]['function']) ? $backtrace[$i]['function'] : '');
+            $args = (isset($backtrace[$i]['args']) ? count($backtrace[$i]['args']) : '');
+            
+            $backoutput .= "$errfile:$line:$function($args)";
+            
+            if($i+1 < count($backtrace)) //show if there are more levels that were cut off
+                $backoutput .= "<-";
+        }
+    }
+
+    $error_code = get_log_error_type_from_PHP_errno($errno);
+    $error_message = "\"$filename: $linenum\",\"$errmsg\",\"$backoutput\"\r\n";
+    log_error_message($error_code, $cnum, $error_message);
+    
+    //Terminate script if fatal error
+    if($errno != 2 && $errno != 8 && $errno != 512 && $errno != 1024 && $errno != 2048){
+        die("A fatal error has occured. Script execution has been aborted");
+    }
+}
+
+set_error_handler("EENPC\userErrorHandler"); 
+
+function get_log_error_type_from_PHP_errno($errno) {
+    /*
+    static $errortype = array ( 1   => "Error",
+                                2   => "Warning",
+                                4   => "Parsing Error",
+                                8   => "Notice",
+                                16  => "Core Error",
+                                32  => "Core Warning",
+                                64  => "Compile Error",
+                                128 => "Compile Warning",
+                                256 => "User Error",
+                                512 => "User Warning",
+                                1024=> "User Notice",
+                                2048=> "PHP Strict",
+                                4096=> "Recoverable Error",
+                                8192=> "Deprecated",
+                                16384=> "User Deprecated",
+                                32767=> "E_ALL"
+                            );
+    */
+    //out($errno);
+    return 2000 + ceil(log($errno, 2));
+}
+
+
+// note: this won't catch die()
+function handleShutdown(){
+    $error = error_get_last();
+    if($error !== NULL){
+        global $cnum;
+        $error_message = "[SHUTDOWN] Parse Error: ".$error['message'] . ' in ' . $error['file'] . ' on line ' . $error['line'] . PHP_EOL;
+        log_error_message(2999, $cnum, $error_message);
+    }
+}
+
+register_shutdown_function('EENPC\handleShutdown');

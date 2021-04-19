@@ -2,19 +2,19 @@
 
 namespace EENPC;
 
+// FUTURE: this file is too big and should be split up
 
-
-function is_country_allowed_to_mass_explore($c, $cpref, $server) {    
+function is_country_allowed_to_mass_explore($c, $cpref) {    
     if($c->explore_rate == $c->explore_min) {
         log_country_message($c->cnum, "Country is not allowed to mass explore because explore rate is the minimum $c->explore_min");
         return false;
     }
-    elseif(!$server->is_clan_server and $c->govt == "R" and $c->land > 10000) {
-        log_country_message($c->cnum, "Country is not allowed to mass explore because it is a rep with more than 10000 acres on a non-clan server");
+    elseif($c->govt == "R" and $c->land > $cpref->mass_explore_stop_acreage_rep) {
+        log_country_message($c->cnum, "Country is not allowed to mass explore because it is a rep with more than $cpref->mass_explore_stop_acreage_rep acres on a non-clan server");
         return false;
     }
-    elseif(!$server->is_clan_server and $c->govt <> "R" and $c->land > 8200) {
-        log_country_message($c->cnum, "Country is not allowed to mass explore because it is a non-rep with more than 8200 acres on a non-clan server");
+    elseif($c->govt <> "R" and $c->land > $cpref->mass_explore_stop_acreage_non_rep) {
+        log_country_message($c->cnum, "Country is not allowed to mass explore because it is a non-rep with more than $cpref->mass_explore_stop_acreage_non_rep acres on a non-clan server");
         return false;
     }
     else {
@@ -33,14 +33,15 @@ PARAMETERS:
 	$turns_to_play - number of turns we want to play
 	$money_to_reserve - money that we cannot spend and have to keep in reserve
 	$is_cashing - 1 if cashing, 0 if not	
+    $always_allow_bushel_pm_sales - 1 if a country can sell bushels on PM even if foodnet is negative
 */
-function food_and_money_for_turns(&$c, $turns_to_play, $money_to_reserve, $is_cashing) {
+function food_and_money_for_turns(&$c, $turns_to_play, $money_to_reserve, $is_cashing, $always_allow_bushel_pm_sales = false) {
 	$incoming_money_per_turn = ($is_cashing ? 1.0 : 1.2) * $c->taxes;
 	$additional_turns_for_expenses_growth = floor($turns_to_play / 5);
 	// check money
 	if(!has_money_for_turns($turns_to_play + $additional_turns_for_expenses_growth, $c->money, $incoming_money_per_turn, $c->expenses, $money_to_reserve)) {
 		// not enough money to play a turn - can we make up the difference by selling a turn's worth of food production?
-		if($c->food > 0 and $c->foodnet > 0) {
+		if($c->food > 0 && ($always_allow_bushel_pm_sales || $c->foodnet > 0)) {
 			// log_country_message($c->cnum, "TEMP DEBUG: Food is ".$c->food); // FUTURE: figure out why this errors sometimes? could be fixed now - Slagpit 20210329
 			PrivateMarket::sell_single_good($c, 'm_bu', min($c->food, ($turns_to_play + $additional_turns_for_expenses_growth) * $c->foodnet));
 		}
@@ -68,7 +69,7 @@ function food_and_money_for_turns(&$c, $turns_to_play, $money_to_reserve, $is_ca
 
 
 
-function get_total_value_of_on_market_goods($c, $max_price_bushels_to_include = 999) {
+function get_total_value_of_on_market_goods($c, $rules, $min_bushel_price_to_truncate = 70) {
     $owned_on_market_info = get_owned_on_market_info();
 
     $total_value = 0;
@@ -77,8 +78,10 @@ function get_total_value_of_on_market_goods($c, $max_price_bushels_to_include = 
         $price = $market_package->price;
         $quantity = $market_package->quantity;
 
-        if($type <> 'm_bu' or $price <= $max_price_bushels_to_include)
-            $total_value += $price * $quantity * (2 - $c->tax());
+        if($type == 'm_bu' && $price > $min_bushel_price_to_truncate) // override price for expensive bushels to base_sell + 6
+            $price = $rules->base_pm_food_sell_price + 6;
+
+        $total_value += $price * $quantity * (2 - $c->tax());
     }
 
     return $total_value;
@@ -106,7 +109,6 @@ function has_money_for_turns($number_of_turns_to_play, $money, $incoming_money_p
 // tries to buy the requested food within the budget
 // stops buying food if it detects that prices are too high
 function buy_full_food_quantity_if_possible(&$c, $food_needed, $max_food_price_to_buy, $money_to_reserve, $purchase_attempt_number = 1) {
-    // FUTURE: consider private market as well (express might have cheaper food than public)
     if ($food_needed <= 0) {// quit because we bought all of the food we needed
         return true;
     }
@@ -141,9 +143,11 @@ function buy_full_food_quantity_if_possible(&$c, $food_needed, $max_food_price_t
 
 
 function get_food_needs_for_turns($number_of_turns_to_play, $food_production, $food_consumption, $force_negative_events = false) {
-    // dividing by 3 is for food production negative events
-    // multiplying by 2 is to account for military units on the market
-    $expected_food_change_from_turn = floor($force_negative_events ? $food_production / 3 : $food_production) - 2 * $food_consumption;
+    // dividing by 3 is for food production negative events    
+    if($number_of_turns_to_play <= 3) // multiplying by 2 is to account for military units on the market
+        $expected_food_change_from_turn = floor(($force_negative_events ? $food_production / 3 : $food_production) - 2 * $food_consumption);
+    else
+        $expected_food_change_from_turn = floor(($force_negative_events ? $food_production / 3 : $food_production) - 1.1 * $food_consumption);
 
     return max(0, -1 * $number_of_turns_to_play * $expected_food_change_from_turn);
 }
@@ -200,14 +204,16 @@ function turns_of_money(&$c)
 }//end turns_of_money()
 
 
-function money_management(&$c, $server_max_possible_market_sell)
+function money_management(&$c, $server_max_possible_market_sell, $cpref, &$turn_action_counts)
 {
     while (turns_of_money($c) < 4) {
         //$foodloss = -1 * $c->foodnet;
 
         if ($c->turns_stored <= 30 && total_cansell_military($c, $server_max_possible_market_sell) > 7500) {
             log_country_message($c->cnum, "Selling max military, and holding turns.");
-            sell_max_military($c, $server_max_possible_market_sell);
+            $possible_turn_result = sell_max_military($c, $server_max_possible_market_sell, $cpref);
+            if($possible_turn_result <> null)
+                update_turn_action_array($turn_action_counts, $possible_turn_result);
             return true;
         } elseif ($c->turns_stored > 30 && total_military($c) > 1000) {
             log_error_message(1002, $c->cnum, "We have stored turns or can't sell on public; sell 1/10 of military");
@@ -222,7 +228,7 @@ function money_management(&$c, $server_max_possible_market_sell)
 }//end money_management()
 
 
-function food_management(&$c)
+function food_management(&$c, $cpref)
 {
     //RETURNS WHETHER TO HOLD TURNS OR NOT
     $reserve = max(130, $c->turns);
@@ -244,13 +250,15 @@ function food_management(&$c)
         $turns_of_food = $foodloss * $turns_buy;
         $market_price  = PublicMarket::price('m_bu');
 
-        if($market_price >= 100 && $c->turns_stored < 30) { // FUTURE: this isn't really any good, but it's better than nothing
+        // FUTURE: 30 should be a cpref? or just redesign entirely?
+        if($market_price > $cpref->max_bushel_buy_price_with_low_stored_turns && $c->turns_stored < 30) { // FUTURE: this isn't really any good, but it's better than nothing
             log_country_message($c->cnum, "Public market food is too expensive at $market_price; hold turns for now, and wait for food on MKT.");
             return true;
         }
 
         //log_country_message($c->cnum, "Market Price: " . $market_price);
-        if ($c->food < $turns_of_food && $c->money > $turns_of_food * $market_price * $c->tax() && $c->money - $turns_of_food * $market_price * $c->tax() + $c->income * $turns_buy > 0) { //losing food, less than turns_buy turns left, AND have the money to buy it
+        //losing food, less than turns_buy turns left, AND have the money to buy it
+        if ($c->food < $turns_of_food && $c->money > $turns_of_food * $market_price * $c->tax() && $c->money - $turns_of_food * $market_price * $c->tax() + $c->income * $turns_buy > 0) {
             $quantity = min($foodloss * $turns_buy, PublicMarket::available('m_bu'));
             // log_country_message($c->cnum, 
             //     "--- FOOD:  - Buy Public ".str_pad('('.$turns_buy, 17, ' ', STR_PAD_LEFT).
@@ -312,7 +320,7 @@ function food_management(&$c)
         log_error_message(1002, $c->cnum, "We're too poor to buy food! Sell 1/10 of our military");
         sell_all_military($c, 1 / 10);     //sell 1/4 of our military
         $c = get_advisor();     //UPDATE EVERYTHING
-        return food_management($c); //RECURSION!
+        return food_management($c, $cpref); //RECURSION!
     }
 
     log_country_message($c->cnum, 'We have exhausted all food options. Valar Morguhlis.');
@@ -416,8 +424,14 @@ function defend_self(&$c, $reserve_cash = 50000, $dpnwMax = 380)
 
 
 
-function sell_max_military(&$c, $server_max_possible_market_sell)
+function sell_max_military(&$c, $server_max_possible_market_sell, $cpref, $allow_average_prices = false, $avg_market_prices = [])
 {
+    if($allow_average_prices && empty($avg_market_prices)) {
+        log_error_message(999, $c->cnum, 'sell_max_military() allowed average price selling but $avg_market_prices was empty');
+        $allow_average_prices = false;
+    }
+    // it's okay if $avg_market_prices is empty if $allow_average_prices == false
+
     $c = get_advisor();     //UPDATE EVERYTHING
     //$market_info = get_market_info();   //get the Public Market info
 
@@ -430,26 +444,38 @@ function sell_max_military(&$c, $server_max_possible_market_sell)
         $quantity[$unit] = can_sell_mil($c, $unit, $server_max_possible_market_sell);
     }
 
-    $rmax    = 1.30; //percent
-    $rmin    = 0.70; //percent
+    $rmax    = 1 + 0.01 * $cpref->selling_price_max_distance;
+    $rmin    = 1 - 0.01 * $cpref->selling_price_max_distance;
     $rstep   = 0.01;
-    $rstddev = 0.10;
+    $rstddev = 0.01 * $cpref->selling_price_std_dev;
     $price   = [];
     foreach ($quantity as $key => $q) {
+        $avg_price = ($allow_average_prices and isset($avg_market_prices[$key]['avg_price'])) ? $avg_market_prices[$key]['avg_price'] : null;
+
         if ($q == 0) {
             $price[$key] = 0;
-        } elseif (PublicMarket::price($key) == null || PublicMarket::price($key) == 0) {
-            $price[$key] = floor($pm_info->buy_price->$key * Math::purebell(0.7, 0.93, 0.3, 0.01)); // don't price worse than private market
         } else {
             $max         = $c->goodsStuck($key) ? 0.99 : $rmax; //undercut if we have goods stuck
-            $price[$key] = min(
-                floor(0.93 * $pm_info->buy_price->$key),
-                floor(PublicMarket::price($key) * Math::purebell($rmin, $max, $rstddev, $rstep))
-            );
+            // there's a random chance to sell based on market average prices instead of current prices
+            $use_avg_price = ($allow_average_prices && $cpref->get_sell_price_method(false) == 'AVG') ? true : false;
+            
+            if ($use_avg_price and $avg_price) { // use average price and average price exists
+                $price[$key] = floor($avg_price * Math::purebell($rmin, $max, $rstddev, $rstep));
+            } elseif (PublicMarket::price($key) == null || PublicMarket::price($key) == 0 || ($use_avg_price and !$avg_price)) {
+                 // don't price worse than most private markets
+                 // FUTURE: exclude our own mil tech?
+                $price[$key] = floor(0.93 * $pm_info->buy_price->$key * Math::half_bell_truncate_right_side(1.0, $rmin, $rstddev, 0.01));
+            } else {
+                $price[$key] = min(
+                    floor(0.93 * $pm_info->buy_price->$key),
+                    floor(PublicMarket::price($key) * Math::purebell($rmin, $max, $rstddev, $rstep))
+                );
+            }
         }
 
+        // FUTURE: better to hold military?
         if ($price[$key] > 0 && $price[$key] * $c->tax() <= $pm_info->sell_price->$key) {
-            //log_country_message($c->cnum, "Public is too cheap for $key, sell on PM");
+            log_country_message($c->cnum, "Public is too cheap for $key, sell on PM");
             sell_cheap_units($c, $key, 0.5);
             $price[$key]    = 0;
             $quantity[$key] = 0;
@@ -662,3 +688,179 @@ function buy_private_below_dpnw(&$c, $dpnw, $money = 0, $shuffle = false, $defOn
 
     }
 }//end buy_private_below_dpnw()
+
+
+
+
+function totaltech($c)
+{
+    return $c->t_mil + $c->t_med + $c->t_bus + $c->t_res + $c->t_agri + $c->t_war + $c->t_ms + $c->t_weap + $c->t_indy + $c->t_spy + $c->t_sdi;
+}//end totaltech()
+
+
+function total_military($c)
+{
+    return $c->m_spy + $c->m_tr + $c->m_j + $c->m_tu + $c->m_ta;    //total_military
+}//end total_military()
+
+
+function total_cansell_tech($c, $server_max_possible_market_sell, $mil_tech_to_keep = 0)
+{
+    if ($c->turns_played < 100) {
+        return 0;
+    }
+
+    $cansell = 0;
+    global $techlist;
+    foreach ($techlist as $tech) {
+        $tech_to_not_sell = ($tech == 't_mil' ? $mil_tech_to_keep : 0);
+        $cansell += can_sell_tech($c, $tech, $server_max_possible_market_sell, $tech_to_not_sell);
+    }
+
+    Debug::msg("CANSELL TECH: $cansell");
+    return $cansell;
+}//end total_cansell_tech()
+
+
+function total_cansell_military($c, $server_max_possible_market_sell)
+{
+    $cansell = 0;
+    global $military_list;
+    foreach ($military_list as $mil) {
+        $cansell += can_sell_mil($c, $mil, $server_max_possible_market_sell);
+    }
+
+    //log_country_message($c->cnum, "CANSELL TECH: $cansell");
+    return $cansell;
+}//end total_cansell_military()
+
+
+
+function can_sell_tech(&$c, $tech = 't_bus', $server_max_possible_market_sell = 25, $tech_to_not_sell = 0)
+{
+    $onmarket = $c->onMarket($tech);
+    $tot      = $c->$tech + $onmarket;
+    $sell     = floor($tot * 0.01 * $server_max_possible_market_sell) - $onmarket; // FUTURE: make work for commie
+    //Debug::msg("Can Sell $tech: $sell; (At Home: {$c->$tech}; OnMarket: $onmarket)");
+
+    if($c->$tech - $sell < $tech_to_not_sell)
+        $sell = $c->$tech - $tech_to_not_sell;
+
+    return $sell > 10 ? $sell : 0;
+}//end can_sell_tech()
+
+
+function can_sell_mil(&$c, $mil = 'm_tr', $server_max_possible_market_sell = 25)
+{
+    $onmarket = $c->onMarket($mil);
+    $tot      = $c->$mil + $onmarket;
+    $sell     = floor($tot * ($c->govt == 'C' ? 0.01 * $server_max_possible_market_sell * 1.35 : 0.01 * $server_max_possible_market_sell)) - $onmarket;
+
+    return $sell > 5000 ? $sell : 0;
+}//end can_sell_mil()
+
+
+function cash(&$c, $turns = 1)
+{
+                          //this means 1 is the default number of turns if not provided
+    return ee('cash', ['turns' => $turns]);             //cash a certain number of turns
+}//end cash()
+
+
+function explore(&$c, $turns = 1)
+{
+    if ($c->empty > $c->land / 2) {
+        $b = $c->built();
+        log_country_message($c->cnum, "We can't explore (Built: {$b}%), what are we doing?");
+        return;
+    }
+
+    //this means 1 is the default number of turns if not provided
+    $result = ee('explore', ['turns' => $turns]);      //cash a certain number of turns
+    if ($result === null) {
+        log_country_message($c->cnum, 'Explore Fail? Update Advisor');
+        $c = get_advisor();
+    }
+
+    return $result;
+}//end explore()
+
+
+function tech($tech = [])
+{
+                     //default is an empty array
+    return ee('tech', ['tech' => $tech]);   //research a particular set of techs
+}//end tech()
+
+
+
+
+function set_indy(&$c)
+{
+    return ee(
+        'indy',
+        ['pro' => [
+                'pro_spy' => $c->pro_spy,
+                'pro_tr' => $c->pro_tr,
+                'pro_j' => $c->pro_j,
+                'pro_tu' => $c->pro_tu,
+                'pro_ta' => $c->pro_ta,
+            ]
+        ]
+    );      //set industrial production
+}//end set_indy()
+
+
+
+function get_market_info()
+{
+    return ee('market');    //get and return the PUBLIC MARKET information
+}//end get_market_info()
+
+
+function get_owned_on_market_info()
+{
+    $goods = ee('onmarket');    //get and return the GOODS OWNED ON PUBLIC MARKET information
+    return $goods->goods;
+}//end get_owned_on_market_info()
+
+
+
+//COUNTRY PLAYING STUFF
+function onmarket($good = 'food', &$c = null)
+{
+    if ($c == null) {
+        return out_data(debug_backtrace());
+    }
+
+    return $c->onMarket($good);
+}//end onmarket()
+
+
+// FUTURE: both this and get_total_value_of_on_market_goods() shouldn't exist
+function onmarket_value($good = null, &$c = null)
+{
+    global $mktinfo;
+    if (!$mktinfo) {
+        $mktinfo = get_owned_on_market_info();  //find out what we have on the market
+    }
+
+    //out_data($mktinfo);
+    //exit;
+    $value = 0;
+    foreach ($mktinfo as $key => $goods) {
+        //out_data($goods);
+        if ($good != null && $goods->type == $good) {
+            $value += $goods->quantity * $goods->price;
+        } elseif ($good == null) {
+            $value += $goods->quantity;
+        }
+
+        if ($c != null) {
+            $c->onMarket($goods);
+        }
+    }
+
+    return $value;
+}//end onmarket_value()
+

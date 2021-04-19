@@ -26,6 +26,15 @@ spl_autoload_register(
 require_once 'Terminal.class.php';
 require_once 'communication.php';
 
+// don't allow the process to be kicked off concurrently by accident
+// this seemingly cannot be in a function because a return releases the lock?
+$fp0 = fopen('zz_lock.txt', 'c');
+if (flock($fp0, LOCK_EX | LOCK_NB)) // LOCK_NB makes it fail right away instead of waiting
+    out("Lock acquired on zz_lock.txt, script will proceed"); 
+else
+    die("Lock could not be acquired on zz_lock.txt - is the process already running?\n");
+
+
 out(Colors::getColoredString("STARTING UP BOT", "purple"));
 
 date_default_timezone_set('GMT'); //SET THE TIMEZONE FIRST
@@ -53,6 +62,8 @@ require_once 'oiler_strat.php';
 require_once 'Destocking.php';
 require_once 'Logging.php';
 require_once 'Purchasing.php';
+require_once 'Selling.php';
+require_once 'Stockpiling.php';
 
 define("RAINBOW", Colors::getColoredString("Rainbow", "purple"));
 define("FARMER", Colors::getColoredString("Farmer", "cyan"));
@@ -102,7 +113,6 @@ $sleepcount = $loopcount = 0;
 $played     = true;
 $checked_for_non_ai = false;
 $set_strategies = true;
-
 
 //$market            = new PublicMarket();
 $server_avg_networth = $server_avg_land = 0;
@@ -209,14 +219,10 @@ while (1) {
                         [
                             'strat' => $strat,
                             'bot_secret' => null,
-                            'playfreq' => null,
                             'playrand' => null,
                             'lastplay' => 0,
                             'nextplay' => 0,
                             'price_tolerance' => 1.0,
-                            'def' => 1.0,
-                            'off' => 1.0,
-                            'aggro' => 1.0,
                             'allyup' => null,
                             'gdi' => null,
                             'retal' => [],
@@ -251,94 +257,89 @@ while (1) {
         Debug::off(); //reset for new country
         $save = false;
 
-        global $cpref;
-        $cpref = $settings->$cnum;
+        global $cpref_file;
+        $cpref_file = $settings->$cnum;
 
         // check for missing strategy just in case
-        if (!isset($cpref->strat)) {
+        if (!isset($cpref_file->strat)) {
             log_error_message(116, $cnum, "Strategy is not set in settings.json file");
             continue;
         }
 
         // check for invalid strategy just in case
-        if (log_translate_simple_strat_name($cpref->strat) == "UNKNOWN") {
+        if (log_translate_simple_strat_name($cpref_file->strat) == "UNKNOWN") {
             log_error_message(116, $cnum, "Invalid strategy is set in settings.json file");
             continue;
         }
 
-        if (!isset($cpref->retal)) {
-            $cpref->retal = [];
+        if (!isset($cpref_file->retal)) {
+            $cpref_file->retal = [];
         }
 
-        $cpref->retal = json_decode(json_encode($cpref->retal), true);
+        $cpref_file->retal = json_decode(json_encode($cpref_file->retal), true);
 
         $mktinfo = null;
 
-        if (!isset($cpref->bot_secret) || $cpref->bot_secret == null) {
-            $cpref->bot_secret = 1000000000 + mt_rand(0,999999999); // 9 digits ought to be enough for anybody
+        if (!isset($cpref_file->bot_secret) || $cpref_file->bot_secret == null) {
+            $cpref_file->bot_secret = 1000000000 + mt_rand(0,999999999); // 9 digits ought to be enough for anybody
             log_main_message("Resetting bot secret number #$cnum", 'red');
             $save = true;
         }
 
-        if (!isset($cpref->playfreq) || $cpref->playfreq == null) {
-            $cpref->playfreq = Math::purebell($server->turn_rate, $server->turn_rate * $rules->maxturns, $server->turn_rate * 20, $server->turn_rate);
-            $cpref->playrand = mt_rand(10, 20) / 10.0; //between 1.0 and 2.0
+        if (!isset($cpref_file->playrand) || $cpref_file->playrand == null) {
+            $cpref_file->playrand = mt_rand(10, 20) / 10.0; //between 1.0 and 2.0
             log_main_message("Resetting Play #$cnum", 'red');
             $save = true;
         }
 
-        if (!isset($cpref->price_tolerance) || $cpref->price_tolerance == 1.00) {
-            $cpref->price_tolerance = round(Math::purebell(0.5, 1.5, 0.1, 0.01), 3); //50% to 150%, 10% std dev, steps of 1%
+        if (!isset($cpref_file->price_tolerance) || $cpref_file->price_tolerance == 1.00) {
+            $cpref_file->price_tolerance = round(Math::purebell(0.5, 1.5, 0.1, 0.01), 3); //50% to 150%, 10% std dev, steps of 1%
             $save                   = true;
-        } elseif ($cpref->price_tolerance != round($cpref->price_tolerance, 3)) {
-            $cpref->price_tolerance = round($cpref->price_tolerance, 3); //round off silly numbers...
+        } elseif ($cpref_file->price_tolerance != round($cpref_file->price_tolerance, 3)) {
+            $cpref_file->price_tolerance = round($cpref_file->price_tolerance, 3); //round off silly numbers...
             $save                   = true;
         }
 
-        if (!isset($cpref->nextplay) || !isset($cpref->lastplay) || $cpref->lastplay < time() - $server->turn_rate * $rules->maxturns) { //maxturns
-            $cpref->nextplay = 0;
+        if (!isset($cpref_file->nextplay) || !isset($cpref_file->lastplay) || $cpref_file->lastplay < time() - $server->turn_rate * $rules->maxturns) { //maxturns
+            $cpref_file->nextplay = 0;
             log_main_message("Resetting Next Play for #$cnum", 'red');
             $save = true;
         }
 
-        if (!isset($cpref->lastTurns)) {
-            $cpref->lastTurns = 0;
+        if (!isset($cpref_file->lastTurns)) {
+            $cpref_file->lastTurns = 0;
         }
 
-        if (!isset($cpref->turnStored)) {
-            $cpref->turnStored = 0;
+        if (!isset($cpref_file->turnStored)) {
+            $cpref_file->turnStored = 0;
         }
 
-        if (!isset($cpref->allyup) || $cpref->allyup == null) {
-            $cpref->allyup = (bool)(rand(0, 9) > 0);
+        if (!isset($cpref_file->allyup) || $cpref_file->allyup == null) {
+            $cpref_file->allyup = (bool)(rand(0, 9) > 0);
         }
 
-        if (!isset($cpref->gdi)) {
-            $cpref->gdi = (bool)(rand(0, 2) == 2);
-            //log_main_message("Setting GDI to ".($cpref->gdi ? "true" : "false"), true, 'brown');
+        if (!isset($cpref_file->gdi)) {
+            $cpref_file->gdi = (bool)(rand(0, 2) == 2);
+            //log_main_message("Setting GDI to ".($cpref_file->gdi ? "true" : "false"), true, 'brown');
         }
 
-        //if($cpref->strat <> 'C') // DEBUG
-        //    continue;
-
-        if ($cpref->nextplay < time()) {
+        if ($cpref_file->nextplay < time()) {
+            $cpref = new cpref($server, $cpref_file, $cnum);
 
             log_country_message($cnum, "\n\n");
             log_country_message($cnum, "Beginning country loop");
             log_main_message("Attempting to play turns for #$cnum");
 
-            $earliest_destock_time = get_earliest_possible_destocking_start_time_for_country($cpref->bot_secret, $cpref->strat, $server->reset_start, $server->reset_end);
+            $earliest_destock_time = $cpref->earliest_destocking_start_time;
             log_country_message($cnum, 'Earliest possible destock time is: ' . log_translate_instant_to_human_readable($earliest_destock_time));
             
             $debug_force_destocking = false; // DEBUG: change to true to force destocking code to run
             $is_destocking = ($debug_force_destocking or time() >= $earliest_destock_time? true : false);
 
-           // $is_destocking = false; // DEBUG
-
             // log snapshot of country status
             $prev_c_values = [];
             $init_c = get_advisor();
-            log_snapshot_message($init_c, "BEGIN", $cpref->strat, $is_destocking, $prev_c_values);
+            log_snapshot_message($init_c, $rules, "BEGIN", $cpref_file->strat, $is_destocking, $prev_c_values);
             unset($init_c);
 
             try {
@@ -352,8 +353,10 @@ while (1) {
                 else { // not destocking
                     log_country_message($cnum, 'Not doing destocking actions');    
 
-                    if ($cpref->allyup) {
-                        Allies::fill('def');
+                    Allies::decline_all_allies_if_needed($cpref);
+
+                    if ($cpref_file->allyup) {
+                        Allies::fill($cpref, 'def');
                     }
 
                     Events::new();
@@ -365,67 +368,64 @@ while (1) {
                     log_main_message("Playing Standard ".Bots::txtStrat($cnum)." Turns for #$cnum ".siteURL($cnum));
                     log_country_message($cnum, "Begin playing standard ".Bots::txtStrat($cnum)." turns");
 
+                    $turn_action_counts = [];
                     // FUTURE: careful with the $cnum global removal, maybe this breaks things? seems fine so far - 20210323
-                    switch ($cpref->strat) {
+                    switch ($cpref_file->strat) {
                         case 'F':
-                            $c = play_farmer_strat($server, $cnum, $rules, $cpref, $exit_condition);
+                            $c = play_farmer_strat($server, $cnum, $rules, $cpref, $exit_condition, $turn_action_counts); 
                             break;
                         case 'T':
-                            $c = play_techer_strat($server, $cnum, $rules, $cpref, $exit_condition);
+                            $c = play_techer_strat($server, $cnum, $rules, $cpref, $exit_condition, $turn_action_counts);
                             break;
                         case 'C':
-                            $c = play_casher_strat($server, $cnum, $rules, $cpref, $exit_condition);
+                            $c = play_casher_strat($server, $cnum, $rules, $cpref, $exit_condition, $turn_action_counts);
                             break;
                         case 'I':
-                            $c = play_indy_strat($server, $cnum, $rules, $cpref, $exit_condition);
+                            $c = play_indy_strat($server, $cnum, $rules, $cpref, $exit_condition, $turn_action_counts);
                             break;
                         default:
-                            $c = play_rainbow_strat($server, $cnum, $rules, $exit_condition);
+                            $c = play_rainbow_strat($server, $cnum, $rules, $cpref, $exit_condition);
                     }
 
-                    if ($cpref->gdi && !$c->gdi) {
+                    log_turn_action_counts($c, $server, $cpref, $turn_action_counts);                    
+
+                    if ($cpref_file->gdi && !$c->gdi) {
                         GDI::join();
-                    } elseif (!$cpref->gdi && $c->gdi) {
+                    } elseif (!$cpref_file->gdi && $c->gdi) {
                         GDI::leave();
                     }
 
-                    if ($c->turns_played < 100 && $cpref->retal) {
-                        $cpref->retal = []; //clear the damned retal thing
+                    if ($c->turns_played < 100 && $cpref_file->retal) {
+                        $cpref_file->retal = []; //clear the damned retal thing
                     }
-
-                    if($exit_condition == 'WAIT_FOR_PUBLIC_MARKET_FOOD') {
-                        log_country_message($cnum, "Country is holding turns while waiting for cheaper public market food to appear");
-                        $nexttime = 4 * $server->turn_rate;
-                    }
-
-                    // $maxin           = Bots::furthest_play($cpref); // now handled in calculate_next_play_in_seconds
-                    // $nexttime        = round(min($maxin, $nexttime));
                 }
 
                 log_country_message($cnum, "End playing standard ".Bots::txtStrat($cnum)." turns with exit condition $exit_condition");
 
-                $seconds_to_next_play = calculate_next_play_in_seconds($cnum, $nexttime, $cpref->strat, $rules->is_clan_server, $rules->max_time_to_market, $rules->max_possible_market_sell, $cpref->playrand, $server->reset_start, $server->reset_end, $server->turn_rate, $cpref->lastTurns, $rules->maxturns, $cpref->turnsStored, $rules->maxstore);
-                $cpref->lastplay = time();
-                $cpref->nextplay = $cpref->lastplay + $seconds_to_next_play;
+                // $seconds_to_next_play = calculate_next_play_in_seconds($cnum, $nexttime, $cpref_file->strat, $rules->is_clan_server, $rules->max_time_to_market, $rules->max_possible_market_sell, $cpref_file->playrand, $server->reset_start, $server->reset_end, $server->turn_rate, $cpref_file->lastTurns, $rules->maxturns, $cpref_file->turnsStored, $rules->maxstore);
+                $seconds_to_next_play = $cpref->calculate_next_play_in_seconds($nexttime, $exit_condition, $rules, $cpref_file);
+                
+                $cpref_file->lastplay = time();
+                $cpref_file->nextplay = $cpref_file->lastplay + $seconds_to_next_play;
                 $nextturns       = floor($seconds_to_next_play / $server->turn_rate);
-                log_country_message($cnum, "This country next plays in: $seconds_to_next_play ($nextturns Turns)    ");
+                log_country_message($cnum, "This country next plays in $seconds_to_next_play seconds ($nextturns Turns) = ".log_translate_instant_to_human_readable(time() + $seconds_to_next_play));
                 $played = true;
                 $save   = true;
 
                 /*
                 // FUTURE: more delta checking, especially for destocking
                 $prev_c_values = [];
-                log_snapshot_message($c, "BEGIN", $cpref->strat, 0, false, $prev_c_values);
+                log_snapshot_message($c, "BEGIN", $cpref_file->strat, 0, false, $prev_c_values);
  
                 $c = get_advisor();
-                log_snapshot_message($c, "DELTA", $cpref->strat, 2, false, $dummy, $prev_c_values);
+                log_snapshot_message($c, "DELTA", $cpref_file->strat, 2, false, $dummy, $prev_c_values);
                 */
 
                 // log snapshots of country status
                 // FUTURE: skip snapshot parameter for speed for remote play?
                 $c = get_advisor(); // this call probably can't be avoided - market info, events, and tax/expenses could be wrong without it
-                log_snapshot_message($c, "DELTA", $cpref->strat, $is_destocking, $dummy, $prev_c_values);
-                log_snapshot_message($c, "END", $cpref->strat, $is_destocking, $dummy); // FUTURE: why does this take six seconds remotely?
+                log_snapshot_message($c, $rules, "DELTA", $cpref_file->strat, $is_destocking, $dummy, $prev_c_values);
+                log_snapshot_message($c, $rules, "END", $cpref_file->strat, $is_destocking, $dummy); // FUTURE: why does this take six seconds remotely?
                 
 
             } catch (Exception $e) {
@@ -437,7 +437,7 @@ while (1) {
         }
 
         if ($save) {
-            $settings->$cnum = $cpref;
+            $settings->$cnum = $cpref_file;
             log_main_message("Saving Settings", 'purple');
             file_put_contents($config['save_settings_file'], json_encode($settings));
             log_main_message("\n");
@@ -490,129 +490,6 @@ while (1) {
 done(); //done() is defined below
 
 
-function calculate_next_play_in_seconds($cnum, $nexttime, $strat, $is_clan_server, $max_time_to_market, $max_possible_market_sell, $country_play_rand_factor, $server_reset_start, $server_reset_end, $server_turn_rate, $country_turns_left, $server_max_turns, $country_stored_turns, $server_stored_turns) {
-    if($nexttime <> null) {
-        log_country_message($cnum, "Next play seconds was passed in as $nexttime");
-        return $nexttime; // always return $nexttime if it's passed on
-    }
-
-    /*
-    indy start standard window: ($max_possible_market_sell/25) * (1 hour + max market time + 3 turns)
-    indy end standard window: ($max_possible_market_sell/25) * ( 1 hour + max market time + 27 turns)
-    express range is 3 hours to 5.85 hours
-    alliance range is 7 hours to 15 hours
-
-    techer start standard window: ($max_possible_market_sell/25) * (1 hour + max market time + 15 turns)
-    techer end standard window: ($max_possible_market_sell/25) * (1 hour + max market time + 39 turns)
-    express range is 4 hours to 7.29 hours
-    alliance range is 11 hours to 19 hours
-
-    casher start standard window: 0.3 * ($server_max_turns * $server_turn_rate)
-    casher end standard window: 0.9 * ($server_max_turns * $server_turn_rate)
-    express range is 7.2 hours to 21.6 hours
-    alliance range is 12 hours to 36 hours
-
-    rainbow start standard window: 0.3 * ($server_max_turns * $server_turn_rate)
-    rainbow end standard window: 0.9 * ($server_max_turns * $server_turn_rate)
-    express range is 7.2 hours to 21.6 hours
-    alliance range is 12 hours to 36 hours
-
-    farmer start standard window: 3 hours + max market time
-    farmer end standard window: 0.6 * ($server_max_turns * $server_turn_rate)
-    express range is 3.45 hours to 12 hours
-    alliance range is 8.45 hours to 24 hours
-    */
-    switch($strat) {
-        case 'F':
-            $play_seconds_minimum = $max_time_to_market + 3 * 3600; // FUTURE: this isn't a good value for servers with very fast turn rates
-            $play_seconds_maximum = round(0.6 * $server_turn_rate * $server_max_turns);
-
-            if ($play_seconds_minimum > $play_seconds_maximum) // won't happen with any current servers, but just in case
-                $play_seconds_minimum = round(0.3 * $server_turn_rate * $server_max_turns);
-            break;
-        case 'T':
-            $play_seconds_minimum = round(($max_possible_market_sell / 25) * (3600 + $max_time_to_market + 15 * $server_turn_rate));
-            $play_seconds_maximum = round(($max_possible_market_sell / 25) * (3600 + $max_time_to_market + 39 * $server_turn_rate));
-            break;
-        case 'C':
-            $play_seconds_minimum = round(0.3 * $server_turn_rate * $server_max_turns);
-            //$play_seconds_maximum = round(0.9 * $server_turn_rate * $server_max_turns); // FUTURE - change to this once express bot count and market stuff is fixed
-            $play_seconds_maximum = round(0.6 * $server_turn_rate * $server_max_turns);
-            break;
-        case 'I':
-            $play_seconds_minimum = round(($max_possible_market_sell / 25) * (3600 + $max_time_to_market + 3 * $server_turn_rate));
-            $play_seconds_maximum = round(($max_possible_market_sell / 25) * (3600 + $max_time_to_market + 27 * $server_turn_rate));
-            break;
-        default:
-            $play_seconds_minimum = round(0.3 * $server_turn_rate * $server_max_turns);
-            // $play_seconds_maximum = round(0.9 * $server_turn_rate * $server_max_turns); // FUTURE - change to this once express bot count and market stuff is fixed
-            $play_seconds_maximum = round(0.6 * $server_turn_rate * $server_max_turns);
-    }
-
-    log_country_message($cnum, "For strategy ".Bots::txtStrat($cnum).", min play seconds is $play_seconds_minimum and max play seconds is $play_seconds_maximum");
-
-    // shrink the window up to 25% based on the country's preference for play
-    // $country_play_rand_factor is random number in range (1, 2)
-    $seconds_to_subtract_from_max = round(0.25 * ($country_play_rand_factor - 1) * ($play_seconds_maximum - $play_seconds_minimum));
-    log_country_message($cnum, "Country playing activity preference is $country_play_rand_factor, so adjusting max down by $seconds_to_subtract_from_max seconds");
-    $play_seconds_maximum -= $seconds_to_subtract_from_max;
-
-    $std_dev = round($play_seconds_maximum - $play_seconds_minimum) / 4; // 2.5% chance of min and max values
-    $bell_random_seconds = round(Math::purebell($play_seconds_minimum, $play_seconds_maximum, $std_dev));
-    log_country_message($cnum, "Bell random play seconds calculated as $bell_random_seconds");
-
-    // if the next play time would mean that additional turns start going into storage, adjust it forward
-    $free_turns = $server_max_turns - $country_turns_left;
-    $depleted_stored_turns = round(min(0.5 * $free_turns, $country_stored_turns));
-    $approx_seconds_until_new_turns_go_to_stored = $server_turn_rate * ($free_turns - $depleted_stored_turns);
-    log_country_message($cnum, "Server max onhand turns is $server_max_turns, country turns left is $country_turns_left, country stored turns is $country_stored_turns");
-    log_country_message($cnum, "It will take approximately $approx_seconds_until_new_turns_go_to_stored seconds until new turns go into storage");   
- 
-    $seconds_until_next_play = $bell_random_seconds;
-    if ($approx_seconds_until_new_turns_go_to_stored < $bell_random_seconds) {
-        $seconds_until_next_play = $approx_seconds_until_new_turns_go_to_stored;
-        log_country_message($cnum, "Bell random seconds value would result in additional stored turns, so changing play time to $seconds_until_next_play");
-    }
-
-    // don't allow bots to login more frequently than 4 * turn rate under normal conditions
-    if (4 * $server_turn_rate > $seconds_until_next_play) { 
-        log_country_message($cnum, "$seconds_until_next_play is less than 4 times the turn rate, so adjusting down");
-        $seconds_until_next_play = 4 * $server_turn_rate;        
-    }
-
-    // if next play time is after 99.5% of the reset is done, country might miss its chance to destock
-    // the destocking code always sets next play, so we'll never get here if the country already started destocking
-    $seconds_in_reset = $server_reset_end - $server_reset_start;
-    // FUTURE: get magic numbers from a destocking.php function
-    if (time() + $seconds_until_next_play > $server_reset_start + 0.995 * $seconds_in_reset) {
-        $target_play_time_range_start = $server_reset_start + 0.985 * $seconds_in_reset;
-        $target_play_time_range_end = $server_reset_start + 0.995 * $seconds_in_reset;
-
-        log_country_message($cnum, "Previous calculated value of $seconds_until_next_play is too close to the end of the set");
- 
-        // random range between 98.5% and 99.5% of reset
-        $seconds_until_next_play = $server_reset_start + 0.01 * mt_rand(0, 100) * (0.995 - 0.985) * $seconds_in_reset - time();
-
-        if ($seconds_until_next_play <= 0) {
-            $seconds_until_next_play = 1800; // not sure how we could get here, but set it to half an hour
-            // FUTURE: log error
-        }
-        log_country_message($cnum, "Next play changed to $seconds_until_next_play to allow for destocking");
-    }
-    
-    log_country_message($cnum, "The final value for seconds to next play is: $seconds_until_next_play");
-
-    return $seconds_until_next_play;
-}                
-
-
-// use to get a random number specific to each cnum that doesn't change during the reset
-// up to 9 digits supported
-function decode_bot_secret($bot_secret_number, $desired_digits) {
-    if ($desired_digits > 9)
-        return 0; // FUTURE: throw error
-    return $bot_secret_number % pow(10, $desired_digits);
-}
 
 function govtStats($countries)
 {
@@ -673,115 +550,7 @@ function govtStats($countries)
 }//end govtStats()
 
 
-
-
-
-
-
-//COUNTRY PLAYING STUFF
-function onmarket($good = 'food', &$c = null)
-{
-    if ($c == null) {
-        return out_data(debug_backtrace());
-    }
-
-    return $c->onMarket($good);
-}//end onmarket()
-
-
-// FUTURE: both this and get_total_value_of_on_market_goods() shouldn't exist
-function onmarket_value($good = null, &$c = null)
-{
-    global $mktinfo;
-    if (!$mktinfo) {
-        $mktinfo = get_owned_on_market_info();  //find out what we have on the market
-    }
-
-    //out_data($mktinfo);
-    //exit;
-    $value = 0;
-    foreach ($mktinfo as $key => $goods) {
-        //out_data($goods);
-        if ($good != null && $goods->type == $good) {
-            $value += $goods->quantity * $goods->price;
-        } elseif ($good == null) {
-            $value += $goods->quantity;
-        }
-
-        if ($c != null) {
-            $c->onMarket($goods);
-        }
-    }
-
-    return $value;
-}//end onmarket_value()
-
-
-function totaltech($c)
-{
-    return $c->t_mil + $c->t_med + $c->t_bus + $c->t_res + $c->t_agri + $c->t_war + $c->t_ms + $c->t_weap + $c->t_indy + $c->t_spy + $c->t_sdi;
-}//end totaltech()
-
-
-function total_military($c)
-{
-    return $c->m_spy + $c->m_tr + $c->m_j + $c->m_tu + $c->m_ta;    //total_military
-}//end total_military()
-
-
-function total_cansell_tech($c, $server_max_possible_market_sell)
-{
-    if ($c->turns_played < 100) {
-        return 0;
-    }
-
-    $cansell = 0;
-    global $techlist;
-    foreach ($techlist as $tech) {
-        $cansell += can_sell_tech($c, $tech, $server_max_possible_market_sell);
-    }
-
-    Debug::msg("CANSELL TECH: $cansell");
-    return $cansell;
-}//end total_cansell_tech()
-
-
-function total_cansell_military($c, $server_max_possible_market_sell)
-{
-    $cansell = 0;
-    global $military_list;
-    foreach ($military_list as $mil) {
-        $cansell += can_sell_mil($c, $mil, $server_max_possible_market_sell);
-    }
-
-    //log_country_message($c->cnum, "CANSELL TECH: $cansell");
-    return $cansell;
-}//end total_cansell_military()
-
-
-
-function can_sell_tech(&$c, $tech = 't_bus', $server_max_possible_market_sell = 25)
-{
-    $onmarket = $c->onMarket($tech);
-    $tot      = $c->$tech + $onmarket;
-    $sell     = floor($tot * 0.01 * $server_max_possible_market_sell) - $onmarket; // FUTURE: make work for commie
-    //Debug::msg("Can Sell $tech: $sell; (At Home: {$c->$tech}; OnMarket: $onmarket)");
-
-    return $sell > 10 ? $sell : 0;
-}//end can_sell_tech()
-
-
-function can_sell_mil(&$c, $mil = 'm_tr', $server_max_possible_market_sell = 25)
-{
-    $onmarket = $c->onMarket($mil);
-    $tot      = $c->$mil + $onmarket;
-    $sell     = floor($tot * ($c->govt == 'C' ? 0.01 * $server_max_possible_market_sell * 1.35 : 0.01 * $server_max_possible_market_sell)) - $onmarket;
-
-    return $sell > 5000 ? $sell : 0;
-}//end can_sell_mil()
-
-
-
+// FUTURE: move the update_c stuff to a new file
 //Interaction with API
 function update_c(&$c, $result)
 {
@@ -793,6 +562,8 @@ function update_c(&$c, $result)
     foreach ($result->turns as $z) {
         $numT++; //this is dumb, but count wasn't working????
     }
+
+    $turn_action = null; // approximate turn action... won't handle weird stuff like building cs and other buildings at the same time
 
     global $lastFunction;
     //out_data($result);                //output data for testing
@@ -813,9 +584,14 @@ function update_c(&$c, $result)
             $str       .= $num.' '.$type;     //Text for screen
             if ($type == 'cs' && $num > 0) {
                 $bpt = true;
+                $turn_action = 'cs';
             } elseif ($type == 'lab' && $num > 0) {
                 $tpt = true;
+                $turn_action = 'buildings';
+            } elseif ($num > 0) {
+                $turn_action = 'buildings';
             }
+
         }
 
         $explain = '('.$c->built().'%)';
@@ -834,6 +610,7 @@ function update_c(&$c, $result)
         $c->tpt    = $result->tpt;
         $c->money -= $result->cost;
     } elseif (isset($result->new_land)) {
+        $turn_action = 'explore';
         $c->empty       += $result->new_land;             //update empty land
         $c->land        += $result->new_land;              //update land
         $c->build_cost   = $result->build_cost;       //update Build Cost
@@ -843,6 +620,7 @@ function update_c(&$c, $result)
         $explain         = '('.$c->land.' A)';          //Text for screen
         $extrapad        = 8;
     } elseif (isset($result->teched)) {
+        $turn_action = 'tech';
         $str = 'Tech: ';
         $tot = 0;
         foreach ($result->teched as $type => $num) {    //for each type of tech that we teched....
@@ -855,16 +633,23 @@ function update_c(&$c, $result)
         $str    .= $tot.' '.actual_count($result->turns).' turns';
         $explain = '('.$c->tpt.' tpt)';     //Text for screen
     } elseif ($lastFunction == 'cash') {
+        $turn_action = 'cash';
         $str = "Cashed ".actual_count($result->turns)." turns";     //Text for screen
     } elseif (isset($result->sell)) {
+        $turn_action = 'sell';
         $str = "Put goods on Public Market";
+    } elseif (isset($result->market_recalled_type)) {
+        $turn_action = 'recall';
+        $str = ($result->market_recalled_type == 'GOODS' ? 'Recalled goods' : 'Recalled tech');        
     }
+
 
     $event    = null; //Text for screen
     $netmoney = $netfood = 0;
     $advisor_update = $OOF = $OOM = false;
     $money_before_turns = $c->money; // for debugging
     $food_before_turns = $c->food; // for debugging
+    $turns_played_before_turns = $c->turns_played;
 
     foreach ($result->turns as $num => $turn) {
         //update stuff based on what happened this turn
@@ -891,10 +676,8 @@ function update_c(&$c, $result)
         
         if (isset($turn->event)) {
             if ($turn->event == 'earthquake') {   //if an earthquake happens...
-                log_country_message($c->cnum, "Earthquake destroyed {$turn->earthquake} Buildings! Update Advisor"); //Text for screen
-
-                //update the advisor, because we no longer know what information is valid
-                $advisor_update = true;
+                log_country_message($c->cnum, "Earthquake destroyed {$turn->earthquake} Buildings! Update Advisor");
+                $advisor_update = true; //update the advisor, because we no longer know what information is valid
             } elseif ($turn->event == 'pciboom') {
                 //in the event of a pci boom, recalculate income so we don't react based on an event
                 $latest_taxrevenue = floor(($turn->taxrevenue ?? 0) / 3);
@@ -954,26 +737,21 @@ function update_c(&$c, $result)
     $c->money += $netmoney;
     $c->food  += $netfood;
 
-    /* -- I think it's fine to move this lower - Slagpit 20210330
-    if ($advisor_update == true) {
-        $c = get_advisor();
+    // update if we left protection
+    if($c->turns_played >= 100 and $c->protection == 1)
+        $c->protection = 0;
+
+    // check that there aren't other reasons to update the advisor
+    // current example is recall goods and recall tech don't tell us what was sent back
+    if(isset($result->force_advisor_update)) { 
+        if($result->force_advisor_update) {
+            if(isset($result->market_recalled_type))            
+                log_country_message($c->cnum, "Update Advisor for market recall of goods or tech");
+            else
+                log_error_message(119, $c->cnum, "Update Advisor for unknown reason");
+            $advisor_update = true;
+        }
     }
-    */
-
-    //Text formatting (adding a + if it is positive; - will be there if it's negative already)
-    $netfood  = str_pad('('.($netfood > 0 ? '+' : null).engnot($netfood).')', 11, ' ', STR_PAD_LEFT);
-    $netmoney = str_pad('($'.($netmoney > 0 ? '+' : null).engnot($netmoney).')', 14, ' ', STR_PAD_LEFT);
-
-    $str  = str_pad($str, 26 + $extrapad).str_pad($explain, 12).str_pad('$'.engnot($c->money), 16, ' ', STR_PAD_LEFT);
-    $str .= $netmoney.str_pad(engnot($c->food).' Bu', 14, ' ', STR_PAD_LEFT).engnot($netfood); //Text for screen
-
-    global $APICalls;
-    $str = str_pad($c->turns, 3).' Turns - '.$str.' '.str_pad($event, 8).' API: '.$APICalls;
-    if ($OOF || $OOM) {
-        $str = Colors::getColoredString($str, "red");
-    }
-
-    log_country_message($c->cnum, $str);
 
     // need to track this to log the right error message if we ran out of food or money
     // it's worse to run out food or money when the object thinks that we didn't
@@ -983,11 +761,26 @@ function update_c(&$c, $result)
         $OOM_error_message = "Before playing $numT turns, money was $money_before_turns. Before advisor update, money was $c->money, taxes were $c->taxes, and exp were $c->expenses. ";
         $OOF_error_message = "Before playing $numT turns, food was $food_before_turns. Before advisor update, food was $c->food, pro was $c->foodpro, and con was $c->foodnet. ";
     }
-       
+
     // update advisor if we got an earthquake, ran out of food, or ran out of money
     if ($advisor_update == true) {
         $c = get_advisor();
     }
+
+    //Text formatting (adding a + if it is positive; - will be there if it's negative already)
+    $netfood  = str_pad('('.($netfood > 0 ? '+' : null).engnot($netfood).')', 11, ' ', STR_PAD_LEFT);
+    $netmoney = str_pad('($'.($netmoney > 0 ? '+' : null).engnot($netmoney).')', 14, ' ', STR_PAD_LEFT);
+
+    $str  = str_pad($str, 26 + $extrapad).str_pad($explain, 12).str_pad('$'.engnot($c->money), 16, ' ', STR_PAD_LEFT);
+    $str .= $netmoney.str_pad(engnot($c->food).' Bu', 14, ' ', STR_PAD_LEFT).engnot($netfood);
+
+    global $APICalls;
+    $str = str_pad($c->turns, 3).' Turns - '.$str.' '.str_pad($event, 8).' API: '.$APICalls;
+    if ($OOF || $OOM) {
+        $str = Colors::getColoredString($str, "red");
+    }
+
+    log_country_message($c->cnum, $str);
 
     if($OOM) {
         $OOM_error_message .= "After advisor update, money was $c->money, taxes were $c->taxes, and exp were $c->expenses";
@@ -1002,29 +795,13 @@ function update_c(&$c, $result)
     }
 
     $APICalls = 0;
+
+    // returning the number of turns played is useful for logging purposes
+    $action_and_turns_used = [];
+    if($turn_action)
+        $action_and_turns_used = [$turn_action => $c->turns_played - $turns_played_before_turns];
+    return $action_and_turns_used;
 }//end update_c()
-
-
-/**
- * Return engineering notation
- *
- * @param  number $number The number to round
- *
- * @return string         The rounded number with B/M/k
- */
-function engnot($number)
-{
-    if (abs($number) > 1000000000) {
-        return round($number / 1000000000, $number / 1000000000 > 100 ? 0 : 1).'B';
-    } elseif (abs($number) > 1000000) {
-        return round($number / 1000000, $number / 1000000 > 100 ? 0 : 1).'M';
-    } elseif (abs($number) > 10000) {
-        return round($number / 1000, $number / 1000 > 100 ? 0 : 1).'k';
-    }
-
-    return $number;
-}//end engnot()
-
 
 
 function event_text($event)
@@ -1054,48 +831,13 @@ function event_text($event)
 }//end event_text()
 
 
-
-
-function cash(&$c, $turns = 1)
-{
-                          //this means 1 is the default number of turns if not provided
-    return ee('cash', ['turns' => $turns]);             //cash a certain number of turns
-}//end cash()
-
-
-function explore(&$c, $turns = 1)
-{
-    if ($c->empty > $c->land / 2) {
-        $b = $c->built();
-        log_country_message($c->cnum, "We can't explore (Built: {$b}%), what are we doing?");
-        return;
-    }
-
-    //this means 1 is the default number of turns if not provided
-    $result = ee('explore', ['turns' => $turns]);      //cash a certain number of turns
-    if ($result === null) {
-        log_country_message($c->cnum, 'Explore Fail? Update Advisor');
-        $c = get_advisor();
-    }
-
-    return $result;
-}//end explore()
-
-
-function tech($tech = [])
-{
-                     //default is an empty array
-    return ee('tech', ['tech' => $tech]);   //research a particular set of techs
-}//end tech()
-
-
 function get_main()
 {
     $main = ee('main');      //get and return the MAIN information
 
-    global $cpref;
-    $cpref->lastTurns   = $main->turns;
-    $cpref->turnsStored = $main->turns_stored;
+    global $cpref_file;
+    $cpref_file->lastTurns   = $main->turns;
+    $cpref_file->turnsStored = $main->turns_stored;
 
     return $main;
 }//end get_main()
@@ -1105,22 +847,6 @@ function get_rules()
 {
     return ee('rules');      //get and return the RULES information
 }//end get_rules()
-
-
-function set_indy(&$c)
-{
-    return ee(
-        'indy',
-        ['pro' => [
-                'pro_spy' => $c->pro_spy,
-                'pro_tr' => $c->pro_tr,
-                'pro_j' => $c->pro_j,
-                'pro_tu' => $c->pro_tu,
-                'pro_ta' => $c->pro_ta,
-            ]
-        ]
-    );      //set industrial production
-}//end set_indy()
 
 
 function update_stats($number)
@@ -1139,27 +865,14 @@ function get_advisor()
 {
     $advisor = ee('advisor');   //get and return the ADVISOR information
 
-    global $cpref;
-    $cpref->lastTurns   = $advisor->turns;
-    $cpref->turnsStored = $advisor->turns_stored;
+    global $cpref_file;
+    $cpref_file->lastTurns   = $advisor->turns;
+    $cpref_file->turnsStored = $advisor->turns_stored;
 
     //out_data($advisor);
     return new Country($advisor);
 }//end get_advisor()
 
-
-
-function get_market_info()
-{
-    return ee('market');    //get and return the PUBLIC MARKET information
-}//end get_market_info()
-
-
-function get_owned_on_market_info()
-{
-    $goods = ee('onmarket');    //get and return the GOODS OWNED ON PUBLIC MARKET information
-    return $goods->goods;
-}//end get_owned_on_market_info()
 
 
 /**

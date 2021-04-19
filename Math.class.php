@@ -47,6 +47,12 @@ class Math
         return max($mean, self::purebell($purebell_min, $max, $std_deviation, $step));
     }
 
+    public static function half_bell_truncate_right_side($mean, $min, $std_deviation, $step = 1) {
+        $purebell_max = $mean + ($mean - $min);
+        return min($mean, self::purebell($min, $purebell_max, $std_deviation, $step));
+    }
+
+
     /**
      * Calculate the standard deviation
      *
@@ -56,7 +62,7 @@ class Math
      */
     public static function standardDeviation($array)
     {
-        if (!$array) {
+        if (!$array or count($array) == 1) { // avoid division by zero error
             return 0;
         }
 
