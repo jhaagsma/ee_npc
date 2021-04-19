@@ -240,9 +240,6 @@ function get_country_owned_resolve_market_name_mismatches($c, $good_name) {
     return $c->$c_name;
 }
 
-
-
-
 // $point_name is for message logging only
 function spend_money_on_markets(&$c, $cpref, $points_needed, $max_spend, $unit_weights, $unit_points, $point_name, $max_dollars_per_point = 100000, $public_only = false, $unit_price_adjustments = [], $total_spent = 0, $total_points_gained = 0, $recursion_level = 1) {
     if($max_spend < 10000) {
