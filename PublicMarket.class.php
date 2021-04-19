@@ -255,7 +255,7 @@ class PublicMarket
 
     // return amount spent
     // $tech_limit is an amount of tech that the country should not exceed
-    public static function buy_tech(&$c, $tech = 't_bus', $max_spend = null, $maxprice = 9999, $tech_limit = 999999999)
+    public static function buy_tech(&$c, $tech = 't_bus', $max_spend = null, $maxprice = 9999, $tech_limit = 999999999) // , &$last_price TODO
     {
         // $max_spend is now static, spent money is tracked via $total_spent
         $update = false;

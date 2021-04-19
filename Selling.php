@@ -28,7 +28,6 @@ function predict_destock_bushel_sell_price($c, $rules) {
 }
 
 function emergency_sell_mil_on_pm (&$c, $money_needed) {
-    // TODO: test 
     $pm_info = privatemarket::getInfo();
     // prefer to sell jets, then tanks, then troops, than turrets
     $mil_sell_order = ['m_j', 'm_ta', 'm_tr', 'm_tu'];

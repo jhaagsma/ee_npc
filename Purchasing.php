@@ -91,7 +91,8 @@ function spend_extra_money(&$c, $buying_priorities, $cpref, $money_to_reserve, $
                         unset($optimal_tech_buying_array[$priority_goal][$key]);
                     elseif($max_spend > 10 * $max_tech_price) {
                         // FUTURE: for bus/res, start by buying the one that the country has the least of?
-                        // TODO: cut down on API calls when tech market is empty or too highly priced?
+                        // TODO: cut down on API calls when tech market is empty or too highly priced? might as well for log spam reasons
+                        // have a single prices skipped line with a comma delimited list
                         $total_spent_on_single_tech = PublicMarket::buy_tech($c, $tech_name, $max_spend, $max_tech_price, $tech_point_limit);
                         $max_spend -= $total_spent_on_single_tech; // have to update here for buy_tech() to not overbuy
                         $total_spent_by_step += $total_spent_on_single_tech;

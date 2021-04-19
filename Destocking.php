@@ -57,8 +57,9 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 	$bushel_market_history_info = get_market_history_food($cnum, $cpref);
 	$public_bushel_avg_price = $bushel_market_history_info['avg_price'];
 	// reasonable to assume that a demo country will resell bushels for $1 less than max PM sell price on all servers
-	// undercut by $3 because we're dumping
-	$estimated_public_market_bushel_sell_price = max(get_max_demo_bushel_recycle_price($rules) - 1, floor($public_bushel_avg_price) - 3);
+	// undercut public avg by a variable amount because we're dumping bushels
+	$public_undercut = ceil(1 + ($public_bushel_avg_price - 40) / 8);
+	$estimated_public_market_bushel_sell_price = max(get_max_demo_bushel_recycle_price($rules) - 1, floor($public_bushel_avg_price) - $public_undercut);
 	log_country_message($cnum, "Estimated public bushel sell price is $estimated_public_market_bushel_sell_price");
 
 	// get what's on the market so we can recall goods or tech as needed depending on time left in reset
@@ -499,16 +500,18 @@ function resell_military_on_public (&$c, $cpref, $server_max_possible_market_sel
 		}
 		elseif($pricing_strategy == 'CURRENT') {
 			$base_sell_price = PublicMarket::price($unit_type);
+			if(!$base_sell_price)
+				$base_sell_price = round($pm_price * ($min_price_jump * $c->tax() + 0.25));
 		}
 		else { // use limit
 			$base_sell_price = 3 * $pm_price;
 		}
 
 		$randomized_sell_price = min(3 * $pm_price, round($base_sell_price * Math::purebell($rmin, $rmax, $rstddev, $rstep)));
-		$minimum_sell_price = round($pm_price * ($min_price_jump * $c->tax() + 0.01 * mt_rand(5, 25)));
+		$minimum_sell_price = round($pm_price * ($min_price_jump * $c->tax() + 0.01 * mt_rand(0, 10)));
 		$public_price = max($randomized_sell_price, $minimum_sell_price);
 
-		log_country_message($c->cnum, "Calc sale of $unit_type: PM price is $pm_price, our sell price is $public_price, and max sell is $max_sell_amount units");
+		log_country_message($c->cnum, "$unit_type sale: sell price is $public_price, PM buy price is $pm_price, min price is $minimum_sell_price, and max sell is $max_sell_amount units");
 
 		$units_to_sell = min($max_sell_amount, floor(($target_sell_amount - $total_value_in_new_market_package) / ((2 - $c->tax()) * $public_price)));
 		if ($units_to_sell < 5000) // FUTURE: game API call
@@ -793,8 +796,8 @@ $reset_seconds_remaining, $max_market_package_time_in_seconds, $is_final_destock
 		$sold_on_private_reason = 'not enough time';
 	}
 
-	if($estimated_public_market_bushel_sell_price * (2 - $c->tax()) < 1.5 + $private_market_bushel_price) {
-		$sold_on_private_reason = 'can get more money on private';
+	if($estimated_public_market_bushel_sell_price * (2 - $c->tax()) < 1 + $private_market_bushel_price) {
+		$sold_on_private_reason = 'public price too low (must be $1 better than private)';
 	}
 
 	if($c->turns == 0) {
