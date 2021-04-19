@@ -78,7 +78,7 @@ class Country
 
     public function get_foodcon_no_decay() {
         return floor($this->foodcon + 0.001 * $this->food); // FUTURE: set this in the object?
-    }
+    } 
 
 
     public function get_foodnet_no_decay() {
