@@ -4,8 +4,7 @@ namespace EENPC;
 
 
 function stash_excess_bushels_on_public_if_needed(&$c, $rules, $max_sell_price = null) {
-    // 0.001 is for decay
-    $excess_bushels = $c->food - 50000 + ($c->foodnet > 0 ? 0 : ($c->turns + 20) * floor(min(0, ($c->foodnet + 0.001 * $c->food))));
+    $excess_bushels = $c->food - 50000 + ($c->foodnet > 0 ? 0 : ($c->turns + 20) * floor(min(0, $c->get_foodnet_no_decay())));
 
     if($excess_bushels > 3500000) {
         if(!food_and_money_for_turns($c, 1, 0, false, true)) // if false then we can't run a turn without hitting OOF
