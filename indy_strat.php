@@ -111,7 +111,7 @@ function play_indy_turn(&$c, $cpref, $server_max_possible_market_sell, $is_allow
         //LOW BPT & CAN AFFORD TO BUILD
         //build one CS if we can afford it and are below our target BPT
         return Build::cs(); //build 1 CS
-    } elseif ($c->money > $cpref->target_cash_after_stockpiling && ( // FUTURE: this is a rather weak form of stockpiling
+    } elseif ($c->money < $cpref->target_cash_after_stockpiling && ( // FUTURE: this is a rather weak form of stockpiling
             $c->protection == 0 && total_cansell_military($c, $server_max_possible_market_sell) > 7500 && sellmilitarytime($c)
             || $c->turns == 1 && total_cansell_military($c, $server_max_possible_market_sell) > 7500
         )
