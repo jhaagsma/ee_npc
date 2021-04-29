@@ -70,6 +70,7 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
 
     attempt_to_recycle_bushels_but_avoid_buyout($c, $cpref, $food_price_history);
 
+    // FUTURE: what if we have a bunch of bushels that we plan to sell on PM?
     if($c->money > 2000000000) { // try to stockpile to avoid corruption and to limit bot abuse
         // first spend extra money normally so we can buy needed military or income techs if they are worthwhile
         spend_extra_money($c, $buying_priorities, $cpref, $money_to_keep_after_stockpiling, false, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array, $buying_schedule);
@@ -169,7 +170,7 @@ function play_farmer_turn(&$c, $cpref, $rules, $is_allowed_to_mass_explore, $bus
         || (        
             $c->protection == 0 && $c->food > 7000
             && (
-                $c->foodnet > 0 && $c->foodnet > 3 * $c->foodcon && $c->food > 30 * $c->foodnet //Don't sell less than 30 turns of food unless you're on your last turn (and desperate?)
+                $c->foodnet > 0 && $c->foodnet > 3 * $c->get_foodcon_no_decay() && $c->food > 30 * $c->get_foodnet_no_decay() //Don't sell less than 30 turns of food unless you're on your last turn (and desperate?)
                 || $c->turns == 1
             )
         )

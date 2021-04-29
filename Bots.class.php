@@ -96,15 +96,15 @@ class Bots
         // a 20/20/20/20/20 split doesn't work well on the ai server
         // farmers end up not being able to sell food and troops can go to $40
         if($is_ai_server and !$is_debug_server) {
-            // per 25 countries: 2 farmer, 3 CI, 1 rainbow, 12 techer, 7 casher
+            // per 25 countries: 3 farmer, 3 CI, 2 rainbow, 10 techer, 7 casher
             // this doesn't handle a few country deletions well, but I don't think that it matters for ai server
             if (($country_position % 25) <= 6) {
                 return 'C';
-            } elseif  (($country_position % 25) <= 18) {
+            } elseif  (($country_position % 25) <= 16) {
                 return 'T';
-            } elseif  (($country_position % 25) <= 21) {
+            } elseif  (($country_position % 25) <= 19) {
                 return 'I';
-            } elseif  (($country_position % 25) <= 23) {
+            } elseif  (($country_position % 25) <= 22) {
                 return 'F';
             } else {
                 return 'R';
