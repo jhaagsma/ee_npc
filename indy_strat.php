@@ -15,6 +15,10 @@ function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$tur
     $starting_turns = $c->turns;
 
     $is_allowed_to_mass_explore = is_country_allowed_to_mass_explore($c, $cpref);
+
+    sell_initial_troops_on_turn_0($c);
+
+
     log_country_message($cnum, "Indy: {$c->pt_indy}%; Bus: {$c->pt_bus}%; Res: {$c->pt_res}%; Mil: {$c->pt_mil}%; Weap: {$c->pt_weap}%");
 
     log_country_message($cnum, "Getting military prices using market search looking back $cpref->market_search_look_back_hours hours", 'green');
@@ -80,6 +84,7 @@ function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$tur
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
         }
 
+        // TODO: tech buying?
         if (turns_of_food($c) > (10 + $c->turns) && turns_of_money($c) > (10 + $c->turns) && $c->money > 3500 * 500 && ($c->money > floor(0.8 * $c->fullBuildCost()) - $c->runCash())
         ) {
             if ($c->turns_played >= $turns_played_for_last_spend_money_attempt + $cpref->spend_extra_money_cooldown_turns) { // wait some number of turns before trying again
@@ -95,7 +100,7 @@ function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$tur
     if($exit_condition = 'NORMAL' && $starting_turns > 30 && ($starting_turns - $c->turns) < 0.3 * $starting_turns)
         $exit_condition = 'LOW_TURNS_PLAYED'; 
 
-    $c->countryStats(INDY);
+    //$c->countryStats(INDY);
 
     return $c;
 }//end play_indy_strat()
@@ -106,15 +111,20 @@ function play_indy_turn(&$c, $cpref, $server_max_possible_market_sell, $is_allow
     $target_bpt = $cpref->initial_bpt_target;
     global $turnsleep;
     usleep($turnsleep);
-    //log_country_message($c->cnum, $main->turns . ' turns left');
-    if ($c->shouldBuildSingleCS($target_bpt)) {
+
+    if ($c->turns_played <= 99) {
+        return play_indy_turn_first_99_turns($c, $cpref, $target_bpt);
+    } elseif ($c->land < 1800) {
+        return play_indy_turn_first_1800_acres($c, $cpref, $target_bpt, $server_max_possible_market_sell);
+    } elseif ($c->shouldBuildSingleCS($target_bpt)) {
         //LOW BPT & CAN AFFORD TO BUILD
         //build one CS if we can afford it and are below our target BPT
         return Build::cs(); //build 1 CS
-    } elseif ($c->money < $cpref->target_cash_after_stockpiling && ( // FUTURE: this is a rather weak form of stockpiling
-            $c->protection == 0 && total_cansell_military($c, $server_max_possible_market_sell) > 7500 && sellmilitarytime($c)
-            || $c->turns == 1 && total_cansell_military($c, $server_max_possible_market_sell) > 7500
-        )
+    } elseif (
+           $c->money < $cpref->target_cash_after_stockpiling // weak stocking
+        && $c->protection == 0
+        && total_cansell_military($c, $server_max_possible_market_sell) > 7500
+        && ($c->turns == 1 || sellmilitarytime($c))
     ) {
         return sell_max_military($c, $server_max_possible_market_sell, $cpref);
     } elseif ($c->shouldBuildFullBPT($target_bpt)) {
@@ -125,13 +135,61 @@ function play_indy_turn(&$c, $cpref, $server_max_possible_market_sell, $is_allow
         return Build::cs(4); //build 4 CS
     } elseif ($c->built() > 50) {  //otherwise... explore if we can
         //1.15 is my growth factor for indies
-        $explore_turn_limit = $is_allowed_to_mass_explore ? 999 : 7; // match spend_money call
+        $explore_turn_limit = $is_allowed_to_mass_explore ? 999 : $cpref->spend_extra_money_cooldown_turns;
         return explore($c, max(1, min($explore_turn_limit, $c->turns - 1, turns_of_money($c) / 1.15 - 4, turns_of_food($c) - 4)));
     } else { //otherwise...  cash
         return cash($c);
     }
 }//end play_indy_turn()
 
+
+function play_indy_turn_first_1800_acres (&$c, $cpref, $target_bpt, $server_max_possible_market_sell) {
+    if($c->turns_played <= 170 && $c->m_tu) {
+        return PrivateMarket::sell_single_good($c, 'm_tu', $c->m_tu);
+    } elseif ( // TODO: takes forever remotely?
+        $c->m_tu
+        && $c->protection == 0
+        && total_cansell_military($c, $server_max_possible_market_sell) > 7500
+        && ($c->turns == 1 || sellmilitarytime($c))
+    ) {
+        return sell_max_military($c, $server_max_possible_market_sell, $cpref);
+    } elseif ($c->shouldBuildFullBPT($target_bpt)) {
+        //build a full BPT if we can afford it
+        return Build::indy($c);
+    } elseif ($c->shouldBuildFourCS($target_bpt)) {
+        //build 4CS if we can afford it and are below our target BPT (80)
+        return Build::cs(4); //build 4 CS
+    } elseif ($c->built() > 50) {  //otherwise... explore if we can
+        //1.15 is my growth factor for indies
+        $explore_turn_limit = 2;
+        return explore($c, max(1, min($explore_turn_limit, $c->turns - 1, turns_of_money($c) / 1.15 - 4, turns_of_food($c) - 4)));
+    //} elseif($c->money < $c->bpt * (1500 + 3 * $c->land) && $c->m_tr + $c->m_j + $c->m_tu + $c->m_ta > 0) {
+    //    return emergency_sell_mil_on_pm ($c, $c->bpt * (1500 + 3 * $c->land) - $c->money); // TODO: is it okay to return false/true?
+    } else { //otherwise...  cash - TODO: money management needs to be good enough so this doesn't ever happen
+        return cash($c);
+    }
+} // play_indy_turn_first_1800_acres
+
+function play_indy_turn_first_99_turns (&$c, $cpref, $target_bpt) {
+    if($c->m_tu) {
+        return PrivateMarket::sell_single_good($c, 'm_tu', $c->m_tu);
+    } elseif($c->land < 600 && $c->built() > 50) {
+        // always explore when possible early on to get more income
+        return explore($c, 1);
+    } elseif ($c->shouldBuildSingleCS($target_bpt, 20)) {
+        return Build::cs(); //build 1 CS
+    } elseif($c->b_farm < 20) {
+        return Build::farmer($c);
+    } elseif ($c->shouldBuildFullBPT($target_bpt)) {
+        //build a full BPT if we can afford it
+        return Build::indy($c);
+    } elseif ($c->shouldBuildFourCS($target_bpt)) {
+        //build 4CS if we can afford it and are below our target BPT (65)
+        return Build::cs(4); //build 4 CS
+    } else { //otherwise...  cash (shouldn't ever happen)
+        return cash($c);
+    }
+} // play_indy_turn_first_99_turns
 
 
 function sellmilitarytime(&$c)
@@ -163,17 +221,3 @@ function indy_switch_government_if_needed($c) {
         }
     }
 } // indy_switch_government_if_needed()
-
-
-/*
-function indyGoals(&$c)
-{
-    return [
-        //what, goal, priority
-        ['t_indy',158,8],
-        ['t_bus',160,3],
-        ['t_res',160,3],
-        ['t_mil',94,4],
-    ];
-}//end indyGoals()
-*/

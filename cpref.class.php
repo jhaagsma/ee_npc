@@ -62,6 +62,7 @@ class cpref
 
         // buying
         $this->purchase_schedule_number = $this->get_purchase_schedule_number();
+        $this->min_land_to_buy_defense = $this->get_min_land_to_buy_defense();        
         $this->target_cash_after_stockpiling = ($this->strat == "C" || $this->strat == "I" ? 1500000000 : 1800000000);
         $this->spend_extra_money_cooldown_turns = ($this->strat == "C" ? 5 : 7);
         $this->max_stockpiling_loss_percent = 60; // must be > 0
@@ -120,6 +121,7 @@ class cpref
             , "mass_explore_stop_acreage_non_rep"
             , "base_inherent_value_for_tech"
             , "purchase_schedule_number"
+            , "min_land_to_buy_defense"
             , "target_cash_after_stockpiling"
             , "spend_extra_money_cooldown_turns"
             , "max_bushel_buy_price_with_low_stored_turns"
@@ -180,6 +182,12 @@ class cpref
             else
                 return "CURRENT";     
         }
+    }
+
+
+
+    private function get_min_land_to_buy_defense() {
+       return 1000 + round($this->decode_bot_secret(4) / 5000);
     }
 
 

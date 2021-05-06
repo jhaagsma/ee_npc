@@ -106,7 +106,7 @@ function play_rainbow_strat($server, $cnum, $rules, $cpref, &$exit_condition)
 
             if ($spend > abs($c->income) * 10) {
                 //try to batch a little bit...
-                buy_rainbow_goals($c, $spend);
+                buy_rainbow_goals($c, $cpref, $spend);
             }
         }
 
@@ -120,7 +120,7 @@ function play_rainbow_strat($server, $cnum, $rules, $cpref, &$exit_condition)
         //$main->turns = 0;             //use this to do one turn at a time
     }
 
-    $c->countryStats(RAINBOW, rainbowGoals($c));
+    //$c->countryStats(RAINBOW, rainbowGoals($c, $cpref));
     return $c;
 }//end play_rainbow_strat()
 
@@ -279,13 +279,13 @@ function tech_rainbow(&$c, $turns = 1)
 
 
 
-function buy_rainbow_goals(&$c, $spend = null)
+function buy_rainbow_goals(&$c, $cpref, $spend = null)
 {
-    Country::countryGoals($c, rainbowGoals($c), $spend);
+    Country::countryGoals($c, rainbowGoals($c, $cpref), $spend);
 }//end buy_rainbow_goals()
 
 
-function rainbowGoals(&$c)
+function rainbowGoals(&$c, $cpref)
 {
     return [
         //what, goal, priority
@@ -295,6 +295,6 @@ function rainbowGoals(&$c)
         ['t_res',145,7],
         ['t_mil',94,5],
         ['nlg',$c->nlgTarget(),5],
-        ['dpa',$c->defPerAcreTarget(),10],
+        ['dpa',$c->defPerAcreTarget($cpref),10],
     ];
 }//end rainbowGoals()

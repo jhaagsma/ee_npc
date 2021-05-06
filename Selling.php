@@ -318,7 +318,7 @@ function set_indy_from_production_algorithm(&$c, $military_unit_price_history, $
        
         // remove jets if we're checking DPA and it's too low
         if ($checkDPA) {
-            $target = $c->defPerAcreTarget();
+            $target = $c->defPerAcreTarget($cpref);
             if ($c->defPerAcre() < $target) {
                 //below def target, don't make jets
                 unset($production_score['m_j']);

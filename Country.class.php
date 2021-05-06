@@ -219,23 +219,31 @@ class Country
      */
     public function nlgTarget($powfactor = 1.00)
     {
-        //lets lower it from 80+turns_playwed/7, to compete
-        return floor(80 + pow($this->turns_played + $this->turns + $this->turns_stored, $powfactor) / 15);
+        if($this->turns_played + $this->turns + $this->turns_stored < 360)
+            return 0;
+        else {
+            //lets lower it from 80+turns_playwed/7, to compete
+            return floor(80 + pow($this->turns_played + $this->turns + $this->turns_stored, $powfactor) / 15);
+        }
     }//end nlgTarget()
 
 
     /**
      * A crude Defence Per Acre number
+     * $cpref - country preference object
      * @param float $mult      multiplication factor
      *
      *  @param float $powfactor power factor
      *
      * @return int DPATarget
      */
-    public function defPerAcreTarget($mult = 1.5, $powfactor = 1.0)
+    public function defPerAcreTarget($cpref, $mult = 1.5, $powfactor = 1.0)
     {
-        //out("Turns Played: {$this->turns_played}");
-        $dpat = floor(75 + pow($this->turns_played + $this->turns + $this->turns_stored, $powfactor) / 10) * $mult;
+        // fine if rainbows don't pass this in, screw them
+        if(isset($cpref) && $this->land < $cpref->min_land_to_buy_defense)
+            $dpat = 0;
+        else
+            $dpat = floor(75 + pow($this->turns_played + $this->turns + $this->turns_stored, $powfactor) / 10) * $mult;
         //log_country_message($this->cnum, "DPAT: $dpat"); // too much log spam - Slagpit
         return $dpat;
     }//end defPerAcreTarget()

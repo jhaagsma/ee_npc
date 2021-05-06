@@ -113,7 +113,7 @@ function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
         // don't see a strong reason to sell excess bushels at this step
     }
 
-    $c->countryStats(CASHER);
+    //$c->countryStats(CASHER);
     return $c;
 }//end play_casher_strat()
 
@@ -139,7 +139,7 @@ function play_casher_turn(&$c, $cpref, $is_allowed_to_mass_explore)
         return Build::cs(4); //build 4 CS
     } elseif ($c->built() > 50) {
         //otherwise... explore if we can
-        $explore_turn_limit = $is_allowed_to_mass_explore ? 999 : 7; // match spend_money call
+        $explore_turn_limit = $is_allowed_to_mass_explore ? 999 : $cpref->spend_extra_money_cooldown_turns;
         return explore($c, max(1, min($explore_turn_limit, $c->turns, turns_of_food($c) - 4)));
     } else {
         //otherwise...  cash
@@ -221,20 +221,3 @@ function casher_switch_government_if_needed($c) {
         }
     }
 } // casher_switch_government_if_needed()
-
-
-/*
-function casherGoals(&$c)
-{
-    $bus_res_goal = ($c->govt == "H" ? 148 : 178);
-    return [
-        //what, goal, priority
-        ['t_bus',$bus_res_goal,800],
-        ['t_res',$bus_res_goal,800],
-        ['t_mil',94,100],
-        ['nlg',$c->nlgTarget(),200],
-        ['dpa',$c->defPerAcreTarget(1.0),400],
-        ['food', 1000000000, 1],
-    ];
-}//end casherGoals()
-*/

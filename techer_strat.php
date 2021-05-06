@@ -115,7 +115,7 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
     if($exit_condition = 'NORMAL' && $starting_turns > 30 && ($starting_turns - $c->turns) < 0.3 * $starting_turns)
         $exit_condition = 'LOW_TURNS_PLAYED'; 
 
-    $c->countryStats(TECHER);
+    //$c->countryStats(TECHER);
 
     return $c;
 }//end play_techer_strat()
@@ -387,15 +387,3 @@ function techer_switch_government_if_needed($c) {
         }
     }
 } // techer_switch_government_if_needed()
-
-
-/*
-function techerGoals(&$c)
-{
-    return [
-        //what, goal, priority
-        ['dpa', $c->defPerAcreTarget(1.0), 2],
-        ['nlg', $c->nlgTarget(),2 ],
-    ];
-}//end techerGoals()
-*/

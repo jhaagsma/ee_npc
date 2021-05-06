@@ -516,7 +516,7 @@ function generate_compact_country_status($c, $rules, $snapshot_type, $strat, $is
     $output_c_values['c_dstk'] = $is_destocking;
     $output_c_values['c_tax']  = $c->taxes;
     $output_c_values['c_exp']  = $c->expenses;
-    $output_c_values['c_netf'] = $c->foodnet;
+    $output_c_values['c_netf'] = $c->get_foodnet_no_decay();
     $output_c_values['c_neto'] = $c->oilpro;
     $output_c_values['c_tpt']  = $c->tpt;
     $output_c_values['c_neti'] = round($c->b_indy * 1.86 * 0.01 * $c->pt_indy * ($c->govt == 'C' ? 1.35 : 1.0)); // FUTURE: from game code

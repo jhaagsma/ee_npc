@@ -45,7 +45,7 @@ function spend_extra_money(&$c, $buying_priorities, $cpref, $money_to_reserve, $
     if($is_tech_goal_present and $skip_tech) // log this here to avoid spam
         log_country_message($c->cnum, "Optimal tech array is empty for goals which usually means tech is too expensive");    
 
-    $target_dpa = $c->defPerAcreTarget();
+    $target_dpa = $c->defPerAcreTarget($cpref);
     $target_dpnw = $c->nlgTarget(); 
 
     log_country_message($c->cnum, "Using schedule $buying_schedule, spend money with ".($delay_military_purchases ? "delayed mil purchases, " : "")."money: $c->money, max to spend: $max_spend, total reserved: $money_to_reserve", 'green');
