@@ -222,7 +222,7 @@ $high_price_score_array, $no_market_history_score_array, $current_price_score_ar
                 $number_of_units_with_no_data++;
         }
 
-        if($number_of_units_with_no_data == 4) { // we will rarely get false positives with this approach, but whatever // TODO: should be 11 for tech
+        if($number_of_units_with_no_data == count($production_factor_per_unit)) { // we will rarely get false positives with this approach, but whatever
             log_country_message($cnum, "Detected no market data so using default values");
             $production_score = $no_market_history_score_array;
         }
@@ -241,7 +241,7 @@ $high_price_score_array, $no_market_history_score_array, $current_price_score_ar
                 $number_of_units_with_no_data++;
         }
 
-        if($number_of_units_with_no_data == 4) { // we will rarely get false positives with this approach, but whatever // TODO: should be 11 for tech
+        if($number_of_units_with_no_data == count($production_factor_per_unit)) { // we will rarely get false positives with this approach, but whatever
             log_country_message($cnum, "Detected no market data so using default values");
             $production_score = $no_market_history_score_array;
         }

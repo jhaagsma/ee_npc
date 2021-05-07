@@ -213,7 +213,7 @@ function play_farmer_turn(&$c, $cpref, $rules, $is_allowed_to_mass_explore, $bus
 function play_farmer_turn_first_1800_acres (&$c, $cpref, $rules, $target_bpt, $bushel_min_sell_price, $bushel_max_sell_price, $food_price_history) {
     if($c->food > 0 && $c->b_farm > 0 && $c->empty >= $c->bpt && $c->money < $c->bpt * $c->build_cost) {
         // sell if we don't have enough cash to build a bpt of farms
-        $pm_info = PrivateMarket::getInfo(); // TODO - cache?
+        $pm_info = PrivateMarket::getInfo(); // FUTURE - cache?
         $food_to_sell = ceil(min($c->food, $c->bpt * $c->build_cost / $pm_info->sell_price->m_bu));
         return PrivateMarket::sell_single_good($c, 'm_bu', $c->food);
     } elseif (

@@ -31,8 +31,7 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
         Allies::fill($cpref, 'res');
     }
 
-    // TODO" DEBUG
-    // techer_switch_government_if_needed($c);
+    techer_switch_government_if_needed($c);
 
     $buying_priorities = [
         ['type'=>'DPA','goal'=>100],
@@ -135,9 +134,11 @@ function play_techer_turn(&$c, $cpref, $rules, $tech_price_min_sell_price, $is_a
     // FUTURE: why does building 4 cs become so slow? can_sell_tech? after protection? selltechtime ?
     // FUTURE: maybe split logic for < target BPT, < 1800 A, and otherwise
 
-    // TODO: need to call ee destroy API
     if($c->govt <> 'H' && $c->govt <> 'I' && $c->turns_played < 180) {
         return play_techer_turn_first_179_turns_for_most_gov($c, $cpref, $tpt_split);
+    } elseif($c->b_farm > 0 && $c->money > 1.2 * $c->build_cost * $c->b_farm) { 
+        // destroy any farms as soon as we have enough cash to replace with labs
+        return Build::destroy_all_of_one_type($c, 'farm');
     } elseif($c->land < 500 && $c->built() > 50) {
         // always explore when possible early on to get more income
         return explore($c, 1);
@@ -167,7 +168,7 @@ function play_techer_turn(&$c, $cpref, $rules, $tech_price_min_sell_price, $is_a
         $teching_turns_remaining_before_explore -= $turns_to_tech;
         return tech_techer($c, $turns_to_tech, $tpt_split);
     } elseif (
-        $cpref->techer_allowed_to_grow && $c->built() > 50 && $c->land < $cpref->techer_land_goal &&
+        $cpref->techer_allowed_to_explore && $c->built() > 50 && $c->land < $cpref->techer_land_goal &&
         (
             ($c->empty < 4 && $c->land < 1800) // always allow for early exploring (cs)
             ||

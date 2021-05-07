@@ -30,6 +30,23 @@ class Build
     }//end buildings()
 
 
+    public static function destroy_all_of_one_type(&$c, $building_type)
+    {
+        $buildings = [];
+        if($building_type == 'farm')
+            $buildings = ['farm' => $c->b_farm];
+        else // FUTURE: support all
+            log_error_message(999, $c->cnum, 'destroy_all_of_one_type(): invalid value for $building_type:'.$building_type);
+
+        ee('destroy', ['destroy' => $buildings]);
+
+        log_country_message($c->cnum, "Destroyed all buildings of type $building_type and updating advisor");
+        
+        // FUTURE: do incremental update
+        return false; //this will do $c->get_advisor();
+    }//end buildings()
+
+
     /**
      * Build CS
      *

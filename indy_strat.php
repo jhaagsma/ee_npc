@@ -84,7 +84,6 @@ function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$tur
             break; //HOLD TURNS HAS BEEN DECLARED; HOLD!!
         }
 
-        // TODO: tech buying?
         if (turns_of_food($c) > (10 + $c->turns) && turns_of_money($c) > (10 + $c->turns) && $c->money > 3500 * 500 && ($c->money > floor(0.8 * $c->fullBuildCost()) - $c->runCash())
         ) {
             if ($c->turns_played >= $turns_played_for_last_spend_money_attempt + $cpref->spend_extra_money_cooldown_turns) { // wait some number of turns before trying again
@@ -142,7 +141,7 @@ function play_indy_turn(&$c, $cpref, $server_max_possible_market_sell, $is_allow
         // sell if we don't have enough cash to build a bpt of indies
         // shouldn't need to check income because money management takes care of it?
         log_country_message($c->cnum, "Selling military on PM in an attempt to avoid cashing");
-        return emergency_sell_mil_on_pm ($c, $c->bpt * $c->build_cost - $c->money); // TODO: is it okay to return false/true?
+        return emergency_sell_mil_on_pm ($c, $c->bpt * $c->build_cost - $c->money); // FUTURE: is it okay to return false/true?
     } else { //otherwise...  cash
         return cash($c);
     }
@@ -155,15 +154,15 @@ function play_indy_turn_first_1800_acres (&$c, $cpref, $target_bpt, $server_max_
     } elseif(($c->m_tr + $c->m_j + $c->m_tu + $c->m_ta) > 0 && $c->b_indy > 0 && $c->empty >= $c->bpt && $c->money < $c->bpt * $c->build_cost) {
         // sell if we don't have enough cash to build a bpt of indies
         log_country_message($c->cnum, "Selling military on PM in an attempt to avoid parking lot");
-        return emergency_sell_mil_on_pm ($c, $c->bpt * $c->build_cost - $c->money); // TODO: is it okay to return false/true?
-    } elseif ( // TODO: takes forever remotely?
+        return emergency_sell_mil_on_pm ($c, $c->bpt * $c->build_cost - $c->money); // FUTURE: is it okay to return false/true?
+    } elseif ( // FUTURE: takes forever remotely?
         $c->m_tu
         && $c->protection == 0
         && total_cansell_military($c, $server_max_possible_market_sell) > 7500
         && ($c->turns == 1 || sellmilitarytime($c))
     ) {
         return sell_max_military($c, $server_max_possible_market_sell, $cpref);
-    } elseif ($c->shouldBuildFullBPT($target_bpt)) { // TODO: why doesn't this work after emergency sell?
+    } elseif ($c->shouldBuildFullBPT($target_bpt)) {
         //build a full BPT if we can afford it
         return Build::indy($c);
     } elseif ($c->shouldBuildFourCS($target_bpt)) {
@@ -173,7 +172,7 @@ function play_indy_turn_first_1800_acres (&$c, $cpref, $target_bpt, $server_max_
         //1.15 is my growth factor for indies
         $explore_turn_limit = 2;
         return explore($c, max(1, min($explore_turn_limit, $c->turns - 1, turns_of_money($c) / 1.15 - 4, turns_of_food($c) - 4)));
-    } else { //otherwise...  cash - TODO: money management needs to be good enough so this doesn't ever happen
+    } else { //otherwise...  cash - FUTURE: money management needs to be good enough so this doesn't ever happen
         return cash($c);
     }
 } // play_indy_turn_first_1800_acres

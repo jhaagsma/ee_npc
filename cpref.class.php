@@ -49,9 +49,11 @@ class cpref
 
 
         $number_of_seconds_in_set = $this->reset_end_time - $this->reset_start_time;
-        $this->techer_allowed_to_grow = (time() < 0.65 * $number_of_seconds_in_set + $this->reset_start_time) ? true : false; // weird to set only for techer
         $this->techer_land_goal = ($turns_in_set < 2200 ? 8000 : 10000); // FUTURE - this is very basic, also weird to only set for techer
-        
+         // weird to set only for techer
+        $this->techer_round_explore_cutoff_percentage = $this->get_techer_round_explore_cutoff_percentage();
+        $this->techer_allowed_to_explore = (time() < $this->techer_round_explore_cutoff_percentage * $number_of_seconds_in_set + $this->reset_start_time) ? true : false;
+
         $this->base_inherent_value_for_tech = 700;
         // if tpt is high enough, spend this percentage of turns teching before considering exploring
         $this->min_perc_teching_turns = $this->get_min_perc_teching_turns();
@@ -119,6 +121,9 @@ class cpref
             , "gdi"
             , "mass_explore_stop_acreage_rep"
             , "mass_explore_stop_acreage_non_rep"
+            , "techer_land_goal"
+            , "techer_round_explore_cutoff_percentage"
+            , "techer_allowed_to_explore"
             , "base_inherent_value_for_tech"
             , "purchase_schedule_number"
             , "min_land_to_buy_defense"
@@ -195,6 +200,13 @@ class cpref
          // between 20% and 50%, fine if not completely even probabilities on edges
         return 20 + round($this->decode_bot_secret(3) / 33);
     }
+
+
+    private function get_techer_round_explore_cutoff_percentage() {
+        // between 45% and 65%, fine if not completely even probabilities on edges
+       return round(0.01 * (45 + $this->decode_bot_secret(5) / 5000), 2);
+    } 
+
 
 
     private function get_production_algorithm() {
