@@ -180,10 +180,10 @@ function play_farmer_turn(&$c, $cpref, $rules, $is_allowed_to_mass_explore, $bus
         )
     ) { 
         // sell some food on PM if we have a lot of empty acres, still have turns, and can't afford to build at least 1k acres
-        if($c->turns > (1000 / $c->bpt) && $c->empty >= 1000 && $c->money < 1000 * (1500 + 3 * $c->land)) {        
+        if($c->turns > (1000 / $c->bpt) && $c->empty >= 1000 && $c->money < 1000 * $c->build_cost) {        
             log_country_message($c->cnum, "Selling food on PM because we have over 999 empty acres and not enough money to build them");    
             $pm_info = PrivateMarket::getInfo();
-            $food_to_sell = ceil(min($c->food, 1000 * (1500 + 3 * $c->land) / $pm_info->sell_price->m_bu));
+            $food_to_sell = ceil(min($c->food, 1000 * $c->build_cost / $pm_info->sell_price->m_bu));
             return PrivateMarket::sell_single_good($c, 'm_bu', $food_to_sell);
         }
         else
@@ -211,10 +211,10 @@ function play_farmer_turn(&$c, $cpref, $rules, $is_allowed_to_mass_explore, $bus
 
 
 function play_farmer_turn_first_1800_acres (&$c, $cpref, $rules, $target_bpt, $bushel_min_sell_price, $bushel_max_sell_price, $food_price_history) {
-    if($c->food > 0 && $c->b_farm > 0 && $c->empty >= $c->bpt && $c->money < $c->bpt * (1500 + 3 * $c->land)  ) {
+    if($c->food > 0 && $c->b_farm > 0 && $c->empty >= $c->bpt && $c->money < $c->bpt * $c->build_cost) {
         // sell if we don't have enough cash to build a bpt of farms
         $pm_info = PrivateMarket::getInfo(); // TODO - cache?
-        $food_to_sell = ceil(min($c->food, $c->bpt * (1500 + 3 * $c->land) / $pm_info->sell_price->m_bu));
+        $food_to_sell = ceil(min($c->food, $c->bpt * $c->build_cost / $pm_info->sell_price->m_bu));
         return PrivateMarket::sell_single_good($c, 'm_bu', $c->food);
     } elseif (
            $c->protection == 0

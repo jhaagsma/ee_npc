@@ -213,7 +213,7 @@ function money_management(&$c, $server_max_possible_market_sell, $cpref, &$turn_
             log_country_message($c->cnum, "Selling max military, and holding turns.");
             $possible_turn_result = sell_max_military($c, $server_max_possible_market_sell, $cpref);
             if($possible_turn_result <> null)
-                update_turn_action_array($turn_action_counts, $possible_turn_result);
+                update_turn_action_array($turn_action_counts, ['sell' => 1]);
             return true;
         } elseif ($c->turns_stored > 30 && total_military($c) > 1000) {
             log_error_message(1002, $c->cnum, "We have stored turns or can't sell on public; sell 1/10 of military");
@@ -293,9 +293,13 @@ function food_management(&$c, $cpref)
         return false;
     }
 
+    if ($c->protection == 1 && $c->turns_stored < 30) {
+        log_country_message($c->cnum, "Hold turns to wait for food on market during protection because we have low stored turns");
+        return true;
+    }
+
     //WE HAVE MONEY, WAIT FOR FOOD ON MKT
     if ($c->protection == 0 && $c->turns_stored < 30 && $c->income > 64 * $foodloss) { // 64 is a reasonably high price for public bushel price
-        //Text for screen
         log_country_message($c->cnum, "We make enough to buy food if we want to; hold turns for now, and wait for food on MKT.");
         return true;
     }
@@ -308,7 +312,6 @@ function food_management(&$c, $cpref)
 
     if ($c->food < $turns_of_food && $c->money > $turns_buy * $foodloss * $pm_info->buy_price->m_bu) {
         //losing food, less than turns_buy turns left, AND have the money to buy it
-        //Text for screen
         // FUTURE: need to check quantity of food available on private market
         log_country_message($c->cnum, 
             "Less than $turns_buy turns worth of food! (".$c->foodnet."/turn) ".

@@ -187,7 +187,7 @@ class cpref
 
 
     private function get_min_land_to_buy_defense() {
-       return 1000 + round($this->decode_bot_secret(4) / 5000);
+       return 1000 + round($this->decode_bot_secret(4) / 5);
     }
 
 

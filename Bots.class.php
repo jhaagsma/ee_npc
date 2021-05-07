@@ -93,8 +93,8 @@ class Bots
     public static function assign_strat_from_country_loop($country_position, $is_debug_server, $is_ai_server) {
         // FUTURE: make it easy to assign whatever mix of strategies we want with different mixes by server
 
-        return 'F'; // TODO DEBUG
-
+        return 'T'; // TODO DEBUG
+        // T is only one remaining
 
         // a 20/20/20/20/20 split doesn't work well on the ai server
         // farmers end up not being able to sell food and troops can go to $40

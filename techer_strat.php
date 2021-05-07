@@ -31,7 +31,8 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
         Allies::fill($cpref, 'res');
     }
 
-    techer_switch_government_if_needed($c);
+    // TODO" DEBUG
+    // techer_switch_government_if_needed($c);
 
     $buying_priorities = [
         ['type'=>'DPA','goal'=>100],
@@ -134,10 +135,13 @@ function play_techer_turn(&$c, $cpref, $rules, $tech_price_min_sell_price, $is_a
     // FUTURE: why does building 4 cs become so slow? can_sell_tech? after protection? selltechtime ?
     // FUTURE: maybe split logic for < target BPT, < 1800 A, and otherwise
 
-    if($c->land < 500 && $c->built() > 50) {
+    // TODO: need to call ee destroy API
+    if($c->govt <> 'H' && $c->govt <> 'I' && $c->turns_played < 180) {
+        return play_techer_turn_first_179_turns_for_most_gov($c, $cpref, $tpt_split);
+    } elseif($c->land < 500 && $c->built() > 50) {
         // always explore when possible early on to get more income
         return explore($c, 1);
-    } elseif ($c->shouldBuildSingleCS($target_bpt)) {
+    } elseif ($c->shouldBuildSingleCS($target_bpt, 30)) {
         //LOW BPT & CAN AFFORD TO BUILD
         //build one CS if we can afford it and are below our target BPT
         return Build::cs(); //build 1 CS
@@ -189,6 +193,35 @@ function play_techer_turn(&$c, $cpref, $rules, $tech_price_min_sell_price, $is_a
         return tech_techer($c, $turns_to_tech, $tpt_split);
     }
 }//end play_techer_turn()
+
+
+
+// FUTURE figure out startup for theo?
+function play_techer_turn_first_179_turns_for_most_gov (&$c, $cpref, $tpt_split) {
+    if($c->food > 0 && $c->b_farm > 0 && $c->b_cs <= 120) {
+        return PrivateMarket::sell_single_good($c, 'm_bu', $c->food);
+    } elseif(($c->land < 400 && $c->built() > 50) || $c->empty < $c->bpt) {
+        // always explore when possible early on to get more income
+        // otherwise, explore if less than bpt of empty acres
+        return explore($c, 1);
+    } elseif ($c->shouldBuildSingleCS(10, 10)) {
+        return Build::cs(); //build 1 CS
+    } elseif ($c->b_farm < 50) {
+        //build a full BPT if we can afford it
+        return Build::farmer($c);
+    } elseif ($c->shouldBuildFourCS(35, 35)) {
+        //build 4CS if we can afford it and are below our target BPT (35 for now)
+        return Build::cs(4); //build 4 CS
+    } elseif ($c->shouldBuildFullBPT(35)) {
+        //build a full BPT if we can afford it
+        return Build::techer($c);
+    } elseif ($c->shouldBuildFourCS(37)) {
+        //build 4CS if we can afford it and are below our target BPT (35 for now)
+        return Build::cs(4); //build 4 CS
+    } else { //otherwise...  tech
+        return tech_techer($c, 1, $tpt_split);
+    }
+} // play_techer_turn_first_179_turns_for_most_gov
 
 
 

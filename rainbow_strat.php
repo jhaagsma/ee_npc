@@ -73,7 +73,7 @@ function play_rainbow_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     while ($c->turns > 0) {
         //$result = PublicMarket::buy($c,array('m_bu'=>100),array('m_bu'=>400));
                 
-        $result = play_rainbow_turn($c, $rules->market_autobuy_tech_price, $rules->max_possible_market_sell);
+        $result = play_rainbow_turn($c, $cpref, $rules->market_autobuy_tech_price, $rules->max_possible_market_sell);
         if ($result === false) {  //UNEXPECTED RETURN VALUE
             $c = get_advisor();     //UPDATE EVERYTHING
             continue;
@@ -125,7 +125,7 @@ function play_rainbow_strat($server, $cnum, $rules, $cpref, &$exit_condition)
 }//end play_rainbow_strat()
 
 
-function play_rainbow_turn(&$c, $market_autobuy_tech_price, $server_max_possible_market_sell)
+function play_rainbow_turn(&$c, $cpref, $market_autobuy_tech_price, $server_max_possible_market_sell)
 {
  //c as in country!
     $target_bpt = 65;

@@ -609,10 +609,11 @@ function get_optimal_tech_from_ee ($tech_type, $min_cs, $min_tech_price, $max_te
     //$optimal_tech_array = $result->optimal_tech;
     // copying object values instead of a reference to an array is madness
     $optimal_tech_array = [];
-    foreach($result->optimal_tech as $turn_bucket => $turn_results)
-        foreach($turn_results as $turn_key => $t_p_q)
-            $optimal_tech_array[$turn_bucket][$turn_key] = (array)$t_p_q;
-
+    if(isset($result->optimal_tech)) {
+        foreach($result->optimal_tech as $turn_bucket => $turn_results)
+            foreach($turn_results as $turn_key => $t_p_q)
+                $optimal_tech_array[$turn_bucket][$turn_key] = (array)$t_p_q;
+    }
     //out_data($optimal_tech_array);
 
     return $optimal_tech_array; //$optimal_tech_array;

@@ -16,6 +16,9 @@ function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
     log_static_cpref_on_turn_0 ($c, $cpref);
 
     $is_allowed_to_mass_explore = is_country_allowed_to_mass_explore($c, $cpref);
+
+    sell_initial_troops_on_turn_0($c);
+
     log_country_message($cnum, "Bus: {$c->pt_bus}%; Res: {$c->pt_res}%; Mil: {$c->pt_mil}%; Weap: {$c->pt_weap}%");
 
     $c->setIndy('pro_spy');
@@ -123,8 +126,10 @@ function play_casher_turn(&$c, $cpref, $is_allowed_to_mass_explore)
     $target_bpt = $cpref->initial_bpt_target;
     global $turnsleep;
     usleep($turnsleep);
-    //log_country_message($c->cnum, $main->turns . ' turns left');
-    if ($c->shouldBuildSingleCS($target_bpt)) {
+
+    if ($c->land < 1800) {
+        return play_casher_turn_first_1800_acres($c, $cpref, $target_bpt);
+    } elseif ($c->shouldBuildSingleCS($target_bpt)) {
         //LOW BPT & CAN AFFORD TO BUILD
         //build one CS if we can afford it and are below our target BPT
         return Build::cs(); //build 1 CS
@@ -146,6 +151,29 @@ function play_casher_turn(&$c, $cpref, $is_allowed_to_mass_explore)
         return cash($c);
     }
 }//end play_casher_turn()
+
+
+
+function play_casher_turn_first_1800_acres (&$c, $cpref, $target_bpt) {
+    if($c->land < 600 && $c->built() > 50) {
+        // always explore when possible early on to get more income
+        return explore($c, 1);
+    } elseif ($c->shouldBuildSingleCS($target_bpt, 25)) {
+        return Build::cs(); //build 1 CS
+    } elseif ($c->shouldBuildFullBPT($target_bpt)) {
+        //build a full BPT if we can afford it
+        return Build::casher($c);
+    } elseif ($c->shouldBuildFourCS($target_bpt)) {
+        //build 4CS if we can afford it and are below our target BPT (65)
+        return Build::cs(4); //build 4 CS
+    } elseif ($c->built() > 50) {  //otherwise... explore if we can
+        $explore_turn_limit = 2;
+        return explore($c, max(1, min($explore_turn_limit, $c->turns, turns_of_food($c) - 4)));   
+    } else { //otherwise...  cash - this shouldn't happen?
+        return cash($c);
+    }
+} // play_casher_turn_first_1800_acres
+
 
 
 function casher_get_buying_priorities ($cnum, $buying_schedule) {
