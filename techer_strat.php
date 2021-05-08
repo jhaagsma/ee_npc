@@ -16,7 +16,7 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
     $is_allowed_to_mass_explore = is_country_allowed_to_mass_explore($c, $cpref);
 
     if(!$cpref->techer_allowed_to_explore)
-        log_country_message($cnum, "Techer is not allowed to explore because it's too close to the end of the round");
+        log_country_message($cnum, "Not allowed to explore due to preference explore cutoff value of $cpref->techer_round_explore_cutoff_percentage");
 
     sell_initial_troops_on_turn_0($c);
 
