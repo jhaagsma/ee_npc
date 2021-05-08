@@ -229,7 +229,7 @@ function casher_get_buying_priorities ($cnum, $buying_schedule) {
     return $buying_priorities;
 } // casher_get_buying_priorities()
 
-function casher_switch_government_if_needed($c) {
+function casher_switch_government_if_needed(&$c) {
     // FUTURE: should obviously call a function with priorities... (same with other strats)
     if ($c->govt == 'M') {
         $rand = rand(0, 100);

@@ -320,7 +320,7 @@ function sellextrafood_farmer(&$c, $rules, $bushel_min_sell_price, $bushel_max_s
 }//end sellextrafood_farmer()
 
 
-function farmer_switch_government_if_needed($c) {
+function farmer_switch_government_if_needed(&$c) {
     if ($c->govt == 'M') {
         $rand = rand(0, 100);
         switch ($rand) {

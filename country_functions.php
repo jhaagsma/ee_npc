@@ -258,7 +258,8 @@ function food_management(&$c, $cpref)
 
         //log_country_message($c->cnum, "Market Price: " . $market_price);
         //losing food, less than turns_buy turns left, AND have the money to buy it
-        if ($c->food < $turns_of_food && $c->money > $turns_of_food * $market_price * $c->tax() && $c->money - $turns_of_food * $market_price * $c->tax() + $c->income * $turns_buy > 0) {
+        // always leave enough money to build 4 cs (helps in the beginning)
+        if ($c->food < $turns_of_food && $c->money > 4 * $c->build_cost + $turns_of_food * $market_price * $c->tax() && $c->money - $turns_of_food * $market_price * $c->tax() + $c->income * $turns_buy > 0) {
             $quantity = min($foodloss * $turns_buy, PublicMarket::available('m_bu'));
             // log_country_message($c->cnum, 
             //     "--- FOOD:  - Buy Public ".str_pad('('.$turns_buy, 17, ' ', STR_PAD_LEFT).

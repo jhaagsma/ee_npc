@@ -203,8 +203,8 @@ class cpref
 
 
     private function get_techer_round_explore_cutoff_percentage() {
-        // between 45% and 65%, fine if not completely even probabilities on edges
-       return round(0.01 * (45 + $this->decode_bot_secret(5) / 5000), 2);
+        // between 40% and 60%, fine if not completely even probabilities on edges
+       return round(0.01 * (40 + $this->decode_bot_secret(5) / 5000), 2);
     } 
 
 

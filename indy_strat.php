@@ -215,7 +215,7 @@ function sellmilitarytime(&$c)
 }//end sellmilitarytime()
 
 
-function indy_switch_government_if_needed($c) {
+function indy_switch_government_if_needed(&$c) {
     if ($c->govt == 'M') {
         $rand = rand(0, 100);
         switch ($rand) {
