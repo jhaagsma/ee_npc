@@ -199,7 +199,7 @@ function play_techer_turn(&$c, $cpref, $rules, $tech_price_min_sell_price, $is_a
 
 // FUTURE figure out startup for theo?
 function play_techer_turn_first_179_turns_for_most_gov (&$c, $cpref, $tpt_split) {
-    if($c->food > 0 && $c->b_farm > 0 && $c->b_cs <= 120) {
+    if($c->food > 0 && $c->b_farm > 0 && $c->foodnet > 20 && $c->b_cs <= 120) {
         return PrivateMarket::sell_single_good($c, 'm_bu', $c->food);
     } elseif(($c->land < 400 && $c->built() > 50) || $c->empty < $c->bpt) {
         // always explore when possible early on to get more income
