@@ -237,7 +237,7 @@ class Country
      *
      * @return int DPATarget
      */
-    public function defPerAcreTarget($cpref, $mult = 1.5, $powfactor = 1.0)
+    public function defPerAcreTarget($cpref = null, $mult = 1.5, $powfactor = 1.0)
     {
         // fine if rainbows don't pass this in, screw them
         if(isset($cpref) && $this->land < $cpref->min_land_to_buy_defense)
@@ -349,11 +349,11 @@ class Country
                 $price          = $price > 500 ? $price : 10000;
                 $score['t_mil'] = ($this->pt_mil - $goal[1]) / (100 - $goal[1]) * $goal[2] * (2500 / $price);
             } elseif ($goal[0] == 'nlg') {
-                $target       = $this->nlgt ?? $this->nlgTarget();
-                $score['nlg'] = ($target - $this->nlg()) / $target * $goal[2];
+                $target       = $this->nlgt ?? 1 + $this->nlgTarget(); // temp hack to avoid division by 0
+                $score['nlg'] = ($target - 1 + $this->nlg()) / $target * $goal[2];
             } elseif ($goal[0] == 'dpa') {
-                $target       = $this->dpat ?? $this->defPerAcreTarget();
-                $actual       = $this->defPerAcre();
+                $target       = $this->dpat ?? 1 + $this->defPerAcreTarget();
+                $actual       = 1 + $this->defPerAcre();
                 $score['dpa'] = ($target - $actual) / $target * $goal[2];
             }
 
