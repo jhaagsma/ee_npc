@@ -45,7 +45,7 @@ function spend_extra_money(&$c, $buying_priorities, $cpref, $money_to_reserve, $
     if($is_tech_goal_present and $skip_tech) // log this here to avoid spam
         log_country_message($c->cnum, "Optimal tech array is empty for goals which usually means tech is too expensive");    
 
-    $target_dpa = $c->defPerAcreTarget();
+    $target_dpa = $c->defPerAcreTarget($cpref);
     $target_dpnw = $c->nlgTarget(); 
 
     log_country_message($c->cnum, "Using schedule $buying_schedule, spend money with ".($delay_military_purchases ? "delayed mil purchases, " : "")."money: $c->money, max to spend: $max_spend, total reserved: $money_to_reserve", 'green');
@@ -609,10 +609,11 @@ function get_optimal_tech_from_ee ($tech_type, $min_cs, $min_tech_price, $max_te
     //$optimal_tech_array = $result->optimal_tech;
     // copying object values instead of a reference to an array is madness
     $optimal_tech_array = [];
-    foreach($result->optimal_tech as $turn_bucket => $turn_results)
-        foreach($turn_results as $turn_key => $t_p_q)
-            $optimal_tech_array[$turn_bucket][$turn_key] = (array)$t_p_q;
-
+    if(isset($result->optimal_tech)) {
+        foreach($result->optimal_tech as $turn_bucket => $turn_results)
+            foreach($turn_results as $turn_key => $t_p_q)
+                $optimal_tech_array[$turn_bucket][$turn_key] = (array)$t_p_q;
+    }
     //out_data($optimal_tech_array);
 
     return $optimal_tech_array; //$optimal_tech_array;

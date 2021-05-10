@@ -72,7 +72,7 @@ function execute_destocking_actions($cnum, $cpref, $server, $rules, &$next_play_
 		// $market_package_piece structure: [{"type":"t_mil","price":6277,"quantity":103068,"time":1617827768,"on_market":true,"seconds_until_on_market":-2362}]
 		if($market_package_piece->type == 'food') {
 			$bushels_on_market = true;
-			if ($market_package_piece->price > 2 + $estimated_public_market_bushel_sell_price) {
+			if ($market_package_piece->price > 2 + $public_bushel_avg_price) {
 				$expensive_bushels_on_market = true;				
 			}
 		}

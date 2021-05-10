@@ -37,7 +37,8 @@ function emergency_sell_mil_on_pm (&$c, $money_needed) {
     foreach($mil_sell_order as $mil_unit){
         $sell_price = $pm_info->sell_price->$mil_unit;
         $amount_to_sell = min($c->$mil_unit, ceil($money_needed / $sell_price));
-        PrivateMarket::sell_single_good($c, $mil_unit, $amount_to_sell);
+        if($amount_to_sell > 0)
+            PrivateMarket::sell_single_good($c, $mil_unit, $amount_to_sell);
         $money_needed -= $amount_to_sell * $sell_price;
         if($money_needed < 0)
             return true;
@@ -221,7 +222,7 @@ $high_price_score_array, $no_market_history_score_array, $current_price_score_ar
                 $number_of_units_with_no_data++;
         }
 
-        if($number_of_units_with_no_data == 4) { // we will rarely get false positives with this approach, but whatever
+        if($number_of_units_with_no_data == count($production_factor_per_unit)) { // we will rarely get false positives with this approach, but whatever
             log_country_message($cnum, "Detected no market data so using default values");
             $production_score = $no_market_history_score_array;
         }
@@ -240,7 +241,7 @@ $high_price_score_array, $no_market_history_score_array, $current_price_score_ar
                 $number_of_units_with_no_data++;
         }
 
-        if($number_of_units_with_no_data == 4) { // we will rarely get false positives with this approach, but whatever
+        if($number_of_units_with_no_data == count($production_factor_per_unit)) { // we will rarely get false positives with this approach, but whatever
             log_country_message($cnum, "Detected no market data so using default values");
             $production_score = $no_market_history_score_array;
         }
@@ -318,7 +319,7 @@ function set_indy_from_production_algorithm(&$c, $military_unit_price_history, $
        
         // remove jets if we're checking DPA and it's too low
         if ($checkDPA) {
-            $target = $c->defPerAcreTarget();
+            $target = $c->defPerAcreTarget($cpref);
             if ($c->defPerAcre() < $target) {
                 //below def target, don't make jets
                 unset($production_score['m_j']);
@@ -359,17 +360,17 @@ function get_tpt_split_from_production_algorithm(&$c, $tech_price_history, $cpre
         $production_score = [
             't_mil' => 0,
             't_med' => 0,
-            't_bus' => 50,
-            't_res' => 50,
-            't_agri' => 0,
+            't_bus' => 40,
+            't_res' => 40,
+            't_agri' => 15,
             't_war' => 0,
             't_ms' => 0,
             't_weap' => 0,
-            't_indy' => 0,
+            't_indy' => 5,
             't_spy' => 0,
             't_sdi' => 0
         ];
-        log_country_message($c->cnum, "Setting tech production to 50% bus/res because we haven't played 150 turns yet");
+        log_country_message($c->cnum, "Setting tech production to mostly bus/res because we haven't played 150 turns yet");
     }
     else { // not the first 150 turns        
         log_country_message($c->cnum, "Setting tech production using algorithm $cpref->production_algorithm", 'green');  

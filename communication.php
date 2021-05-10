@@ -217,6 +217,7 @@ function expected_result($input)
         'advisor' => 'ADVISOR',
         'main' => 'MAIN',
         'build' => 'BUILD',
+        'destroy' => 'DESTROY',
         'explore' => 'EXPLORE',
         'cash' => 'CASH',
         'pm_info' => 'PM_INFO',

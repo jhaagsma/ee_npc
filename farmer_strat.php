@@ -141,6 +141,9 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
         ) {
         spend_extra_money($c, $buying_priorities, $cpref, floor(0.9*$c->fullBuildCost()), false, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array, $buying_schedule);
     }
+    else { // farmers can get caught in a pattern where they have enough cash for military, do a big mass explore, but now their building costs are too high so they can't buy military
+        spend_extra_money($c, $buying_priorities, $cpref, floor(0.10 * $c->money), false, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array, $buying_schedule);
+    }
 
     if($c->money > 2000000000) { // try to stockpile to avoid corruption and to limit bot abuse
         spend_extra_money_on_stockpiling($c, $cpref, $money_to_keep_after_stockpiling, $stockpiling_weights, $stockpiling_adjustments);
@@ -150,7 +153,7 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
     if($exit_condition = 'NORMAL' && $starting_turns > 30 && ($starting_turns - $c->turns) < 0.3 * $starting_turns)
         $exit_condition = 'LOW_TURNS_PLAYED'; 
 
-    $c->countryStats(FARMER);
+    //$c->countryStats(FARMER);
     return $c;
 }//end play_farmer_strat()
 
@@ -160,26 +163,27 @@ function play_farmer_turn(&$c, $cpref, $rules, $is_allowed_to_mass_explore, $bus
     $target_bpt = $cpref->initial_bpt_target;
     global $turnsleep;
     usleep($turnsleep);
-    //log_country_message($c->cnum, $main->turns . ' turns left');
-    if ($c->shouldBuildSingleCS($target_bpt, 20)) {
+
+    if ($c->turns_played <= 99) {
+        return play_farmer_turn_first_99_turns($c, $cpref, $target_bpt);
+    } elseif ($c->land < 1800) {
+        return play_farmer_turn_first_1800_acres($c, $cpref, $rules, $target_bpt, $bushel_min_sell_price, $bushel_max_sell_price, $food_price_history);
+    } elseif ($c->shouldBuildSingleCS($target_bpt)) {
         //LOW BPT & CAN AFFORD TO BUILD
         //build one CS if we can afford it and are below our target BPT
         return Build::cs(); //build 1 CS
     } elseif (
-        ($c->protection == 1 && $c->food > 100 && $c->b_farm > 0) // sell on private in protection if food > 100 and we have at least one farm
-        || (        
             $c->protection == 0 && $c->food > 7000
             && (
-                $c->foodnet > 0 && $c->foodnet > 3 * $c->get_foodcon_no_decay() && $c->food > 30 * $c->get_foodnet_no_decay() //Don't sell less than 30 turns of food unless you're on your last turn (and desperate?)
+                $c->foodnet > 0 && $c->get_foodnet_no_decay() > 3 * $c->get_foodcon_no_decay() && $c->food > 30 * $c->get_foodnet_no_decay() //Don't sell less than 30 turns of food unless you're on your last turn (and desperate?)
                 || $c->turns == 1
-            )
         )
     ) { 
         // sell some food on PM if we have a lot of empty acres, still have turns, and can't afford to build at least 1k acres
-        if($c->turns > (1000 / $c->bpt) && $c->empty >= 1000 && $c->money < 1000 * (1500 + 3 * $c->land)) {        
+        if($c->turns > (1000 / $c->bpt) && $c->empty >= 1000 && $c->money < 1000 * $c->build_cost) {        
             log_country_message($c->cnum, "Selling food on PM because we have over 999 empty acres and not enough money to build them");    
             $pm_info = PrivateMarket::getInfo();
-            $food_to_sell = ceil(min($c->food, 1000 * (1500 + 3 * $c->land) / $pm_info->sell_price->m_bu));
+            $food_to_sell = ceil(min($c->food, 1000 * $c->build_cost / $pm_info->sell_price->m_bu));
             return PrivateMarket::sell_single_good($c, 'm_bu', $food_to_sell);
         }
         else
@@ -194,7 +198,7 @@ function play_farmer_turn(&$c, $cpref, $rules, $is_allowed_to_mass_explore, $bus
         //build 4CS if we can afford it and are below our target BPT (65)
         return Build::cs(4); //build 4 CS
     } elseif ($c->built() > 50) {  //otherwise... explore if we can
-        $explore_turn_limit = $is_allowed_to_mass_explore ? 999 : 7; // match spend_money call
+        $explore_turn_limit = $is_allowed_to_mass_explore ? 999 : $cpref->spend_extra_money_cooldown_turns;
         return explore($c, max(1,min($explore_turn_limit, $c->turns - 1, turns_of_money($c) - 4)));
     } elseif($c->food > 0) { // better to sell on PM than cash
         log_country_message($c->cnum, "Selling food on PM in an attempt to avoid cashing turns");
@@ -203,6 +207,60 @@ function play_farmer_turn(&$c, $cpref, $rules, $is_allowed_to_mass_explore, $bus
         return cash($c); // FUTURE - hold turns instead if food is on market?
     }
 }//end play_farmer_turn()
+
+
+
+function play_farmer_turn_first_1800_acres (&$c, $cpref, $rules, $target_bpt, $bushel_min_sell_price, $bushel_max_sell_price, $food_price_history) {
+    if($c->food > 0 && $c->b_farm > 0 && $c->empty >= $c->bpt && $c->money < $c->bpt * $c->build_cost) {
+        // sell if we don't have enough cash to build a bpt of farms
+        $pm_info = PrivateMarket::getInfo(); // FUTURE - cache?
+        $food_to_sell = ceil(min($c->food, $c->bpt * $c->build_cost / $pm_info->sell_price->m_bu));
+        return PrivateMarket::sell_single_good($c, 'm_bu', $c->food);
+    } elseif (
+           $c->protection == 0
+        && $c->food > 7000
+        && (
+            $c->foodnet > 0 && $c->get_foodnet_no_decay() > 3 * $c->get_foodcon_no_decay() && $c->food > 30 * $c->get_foodnet_no_decay() //Don't sell less than 30 turns of food unless you're on your last turn (and desperate?)
+            || $c->turns == 1
+        )
+    ) { 
+        return sellextrafood_farmer($c, $rules, $bushel_min_sell_price, $bushel_max_sell_price, $cpref, $food_price_history);
+    } elseif ($c->shouldBuildFullBPT($target_bpt)) {
+        //build a full BPT if we can afford it
+        return Build::farmer($c);
+    } elseif ($c->shouldBuildFourCS($target_bpt)) {
+        //build 4CS if we can afford it and are below our target BPT (65)
+        return Build::cs(4); //build 4 CS
+    } elseif ($c->built() > 50) {  //otherwise... explore if we can
+        $explore_turn_limit = 2;
+        return explore($c, max(1,min($explore_turn_limit, $c->turns - 1, turns_of_money($c) - 4)));
+    } elseif($c->food > 0) { // better to sell on PM than cash
+        log_country_message($c->cnum, "Selling all food on PM in an attempt to avoid cashing turns");
+        return PrivateMarket::sell_single_good($c, 'm_bu', $c->food);
+    } else { //otherwise...  cash :(
+        return cash($c); // FUTURE - hold turns instead if food is on market?
+    }
+} // play_farmer_turn_first_1800_acres
+
+
+function play_farmer_turn_first_99_turns (&$c, $cpref, $target_bpt) {
+    if($c->food > 0 && $c->b_farm > 0) {
+        return PrivateMarket::sell_single_good($c, 'm_bu', $c->food);
+    } elseif($c->land < 600 && $c->built() > 50) {
+        // always explore when possible early on to get more income
+        return explore($c, 1);
+    } elseif ($c->shouldBuildSingleCS($target_bpt, 20)) {
+        return Build::cs(); //build 1 CS
+    } elseif ($c->shouldBuildFullBPT($target_bpt)) {
+        //build a full BPT if we can afford it
+        return Build::farmer($c);
+    } elseif ($c->shouldBuildFourCS($target_bpt)) {
+        //build 4CS if we can afford it and are below our target BPT (65)
+        return Build::cs(4); //build 4 CS
+    } else { //otherwise...  cash (shouldn't ever happen)
+        return cash($c);
+    }
+} // play_farmer_turn_first_99_turns
 
 
 function sellextrafood_farmer(&$c, $rules, $bushel_min_sell_price, $bushel_max_sell_price, $cpref, $food_price_history)
@@ -262,7 +320,7 @@ function sellextrafood_farmer(&$c, $rules, $bushel_min_sell_price, $bushel_max_s
 }//end sellextrafood_farmer()
 
 
-function farmer_switch_government_if_needed($c) {
+function farmer_switch_government_if_needed(&$c) {
     if ($c->govt == 'M') {
         $rand = rand(0, 100);
         switch ($rand) {
@@ -286,20 +344,3 @@ function farmer_switch_government_if_needed($c) {
 function farmer_get_buying_priorities ($cnum, $buying_schedule) {
     return casher_get_buying_priorities ($cnum, $buying_schedule); // same as casher for now
 } // farmer_get_buying_priorities()
-
-
-/*
-function farmerGoals(&$c)
-{
-    return [
-        //what, goal, priority
-        ['t_agri',227,1000],
-        ['t_bus',174,500],
-        ['t_res',174,500],
-        ['t_mil',95,200],
-        ['nlg',$c->nlgTarget(),200],
-        ['dpa',$c->defPerAcreTarget(1.0),1000],
-        ['food', 1000000000, 5],
-    ];
-}//end farmerGoals()
-*/

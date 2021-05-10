@@ -276,7 +276,8 @@ while (1) {
             $cpref_file->retal = [];
         }
 
-        $cpref_file->retal = json_decode(json_encode($cpref_file->retal), true);
+
+        // $cpref_file->retal = json_decode(json_encode($cpref_file->retal), true); // errors out
 
         $mktinfo = null;
 
@@ -360,7 +361,7 @@ while (1) {
                     }
 
                     Events::new();
-                    Country::listRetalsDue();
+                    //Country::listRetalsDue(); // errors out
 
                     $nexttime = null;
                     $exit_condition = null;

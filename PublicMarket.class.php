@@ -108,6 +108,15 @@ class PublicMarket
                 //out_data($result);
             }
 
+            /*
+            TODO
+            [2021-04-21 03:23:57] 
+ERROR 2001-PHP Warning; CNUM: #61; DETAILS: "/home/eenpc/ai_test/PublicMarket.class.php: 116","Division by zero",""
+
+[2021-04-21 03:23:57] --- BUY  Public:                 0  t_mil @ $NAN  (97.6%)    $494M         ($-0)
+*/
+
+
             $c->$type += $details->quantity;
             $c->money -= $details->cost;
             $tcost    += $details->cost;
