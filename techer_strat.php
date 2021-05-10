@@ -210,7 +210,7 @@ function play_techer_turn_first_179_turns_for_most_gov (&$c, $cpref, $tpt_split)
         return explore($c, 1);
     } elseif ($c->shouldBuildSingleCS(10, 10)) {
         return Build::cs(); //build 1 CS
-    } elseif ($c->b_farm < 50) {
+    } elseif ($c->b_farm < 50 && $c->shouldBuildFullBPT(null)) {
         //build a full BPT if we can afford it
         return Build::farmer($c);
     } elseif ($c->shouldBuildFourCS(35, 35)) {
