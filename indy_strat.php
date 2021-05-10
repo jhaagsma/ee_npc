@@ -185,7 +185,7 @@ function play_indy_turn_first_99_turns (&$c, $cpref, $target_bpt) {
         return explore($c, 1);
     } elseif ($c->shouldBuildSingleCS($target_bpt, 20)) {
         return Build::cs(); //build 1 CS
-    } elseif($c->b_farm < 20) {
+    } elseif($c->b_farm < 20 && $c->shouldBuildFullBPT(null)) {
         return Build::farmer($c);
     } elseif ($c->shouldBuildFullBPT($target_bpt)) {
         //build a full BPT if we can afford it

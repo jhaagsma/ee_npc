@@ -158,7 +158,7 @@ function handle_output($serverOutput, $function, $cnum) // $cnum may not be set
         $server = ee('server'); // I think it's fine for this to not refresh the logging directories
         return null;
     } elseif ($message == "ERROR" && $response == "MONEY") {
-        log_error_message(102, $cnum, "Not enough Money!"); // FUTURE: message should have something helpful for debugging
+        log_error_message(102, $cnum, "Not enough Money for $function"); // FUTURE: message should have something helpful for debugging
         return null;
     } elseif ($message == "ERROR" && $response == "NOT_ENOUGH_TURNS") {
         log_error_message(103, $cnum, "Not enough Turns!"); // FUTURE: message should have something helpful for debugging
