@@ -105,7 +105,7 @@ if (file_exists($config['save_settings_file'])) {
     log_error_message(117, null, "No Settings File Found");
 }
 
-log_main_message('\n\n');
+log_main_message("\n\n");
 log_main_message("BOT IS STARTING AND HAS CLEARED INITIAL CHECKS", 'purple');
 log_main_message('Current Unix Time: '.time());
 log_main_message('Entering Infinite Loop');
