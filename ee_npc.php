@@ -34,8 +34,7 @@ if (flock($fp0, LOCK_EX | LOCK_NB)) // LOCK_NB makes it fail right away instead 
 else
     die("Lock could not be acquired on zz_lock.txt - is the process already running?\n");
 
-out('');    
-out('');
+
 out(Colors::getColoredString("STARTING UP BOT", "purple"));
 
 date_default_timezone_set('GMT'); //SET THE TIMEZONE FIRST
@@ -106,6 +105,7 @@ if (file_exists($config['save_settings_file'])) {
     log_error_message(117, null, "No Settings File Found");
 }
 
+log_main_message('/n/n');
 log_main_message("BOT IS STARTING AND HAS CLEARED INITIAL CHECKS", 'purple');
 log_main_message('Current Unix Time: '.time());
 log_main_message('Entering Infinite Loop');
