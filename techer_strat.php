@@ -115,7 +115,7 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
         // don't see a strong reason to sell excess bushels at this step
     }
 
-    if($exit_condition = 'NORMAL' && $starting_turns > 30 && ($starting_turns - $c->turns) < 0.3 * $starting_turns)
+    if($exit_condition == 'NORMAL' && $starting_turns > 30 && ($starting_turns - $c->turns) < 0.3 * $starting_turns)
         $exit_condition = 'LOW_TURNS_PLAYED'; 
 
     //$c->countryStats(TECHER);
@@ -137,8 +137,8 @@ function play_techer_turn(&$c, $cpref, $rules, $tech_price_min_sell_price, $is_a
     // FUTURE: why does building 4 cs become so slow? can_sell_tech? after protection? selltechtime ?
     // FUTURE: maybe split logic for < target BPT, < 1800 A, and otherwise
 
-    if($c->govt <> 'I' && $c->turns_played < 180) {
-        return play_techer_turn_first_179_turns_for_most_gov($c, $cpref, $tpt_split);
+    if($c->govt <> 'I' && $c->turns_played <= 180) {
+        return play_techer_turn_first_180_turns_for_most_gov($c, $cpref, $tpt_split, $tech_price_min_sell_price, $server_max_possible_market_sell);
     } elseif($c->b_farm > 0 && $c->money > 1.2 * $c->build_cost * $c->b_farm) { 
         // destroy any farms as soon as we have enough cash to replace with labs
         return Build::destroy_all_of_one_type($c, 'farm');
@@ -200,10 +200,12 @@ function play_techer_turn(&$c, $cpref, $rules, $tech_price_min_sell_price, $is_a
 
 
 
-function play_techer_turn_first_179_turns_for_most_gov (&$c, $cpref, $tpt_split) {
+function play_techer_turn_first_180_turns_for_most_gov (&$c, $cpref, $tpt_split, $tech_price_min_sell_price, $server_max_possible_market_sell) {
     // it's kind of weird to farm start as theo, but it seems to work out decently enough for now
     if($c->food > 0 && $c->b_farm > 0 && $c->foodnet > 20 && $c->b_cs <= 120) {
         return PrivateMarket::sell_single_good($c, 'm_bu', $c->food);
+    } elseif($c->turns_played == 179 && total_cansell_tech($c, $server_max_possible_market_sell, $mil_tech_to_keep) >= 40) {
+        return sell_max_tech($c, $cpref, $tech_price_min_sell_price, $server_max_possible_market_sell);
     } elseif(($c->land < 400 && $c->built() > 50) || $c->empty < $c->bpt) {
         // always explore when possible early on to get more income
         // otherwise, explore if less than bpt of empty acres
@@ -225,7 +227,7 @@ function play_techer_turn_first_179_turns_for_most_gov (&$c, $cpref, $tpt_split)
     } else { //otherwise...  tech
         return tech_techer($c, 1, $tpt_split);
     }
-} // play_techer_turn_first_179_turns_for_most_gov
+} // play_techer_turn_first_180_turns_for_most_gov
 
 
 
