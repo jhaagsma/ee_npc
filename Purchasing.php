@@ -107,7 +107,8 @@ function spend_extra_money(&$c, $buying_priorities, $cpref, $money_to_reserve, $
                 }
             }
         }
-        elseif($priority_type == 'NWPA') {            
+        elseif($priority_type == 'NWPA') {   
+            $c->updateMain(); // networth isn't updated as countries play turns         
             $total_nw_goal = ceil($target_dpnw * $priority_goal * $c->land / 100);
             $nw_needed = $total_nw_goal - $c->networth;
             if($nw_needed > 0) {
@@ -118,8 +119,9 @@ function spend_extra_money(&$c, $buying_priorities, $cpref, $money_to_reserve, $
                     $money_to_reserve += $total_spent_or_reserved_by_step;
                 }
                 else {
+                    $c->updateMain(); // networth isn't updated as countries play turns    
                     $was_goal_met = $c->networth >= $total_nw_goal ? true : false;
-                    log_country_message($c->cnum, "NWPA goal $priority_goal%: Spent $total_spent_or_reserved_by_step to increase NW and did ".($was_goal_met ? "" : 'NOT ')."meet the goal of $total_defense_points_goal NW");
+                    log_country_message($c->cnum, "NWPA goal $priority_goal%: Spent $total_spent_or_reserved_by_step to increase NW and did ".($was_goal_met ? "" : 'NOT ')."meet the goal of $total_nw_goal NW");
                     $total_spent += $total_spent_or_reserved_by_step;
                 }
                 $max_spend -= $total_spent_or_reserved_by_step;

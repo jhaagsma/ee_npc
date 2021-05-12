@@ -34,7 +34,8 @@ if (flock($fp0, LOCK_EX | LOCK_NB)) // LOCK_NB makes it fail right away instead 
 else
     die("Lock could not be acquired on zz_lock.txt - is the process already running?\n");
 
-
+out('');    
+out('');
 out(Colors::getColoredString("STARTING UP BOT", "purple"));
 
 date_default_timezone_set('GMT'); //SET THE TIMEZONE FIRST
