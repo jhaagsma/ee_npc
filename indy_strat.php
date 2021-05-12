@@ -96,7 +96,7 @@ function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$tur
     // FUTURE: always sell at end if possible - make sell_max_military get food/money to avoid OOF and OOM
     // total_cansell_military > 20000?
 
-    if($exit_condition = 'NORMAL' && $starting_turns > 30 && ($starting_turns - $c->turns) < 0.3 * $starting_turns)
+    if($exit_condition == 'NORMAL' && $starting_turns > 30 && ($starting_turns - $c->turns) < 0.3 * $starting_turns)
         $exit_condition = 'LOW_TURNS_PLAYED'; 
 
     //$c->countryStats(INDY);
