@@ -7,7 +7,7 @@ namespace EENPC;
 
 function sell_initial_troops_on_turn_0(&$c) {
     if($c->turns_played == 0 && $c->m_tr > 0)
-        privatemarket::sell_single_good($c, 'm_tr', $c->m_tr);
+        PrivateMarket::sell_single_good($c, 'm_tr', $c->m_tr);
 }
 
 
