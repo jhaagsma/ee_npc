@@ -98,6 +98,7 @@ class cpref
         $this->selling_price_std_dev = 5;
         $this->farmer_max_early_sell_price = 49;
         $this->farmer_max_late_sell_price = 99;
+        $this->indy_min_profit_for_public_sale = 1.35;
 
         // destocking
         $this->earliest_destocking_start_time = $this->get_earliest_destocking_start_time();
