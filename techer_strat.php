@@ -138,7 +138,7 @@ function play_techer_turn(&$c, $cpref, $rules, $tech_price_min_sell_price, $is_a
     // FUTURE: maybe split logic for < target BPT, < 1800 A, and otherwise
 
     if($c->govt <> 'I' && $c->turns_played <= 180) {
-        return play_techer_turn_first_180_turns_for_most_gov($c, $cpref, $tpt_split, $tech_price_min_sell_price, $server_max_possible_market_sell);
+        return play_techer_turn_first_180_turns_for_most_gov($c, $cpref, $tpt_split, $tech_price_min_sell_price, $server_max_possible_market_sell, $mil_tech_to_keep);
     } elseif($c->b_farm > 0 && $c->money > 1.2 * $c->build_cost * $c->b_farm) { 
         // destroy any farms as soon as we have enough cash to replace with labs
         return Build::destroy_all_of_one_type($c, 'farm');
@@ -200,7 +200,7 @@ function play_techer_turn(&$c, $cpref, $rules, $tech_price_min_sell_price, $is_a
 
 
 
-function play_techer_turn_first_180_turns_for_most_gov (&$c, $cpref, $tpt_split, $tech_price_min_sell_price, $server_max_possible_market_sell) {
+function play_techer_turn_first_180_turns_for_most_gov (&$c, $cpref, $tpt_split, $tech_price_min_sell_price, $server_max_possible_market_sell, $mil_tech_to_keep) {
     // it's kind of weird to farm start as theo, but it seems to work out decently enough for now
     if($c->food > 0 && $c->b_farm > 0 && $c->foodnet > 20 && $c->b_cs <= 120) {
         return PrivateMarket::sell_single_good($c, 'm_bu', $c->food);
