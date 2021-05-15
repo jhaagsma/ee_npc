@@ -142,7 +142,7 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
         spend_extra_money($c, $buying_priorities, $cpref, floor(0.9*$c->fullBuildCost()), false, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array, $buying_schedule);
     }
     else { // farmers can get caught in a pattern where they have enough cash for military, do a big mass explore, but now their building costs are too high so they can't buy military
-        spend_extra_money($c, $buying_priorities, $cpref, floor(0.10 * $c->money), false, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array, $buying_schedule);
+        spend_extra_money($c, $buying_priorities, $cpref, floor(0.9 * $c->money), false, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array, $buying_schedule);
     }
 
     if($c->money > 2000000000) { // try to stockpile to avoid corruption and to limit bot abuse
