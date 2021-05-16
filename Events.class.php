@@ -84,7 +84,7 @@ class Events
                     $types[$item->type]++;
                 }
 
-                Country::addRetalDue($item->attacker, $item->type, $item->land);
+                //Country::addRetalDue($item->attacker, $item->type, $item->land);
 
                 //out($item);
             }
