@@ -185,14 +185,14 @@ function casher_get_buying_priorities ($cnum, $buying_schedule) {
     if($buying_schedule == 0) { // heavy military
         $buying_priorities = [
             ['type'=>'DPA','goal'=>100],
-            ['type'=>'INCOME_TECHS','goal'=>100],
+            ['type'=>'INCOME_TECHS','goal'=>90],
             ['type'=>'NWPA','goal'=>100]
         ];
     }
     elseif($buying_schedule == 1) { // heavy tech
         $buying_priorities = [
             ['type'=>'DPA','goal'=>1],
-            ['type'=>'INCOME_TECHS','goal'=>100],
+            ['type'=>'INCOME_TECHS','goal'=>90],
             ['type'=>'DPA','goal'=>100],
             ['type'=>'NWPA','goal'=>100]
         ];
@@ -204,7 +204,7 @@ function casher_get_buying_priorities ($cnum, $buying_schedule) {
             ['type'=>'DPA','goal'=>60],
             ['type'=>'INCOME_TECHS','goal'=>40],
             ['type'=>'DPA','goal'=>100],
-            ['type'=>'INCOME_TECHS','goal'=>100],
+            ['type'=>'INCOME_TECHS','goal'=>90],
             ['type'=>'NWPA','goal'=>100]
         ];
     }
@@ -213,7 +213,7 @@ function casher_get_buying_priorities ($cnum, $buying_schedule) {
             ['type'=>'DPA','goal'=>2],
             ['type'=>'INCOME_TECHS','goal'=>50],
             ['type'=>'DPA','goal'=>35], 
-            ['type'=>'INCOME_TECHS','goal'=>100],          
+            ['type'=>'INCOME_TECHS','goal'=>90],
             ['type'=>'DPA','goal'=>100],
             ['type'=>'NWPA','goal'=>100]
         ];
