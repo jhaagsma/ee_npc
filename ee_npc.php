@@ -147,7 +147,7 @@ while (1) {
                 $countriesleft = $server->countries_allowed - $server->alive_count;
                 $sleeptime     = $timeleft / $countriesleft;
                 log_main_message("Sleep for $sleeptime to spread countries out");
-                sleep($sleeptime);
+                sleep((int)$sleeptime);
             }
             $create_attempts_remaining--; // avoid infinite loop when something goes wrong
         }
