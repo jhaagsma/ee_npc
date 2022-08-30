@@ -366,7 +366,7 @@ function sell_max_tech(&$c, $cpref, $tech_price_min_sell_price, $server_max_poss
  *
  * @return EEResult       Teching
  */
-function tech_techer(&$c, $turns = 1, $tpt_split)
+function tech_techer(&$c, $turns = 1, $tpt_split = [])
 {
     //lets do random weighting... to some degree
     //$market_info = get_market_info();   //get the Public Market info

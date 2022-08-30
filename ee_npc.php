@@ -773,11 +773,11 @@ function update_c(&$c, $result)
     $netfood  = str_pad('('.($netfood > 0 ? '+' : null).engnot($netfood).')', 11, ' ', STR_PAD_LEFT);
     $netmoney = str_pad('($'.($netmoney > 0 ? '+' : null).engnot($netmoney).')', 14, ' ', STR_PAD_LEFT);
 
-    $str  = str_pad($str, 26 + $extrapad).str_pad($explain, 12).str_pad('$'.engnot($c->money), 16, ' ', STR_PAD_LEFT);
+    $str  = str_pad($str ?? "", 26 + $extrapad).str_pad($explain ?? "", 12).str_pad('$'.engnot($c->money), 16, ' ', STR_PAD_LEFT);
     $str .= $netmoney.str_pad(engnot($c->food).' Bu', 14, ' ', STR_PAD_LEFT).engnot($netfood);
 
     global $APICalls;
-    $str = str_pad($c->turns, 3).' Turns - '.$str.' '.str_pad($event, 8).' API: '.$APICalls;
+    $str = str_pad($c->turns ?? 0, 3).' Turns - '.$str.' '.str_pad($event ?? "", 8).' API: '.$APICalls;
     if ($OOF || $OOM) {
         $str = Colors::getColoredString($str, "red");
     }

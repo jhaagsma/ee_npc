@@ -599,9 +599,9 @@ function generate_compact_country_status_string($cnum, $header, $snapshot_type, 
     // tech percentages
     $pmil = str_pad(round($c_pmil, 2).'%', 8, ' ', STR_PAD_LEFT); //-100.12% is 8 characters
     $pbus = str_pad(round($c_pbus, 2).'%', 8, ' ', STR_PAD_LEFT);
-    $pres = str_pad(round($c_pres, 2).'%', 8, ' ', STR_PAD_LEFT);
-    $pwep = str_pad(round($c_pwep, 2).'%', 8, ' ', STR_PAD_LEFT);
-    $ppro = str_pad(($c_ppro <> -1 ? round($c_ppro, 2).'%' : 'N/A'), 8, ' ', STR_PAD_LEFT);
+    $pres = str_pad(round(is_numeric($c_pres) ? $c_pres : -1, 2).'%', 8, ' ', STR_PAD_LEFT);
+    $pwep = str_pad(round(is_numeric($c_pwep) ? $c_pwep : -1, 2).'%', 8, ' ', STR_PAD_LEFT);
+    $ppro = str_pad(($c_ppro <> -1 ? round((is_numeric($c_ppro) ? (float)$c_ppro : 100), 2).'%' : 'N/A'), 8, ' ', STR_PAD_LEFT);
     
     // production
     $dstk = str_pad(($c_dstk === "N/A" ? $c_dstk : log_translate_boolean_to_YN($c_dstk)), 8, ' ', STR_PAD_LEFT);
@@ -657,6 +657,10 @@ function generate_compact_country_status_string($cnum, $header, $snapshot_type, 
  */
 function engnot($number)
 {
+    if (!is_numeric($number))
+	$number = 0;
+
+    //$number = (float)$number;
     if (abs($number) > 1000000000) {
         return round($number / 1000000000, $number / 1000000000 > 100 ? 0 : 1).'B';
     } elseif (abs($number) > 1000000) {
@@ -700,7 +704,7 @@ function log_translate_boolean_to_YN($boolean_value) {
 
 
 function log_translate_instant_to_human_readable($instant) {
-    return date('m/d/Y H:i:s', $instant);
+    return date('m/d/Y H:i:s', (int)$instant);
 }
 
 

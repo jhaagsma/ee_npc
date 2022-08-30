@@ -141,7 +141,13 @@ function handle_output($serverOutput, $function, $cnum) // $cnum may not be set
     //     out_data($response);
     // }
 
-    $message  = key($response);
+    //$message  = key($response);
+    $message = "";
+    foreach($response as $key => $value) {
+	$message = $key;
+	break;
+    }
+
     $response = $response->$message ?? null;
     //$parts = explode(':', $serverOutput, 2);
     //This will simply kill the script if EE returns with an error
