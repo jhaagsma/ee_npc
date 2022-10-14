@@ -101,7 +101,9 @@ class PrivateMarket
                     $str .= $pad;
                 }
 
-                self::$info->available->$type -= $amount;
+		if (isset(self::$info->available->$type)) {
+                    self::$info->available->$type -= $amount;
+		}
                 $c->$type                     += $amount;
 
                 $str .= str_pad(engnot($amount), 8, ' ', STR_PAD_LEFT)
