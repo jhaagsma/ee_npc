@@ -326,7 +326,7 @@ class Country
                 $govt = 1.0;
         }
 
-        return floor($this->networth / ($this->land * $govt));
+        return floor($this->networth / max($this->land * $govt, 1));
     }//end nlg()
 
 
