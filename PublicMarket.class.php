@@ -105,9 +105,9 @@ class PublicMarket
             $c->$type += $details->quantity;
             $c->money -= $details->cost;
             $tcost    += $details->cost;
-            $itemstr   = str_pad(engnot($details->quantity), 8, ' ', STR_PAD_LEFT)
+            $itemstr   = ($details->quantity > 0 ? str_pad(engnot($details->quantity), 8, ' ', STR_PAD_LEFT)
                          .' '.str_pad($type, 6, ' ', STR_PAD_LEFT)
-                         .' @'.str_pad('$'.floor($details->cost / $details->quantity), 5, ' ', STR_PAD_LEFT);
+                         .' @'.str_pad('$'.floor($details->cost / $details->quantity), 5, ' ', STR_PAD_LEFT) : "");
 
             $pt = 'p'.$type;
             if (isset($details->$pt)) {

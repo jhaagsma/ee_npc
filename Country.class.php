@@ -294,7 +294,7 @@ class Country
      */
     public function defPerAcre()
     {
-        return round((1 * $this->m_tr + 2 * $this->m_tu + 4 * $this->m_ta) / $this->land);
+        return round((1 * $this->m_tr + 2 * $this->m_tu + 4 * $this->m_ta) / max(1,$this->land));
     }//end defPerAcre()
 
 
@@ -305,7 +305,7 @@ class Country
      */
     public function built()
     {
-        return floor(100 * ($this->land - $this->empty) / $this->land);
+        return floor(100 * ($this->land - $this->empty) / max(1,$this->land));
     }//end built()
 
 
