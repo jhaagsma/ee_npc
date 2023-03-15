@@ -571,30 +571,30 @@ function generate_compact_country_status_string($cnum, $header, $snapshot_type, 
         $c_dstk = 'N/A';    
     }
 
-    $t_st = str_pad($c_t_st, 8, ' ', STR_PAD_LEFT);
-    $t_pl = str_pad($c_t_pl, 8, ' ', STR_PAD_LEFT);
-    $netw = str_pad(engnot($c_netw), 8, ' ', STR_PAD_LEFT);
-    $land = str_pad(engnot($c_land), 8, ' ', STR_PAD_LEFT);
-    $cash = str_pad(engnot($c_cash), 8, ' ', STR_PAD_LEFT);
-    $food = str_pad(engnot($c_food), 8, ' ', STR_PAD_LEFT);
-    $tech = str_pad(engnot($c_tech), 8, ' ', STR_PAD_LEFT);
+    $t_st = str_pad($c_t_st ?? '', 8, ' ', STR_PAD_LEFT);
+    $t_pl = str_pad($c_t_pl ?? '', 8, ' ', STR_PAD_LEFT);
+    $netw = str_pad(engnot($c_netw) ?? '', 8, ' ', STR_PAD_LEFT);
+    $land = str_pad(engnot($c_land) ?? '', 8, ' ', STR_PAD_LEFT);
+    $cash = str_pad(engnot($c_cash) ?? '', 8, ' ', STR_PAD_LEFT);
+    $food = str_pad(engnot($c_food) ?? '', 8, ' ', STR_PAD_LEFT);
+    $tech = str_pad(engnot($c_tech) ?? '', 8, ' ', STR_PAD_LEFT);
     
     // buildings
-    $pbds = str_pad($c_pbds, 8, ' ', STR_PAD_LEFT);
-    $ibds = str_pad($c_ibds, 8, ' ', STR_PAD_LEFT);   
-    $nbds = str_pad($c_nbds, 8, ' ', STR_PAD_LEFT);
-    $cs = str_pad($c_cs, 8, ' ', STR_PAD_LEFT);   
-    $emty = str_pad($c_emty, 8, ' ', STR_PAD_LEFT);   
+    $pbds = str_pad($c_pbds ?? '', 8, ' ', STR_PAD_LEFT);
+    $ibds = str_pad($c_ibds ?? '', 8, ' ', STR_PAD_LEFT);   
+    $nbds = str_pad($c_nbds ?? '', 8, ' ', STR_PAD_LEFT);
+    $cs = str_pad($c_cs ?? '', 8, ' ', STR_PAD_LEFT);   
+    $emty = str_pad($c_emty  ?? '', 8, ' ', STR_PAD_LEFT);   
  
     // military
-    $spy = str_pad(engnot($c_spy), 8, ' ', STR_PAD_LEFT);
-    $tr = str_pad(engnot($c_tr), 8, ' ', STR_PAD_LEFT);
-    $jets = str_pad(engnot($c_jets), 8, ' ', STR_PAD_LEFT);
-    $tu = str_pad(engnot($c_tu), 8, ' ', STR_PAD_LEFT);
-    $ta = str_pad(engnot($c_ta), 8, ' ', STR_PAD_LEFT);
-    $read = str_pad($c_read, 8, ' ', STR_PAD_LEFT);
-    $ps = str_pad($c_ps, 8, ' ', STR_PAD_LEFT); // FUTURE: when attacking is available
-    $oil = str_pad(engnot($c_oil), 8, ' ', STR_PAD_LEFT);   
+    $spy = str_pad(engnot($c_spy) ?? '', 8, ' ', STR_PAD_LEFT);
+    $tr = str_pad(engnot($c_tr) ?? '', 8, ' ', STR_PAD_LEFT);
+    $jets = str_pad(engnot($c_jets) ?? '', 8, ' ', STR_PAD_LEFT);
+    $tu = str_pad(engnot($c_tu) ?? '', 8, ' ', STR_PAD_LEFT);
+    $ta = str_pad(engnot($c_ta) ?? '', 8, ' ', STR_PAD_LEFT);
+    $read = str_pad($c_read ?? '', 8, ' ', STR_PAD_LEFT);
+    $ps = str_pad($c_ps ?? '', 8, ' ', STR_PAD_LEFT); // FUTURE: when attacking is available
+    $oil = str_pad(engnot($c_oil) ?? '', 8, ' ', STR_PAD_LEFT);   
     
     // tech percentages
     $pmil = str_pad(round($c_pmil, 2).'%', 8, ' ', STR_PAD_LEFT); //-100.12% is 8 characters
