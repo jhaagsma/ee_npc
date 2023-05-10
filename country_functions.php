@@ -196,7 +196,7 @@ function turns_of_food(&$c)
 
 function turns_of_money(&$c)
 {
-    if ($c->income > 0) {
+    if ($c->income >= 0) {
         return 1000; //POSITIVE INCOME
     }
     $incomeloss = -1 * $c->income;
