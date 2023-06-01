@@ -597,8 +597,8 @@ function generate_compact_country_status_string($cnum, $header, $snapshot_type, 
     $oil = str_pad(engnot($c_oil) ?? '', 8, ' ', STR_PAD_LEFT);   
     
     // tech percentages
-    $pmil = str_pad(round($c_pmil, 2).'%', 8, ' ', STR_PAD_LEFT); //-100.12% is 8 characters
-    $pbus = str_pad(round($c_pbus, 2).'%', 8, ' ', STR_PAD_LEFT);
+    $pmil = str_pad(round($c_pmil ?? 0, 2).'%', 8, ' ', STR_PAD_LEFT); //-100.12% is 8 characters
+    $pbus = str_pad(round($c_pbus ?? 0, 2).'%', 8, ' ', STR_PAD_LEFT);
     $pres = str_pad(round(is_numeric($c_pres) ? $c_pres : -1, 2).'%', 8, ' ', STR_PAD_LEFT);
     $pwep = str_pad(round(is_numeric($c_pwep) ? $c_pwep : -1, 2).'%', 8, ' ', STR_PAD_LEFT);
     $ppro = str_pad(($c_ppro <> -1 ? round((is_numeric($c_ppro) ? (float)$c_ppro : 100), 2).'%' : 'N/A'), 8, ' ', STR_PAD_LEFT);
