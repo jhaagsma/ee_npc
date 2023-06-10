@@ -604,20 +604,20 @@ function generate_compact_country_status_string($cnum, $header, $snapshot_type, 
     $ppro = str_pad(($c_ppro <> -1 ? round((is_numeric($c_ppro) ? (float)$c_ppro : 100), 2).'%' : 'N/A'), 8, ' ', STR_PAD_LEFT);
     
     // production
-    $dstk = str_pad(($c_dstk === "N/A" ? $c_dstk : log_translate_boolean_to_YN($c_dstk)), 8, ' ', STR_PAD_LEFT);
-    $tax = str_pad($c_tax, 8, ' ', STR_PAD_LEFT);
-    $exp = str_pad($c_exp, 8, ' ', STR_PAD_LEFT);
-    $netf = str_pad($c_netf, 8, ' ', STR_PAD_LEFT);
-    $neto = str_pad($c_neto, 8, ' ', STR_PAD_LEFT);
-    $tpt = str_pad($c_tpt, 8, ' ', STR_PAD_LEFT);
-    $neti = str_pad($c_neti, 8, ' ', STR_PAD_LEFT);
-    $bpt = str_pad($c_bpt, 8, ' ', STR_PAD_LEFT);
+    $dstk = str_pad(($c_dstk === "N/A" ? $c_dstk ?? ' ': log_translate_boolean_to_YN($c_dstk)), 8, ' ', STR_PAD_LEFT);
+    $tax = str_pad($c_tax ?? ' ', 8, ' ', STR_PAD_LEFT);
+    $exp = str_pad($c_exp ?? ' ', 8, ' ', STR_PAD_LEFT);
+    $netf = str_pad($c_netf ?? ' ', 8, ' ', STR_PAD_LEFT);
+    $neto = str_pad($c_neto ?? ' ', 8, ' ', STR_PAD_LEFT);
+    $tpt = str_pad($c_tpt ?? ' ', 8, ' ', STR_PAD_LEFT);
+    $neti = str_pad($c_neti ?? ' ', 8, ' ', STR_PAD_LEFT);
+    $bpt = str_pad($c_bpt ?? ' ', 8, ' ', STR_PAD_LEFT);
     
     // value of goods on market
-    $om_v = str_pad(engnot($c_om_v), 8, ' ', STR_PAD_LEFT);   
-    $om_u = str_pad(engnot($c_om_u), 8, ' ', STR_PAD_LEFT);   
-    $om_b = str_pad(engnot($c_om_b), 8, ' ', STR_PAD_LEFT);   
-    $om_t = str_pad(engnot($c_om_t), 8, ' ', STR_PAD_LEFT);   
+    $om_v = str_pad(engnot($c_om_v) ?? ' ', 8, ' ', STR_PAD_LEFT);   
+    $om_u = str_pad(engnot($c_om_u) ?? ' ', 8, ' ', STR_PAD_LEFT);   
+    $om_b = str_pad(engnot($c_om_b) ?? ' ', 8, ' ', STR_PAD_LEFT);   
+    $om_t = str_pad(engnot($c_om_t) ?? ' ', 8, ' ', STR_PAD_LEFT);   
 
     $spcs = str_repeat(' ', 8);
     $s = "\n|  ";
