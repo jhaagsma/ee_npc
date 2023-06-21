@@ -186,7 +186,7 @@ class Country
     }//end setIndy()
 
 
-    public function setIndyFromMarket($checkDPA = false)
+    public function setIndyFromMarket($checkDPA = false, $isIndy = false)
     {
 
         if ($this->m_spy < 10000) {
@@ -228,6 +228,11 @@ class Country
 
         if ($checkDPA) {
             $target = $this->dpat ?? $this->defPerAcreTarget();
+
+            if ($isIndy) {
+                $target = $target / 2;
+            }
+
             if ($this->defPerAcre() < $target) {
                 //below def target, don't make jets
                 unset($score['pro_j']);
