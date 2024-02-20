@@ -51,6 +51,9 @@ class Bots
         global $settings;
         $nextplays = [];
         foreach ($countries as $cnum) {
+            if (!isset($settings->$cnum)) {
+                $settings->$cnum = new \stdClass(); // Initialize as a simple object
+            }
             if (isset($settings->$cnum->nextplay)) {
                 $nextplays[] = $settings->$cnum->nextplay;
             } else {
