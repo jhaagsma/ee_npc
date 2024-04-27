@@ -51,6 +51,16 @@ class Bots
         global $settings;
         $nextplays = [];
         foreach ($countries as $cnum) {
+            if ($cnum == null) {
+                out("Cnum is null??");
+		continue;
+	    }
+            if ($settings == null) {
+		out("settings is null??");
+                $settings = new \stdClass();
+            }
+
+
             if (!isset($settings->$cnum)) {
                 $settings->$cnum = new \stdClass(); // Initialize as a simple object
             }
@@ -220,6 +230,9 @@ class Bots
 
     public static function oldestPlay($countries)
     {
+	if (count(self::lastPlays($countries)) == 0)
+	    return 0;
+
         return min(self::lastPlays($countries));
     }//end oldestPlay()
 }//end class

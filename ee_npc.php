@@ -88,6 +88,8 @@ $server = getServer();
 //$market            = new PublicMarket();
 $server_avg_networth = $server_avg_land = 0;
 
+$first = true;
+
 while (1) {
     if (!is_object($server)) {
         $server = getServer();
@@ -131,7 +133,9 @@ while (1) {
     }
 
     $played = false;
-    //out("Country Count: ".count($countries));
+    if ($first)
+        out("Country Count: ".count($countries));
+    
     foreach ($countries as $cnum) {
         Debug::off(); //reset for new country
         $save = false;
@@ -331,6 +335,7 @@ while (1) {
 
     sleep($sleep); //sleep for $sleep seconds
     Bots::outNext($countries, true);
+    $first = false;
 }
 
 done(); //done() is defined below
