@@ -352,7 +352,7 @@ function set_indy_from_production_algorithm(&$c, $military_unit_price_history, $
 
 
 
-function get_tpt_split_from_production_algorithm(&$c, $tech_price_history, $cpref)
+function get_tpt_split_from_production_algorithm(&$c, $tech_price_history, $cpref, $server)
 {
     // produce bus/res in first 150 turns because there's very little demand for anything else and we're probably poor
     // FUTURE: 150 is a made up number that could be changed to something better
@@ -440,6 +440,11 @@ function get_tpt_split_from_production_algorithm(&$c, $tech_price_history, $cpre
 
         $production_score = create_production_scores_based_on_preferences($c->cnum, $cpref, $tech_price_history, $cpref->base_inherent_value_for_tech, $production_factor_per_unit,
         $high_price_score_array, $no_market_history_score_array, $current_price_score_array, $default_current_prices, $default_historical_prices);
+    }
+
+    if($server->is_cooperation_server) {
+        $production_score['t_war'] = 0;
+        $production_score['t_sdi'] = 0;
     }
 
     log_country_message($c->cnum, "Normalizing production scores to sum to 10000 for easier reading");
