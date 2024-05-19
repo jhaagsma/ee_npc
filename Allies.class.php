@@ -101,7 +101,7 @@ class Allies
      *
      * @return null
      */
-    public static function fill($cpref, $type = 'def', $rules)
+    public static function fill($cpref, $type, $rules)
     {
         if (!self::$allowed || !$cpref->acquire_ingame_allies) {
             return false;
