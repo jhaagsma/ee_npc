@@ -54,7 +54,7 @@ class cpref
         $this->techer_round_explore_cutoff_percentage = $this->get_techer_round_explore_cutoff_percentage();
         $this->techer_allowed_to_explore = (time() < $this->techer_round_explore_cutoff_percentage * $number_of_seconds_in_set + $this->reset_start_time) ? true : false;
 
-        $this->base_inherent_value_for_tech = 350 * 2; // TODO: why is this broken? $rules->nw_per_tech_point;
+        $this->base_inherent_value_for_tech = 325 * $rules->nw_per_tech_point;
         // if tpt is high enough, spend this percentage of turns teching before considering exploring
         $this->min_perc_teching_turns = $this->get_min_perc_teching_turns();
         $this->initial_bpt_target = ($this->strat == "T" ? 60 : 65);
