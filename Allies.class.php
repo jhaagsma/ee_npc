@@ -101,9 +101,19 @@ class Allies
      *
      * @return null
      */
-    public static function fill($cpref, $type = 'def')
+    public static function fill($cpref, $type = 'def', $rules)
     {
         if (!self::$allowed || !$cpref->acquire_ingame_allies) {
+            return false;
+        }
+
+        if(
+            ($type == 'def' && !$rules->ingame_def_allies_allowed) ||
+            ($type == 'off' && !$rules->ingame_off_allies_allowed) ||
+            ($type == 'res' && !$rules->ingame_res_allies_allowed) ||
+            ($type == 'spy' && !$rules->ingame_spy_allies_allowed) ||
+            ($type == 'trade' && !$rules->ingame_trade_allies_allowed)
+        ) {
             return false;
         }
 

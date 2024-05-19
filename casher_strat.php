@@ -24,7 +24,7 @@ function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
     $c->setIndy('pro_spy');
 
     if ($c->m_spy > 10000) {
-        Allies::fill($cpref, 'spy');
+        Allies::fill($cpref, 'spy', $rules);
     }
 
     casher_switch_government_if_needed($c);

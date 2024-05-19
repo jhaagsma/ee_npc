@@ -321,12 +321,12 @@ while (1) {
         }
 
         if (!isset($cpref_file->gdi)) {
-            $cpref_file->gdi = (bool)(rand(0, 2) == 2);
+            $cpref_file->gdi = (bool)($rules->is_gdi_disabled ? false : (rand(0, 2) == 2));
             //log_main_message("Setting GDI to ".($cpref_file->gdi ? "true" : "false"), true, 'brown');
         }
 
         if ($cpref_file->nextplay < time()) {
-            $cpref = new cpref($server, $cpref_file, $cnum);
+            $cpref = new cpref($server, $cpref_file, $cnum, $rules);
 
             log_country_message($cnum, "\n\n");
             log_country_message($cnum, "Beginning country loop");
@@ -358,7 +358,7 @@ while (1) {
                     Allies::decline_all_allies_if_needed($cpref);
 
                     if ($cpref_file->allyup) {
-                        Allies::fill($cpref, 'def');
+                        Allies::fill($cpref, 'def', $rules);
                     }
 
                     Events::new();
@@ -391,9 +391,9 @@ while (1) {
 
                     log_turn_action_counts($c, $server, $cpref, $turn_action_counts);                    
 
-                    if ($cpref_file->gdi && !$c->gdi) {
+                    if (!$rules->is_gdi_disabled && $cpref_file->gdi && !$c->gdi) {
                         GDI::join();
-                    } elseif (!$cpref_file->gdi && $c->gdi) {
+                    } elseif (!$rules->is_gdi_disabled && !$cpref_file->gdi && $c->gdi) {
                         GDI::leave();
                     }
 

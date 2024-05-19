@@ -18,7 +18,7 @@ namespace EENPC;
 class cpref
 {
 
-    public function __construct($server, $cpref_file, $cnum)
+    public function __construct($server, $cpref_file, $cnum, $rules)
     {
         $this->cnum = $cnum;
 
@@ -38,7 +38,7 @@ class cpref
         $this->bot_secret_number = $cpref_file->bot_secret;
         $this->playrand = $cpref_file->playrand;
         $this->price_tolerance = $cpref_file->price_tolerance;
-        $this->acquire_ingame_allies = ($this->is_clan_server ? $cpref_file->allyup : false); // no allies on non-clan servers for now
+        $this->acquire_ingame_allies = ($this->is_clan_server && !$this->is_cooperation_server ? $cpref_file->allyup : false); // no allies on non-clan servers for now
         $this->gdi = $cpref_file->gdi;
         // end personality file issue
 
@@ -54,7 +54,7 @@ class cpref
         $this->techer_round_explore_cutoff_percentage = $this->get_techer_round_explore_cutoff_percentage();
         $this->techer_allowed_to_explore = (time() < $this->techer_round_explore_cutoff_percentage * $number_of_seconds_in_set + $this->reset_start_time) ? true : false;
 
-        $this->base_inherent_value_for_tech = 700;
+        $this->base_inherent_value_for_tech = 350 * $rules->nw_per_tech_point;
         // if tpt is high enough, spend this percentage of turns teching before considering exploring
         $this->min_perc_teching_turns = $this->get_min_perc_teching_turns();
         $this->initial_bpt_target = ($this->strat == "T" ? 60 : 65);
@@ -67,7 +67,7 @@ class cpref
         $this->min_land_to_buy_defense = $this->get_min_land_to_buy_defense();        
         $this->target_cash_after_stockpiling = ($this->strat == "C" || $this->strat == "I" ? 1500000000 : 1800000000);
         $this->spend_extra_money_cooldown_turns = ($this->strat == "C" ? 5 : 7);
-        $this->max_stockpiling_loss_percent = 60; // must be > 0
+        $this->max_stockpiling_loss_percent = 70; // must be > 0
         $this->max_bushel_buy_price_with_low_stored_turns = 99;
         $this->tech_max_purchase_price = 9999;     
         // techers probably need to buy everything off PM, but other strats can likely skip turrets
