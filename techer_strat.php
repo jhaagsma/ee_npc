@@ -27,11 +27,11 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
     $c->setIndy('pro_spy');
 
     if ($c->m_spy > 10000) {
-        Allies::fill($cpref, 'spy');
+        Allies::fill($cpref, 'spy', $rules);
     }
 
     if ($c->b_lab > 2000) {
-        Allies::fill($cpref, 'res');
+        Allies::fill($cpref, 'res', $rules);
     }
 
     techer_switch_government_if_needed($c);

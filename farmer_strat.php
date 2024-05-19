@@ -42,7 +42,7 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
     $c->setIndy('pro_spy');
 
     if ($c->m_spy > 10000) {
-        Allies::fill($cpref, 'spy');
+        Allies::fill($cpref, 'spy', $rules);
     }
 
     farmer_switch_government_if_needed($c);

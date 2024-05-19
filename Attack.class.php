@@ -16,6 +16,7 @@ namespace EENPC;
 
 class Attack
 {
+    // NOTE: when implemented this must respect cooperation server, $rules->can_attack_players, etc
     public static function doAttack(&$c, $cnum) {
 
     }

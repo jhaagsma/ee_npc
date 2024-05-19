@@ -43,21 +43,21 @@ function play_rainbow_strat($server, $cnum, $rules, $cpref, &$exit_condition)
     }
 
     if ($c->m_spy > 10000) {
-        Allies::fill($cpref, 'spy');
+        Allies::fill($cpref, 'spy', $rules);
     }
 
     if ($c->b_lab > 2000) {
-        Allies::fill($cpref, 'res');
+        Allies::fill($cpref, 'res', $rules);
     }
 
     if ($c->m_j > 1000000) {
-        Allies::fill($cpref, 'off');
+        Allies::fill($cpref, 'off', $rules);
     }
 
     //because why not?
     // it's confusing for players, especially new ones - Slagpit
     //if ($c->govt == 'M') {
-    //    Allies::fill($cpref, 'trade');
+    //    Allies::fill($cpref, 'trade', $rules);
     //}
 
     //get the PM info

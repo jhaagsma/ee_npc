@@ -26,7 +26,7 @@ function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$tur
     set_indy_from_production_algorithm($c, $military_unit_price_history, $cpref, false); // changing to not check DPA - Slagpit 20210321
 
     if ($c->m_spy > 10000) {
-        Allies::fill($cpref, 'spy');
+        Allies::fill($cpref, 'spy', $rules);
     }
 
     indy_switch_government_if_needed($c);
