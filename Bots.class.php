@@ -90,7 +90,7 @@ class Bots
     }//end server_start_end_notification()
 
 
-    public static function assign_strat_from_country_loop($country_position, $is_debug_server, $is_ai_server) {
+    public static function assign_strat_from_country_loop($country_position, $is_debug_server, $is_ai_server, $is_clan_server) {
         // FUTURE: make it easy to assign whatever mix of strategies we want with different mixes by server
 
         // return 'T'; // DEBUG
@@ -110,6 +110,20 @@ class Bots
             } elseif  (($country_position % 25) <= 20) {
                 return 'F';
             } else {
+                return 'R';
+            }
+        }
+
+        if($is_clan_server) {
+            if (($country_position % 28) <= 6) { // 7
+                return 'F';
+            } elseif  (($country_position % 28) <= 12) { // 6
+                return 'T';
+            } elseif  (($country_position % 28) <= 17) {  // 5
+                return 'I';
+            } elseif  (($country_position % 28) <= 22) { // 5
+                return 'C';
+            } else { // 5
                 return 'R';
             }
         }
