@@ -213,7 +213,7 @@ while (1) {
         sort($cnums_new);
         foreach($cnums_new as $key => $cnum) {
             if (!isset($settings->$cnum)) {  
-                $strat = Bots::assign_strat_from_country_loop($dead_country_count + $key, $server->is_debug, $server->is_ai_server);    
+                $strat = Bots::assign_strat_from_country_loop($dead_country_count + $key, $server->is_debug, $server->is_ai_server, $server->is_clan_server);    
                 log_main_message("No settings line for #$cnum found. Newly assigned strategy is: $strat");
                 $settings->$cnum = json_decode(
                     json_encode(
@@ -233,7 +233,7 @@ while (1) {
             }
             
             if (!isset($settings->$cnum->strat) || $settings->$cnum->strat == null) {
-                $strat = Bots::assign_strat_from_country_loop($dead_country_count + $key, $server->is_debug, $server->is_ai_server);
+                $strat = Bots::assign_strat_from_country_loop($dead_country_count + $key, $server->is_debug, $server->is_ai_server, $server->is_clan_server);
                 $settings->$cnum->strat = $strat;
                 log_main_message("No strategy found for #$cnum in settings line. Newly assigned strategy is: $strat");
             }
