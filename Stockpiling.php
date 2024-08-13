@@ -272,9 +272,9 @@ function get_approx_expense_per_turn_for_mil_unit ($unit, $unit_nw, $food_price,
     $unit_base_exp_food = ['m_tr' => 0.001,'m_j' => 0.001,'m_tu' => 0.001,'m_ta' => 0.003];
 
     // assumes no military bases
-    return 0.01 * $pt_mil * ($govt == "T" ? 0.9 : 1) * (1 + $networth / 200000000) * $unit_base_exp_money[$unit] // money
-    + $food_price * $unit_base_exp_food[$unit] // food
-    + $current_expenses_mil * (-1 + (1 + (($unit_nw + $networth) / 200000000)) / (1 + $networth / 200000000)); // expenses increase because NW goes up
+    return 0.01 * $pt_mil * ($govt == "T" ? 0.9 : 1) * $unit_base_exp_money[$unit] // money
+    + $food_price * $unit_base_exp_food[$unit]; // food
+    // + $current_expenses_mil * (-1 + (1 + (($unit_nw + $networth) / 200000000)) / (1 + $networth / 200000000)); // expenses increase because NW goes up
 }
 
 

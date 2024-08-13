@@ -49,7 +49,7 @@ class cpref
 
 
         $number_of_seconds_in_set = $this->reset_end_time - $this->reset_start_time;
-        $this->techer_land_goal = ($turns_in_set < 2200 ? 8000 : 10000); // FUTURE - this is very basic, also weird to only set for techer
+        $this->techer_land_goal = 11 * ($cnum % 100) + ($turns_in_set < 2200 ? 7500 : 10000); // FUTURE - this is very basic, also weird to only set for techer
          // weird to set only for techer
         $this->techer_round_explore_cutoff_percentage = $this->get_techer_round_explore_cutoff_percentage();
         $this->techer_allowed_to_explore = (time() < $this->techer_round_explore_cutoff_percentage * $number_of_seconds_in_set + $this->reset_start_time) ? true : false;
@@ -69,7 +69,7 @@ class cpref
         $this->spend_extra_money_cooldown_turns = ($this->strat == "C" ? 5 : 7);
         $this->max_stockpiling_loss_percent = 70; // must be > 0
         $this->max_bushel_buy_price_with_low_stored_turns = 99;
-        $this->tech_max_purchase_price = 9999;     
+        $this->tech_max_purchase_price = 10000;     
         // techers probably need to buy everything off PM, but other strats can likely skip turrets
         $this->final_dpnw_for_stocking_calcs = ($this->strat == "T" ? (2025 / 6.5) : (3*144+588+2.5*192)/(1.5+2+0.6*2.5));
         $this->should_demo_attempt_bushel_recycle = true;
