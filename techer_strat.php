@@ -41,7 +41,7 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
         ['type'=>'NWPA','goal'=>100]
     ];
     $money_to_keep_after_stockpiling = $cpref->target_cash_after_stockpiling;
-    get_stockpiling_weights_and_adjustments ($stockpiling_weights, $stockpiling_adjustments, $c, $server, $rules, $cpref, $money_to_keep_after_stockpiling, true, false, true);
+    get_stockpiling_weights_and_adjustments ($stockpiling_weights, $stockpiling_adjustments, $c, $server, $rules, $cpref, $money_to_keep_after_stockpiling, true, true, true);
     $tech_price_min_sell_price = get_techer_min_sell_price($c, $cpref, $rules);
 
     // log useful information about country state
@@ -78,7 +78,7 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
         //$result = PublicMarket::buy($c,array('m_bu'=>100),array('m_bu'=>400));
                 
         $result = play_techer_turn($c, $cpref, $rules, $tech_price_min_sell_price, $is_allowed_to_mass_explore, $tech_price_history, $tpt_split, $teching_turns_remaining_before_explore);
-        if ($result === false) {  //UNEXPECTED RETURN VALUE
+        if ($result === null) {  //UNEXPECTED RETURN VALUE
             $c = get_advisor();     //UPDATE EVERYTHING
             continue;
         }

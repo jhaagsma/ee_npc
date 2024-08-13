@@ -55,7 +55,7 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
     $cost_for_military_point_guess = get_cost_per_military_points_for_caching($c);
     $dpnw_guess = get_dpnw_for_caching($c);
     $money_to_keep_after_stockpiling = $cpref->target_cash_after_stockpiling;
-    get_stockpiling_weights_and_adjustments ($stockpiling_weights, $stockpiling_adjustments, $c, $server, $rules, $cpref, $money_to_keep_after_stockpiling, false, true, true);
+    get_stockpiling_weights_and_adjustments ($stockpiling_weights, $stockpiling_adjustments, $c, $server, $rules, $cpref, $money_to_keep_after_stockpiling, true, true, true);
     $bushel_min_sell_price = get_farmer_min_sell_price($c, $cpref, $rules, $server);
     $bushel_max_sell_price = get_farmer_max_sell_price($c, $cpref, $rules, $server);
 
@@ -90,7 +90,7 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
     while ($c->turns > 0) {
         //$result = PublicMarket::buy($c,array('m_bu'=>100),array('m_bu'=>400));
         $result = play_farmer_turn($c, $cpref, $rules, $is_allowed_to_mass_explore, $bushel_min_sell_price, $bushel_max_sell_price, $food_price_history);
-        if ($result === false) {  //UNEXPECTED RETURN VALUE
+        if ($result === null) {  //UNEXPECTED RETURN VALUE
             $c = get_advisor();     //UPDATE EVERYTHING
             continue;
         }

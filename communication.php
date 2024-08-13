@@ -56,7 +56,7 @@ function ee($function, $parameterArray = [])
     $APICalls++;
 
     $return = handle_output($serverOutput, $function, $cnum);
-    if ($return === false) {
+    if ($return === null) {
         out_data($init);
     }
 
@@ -74,7 +74,7 @@ function getServer($refresh_logging_directory = false)
     $server_loaded = false;
     $server        = null;
     while (!$server_loaded) {
-        if ($server_loaded === false) {
+        if ($server_loaded === false || $server_loaded === null) {
             $server = ee('server');
             if (is_object($server)) {
                 $server_loaded = true;
@@ -103,7 +103,7 @@ function getRules()
     $rules_loaded = false;
     $rules        = null;
     while (!$rules_loaded) {
-        if ($rules_loaded === false) {
+        if ($rules_loaded === false || $rules_loaded === null) {
             $rules = ee('rules');
             if (is_object($rules)) {
                 $rules_loaded = true;
@@ -185,7 +185,8 @@ function handle_output($serverOutput, $function, $cnum) // $cnum may not be set
 
         log_error_message(106, $cnum, "\n\nUnexpected Result for '$function': ".$message.':'.$response."\n\n");
 
-        return $response;
+        return null;
+        //return $response; // always return null to avoid infinite loops in calling code
     } elseif (!expected_result($function)) {
         $error_message = "Function: ".($function ?? "")."\nMessage: ".($message ?? "")."\nServer Output: \n".($serverOutput ?? "");
         log_error_message(107, $cnum, $error_message);
@@ -194,7 +195,8 @@ function handle_output($serverOutput, $function, $cnum) // $cnum may not be set
         //log_country_or_main_message($cnum, $message);
         //out_data($response);
         //log_country_or_main_message($cnum, "Server Output: \n".$serverOutput);
-        return false;
+        return null;
+        // return false; // always return null to avoid infinite loops in calling code
     }
 
     return $response;
