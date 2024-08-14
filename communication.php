@@ -56,7 +56,7 @@ function ee($function, $parameterArray = [])
     $APICalls++;
 
     $return = handle_output($serverOutput, $function, $cnum);
-    if ($return === null) {
+    if (!$return) {
         out_data($init);
     }
 
@@ -74,7 +74,7 @@ function getServer($refresh_logging_directory = false)
     $server_loaded = false;
     $server        = null;
     while (!$server_loaded) {
-        if ($server_loaded === false || $server_loaded === null) {
+        if ($server_loaded === false) {
             $server = ee('server');
             if (is_object($server)) {
                 $server_loaded = true;
@@ -103,7 +103,7 @@ function getRules()
     $rules_loaded = false;
     $rules        = null;
     while (!$rules_loaded) {
-        if ($rules_loaded === false || $rules_loaded === null) {
+        if ($rules_loaded === false) {
             $rules = ee('rules');
             if (is_object($rules)) {
                 $rules_loaded = true;
@@ -154,25 +154,25 @@ function handle_output($serverOutput, $function, $cnum) // $cnum may not be set
     //This is to avoid foulups, and to simplify the code checking above
     if ($message == 'COUNTRY_IS_DEAD') {
         log_country_message($cnum, "Country is Dead!");
-        return null;
+        return false;
     } elseif ($message == 'OWNED') {
         log_error_message(101, $cnum, "Trying to sell more than owned!"); // FUTURE: message should have something helpful for debugging
-        return null;
+        return false;
     } elseif ($message == "ERROR" && $response == "MAXIMUM_COUNTRIES_REACHED") {
         log_main_message("Already have total allowed countries so refreshing server...");
         global $server; //do all this with a class sometime soon
         $server = ee('server'); // I think it's fine for this to not refresh the logging directories
-        return null;
+        return false;
     } elseif ($message == "ERROR" && $response == "MONEY") {
         log_error_message(102, $cnum, "Not enough Money for $function"); // FUTURE: message should have something helpful for debugging
-        return null;
+        return false;
     } elseif ($message == "ERROR" && $response == "NOT_ENOUGH_TURNS") {
         log_error_message(103, $cnum, "Not enough Turns!"); // FUTURE: message should have something helpful for debugging
-        return null;
+        return false;
     } elseif ($function == 'ally/offer' && $message == "ERROR" && $response == "disallowed_by_server") {
         log_error_message(104, $cnum, "Allies are not allowed!");
         Allies::$allowed = false;
-        return null;
+        return false;
     } elseif (expected_result($function) && $message != expected_result($function)) {
         if (is_object($message) || is_object($response)) {
             out_data($message);
@@ -185,7 +185,7 @@ function handle_output($serverOutput, $function, $cnum) // $cnum may not be set
 
         log_error_message(106, $cnum, "\n\nUnexpected Result for '$function': ".$message.':'.$response."\n\n");
 
-        return null;
+        return false;
         //return $response; // always return null to avoid infinite loops in calling code
     } elseif (!expected_result($function)) {
         $error_message = "Function: ".($function ?? "")."\nMessage: ".($message ?? "")."\nServer Output: \n".($serverOutput ?? "");
@@ -195,8 +195,7 @@ function handle_output($serverOutput, $function, $cnum) // $cnum may not be set
         //log_country_or_main_message($cnum, $message);
         //out_data($response);
         //log_country_or_main_message($cnum, "Server Output: \n".$serverOutput);
-        return null;
-        // return false; // always return null to avoid infinite loops in calling code
+        return false; // always return null to avoid infinite loops in calling code
     }
 
     return $response;

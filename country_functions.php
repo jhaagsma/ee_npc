@@ -274,7 +274,7 @@ function food_management(&$c, $cpref)
 
             //Buy 3 turns of food off the public at or below the PM price
             $result = PublicMarket::buy($c, ['m_bu' => $quantity], ['m_bu' => $market_price]);
-            if ($result === null) {
+            if (!$result) {
                 PublicMarket::update();
             }
             //PublicMarket::relaUpdate('m_bu', $quantity, $result->bought->m_bu->quantity);
@@ -608,7 +608,7 @@ function buy_public_below_dpnw(&$c, $dpnw, &$money = null, $shuffle = false, $de
                 $result = PublicMarket::buy($c, [$unit => $quantity], [$unit => PublicMarket::price($unit)]);
                 PublicMarket::update();
                 $money = $c->money - $reserve;
-                if ($result === null
+                if (!$result
                     || !isset($result->bought->$unit->quantity)
                     || $result->bought->$unit->quantity == 0
                 ) {
@@ -781,7 +781,7 @@ function explore(&$c, $turns = 1)
 
     //this means 1 is the default number of turns if not provided
     $result = ee('explore', ['turns' => $turns]);      //cash a certain number of turns
-    if ($result === null) {
+    if (!$result) {
         log_country_message($c->cnum, 'Explore Fail? Update Advisor');
         $c = get_advisor();
     }

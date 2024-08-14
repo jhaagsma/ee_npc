@@ -90,7 +90,7 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
     while ($c->turns > 0) {
         //$result = PublicMarket::buy($c,array('m_bu'=>100),array('m_bu'=>400));
         $result = play_farmer_turn($c, $cpref, $rules, $is_allowed_to_mass_explore, $bushel_min_sell_price, $bushel_max_sell_price, $food_price_history);
-        if ($result === null) {  //UNEXPECTED RETURN VALUE
+        if (!$result) {  //UNEXPECTED RETURN VALUE
             $c = get_advisor();     //UPDATE EVERYTHING
             continue;
         }

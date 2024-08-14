@@ -60,7 +60,7 @@ function play_indy_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$tur
     while ($c->turns > 0) {
         //$result = PublicMarket::buy($c,array('m_bu'=>100),array('m_bu'=>400));
         $result = play_indy_turn($c, $cpref, $rules->max_possible_market_sell, $is_allowed_to_mass_explore);
-        if ($result === null) {  //UNEXPECTED RETURN VALUE
+        if (!$result) {  //UNEXPECTED RETURN VALUE
             $c = get_advisor();     //UPDATE EVERYTHING
             continue;
         }

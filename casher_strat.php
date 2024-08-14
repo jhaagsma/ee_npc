@@ -68,7 +68,7 @@ function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
     $turns_played_for_last_spend_money_attempt = 0;
     while ($c->turns > 0) {
         $result = play_casher_turn($c, $cpref, $is_allowed_to_mass_explore);
-        if ($result === null) {  //UNEXPECTED RETURN VALUE
+        if (!$result) {  //UNEXPECTED RETURN VALUE
             $c = get_advisor();     //UPDATE EVERYTHING
             continue;
         }
