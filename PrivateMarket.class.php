@@ -54,7 +54,7 @@ class PrivateMarket
      */
     public static function getRecent($c = null)
     {
-        if (time() - self::$updated > 20 && ($c === null || $c->cnum == self::$cnum) || self::$info == []) {
+        if (time() - self::$updated > 20 && ($c === null || $c === false || $c->cnum == self::$cnum) || self::$info == []) {
             return self::getInfo($c);
         }
 

@@ -291,7 +291,7 @@ ERROR 2001-PHP Warning; CNUM: #61; DETAILS: "/home/eenpc/ai_test/PublicMarket.cl
                 $money_before_purchase = $c->money;
                 $result = PublicMarket::buy($c, [$tech => $tobuy], [$tech => $price]);
                 $total_spent += $money_before_purchase - $c->money; // FUTURE - not safe if country loses cash for other reason
-                if ($result === null) {
+                if (!$result) {
                     if ($update == false) {
                         $update = true;
                         self::update(); //force update once more, and let it loop again

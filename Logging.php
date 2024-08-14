@@ -242,7 +242,7 @@ function log_error_message($error_type, $cnum, $message) {
     global $log_to_local, $local_file_path;
 
     $error_type_name = log_get_name_of_error_type($error_type);
-    if($error_type_name === null) {
+    if(!$error_type_name) {
         $local_error_message = "must call log_error_message() with a valid type (non-negative int)";
         out($local_error_message);
         log_error_message(0, $cnum, $local_error_message);

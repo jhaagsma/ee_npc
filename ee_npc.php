@@ -44,7 +44,7 @@ out('Error Reporting and Timezone Set');
 $config = null;
 require_once 'config.php';
 
-if ($config === null) {
+if (!$config) {
     //ADD IN AUTOGENERATE CONFIG HERE?
     die("Config not included successfully! Do you have config.php set up properly?");
 }

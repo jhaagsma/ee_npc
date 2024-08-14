@@ -74,7 +74,7 @@ function play_rainbow_strat($server, $cnum, $rules, $cpref, &$exit_condition)
         //$result = PublicMarket::buy($c,array('m_bu'=>100),array('m_bu'=>400));
                 
         $result = play_rainbow_turn($c, $cpref, $rules->market_autobuy_tech_price, $rules->max_possible_market_sell);
-        if ($result === null) {  //UNEXPECTED RETURN VALUE
+        if (!$result) {  //UNEXPECTED RETURN VALUE
             $c = get_advisor();     //UPDATE EVERYTHING
             continue;
         }
