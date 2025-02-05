@@ -15,7 +15,7 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
     $starting_turns = $c->turns;
     $is_allowed_to_mass_explore = is_country_allowed_to_mass_explore($c, $cpref);
 
-    if(!$cpref->techer_allowed_to_explore)
+    if($c->land >= 5000 && $cpref->techer_allowed_to_explore)
         log_country_message($cnum, "Not allowed to explore due to preference explore cutoff value of $cpref->techer_round_explore_cutoff_percentage");
 
     sell_initial_troops_on_turn_0($c);
@@ -171,7 +171,8 @@ function play_techer_turn(&$c, $cpref, $rules, $tech_price_min_sell_price, $is_a
         $teching_turns_remaining_before_explore -= $turns_to_tech;
         return tech_techer($c, $turns_to_tech, $tpt_split);
     } elseif (
-        $cpref->techer_allowed_to_explore && $c->built() > 50 && $c->land < $cpref->techer_land_goal &&
+        // allow exploring if < 5000 acres to improve late start techer
+        ($c->land < 5000 || $cpref->techer_allowed_to_explore) && $c->built() > 50 && $c->land < $cpref->techer_land_goal &&
         (
             ($c->empty < 4 && $c->land < 1800) // always allow for early exploring (cs)
             ||
