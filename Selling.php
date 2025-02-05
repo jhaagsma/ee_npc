@@ -421,7 +421,7 @@ function get_tpt_split_from_production_algorithm(&$c, $tech_price_history, $cpre
             't_weap' => 3000,
             't_indy' => 6000,
             't_spy' => 1000,
-            't_sdi' => 8000
+            't_sdi' => 5000
         ];
         // default values used for AVG_PRICE and SALES when there's no market history for a single unit
         $default_historical_prices = [
@@ -442,10 +442,10 @@ function get_tpt_split_from_production_algorithm(&$c, $tech_price_history, $cpre
         $high_price_score_array, $no_market_history_score_array, $current_price_score_array, $default_current_prices, $default_historical_prices);
     }
 
-    if($server->is_cooperation_server) {
-        $production_score['t_war'] = 0;
-        $production_score['t_sdi'] = 0;
-    }
+    //if($server->is_cooperation_server) {
+    //    $production_score['t_war'] = 0;
+    //    $production_score['t_sdi'] = 0;
+    //}
 
     log_country_message($c->cnum, "Normalizing production scores to sum to 10000 for easier reading");
     normalize_array_for_selling($c->cnum, $production_score, 10000, 't_bus');
