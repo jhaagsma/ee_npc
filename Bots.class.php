@@ -114,6 +114,7 @@ class Bots
             }
         }
 
+        /*
         if($is_clan_server) {
             if (($country_position % 28) <= 6) { // 7
                 return 'F';
@@ -127,7 +128,8 @@ class Bots
                 return 'R';
             }
         }
-
+        */
+        
         // other servers use this logic of 20/20/20/20/20
         // debug servers are included here so we can test this code before it goes live
         if ($country_position % 5 == 0) {
