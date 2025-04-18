@@ -56,7 +56,7 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
     //out_data($owned_on_market_info); //output the owned on market info
 
 
-    if($c->money > 2000000000) { // try to stockpile to avoid corruption and to limit bot abuse
+    if($c->money > 1700000000) { // try to stockpile to avoid corruption and to limit bot abuse
         // first spend extra money normally so we can buy needed military
         spend_extra_money($c, $buying_priorities, $cpref, $money_to_keep_after_stockpiling, false);
         spend_extra_money_on_stockpiling($c, $cpref, $money_to_keep_after_stockpiling, $stockpiling_weights, $stockpiling_adjustments);
@@ -110,7 +110,7 @@ function play_techer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
         spend_extra_money($c, $buying_priorities, $cpref, $c->fullBuildCost() - $c->runCash(), false);//keep enough money to build out everything
     }
 
-    if($c->money > 2000000000) { // try to stockpile to avoid corruption and to limit bot abuse
+    if($c->money > 1700000000) { // try to stockpile to avoid corruption and to limit bot abuse
         spend_extra_money_on_stockpiling($c, $cpref, $money_to_keep_after_stockpiling, $stockpiling_weights, $stockpiling_adjustments);
         // don't see a strong reason to sell excess bushels at this step
     }

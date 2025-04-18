@@ -71,14 +71,14 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
     attempt_to_recycle_bushels_but_avoid_buyout($c, $cpref, $food_price_history);
 
     // FUTURE: what if we have a bunch of bushels that we plan to sell on PM?
-    if($c->money > 2000000000) { // try to stockpile to avoid corruption and to limit bot abuse
+    if($c->money > 1700000000) { // try to stockpile to avoid corruption and to limit bot abuse
         // first spend extra money normally so we can buy needed military or income techs if they are worthwhile
         spend_extra_money($c, $buying_priorities, $cpref, $money_to_keep_after_stockpiling, false, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array, $buying_schedule);
         spend_extra_money_on_stockpiling($c, $cpref, $money_to_keep_after_stockpiling, $stockpiling_weights, $stockpiling_adjustments);
     }
 
     $turn_action_counts = [];
-    if($c->money > 1000000000) {// only called here to keep returned bushels on the market at high prices if we have a lot of cash
+    if($c->money > 700000000) {// only called here to keep returned bushels on the market at high prices if we have a lot of cash
         $possible_turn_result = stash_excess_bushels_on_public_if_needed($c, $rules);
         if($possible_turn_result) {
             $action_and_turns_used = update_c($c, $possible_turn_result);
@@ -145,7 +145,7 @@ function play_farmer_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
         spend_extra_money($c, $buying_priorities, $cpref, floor(0.9 * $c->money), false, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array, $buying_schedule);
     }
 
-    if($c->money > 2000000000) { // try to stockpile to avoid corruption and to limit bot abuse
+    if($c->money > 1700000000) { // try to stockpile to avoid corruption and to limit bot abuse
         spend_extra_money_on_stockpiling($c, $cpref, $money_to_keep_after_stockpiling, $stockpiling_weights, $stockpiling_adjustments);
         // don't see a strong reason to sell excess bushels at this step
     }
