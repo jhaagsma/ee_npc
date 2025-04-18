@@ -50,7 +50,7 @@ function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
     //$owned_on_market_info = get_owned_on_market_info();     //find out what we have on the market
 
 
-    if($c->money > 2000000000) { // try to stockpile to avoid corruption and to limit bot abuse
+    if($c->money > 1700000000) { // try to stockpile to avoid corruption and to limit bot abuse
         // first spend extra money normally so we can buy needed military or income techs if they are worthwhile
         spend_extra_money($c, $buying_priorities, $cpref, $money_to_keep_after_stockpiling, false, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array, $buying_schedule);
         spend_extra_money_on_stockpiling($c, $cpref, $money_to_keep_after_stockpiling, $stockpiling_weights, $stockpiling_adjustments);
@@ -114,7 +114,7 @@ function play_casher_strat($server, $cnum, $rules, $cpref, &$exit_condition, &$t
         spend_extra_money($c, $buying_priorities, $cpref, floor(0.9 * $c->money), false, $cost_for_military_point_guess, $dpnw_guess, $optimal_tech_buying_array, $buying_schedule);
     }
 
-    if($c->money > 2000000000) { // try to stockpile to avoid corruption and to limit bot abuse
+    if($c->money > 1700000000) { // try to stockpile to avoid corruption and to limit bot abuse
         spend_extra_money_on_stockpiling($c, $cpref, $money_to_keep_after_stockpiling, $stockpiling_weights, $stockpiling_adjustments);
         // don't see a strong reason to sell excess bushels at this step
     }

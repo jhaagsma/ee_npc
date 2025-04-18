@@ -65,7 +65,7 @@ class cpref
         // buying
         $this->purchase_schedule_number = $this->get_purchase_schedule_number();
         $this->min_land_to_buy_defense = $this->get_min_land_to_buy_defense();        
-        $this->target_cash_after_stockpiling = ($this->strat == "C" || $this->strat == "I" ? 1500000000 : 1800000000);
+        $this->target_cash_after_stockpiling = ($this->strat == "C" || $this->strat == "I" ? 1200000000 : 1500000000);
         $this->spend_extra_money_cooldown_turns = ($this->strat == "C" ? 5 : 7);
         $this->max_stockpiling_loss_percent = 70; // must be > 0
         $this->max_bushel_buy_price_with_low_stored_turns = 99;
